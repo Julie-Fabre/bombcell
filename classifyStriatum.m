@@ -1,7 +1,7 @@
 % get good units 
 goodUnits = qMetric.numSpikes >= param.minNumSpikes & qMetric.waveformRawAmpli >= param.minAmpli & ...
     qMetric.fractionRPVchunk <= param.maxRPV ...
-    & qMetric.somatic == param.somaCluster;% & qMetric.pMissing < param.maxPercMissing;
+    & qMetric.somatic == param.somaCluster & qMetric.pMissing < param.maxPercMissing;
 
 %classify into 4 groups
 msn = ephysParams.postSpikeSuppression < 40 & ephysParams.templateDuration > param.cellTypeDuration;
