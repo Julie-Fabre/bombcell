@@ -1,7 +1,7 @@
 % get good units 
 goodUnits = qMetric.numSpikes >= param.minNumSpikes & qMetric.waveformRawAmpli >= param.minAmpli & ...
     qMetric.fractionRPVchunk <= param.maxRPV ...
-    & ephysParams.somatic == param.somaCluster & nanmin(qmetric.percent_missing_ndtr(2:end, :)) < param.maxPercMissing;
+    & qMetric.somatic == param.somaCluster;% & qMetric.pMissing < param.maxPercMissing;
 
 %classify into 4 groups
 msn = ephysParams.postSpikeSuppression < 40 & ephysParams.templateDuration > param.cellTypeDuration;
@@ -12,3 +12,9 @@ tan = ephysParams.postSpikeSuppression >= 40 & ephysParams.templateDuration > pa
 uin = ephysParams.prop_long_isi > 0.1 & ...
     ephysParams.postSpikeSuppression < param.cellTypePostS & ...
     ephysParams.templateDuration < param.cellTypeDuration;
+
+cellTypesClassif = struct;
+cellTypesClassif(1).cells = msn;
+cellTypesClassif(2).cells = fsi;
+cellTypesClassif(3).cells = tan;
+cellTypesClassif(4).cells = uin;

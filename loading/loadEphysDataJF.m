@@ -1,5 +1,5 @@
-function [ephysData, behavData] = loadEphysDataJF(ephys_path, animal, day, experiment, corona, trained )
-load_parts.ephys=false; 
+function ephysData = loadEphysDataJF(ephys_path, animal, day, experiment )
+load_parts.ephys=true; 
 AP_load_experimentJF;
 
 spike_templates_0idx = readNPY([ephys_path filesep 'spike_templates.npy']);
@@ -34,22 +34,9 @@ ephysData.pc_features = pc_features(good_spike_idx,:,:);
 ephysData.pc_features_full = pc_features;
 ephysData.pc_features_ind_full = pc_features_ind;
 ephysData.pc_features_ind = pc_features_ind(good_templates_idx+1,:);
-ephysData.str_templates = str_templates;
-ephysData.spike_rate = spike_rate;
+%ephysData.str_templates = str_templates;
+%ephysData.spike_rate = spike_rate;
 ephysData.new_spike_idx = new_spike_idx;
 
 
-if trained
-    behavData.signals = signals_events;
-    behavData.wheel_move_time = wheel_move_time;
-    behavData.stim_to_move = stim_to_move;
-    behavData.stim_to_feedback = stim_to_feedback;
-    behavData.trial_conditions = trial_conditions;
-    behavData.stimOn_times = stimOn_times;
-    behavData.reward_t_block =  reward_t_block;
-    behavData.trial_choice = trial_choice;
-    behavData.trial_outcome=trial_outcome;
-else
-    behavData.stimOn_times = stimOn_times;
-end
 end
