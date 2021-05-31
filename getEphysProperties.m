@@ -24,6 +24,7 @@ for iUnit = 1:size(allT, 1)
     ephysParams.postSpikeSuppression(iUnit) = acgfr;
 
     %% templateDuration
+    waveformsTemp_mean = ephysData.template_waveforms(thisUnit, :);
     minProminence = 0.2 * max(abs(squeeze(waveformsTemp_mean)));
     qMetric.waveformUnit(iUnit, :) = squeeze(waveformsTemp_mean);
     %figure();plot(qMetric.waveform(iUnit, :))
