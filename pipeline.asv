@@ -79,18 +79,11 @@ keep qMetric ephysParams ephysData param
 %% classify cells 
 classifyStriatum; 
 
-%very quick plotting-just to check 
+%plot cells 
 figure();
 plot(nanmean(ephysData.template_waveforms(msn,:)))
 hold on;
 plot(nanmean(ephysData.template_waveforms(fsi,:)))
 plot(nanmean(ephysData.template_waveforms(tan,:)))
 plot(nanmean(ephysData.template_waveforms(uin,:)))
-
-figure();
-plot(nanmean(ephysParams.ACG(msn,:)))
-hold on;
-plot(nanmean(ephysParams.ACG(fsi,:)))
-plot(nanmean(ephysParams.ACG(tan,:)))
-plot(nanmean(ephysParams.ACG(uin,:)))
 %save qualityMetrics, ephysProperties and classification
