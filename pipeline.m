@@ -80,17 +80,31 @@ keep qMetric ephysParams ephysData param
 classifyStriatum; 
 
 %very quick plotting-just to check 
+celltype_col = ...
+    [0.9,0.4,0.6; ...
+    0.4,0.5,0.6; ...
+    0.5,0.3,0.1; ...
+    1,0.5,0];
+waveform_t = 1e3*((0:size(ephysData.template_waveforms,2)-1)/30000);
 figure();
-plot(nanmean(ephysData.template_waveforms(msn,:)))
 hold on;
-plot(nanmean(ephysData.template_waveforms(fsi,:)))
-plot(nanmean(ephysData.template_waveforms(tan,:)))
-plot(nanmean(ephysData.template_waveforms(uin,:)))
+for iCellType=1:4
+    plot(waveform_t, nanmean(ephysData.template_waveforms(cellTypesClassif(iCellType).cells,:)),'Color',celltype_col(iCellType,:))
+    plotshaded(waveform_t, [ nanmean(ephysData.template_waveforms(cellTypesClassif(iCellType).cells,:)) - ...
+        nanstd(ephysData.template_waveforms(cellTypesClassif(iCellType).cells,:)); ...
+        nanmean(ephysData.template_waveforms(cellTypesClassif(iCellType).cells,:)) + ...
+        nanstd(ephysData.template_waveforms(cellTypesClassif(iCellType).cells,:))],celltype_col(iCellType,:))
+end
+makepretty;
 
 figure();
-plot(nanmean(ephysParams.ACG(msn,:)))
 hold on;
-plot(nanmean(ephysParams.ACG(fsi,:)))
-plot(nanmean(ephysParams.ACG(tan,:)))
-plot(nanmean(ephysParams.ACG(uin,:)))
+for iCellType=1:4
+    subplot(1,4,iCellType)
+    area(0:0.001:1, nanmean(ephysParams.ACG(cellTypesClassif(iCellType).cells,:)),'FaceColor',celltype_col(iCellType,:))
+    plotshaded(0:0.001:1,[ nanmean(ephysParams.ACG(cellTypesClassif(iCellType).cells,:)) - ...
+        nanstd(ephysParams.ACG(cellTypesClassif(iCellType).cells,:)); ...
+        nanmean(ephysParams.ACG(cellTypesClassif(iCellType).cells,:)) + ...
+        nanstd(ephysParams.ACG(cellTypesClassif(iCellType).cells,:))],celltype_col(iCellType,:))
+end
 %save qualityMetrics, ephysProperties and classification
