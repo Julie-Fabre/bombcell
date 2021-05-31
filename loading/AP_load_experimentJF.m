@@ -360,22 +360,26 @@ if block_exists
             signals_events.missValues = circshift(signals_events.missValues, [0, -1]);
 
             % Get number of completed trials (if uncompleted last trial)
-            n_trials = length(signals_events.endTrialTimes);
+            %keep pones with logged stimN (= not first and repeat on
+            %incorrect)
+            
+            n_trials = [length(signals_events.stimOnTimes) - ...
+                length(find(signals_events.stimOnTimes > signals_events.stimNTimes(1))), length(signals_events.endTrialTimes)];
 
             % Get stim on times by closest photodiode flip
             [~, closest_stimOn_photodiode] = ...
                 arrayfun(@(x) min(abs(signals_events.stimOnTimes(x)- ...
                 photodiode_flip_times)), ...
-                1:n_trials);
+                n_trials(1):n_trials(end));
             stimOn_times = photodiode_flip_times(closest_stimOn_photodiode);
-
+            %stimOn
             % Check that the stim times aren't off by a certain threshold
             % (skip the first one - that's usually delayed a little)
             stim_time_offset_thresh = 0.1;
-            if any(abs(stimOn_times(2:end)-signals_events.stimOnTimes(2:n_trials)') >= ...
+            if any(abs(stimOn_times(2:end)-signals_events.stimOnTimes(n_trials(1)+1:n_trials(2))') >= ...
                     stim_time_offset_thresh)
                 figure;
-                plot(stimOn_times-signals_events.stimOnTimes(1:n_trials)', '.k')
+                plot(stimOn_times(2:end)-signals_events.stimOnTimes(n_trials(1)+1:n_trials(2))', '.k')
                 line(xlim, repmat(stim_time_offset_thresh, 2, 1), 'color', 'r');
                 line(xlim, repmat(-stim_time_offset_thresh, 2, 1), 'color', 'r');
                 warning('Stim signals/photodiode offset over threshold');
@@ -409,8 +413,8 @@ if block_exists
             % Get conditions for all trials
 
             % (trial_timing)
-            stim_to_move = padarray(wheel_move_time-stimOn_times, [n_trials - length(stimOn_times), 0], NaN, 'post');
-            stim_to_feedback = signals_events.responseTimes(1:n_trials)' - stimOn_times(1:n_trials);
+            stim_to_move = padarray(wheel_move_time-stimOn_times, [length(stimOn_times) - length(stimOn_times), 0], NaN, 'post');
+            stim_to_feedback = signals_events.responseTimes(n_trials(1):n_trials(end))' - stimOn_times;
 
             % (early vs late move)
             trial_timing = 1 + (stim_to_move > 0.5);
@@ -420,8 +424,8 @@ if block_exists
                 (signals_events.trialSideValues == -1 & signals_events.missValues == 1);
             go_right = (signals_events.trialSideValues == -1 & signals_events.hitValues == 1) | ...
                 (signals_events.trialSideValues == 1 & signals_events.missValues == 1);
-            trial_choice = go_right(1:n_trials)' - go_left(1:n_trials)';
-            trial_outcome = signals_events.hitValues(1:n_trials)' - signals_events.missValues(1:n_trials)';
+            trial_choice = go_right(n_trials(1):n_trials(end))' - go_left(n_trials(1):n_trials(end))';
+            trial_outcome = signals_events.hitValues(n_trials(1):n_trials(end))' - signals_events.missValues(n_trials(1):n_trials(end))';
 
             % (trial conditions: [contrast,side,choice,timing])
             %theseTrialsAnalyze = signals_events.stimNValues(1:n_trials)- stimOn_times; %for some reason, some of first aren't logged - drop them 
@@ -430,17 +434,17 @@ if block_exists
             choices = [-1, 1];
             timings = [1, 2];
             %%hacky-need to chagnge in future and check - stimNMvalues probably end ones need to not be used =- because some first stimN values not logged 
-             stimOn_times = stimOn_times(1:n_trials);
-             wheel_move_time = wheel_move_time(1:n_trials);
-             signals_events.responseTimes = signals_events.responseTimes(1:n_trials);
-            trial_outcome = trial_outcome(1:n_trials); 
+             %stimOn_times = stimOn_times(n_trials);
+             %wheel_move_time = wheel_move_time(n_trials);
+            % signals_events.responseTimes = signals_events.responseTimes(n_trials(1):n_trials(end));
+           % trial_outcome = trial_outcome(n_trials(1):n_trials(end)); 
             
             conditions = combvec(imageN, sides, choices, timings)';
             n_conditions = size(conditions, 1);
 
             trial_conditions = ...
-                [signals_events.stimNValues(1:n_trials)', signals_events.trialSideValues(1:n_trials)', ...
-                trial_choice(1:n_trials), trial_timing(1:n_trials)];
+                [signals_events.stimNValues', signals_events.trialSideValues(n_trials(1):n_trials(end))', ...
+                trial_choice, trial_timing];
             [~, trial_id] = ismember(trial_conditions, conditions, 'rows');
             
         case {'AP_sparseNoise'}
@@ -995,6 +999,7 @@ if ephys_exists && load_parts.ephys
     load(([ephys_path, filesep, 'sync.mat']));
 
     % Read header information
+    if ~isSpikeGlx
     header_path = [ephys_path, filesep, 'dat_params.txt'];
     header_fid = fopen(header_path);
     header_info = textscan(header_fid, '%s %s', 'delimiter', {' = '});
@@ -1010,6 +1015,9 @@ if ephys_exists && load_parts.ephys
         ephys_sample_rate = str2num(header.sample_rate);
     elseif isfield(header, 'ap_sample_rate')
         ephys_sample_rate = str2num(header.ap_sample_rate);
+    end
+    else
+        ephys_sample_rate = 30000;
     end
     spike_times = double(readNPY([ephys_path, filesep, 'spike_times.npy'])) ./ ephys_sample_rate;
     spike_templates_0idx = readNPY([ephys_path, filesep, 'spike_templates.npy']);
@@ -1069,7 +1077,14 @@ if ephys_exists && load_parts.ephys
     % Get experiment index by finding numbered folders
     protocols_list = AP_list_experimentsJF(animal, day);
     experiment_idx = experiment == [protocols_list.experiment];
-
+if isSpikeGlx
+    ops.recording_software='SpikeGLX' ;
+    ops.ephys_folder=[ephysAPfile '\..'];
+    [expInfo,~] = AP_cortexlab_filenameJF(animal,day,experiment,'expInfo',site);
+    [co]=mainprobe_to_timeline(ephys_path,...
+    Timeline,ops,expInfo);
+    spike_times_timeline =  spike_times*co(2) + co(1); 
+else
     if exist('flipper_flip_times_timeline', 'var') && length(sync) >= flipper_sync_idx
         % (if flipper, use that)
         % (at least one experiment the acqLive connection to ephys was bad
@@ -1185,9 +1200,9 @@ if ephys_exists && load_parts.ephys
     dontAnalyze = 0;
     % Get spike times in timeline time
     spike_times_timeline = interp1(sync_ephys, sync_timeline, spike_times, 'linear', 'extrap');
-
+end
     % Get "good" templates from labels
-    if exist('cluster_groups', 'var')
+    if exist('cluster_groups', 'var') && loadClusters
         % If there's a manual classification
         if verbose;
             disp('Keeping manually labelled good units...');
@@ -1203,7 +1218,19 @@ if ephys_exists && load_parts.ephys
         % Define good units from labels
         good_templates_idx = uint32(cluster_groups{1}( ...
             strcmp(cluster_groups{2}, 'good') | strcmp(cluster_groups{2}, 'mua')));
-        good_templates = ismember(0:size(templates, 1)-1, good_templates_idx);
+        template_label_mua= uint32(cluster_groups{1}( ...
+            strcmp(cluster_groups{2}, 'mua') ));
+         template_label_good = uint32(cluster_groups{1}( ...
+            strcmp(cluster_groups{2}, 'good') ));
+        template_labelM = good_templates_idx(ismember(good_templates_idx, template_label_mua));
+        template_labelG = good_templates_idx(ismember(good_templates_idx, template_label_good));
+        
+        [good_templates, ii] = ismember(0:size(templates, 1)-1, good_templates_idx);
+        
+        [good_templatesG, ii] = ismember(0:size(templates, 1)-1, template_labelG);
+        [good_templatesM, ii] = ismember(0:size(templates, 1)-1, template_labelM);
+        
+         template_label=good_templatesG.*1+(good_templatesM).*2;
 
     elseif exist([ephys_path, filesep, 'cluster_AP_triage.tsv'], 'file')
         % If no manual but AP_triage clusters are available
@@ -1240,7 +1267,7 @@ if ephys_exists && load_parts.ephys
     waveforms = waveforms(good_templates, :);
     templateDuration = templateDuration(good_templates);
     templateDuration_us = templateDuration_us(good_templates);
-
+    %template_label = template_label(good_templates);
     % Throw out all non-good spike data
     good_spike_idx = ismember(spike_templates_0idx, good_templates_idx);
     spike_times = spike_times(good_spike_idx);

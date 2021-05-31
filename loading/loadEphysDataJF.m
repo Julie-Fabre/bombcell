@@ -1,5 +1,7 @@
 function ephysData = loadEphysDataJF(ephys_path, animal, day, experiment )
 load_parts.ephys=true; 
+isSpikeGlx=0;
+loadClusters = 0;
 AP_load_experimentJF;
 
 spike_templates_0idx = readNPY([ephys_path filesep 'spike_templates.npy']);
