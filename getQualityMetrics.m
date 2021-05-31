@@ -7,7 +7,7 @@ qMetric = struct;
 allT = unique(ephysData.spike_templates);
 
 for iUnit = 1:size(allT, 1)
-    thisUnit = iUnit;
+    thisUnit = allT(iUnit);
     theseSpikesIdx = ephysData.spike_templates == thisUnit;
     theseSpikes = ephysData.spike_times_timeline(theseSpikesIdx);
     theseAmplis = ephysData.template_amplitudes(theseSpikesIdx);
