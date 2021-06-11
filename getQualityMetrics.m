@@ -33,6 +33,8 @@ for iUnit = 1:size(allT, 1)
     raw.ap_dat_dir = dir(raw.ephys_ap_filename);
     raw.pull_spikeT = -40:41; % number of points to pull for each waveform
     raw.microVoltscaling = 0.19499999284744263; %in structure.oebin for openephys, this never changed so hard-coded here-not loading it in.
+    % for spike glx, V = i * Vmax / Imax / gain.
+    % https://github.com/billkarsh/SpikeGLX/blob/gh-pages/Support/Metadata_20.md 
 
     raw.dataTypeNBytes = numel(typecast(cast(0, raw.ephys_datatype), 'uint8'));
     raw.n_samples = raw.ap_dat_dir.bytes / (raw.n_channels * raw.dataTypeNBytes);
@@ -40,7 +42,7 @@ for iUnit = 1:size(allT, 1)
     raw.max_pull_spikes = 200; % number of spikes to pull
 
     %get amplitude
-    [qMetric.waveformRawAmpli(iUnit), qMetric.waveformRaw(iUnit,:)] = getRawWaveformAmplitude(iUnit, ephysData, raw);
+    [qMetric.waveformRawAmpli(iUnit), qMetric.waveformRaw(iUnit,:), qMetric.thisChannelRaw(iUnit)] = getRawWaveformAmplitude(iUnit, ephysData, raw);
 
     %% Number of spikes
     qMetric.numSpikes(iUnit) = numel(theseSpikes);

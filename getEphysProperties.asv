@@ -98,12 +98,12 @@ for iUnit = 1:size(allT, 1)
     ephysParams.prop_long_isi(iUnit) = long_isi_total / ...
         (sum(use_spiking_stat_bins(:)) * spiking_stat_window);
 
-%     figure();
-%     [counts, bins] = histcounts(curr_isi);
-%     cdf = cumsum(counts);
-%     plot(0.5*(bins(1:end-1)+bins(2:end)), counts);
-%     xlabel('ISI (s)')
-%     ylabel('# ISIs')
-%     makepretty;
+    figure();
+    [counts, bins] = histcounts(curr_isi);
+    cdf = cumsum(counts);
+    plot(0.5*(bins(1:end-1)+bins(2:end)), counts);
+    xlabel('ISI (s)')
+    ylabel('# ISIs')
+    makepretty;
     %% ~~ Other ephys properties ~~
 end

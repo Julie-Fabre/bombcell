@@ -107,4 +107,21 @@ for iCellType=1:4
         nanmean(ephysParams.ACG(cellTypesClassif(iCellType).cells,:)) + ...
         nanstd(ephysParams.ACG(cellTypesClassif(iCellType).cells,:))],celltype_col(iCellType,:))
 end
+
+% check waveform ampli 
+unit = 1;
+figure();
+plot(waveform_t, ephysData.template_waveforms(unit,:),'Color','k')
+ylabel('amplitude (a.u.)')
+hold on; 
+makepretty;
+yyaxis right
+%qMetric.waveformRaw(iUnit,:), qMetric.thisChannelRaw(iUnit)
+plot(waveform_t, qMetric.waveformRaw(unit,:))%plot example cell 
+legend({'template', ['raw, amplitude = ', num2str(qMetric.waveformRawAmpli(unit))]})
+ylabel('amplitude (\muVolts)')
+xlim([waveform_t(1), waveform_t(end)])
+xlabel('time (ms)')
+makepretty;
+
 %save qualityMetrics, ephysProperties and classification
