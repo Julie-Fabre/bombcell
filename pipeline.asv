@@ -95,13 +95,28 @@ for iCellType=1:4
         nanmean(ephysData.template_waveforms(cellTypesClassif(iCellType).cells,:)) + ...
         nanstd(ephysData.template_waveforms(cellTypesClassif(iCellType).cells,:))],celltype_col(iCellType,:))
 end
-xlabel
-hold on;
+makepretty;
 
 figure();
-plot(nanmean(ephysParams.ACG(msn,:)))
 hold on;
-plot(nanmean(ephysParams.ACG(fsi,:)))
-plot(nanmean(ephysParams.ACG(tan,:)))
-plot(nanmean(ephysParams.ACG(uin,:)))
+for iCellType=1:4
+    subplot(1,4,iCellType)
+    area(0:0.001:1, nanmean(ephysParams.ACG(cellTypesClassif(iCellType).cells,:)),'FaceColor',celltype_col(iCellType,:))
+    plotshaded(0:0.001:1,[ nanmean(ephysParams.ACG(cellTypesClassif(iCellType).cells,:)) - ...
+        nanstd(ephysParams.ACG(cellTypesClassif(iCellType).cells,:)); ...
+        nanmean(ephysParams.ACG(cellTypesClassif(iCellType).cells,:)) + ...
+        nanstd(ephysParams.ACG(cellTypesClassif(iCellType).cells,:))],celltype_col(iCellType,:))
+end
+
+% check waveform ampli 
+unit = 1;
+figure();
+plot(waveform_t, ephysData.template_waveforms(unit,:))
+hold on; 
+%qMetric.waveformRaw(iUnit,:), qMetric.thisChannelRaw(iUnit)
+plot(waveform_t, qMetric.waveformRaw(unit,:))%plot example cell 
+legend({'template', ['raw, amplitude = ', num2str(qMetric.waveformRawAmpli(unit))]})
+xlim([waveform_t(1), wavf
+makepretty;
+
 %save qualityMetrics, ephysProperties and classification

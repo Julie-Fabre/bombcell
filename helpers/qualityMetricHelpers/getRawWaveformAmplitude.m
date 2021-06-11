@@ -1,4 +1,4 @@
-function [waveformRawAmpli, waveformRaw] = getRawWaveformAmplitude(iUnit, ephysData, raw)
+function [waveformRawAmpli, waveformRaw, thisChannelRaw] = getRawWaveformAmplitude(iUnit, ephysData, raw)
 allT = unique(ephysData.spike_templates);
 thisRawUnit = allT(iUnit);
 curr_template = thisRawUnit;
