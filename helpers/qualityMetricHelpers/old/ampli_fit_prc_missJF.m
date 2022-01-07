@@ -28,6 +28,9 @@ p0 = [max(num), mode_seed, 2 * nanstd(coords), prctile(curr_amplis, 1)];
 
 %give up and call python, where life makes sense and functions are pretty
 echo off;
+%lsqcurvefit(fun,x0,xdata,ydata)
+
+%pyenv('Version','/usr/bin/python3.8')
 py.importlib.import_module('gaussFitJF');
 warning('off','all')
 py.importlib.import_module('numpy');
