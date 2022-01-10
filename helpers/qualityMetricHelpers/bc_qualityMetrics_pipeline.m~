@@ -1,18 +1,54 @@
 % pipeline 
 plotThis = 0;
 
+
+
+%% params
+param = struct;
+param.tauR = 0.0010; %refractory period time (s)
+param.tauC = 0.0002; %censored period time (s)
+param.maxPercSpikesMissing = 30;
+param.minNumSpikes = 300;
+param.maxNtroughsPeaks = 3;
+param.axonal = 0; 
+param.maxRPVviolations = 0.2;
+param.minAmplitude = 70; 
+
+%% get waveform max_channel
+waveformTemplates =  waveforms{iDay};
+maxChannels = bc_getWaveformMaxChannel(waveformTemplates);
+
+%% 
 iUnit = 1;
 theseSpikeTimes = spike_times{iDay}(spike_templates{iDay} == iUnit);
 theseAmplis = template_amplitude{iDay}(spike_templates{iDay} == iUnit);
-timeChunks = min(spike_times{iDay}(spike_templates{iDay} == iUnit)):500:max(spike_times{iDay}(spike_templates{iDay} == iUnit));
+timeChunks = min(spike_times{iDay}(spike_templates{iDay} == iUnit)):600:max(spike_times{iDay}(spike_templates{iDay} == iUnit));
+
+
 %% percentage spikes missing 
 [perc, ~] = bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, plotThis); 
+
 %% define timechunks to keep
-if any(perc < 30) % if there are some good time chunk, keep
-    useTheseTimes = perc < 30;
-else
+if any(perc < param.maxPercSpikesMissing) % if there are some good time chunks, keep those
+    useTheseTimes = find(perc < param.maxPercSpikesMissing);
+    theseSpikeTimes = theseSpikeTimes > timeChunks(usetheseTimes(end)+1)
+else %otherwise, keep all chunks to compute quality metrics on
     useTheseTimes = ones(numel(perc),1);
 end
-%% percentage spikes missing 
+
+%% number spikes 
 nSpikes = bc_numberSpikes(theseSpikeTimes); 
 
+%% waveform: number peaks/troughs and is peak before trough (= axonal)
+[nPeaks, nTroughs, axonal] = bc_troughsPeaks(waveformTemplates(iUnit, :,maxChannels(iUnit)), plotThis);
+
+%% waveform spatial decay 
+
+%% fraction contam
+[Fp, r, overestimate] = bc_fractionRPviolations(numel(theseSpikes), theseSpikes, param.tauR, param.tauC, ...
+    timeChunks(end)-timeChunks(1), plotThis);
+
+%% amplitude
+
+
+%% distance metrics 

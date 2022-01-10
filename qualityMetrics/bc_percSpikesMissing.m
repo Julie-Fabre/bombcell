@@ -11,7 +11,7 @@ function [percent_missing, timeChunks] = bc_percSpikesMissing(theseAmplitudes, t
 % Note that this will underestimate the amount of spikes missing in the
 % case or bursty cells, where there spike amplitude is decreased during the
 % burst. 
-
+warning off;
 percent_missing = nan(numel(timeChunks)-1,1);
 if plotThis 
     figure();
