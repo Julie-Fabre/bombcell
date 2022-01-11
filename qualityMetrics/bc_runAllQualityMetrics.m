@@ -72,13 +72,13 @@ for iUnit = 1:length(uniqueTemplates)
     % 10 min time chunks
 
     %% percentage spikes missing
-    [perc, ~] = bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotThis);
+    percSpikesMissing = bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotThis);
     
     %% define timechunks to keep
-    if any(perc < param.maxPercSpikesMissing) % if there are some good time chunks, keep those
+    if any(percSpikesMissing < param.maxPercSpikesMissing) % if there are some good time chunks, keep those
         
-        useTheseTimes = find(perc < param.maxPercSpikesMissing);
-        qMetric.percSpikesMissing(iUnit) = nanmean(perc(useTheseTimes(1):useTheseTimes(end)));
+        useTheseTimes = find(percSpikesMissing < param.maxPercSpikesMissing);
+        qMetric.percSpikesMissing(iUnit) = nanmean(percSpikesMissing(useTheseTimes(1):useTheseTimes(end)));
         theseAmplis = theseAmplis(theseSpikeTimes < timeChunks(useTheseTimes(end)+1) & ...
             theseSpikeTimes > timeChunks(useTheseTimes(1)));
         theseSpikeTimes = theseSpikeTimes(theseSpikeTimes < timeChunks(useTheseTimes(end)+1) & ...
@@ -86,8 +86,8 @@ for iUnit = 1:length(uniqueTemplates)
         %QQ change non continous
         timeChunks = timeChunks(useTheseTimes(1):useTheseTimes(end)+1);
     else %otherwise, keep all chunks to compute quality metrics on
-        useTheseTimes = ones(numel(perc), 1);
-        qMetric.percSpikesMissing(iUnit) = nanmean(perc);
+        useTheseTimes = ones(numel(percSpikesMissing), 1);
+        qMetric.percSpikesMissing(iUnit) = nanmean(percSpikesMissing);
     end
     qMetric.useTheseTimes(iUnit,:) = useTheseTimes;
 

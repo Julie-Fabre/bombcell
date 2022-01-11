@@ -1,5 +1,17 @@
 function rawAmplitude = bc_getRawAmplitude(rawWaveforms, rawFolder)
-
+% JF, Get the amplitude of the mean raw waveform for a unit 
+% ------
+% Inputs
+% ------
+% rawWaveforms: nTimePoints × 1 double vector of the mean raw waveform
+%   for one unit
+% rawFolder: string containing the location of the raw .bin or .dat file.
+% ------
+% Outputs
+% ------
+% rawAmplitude: raw amplitude in microVolts of the mean raw wwaveform for
+% this unit 
+% 
 
 spikeFile = dir(fullfile(rawFolder, '*.ap.bin')); % spikeGLX format 
 if isempty(spikeFile)

@@ -6,10 +6,17 @@ function [nPeaks, nTroughs, axonal] = bc_troughsPeaks(thisWaveform, ephys_sample
 % ------
 % thisWaveform: nTemplates × nTimePoints × nChannels single matrix of
 %   template waveforms for each template and channel
+% ephys_sample_rate: recording sampling rate (eg 30 000)
+% plotThis: boolean, whether to plot waveform and detected peaks or not 
 % ------
 % Outputs
 % ------
-% maxChannels: nTemplates * 1 vector of max channels for each template
+% nPeaks: number of detected peaks
+% nTroughs: number of detected troughs
+% axonal: boolean, is leargest detected peak before the largest detected
+%   trough (indicative of an axonal spike, cf: Deligkaris, K., Bullmann, T. & Frey, U. 
+%   Extracellularly recorded somatic and neuritic signal shapes and classification 
+%   algorithms for high-density microelectrode array electrophysiology. Front. Neurosci. 10, 421 (2016).)
 % 
 minProminence = 0.2 * max(abs(squeeze(thisWaveform))); % minimum threshold to detcet peaks/troughs
 

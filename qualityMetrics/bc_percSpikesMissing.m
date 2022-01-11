@@ -1,18 +1,20 @@
-function [percent_missing, timeChunks] = bc_percSpikesMissing(theseAmplitudes, theseSpikeTimes, timeChunks, plotThis)
+function percent_missing  = bc_percSpikesMissing(theseAmplitudes, theseSpikeTimes, timeChunks, plotThis)
 % JF, Estimate the amount of spikes missing (below the detection threshold)
 % by fitting a gaussian to the amplitude distribution for each timeChunk
 % defined in timeChunks
 % ------
 % Inputs
 % ------
-% theseAmplitudes
-% timeChunks
-% plotThis
+% theseAmplitudes: nSpikesforThisUnit × 1 double vector of the amplitude scaling factor 
+%   that was applied to the template when extracting that spike
+% theseSpikeTimes: nSpikesforThisUnit × 1 double vector of time in seconds
+%   of each of the unit's spikes.
+% timeChunks: timeChunks edges in which to compute the metric
+% plotThis: boolean, whether to plot amplitude distribution and fit or not
 % ------
 % Outputs
 % ------
-% perc
-% timeChunks
+% percent_missing: estimated percent spike missing for each time chunk.
 % 
 % Note that this will underestimate the amount of spikes missing in the
 % case or bursty cells, where there spike amplitude is decreased during the

@@ -3,12 +3,12 @@ function nSpikes = bc_numberSpikes(theseSpikeTimes)
 % ------
 % Inputs
 % ------
-% templateWaveforms: nTemplates × nTimePoints × nChannels single matrix of
-%   template waveforms for each template and channel
+% theseSpikeTimes: nSpikesforThisUnit × 1 double vector of time in seconds
+%   of each of the unit's spikes.
 % ------
 % Outputs
 % ------
-% maxChannels: nTemplates * 1 vector of max channels for each template
+% nSpikes: number of spikes for that unit 
 % 
 nSpikes = numel(theseSpikeTimes); 
 

@@ -1,14 +1,17 @@
 function [isoD,Lratio, silhouetteScore,mahalD, halfWayPoint,L] = bc_getDistanceMetrics(pc_features, ...
     pc_feature_ind, thisUnit, numberSpikes, spikesIdx, allSpikesIdx, nChansToUse, plotThis)
-% JF, Get distance metrics 
+% JF, Get the amplitude of the mean raw waveform for a unit 
 % ------
 % Inputs
 % ------
-% 
+% rawWaveforms: nTimePoints × 1 double vector of the mean raw waveform
+%   for one unit
+% rawFolder: string containing the location of the raw .bin or .dat file.
 % ------
 % Outputs
 % ------
-% 
+% rawAmplitude: raw amplitude in microVolts of the mean raw wwaveform for
+% this unit 
 % 
 % based on functions in https://github.com/cortex-lab/sortingQuality
 
