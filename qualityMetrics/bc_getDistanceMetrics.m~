@@ -1,18 +1,28 @@
-function [isoD,Lratio, silhouetteScore,mahalD, halfWayPoint,L] = bc_getDistanceMetrics(pc_features, ...
+function [isoD, Lratio, silhouetteScore, mahalD, halfWayPoint, L] = bc_getDistanceMetrics(pc_features, ...
     pc_feature_ind, thisUnit, numberSpikes, spikesIdx, allSpikesIdx, nChansToUse, plotThis)
-% JF, Get the amplitude of the mean raw waveform for a unit 
+% JF, Get distance metrics
 % ------
 % Inputs
 % ------
-% rawWaveforms: nTimePoints × 1 double vector of the mean raw waveform
-%   for one unit
-% rawFolder: string containing the location of the raw .bin or .dat file.
+% pc_features: nSpikes × nFeaturesPerChannel × nPCFeatures single single 
+matrix giving the PC values for each spike. The channels that those features came from are specified in pc_features_ind. E.g. the value at pc_features[123, 1, 5] is the projection of the 123rd spike onto the 1st PC on the channel given by pc_feature_ind[5].
+% pc_feature_ind: nTemplates × nPCFeatures uint32
+% thisUnit
+% numberSpikes
+% spikeIdx
+% allSpikesIdx
+% nChansToUse
+% plotThis
 % ------
 % Outputs
 % ------
-% rawAmplitude: raw amplitude in microVolts of the mean raw wwaveform for
-% this unit 
-% 
+% isoD
+% Lratio
+% silhouetteScore
+% mahalD
+% halfWayPoint
+% L
+%
 % based on functions in https://github.com/cortex-lab/sortingQuality
 
 nPCs = size(pc_features, 2); %should be 3 PCs
@@ -67,7 +77,7 @@ end
 if nCount > numberSpikes && numberSpikes > nChansToUse * nPCs %isolation distance not defined
     %isolation distance
     halfWayPoint = size(theseFeatures, 1);
-    
+
     %l-ratio
     theseOtherFeatures = reshape(theseOtherFeatures, size(theseOtherFeatures, 1), []);
     mahalD = mahal(theseOtherFeatures, theseFeatures);
@@ -90,7 +100,7 @@ elseif ~isempty(theseOtherFeatures) && numberSpikes > nChansToUse * nPCs
     %isolation distance
     halfWayPoint = NaN;
     isoD = NaN;
-    
+
     %l-ratio
     theseOtherFeatures = reshape(theseOtherFeatures, size(theseOtherFeatures, 1), []);
     mahalD = mahal(theseOtherFeatures, theseFeatures);
@@ -106,33 +116,33 @@ elseif ~isempty(theseOtherFeatures) && numberSpikes > nChansToUse * nPCs
 
     mahalDclosest = mahal(reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse), theseFeatures);
     silhouetteScore = (nanmean(mahalDself) - nanmean(mahalDclosest)) / max(mahalDclosest);
-    
+
 
 else
     %isolation distance
     halfWayPoint = NaN;
     mahalD = NaN;
     isoD = NaN;
-    
+
     %l-ratio
-    L = NaN; 
+    L = NaN;
     Lratio = NaN;
 
     %silhouette score
     silhouetteScore = NaN;
 
 end
-    if plotThis
-        Y =reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse);
-        X = theseFeatures;
-        d2_mahal = mahal(Y,X);
-        figure();
-        scatter(X(:,1),X(:,2),10,'.k') % Scatter plot with points of size 10
-        hold on
-        scatter(Y(:,1),Y(:,2),10,d2_mahal,'o','filled')
-        hb = colorbar;
-        ylabel(hb,'Mahalanobis Distance')
-        legend('this cluster','other clusters','Location','best');
-    end
+if plotThis
+    Y = reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse);
+    X = theseFeatures;
+    d2_mahal = mahal(Y, X);
+    figure();
+    scatter(X(:, 1), X(:, 2), 10, '.k') % Scatter plot with points of size 10
+    hold on
+    scatter(Y(:, 1), Y(:, 2), 10, d2_mahal, 'o', 'filled')
+    hb = colorbar;
+    ylabel(hb, 'Mahalanobis Distance')
+    legend('this cluster', 'other clusters', 'Location', 'best');
+end
 
 end

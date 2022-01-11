@@ -1,15 +1,28 @@
-function [isoD,Lratio, silhouetteScore,mahalD, halfWayPoint,L] = bc_getDistanceMetrics(pc_features, ...
+function [isoD, Lratio, silhouetteScore] = bc_getDistanceMetrics(pc_features, ...
     pc_feature_ind, thisUnit, numberSpikes, spikesIdx, allSpikesIdx, nChansToUse, plotThis)
-% JF, Get distance metrics 
+% JF, Get distance metrics
 % ------
 % Inputs
 % ------
-% 
+% pc_features: nSpikes × nFeaturesPerChannel × nPCFeatures  single 
+%   matrix giving the PC values for each spike. 
+% pc_feature_ind: nTemplates × nPCFeatures uint32  matrix specifying which 
+%   channels contribute to each entry in dim 3 of the pc_features matrix
+% thisUnit: unit number 
+% numberSpikes: number of spikes for that unit
+% spikesIdx: boolean vector indicating which spikes belong to thisUnit
+% allSpikesIdx: nSpikes × 1 uint32 vector giving the identity of each
+%   spike's matched template, for all templates
+% nChansToUse: number of channels to use to compute distance metrics (eg 4)
+% plotThis: boolean, whether to plot the mahalobnis distance between spikes 
+%   of thisUnit and otherUnits on the nChansToUse closest channels 
 % ------
 % Outputs
 % ------
-% 
-% 
+% isoD: isolation distance 
+% Lratio: l-ratio
+% silhouetteScore: silhouette score 
+%
 % based on functions in https://github.com/cortex-lab/sortingQuality
 
 nPCs = size(pc_features, 2); %should be 3 PCs
@@ -64,7 +77,7 @@ end
 if nCount > numberSpikes && numberSpikes > nChansToUse * nPCs %isolation distance not defined
     %isolation distance
     halfWayPoint = size(theseFeatures, 1);
-    
+
     %l-ratio
     theseOtherFeatures = reshape(theseOtherFeatures, size(theseOtherFeatures, 1), []);
     mahalD = mahal(theseOtherFeatures, theseFeatures);
@@ -87,7 +100,7 @@ elseif ~isempty(theseOtherFeatures) && numberSpikes > nChansToUse * nPCs
     %isolation distance
     halfWayPoint = NaN;
     isoD = NaN;
-    
+
     %l-ratio
     theseOtherFeatures = reshape(theseOtherFeatures, size(theseOtherFeatures, 1), []);
     mahalD = mahal(theseOtherFeatures, theseFeatures);
@@ -103,33 +116,33 @@ elseif ~isempty(theseOtherFeatures) && numberSpikes > nChansToUse * nPCs
 
     mahalDclosest = mahal(reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse), theseFeatures);
     silhouetteScore = (nanmean(mahalDself) - nanmean(mahalDclosest)) / max(mahalDclosest);
-    
+
 
 else
     %isolation distance
     halfWayPoint = NaN;
     mahalD = NaN;
     isoD = NaN;
-    
+
     %l-ratio
-    L = NaN; 
+    L = NaN;
     Lratio = NaN;
 
     %silhouette score
     silhouetteScore = NaN;
 
 end
-    if plotThis
-        Y =reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse);
-        X = theseFeatures;
-        d2_mahal = mahal(Y,X);
-        figure();
-        scatter(X(:,1),X(:,2),10,'.k') % Scatter plot with points of size 10
-        hold on
-        scatter(Y(:,1),Y(:,2),10,d2_mahal,'o','filled')
-        hb = colorbar;
-        ylabel(hb,'Mahalanobis Distance')
-        legend('this cluster','other clusters','Location','best');
-    end
+if plotThis
+    Y = reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse);
+    X = theseFeatures;
+    d2_mahal = mahal(Y, X);
+    figure();
+    scatter(X(:, 1), X(:, 2), 10, '.k') % Scatter plot with points of size 10
+    hold on
+    scatter(Y(:, 1), Y(:, 2), 10, d2_mahal, 'o', 'filled')
+    hb = colorbar;
+    ylabel(hb, 'Mahalanobis Distance')
+    legend('this cluster', 'other clusters', 'Location', 'best');
+end
 
 end

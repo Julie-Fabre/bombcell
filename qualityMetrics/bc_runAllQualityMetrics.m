@@ -107,7 +107,7 @@ for iUnit = 1:length(uniqueTemplates)
         param.rawFolder);
     
     %% distance metrics
-    [qMetric.isoD(iUnit),qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit),~, ~,~] = bc_getDistanceMetrics(pcFeatures, ...
+    [qMetric.isoD(iUnit),qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit)] = bc_getDistanceMetrics(pcFeatures, ...
     pcFeatureIdx, thisUnit, qMetric.nSpikes(iUnit), spikeTemplates==thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
 
 end
