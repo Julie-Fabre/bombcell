@@ -22,7 +22,7 @@ for iDay = 1:size(foldersAll, 1)
     template_amplitude{iDay} = readNPY([foldersAll{iDay, 1}, filesep, 'amplitudes.npy']);
     spike_clusters{iDay} = readNPY([foldersAll{iDay, 1}, filesep, 'spike_clusters.npy']) + 1;
     pc_features{iDay} = readNPY([foldersAll{iDay, 1}, filesep, 'pc_features.npy']) ;
-    pc_feature_ind{iDay} = readNPY([foldersAll{iDay, 1}, filesep, 'pc_feature_ind.npy']) + 1;
+    pc_features_idx{iDay} = readNPY([foldersAll{iDay, 1}, filesep, 'pc_feature_ind.npy']) + 1;
     %mean_template_ampltiude
 end
 
@@ -36,7 +36,7 @@ param.maxNtroughsPeaks = 3;
 param.axonal = 0; 
 param.maxRPVviolations = 0.2;
 param.minAmplitude = 70; 
-param.plotThis = 0;
+param.plotThis = 1;
 param.rawFolder = d1_rawfolder;
 param.deltaTimeChunk = 600; % 10 min time chunk
 param.ephys_sample_rate = 30000;
@@ -46,4 +46,4 @@ param.nChannelsIsoDist = 4;
 %% run and save qualityMetrics 
 iDay = 1;
 qMetrics = bc_runAllQualityMetrics(param, spike_times{iDay}, spike_templates{iDay}, ...
-    templates{iDay}, template_amplitude{iDay},pc_features{iDay},pc_feature_ind{iDay});
+    templates{iDay}, template_amplitude{iDay});

@@ -1,7 +1,7 @@
 function [isoD,Lratio, silhouetteScore,mahalD, halfWayPoint,L] = getDistanceMetricsJF(pc_features, ...
     pc_feature_ind, thisUnit, numberSpikes, spikesIdx, allSpikesIdx, nChansToUse)
 
-
+% based on functions in https://github.com/cortex-lab/sortingQuality
 %nChansToUse = 4; %tetrodes
 nPCs = size(pc_features, 2); %should be 3 PCs
 
