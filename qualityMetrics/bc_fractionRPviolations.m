@@ -1,5 +1,5 @@
 function [Fp, r, overestimate] = bc_fractionRPviolations(N, spikeTrain, tauR, tauC, T, plotThis)
-% JF
+% JF, get the estimated fraction of refractory period violation for a unit
 % ------
 % Inputs
 % ------
@@ -7,6 +7,7 @@ function [Fp, r, overestimate] = bc_fractionRPviolations(N, spikeTrain, tauR, ta
 % tauR: refractory period
 % tauC: censored period
 % T: total experiment duration
+% plotThis: boolean, whether to plot ISIs or not
 % ------
 % Outputs
 % ------

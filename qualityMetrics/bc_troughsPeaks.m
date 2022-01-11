@@ -1,5 +1,16 @@
 function [nPeaks, nTroughs, axonal] = bc_troughsPeaks(thisWaveform, ephys_sample_rate, plotThis)
-
+% JF, Get the number of troughs and peaks for each waveform, and determine
+% whether waveform is likely axonal (biggest peak before biggest trough)
+% ------
+% Inputs
+% ------
+% thisWaveform: nTemplates × nTimePoints × nChannels single matrix of
+%   template waveforms for each template and channel
+% ------
+% Outputs
+% ------
+% maxChannels: nTemplates * 1 vector of max channels for each template
+% 
 minProminence = 0.2 * max(abs(squeeze(thisWaveform))); % minimum threshold to detcet peaks/troughs
 
 [PKS, LOCS] = findpeaks(squeeze(thisWaveform), 'MinPeakProminence', minProminence); % get peaks

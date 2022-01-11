@@ -1,9 +1,14 @@
-function maxChannels = bc_getWaveformMaxChannel(waveformTemplates)
-% Get the waveform of all templates (channel with largest amplitude)
-    [~, maxChannels] = max(max(abs(waveformTemplates), [], 2), [], 3);
-%     templates_max = nan(size(waveformTemplates,1), size(waveformTemplates, 2));
-%     for curr_template = 1:size(waveformTemplates,1)
-%         templates_max(curr_template, :) = ...
-%             waveformTemplates(curr_template, :, max_site(curr_template));
-%     end
+function maxChannels = bc_getWaveformMaxChannel(templateWaveforms)
+% JF, Get the max channel for all templates (channel with largest amplitude)
+% ------
+% Inputs
+% ------
+% templateWaveforms: nTemplates × nTimePoints × nChannels single matrix of
+%   template waveforms for each template and channel
+% ------
+% Outputs
+% ------
+% maxChannels: nTemplates * 1 vector of max channels for each template
+% 
+    [~, maxChannels] = max(max(abs(templateWaveforms), [], 2), [], 3);
 end

@@ -97,9 +97,7 @@ for iUnit = 1:length(uniqueTemplates)
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.axonal(iUnit)] = bc_troughsPeaks(templateWaveforms(thisUnit, :, maxChannels(iUnit)), ...
         param.ephys_sample_rate, param.plotThis);
 
-    %% waveform spatial decay
-
-    %% fraction contam
+    %% fraction contam (false postives)
     [qMetric.Fp(iUnit), ~, ~] = bc_fractionRPviolations(numel(theseSpikeTimes), theseSpikeTimes, param.tauR, param.tauC, ...
         timeChunks(end)-timeChunks(1), param.plotThis);
 

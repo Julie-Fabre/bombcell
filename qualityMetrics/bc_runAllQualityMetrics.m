@@ -23,7 +23,7 @@ function qMetric = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ..
 % spikeTimes: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
 % spikeTemplates: nSpikes × 1 uint32 vector giving the identity of each
 %   spike's matched template
-% templateWaveforms:nTemplates × nTimePoints × nChannels single matrix of
+% templateWaveforms: nTemplates × nTimePoints × nChannels single matrix of
 %   template waveforms for each template and channel 
 % templateAmplitudes: nSpikes × 1 double vector of the amplitude scaling factor 
 %   that was applied to the template when extracting that spike
@@ -41,8 +41,9 @@ function qMetric = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ..
 %   Fp
 %   rawAmplitude
 %   spatialDecay 
-%   
-
+%   isoD
+%   Lratio
+%   silhouetteScore
 %% get waveform max_channel and raw waveforms
 
 maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
@@ -50,7 +51,7 @@ rawWaveformFolder = dir(fullfile(param.rawFolder, 'rawWaveforms.mat'));
 
 if isempty(rawWaveformFolder)
     
-    rawWaveforms = bc_extractRawWaveformsFast(param.nChannels, param.nRawSpikesToExtract, spikeTimes, spikeTemplates, param.rawFolder, 0); % takes ~10'
+    rawWaveforms = bc_extractRawWaveformsFast(param.nChannels, param.nRawSpikesToExtract, spikeTimes, spikeTemplates, param.rawFolder, 1); % takes ~10'
     
 else
     load(fullfile(param.rawFolder, 'rawWaveforms.mat'));
@@ -97,9 +98,7 @@ for iUnit = 1:length(uniqueTemplates)
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.axonal(iUnit)] = bc_troughsPeaks(templateWaveforms(thisUnit, :, maxChannels(iUnit)), ...
         param.ephys_sample_rate, param.plotThis);
 
-    %% waveform spatial decay
-
-    %% fraction contam
+    %% fraction contam (false postives)
     [qMetric.Fp(iUnit), ~, ~] = bc_fractionRPviolations(numel(theseSpikeTimes), theseSpikeTimes, param.tauR, param.tauC, ...
         timeChunks(end)-timeChunks(1), param.plotThis);
 

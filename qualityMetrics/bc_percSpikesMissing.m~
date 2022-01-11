@@ -1,7 +1,5 @@
 function [percent_missing, timeChunks] = bc_percSpikesMissing(theseAmplitudes, theseSpikeTimes, timeChunks, plotThis)
-% JF, Estimate the amount of spikes missing (below the detection threshold)
-% by fitting a gaussian to the amplitude distribution for each timeChunk
-% defined in timeChunks
+% JF, Estimate the amount of spikes missing (below the detection threshold) by fitting a gaussian to the amplitude distribution 
 % ------
 % Inputs
 % ------
