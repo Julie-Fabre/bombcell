@@ -44,52 +44,31 @@ function qMetric = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ..
 %   isoD
 %   Lratio
 %   silhouetteScore
-%% get waveform max_channel and raw waveforms
+%% prepare for quality metrics computations: get waveform max_channel and raw waveforms
 
 maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
-rawWaveformFolder = dir(fullfile(param.rawFolder, 'rawWaveforms.mat'));
 
-if isempty(rawWaveformFolder)
+rawWaveforms = bc_extractRawWaveformsFast(rawWaveformFolder, param.nChannels, param.nRawSpikesToExtract, spikeTimes, spikeTemplates, param.rawFolder, 1); % takes ~10'
     
-    rawWaveforms = bc_extractRawWaveformsFast(param.nChannels, param.nRawSpikesToExtract, spikeTimes, spikeTemplates, param.rawFolder, 1); % takes ~10'
-    
-else
-    load(fullfile(param.rawFolder, 'rawWaveforms.mat'));
-end
-
-%%
+%% loop through units and get quality metrics
 qMetric = struct;
 uniqueTemplates = unique(spikeTemplates);
 spikeTimes = spikeTimes ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
 timeChunks = min(spikeTimes):param.deltaTimeChunk:max(spikeTimes);
 
 for iUnit = 1:length(uniqueTemplates)
-    clearvars thisUnit theseSpikeTimes theseAmplis 
+    clearvars thisUnit theseSpikeTimes theseAmplis
+    
     thisUnit = uniqueTemplates(iUnit);
     theseSpikeTimes = spikeTimes(spikeTemplates == thisUnit);
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
-    
-    % 10 min time chunks
 
     %% percentage spikes missing
     percSpikesMissing = bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotThis);
     
     %% define timechunks to keep
-    if any(percSpikesMissing < param.maxPercSpikesMissing) % if there are some good time chunks, keep those
-        
-        useTheseTimes = find(percSpikesMissing < param.maxPercSpikesMissing);
-        qMetric.percSpikesMissing(iUnit) = nanmean(percSpikesMissing(useTheseTimes(1):useTheseTimes(end)));
-        theseAmplis = theseAmplis(theseSpikeTimes < timeChunks(useTheseTimes(end)+1) & ...
-            theseSpikeTimes > timeChunks(useTheseTimes(1)));
-        theseSpikeTimes = theseSpikeTimes(theseSpikeTimes < timeChunks(useTheseTimes(end)+1) & ...
-            theseSpikeTimes > timeChunks(useTheseTimes(1)));
-        %QQ change non continous
-        timeChunks = timeChunks(useTheseTimes(1):useTheseTimes(end)+1);
-    else %otherwise, keep all chunks to compute quality metrics on
-        useTheseTimes = ones(numel(percSpikesMissing), 1);
-        qMetric.percSpikesMissing(iUnit) = nanmean(percSpikesMissing);
-    end
-    qMetric.useTheseTimes(iUnit,:) = useTheseTimes;
+    [qMetric.percSpikesMissing(iUnit), theseSpikeTimes, theseAmplis, timeChunks, qMetric.useTheseTimes{iUnit} ] = bc_defineTimechunksToKeep(percSpikesMissing, ...
+        param.maxPercSpikesMissing, theseAmplis, theseSpikeTimes, timeChunks);
 
     %% number spikes
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
@@ -107,7 +86,7 @@ for iUnit = 1:length(uniqueTemplates)
         param.rawFolder);
     
     %% distance metrics
-    [qMetric.isoD(iUnit),qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit)] = bc_getDistanceMetrics(pcFeatures, ...
+    [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit)] = bc_getDistanceMetrics(pcFeatures, ...
     pcFeatureIdx, thisUnit, qMetric.nSpikes(iUnit), spikeTemplates==thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
 
 end
