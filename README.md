@@ -2,7 +2,7 @@
 
 Used in Peters et al., 2021 to classify striatal units .
 
-<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bomcbell2.png" width=20% height=20%>
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell2.png" width=20% height=20%>
 
 ### Quality metrics 
 
