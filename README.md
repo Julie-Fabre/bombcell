@@ -2,8 +2,8 @@
 
 Quality metrics for neuropixels data, used in Peters et al., 2021 to get some bombshell cells! 
 
-![alt text](https://github.com/Julie-Fabre/bombcell/blob/master/images/bomcell.svg?raw=true)
-<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bomcell.svg">
+![alt text](https://github.com/Julie-Fabre/bombcell/blob/master/images/bomcell.png?raw=true)
+
 
 ### Quality metrics 
 
