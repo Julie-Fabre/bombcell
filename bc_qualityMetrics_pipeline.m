@@ -32,7 +32,7 @@ param.plotThis = 0;
 % refractory period parameters
 param.tauR = 0.0010; %refractory period time (s)
 param.tauC = 0.0002; %censored period time (s)
-param.maxRPVviolations = 0.3;
+param.maxRPVviolations = 0.5;
 % percentage spikes missing parameters 
 param.maxPercSpikesMissing = 50;
 param.computeTimeChunks = 0;
@@ -46,7 +46,7 @@ param.axonal = 0;
 % amplitude parameters
 param.rawFolder = d1_rawfolder;
 param.nRawSpikesToExtract = 100; 
-param.minAmplitude = 20; 
+param.minAmplitude = 15; 
 % recording parametrs
 param.ephys_sample_rate = 30000;
 param.nChannels = 385;
@@ -59,5 +59,9 @@ param.ssMin = NaN;
 
 %% run and save qualityMetrics 
 iDay = 1;
-[qMetrics, goodUnits] = bc_runAllQualityMetrics(param, spike_times{iDay}, spike_templates{iDay}, ...
+[qMetric, goodUnits] = bc_runAllQualityMetrics(param, spike_times{iDay}, spike_templates{iDay}, ...
     templates{iDay}, template_amplitude{iDay},pc_features{iDay},pc_feature_ind{iDay});
+
+goodUnits = qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
+        qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
+        qMetric.rawAmplitude > param.minAmplitude; 
