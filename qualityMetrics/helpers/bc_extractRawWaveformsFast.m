@@ -72,6 +72,8 @@ else
                 if size(data, 2) == spikeWidth
                     spikeMap(:, :, iSpike) = data(1:nChannels-1, :, :); %remove sync channel
                 end
+            
+                
             end
         end
         spikeMapMean = nanmean(spikeMap, 3);

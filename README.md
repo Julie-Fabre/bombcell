@@ -1,8 +1,8 @@
-# bombcell
+# bombcell: evaluate and plot the quality of neuropixel-recorded units & compute and plot electrophysiological characteristics
 
-Quality metrics for neuropixels data, used in Peters et al., 2021 to get some bombshell cells! 
+Used in Peters et al., 2021 to classify striatal units .
 
-<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bomcell.png" width=20% height=20%>
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bomcbell2.png" width=20% height=20%>
 
 ### Quality metrics 
 

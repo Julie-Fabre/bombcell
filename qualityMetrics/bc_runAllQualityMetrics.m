@@ -33,6 +33,7 @@ function [qMetric, goodUnits] = bc_runAllQualityMetrics(param, spikeTimes, spike
 %   isoDmin: minimum isolation distance to classify unit as good
 %   lratioMin: minimum l-ratio to classify unit as good 
 %   ssMin: silhouette score to classify unit as good  
+%   computeTimeChunks
 %
 % spikeTimes: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
 %
@@ -96,9 +97,12 @@ for iUnit = 1:length(uniqueTemplates)
     percSpikesMissing = bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotThis);
 
     %% define timechunks to keep
-    [qMetric.percSpikesMissing(iUnit), theseSpikeTimes, theseAmplis, timeChunks, qMetric.useTheseTimes{iUnit}] = bc_defineTimechunksToKeep(percSpikesMissing, ...
-        param.maxPercSpikesMissing, theseAmplis, theseSpikeTimes, timeChunks);
-
+    if param.computeTimeChunks
+        [qMetric.percSpikesMissing(iUnit), theseSpikeTimes, theseAmplis, timeChunks, qMetric.useTheseTimes{iUnit}] = bc_defineTimechunksToKeep(percSpikesMissing, ...
+            param.maxPercSpikesMissing, theseAmplis, theseSpikeTimes, timeChunks);
+    else
+        qMetric.percSpikesMissing(iUnit) = percSpikesMissing;
+    end
     %% number spikes
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
 
@@ -111,13 +115,26 @@ for iUnit = 1:length(uniqueTemplates)
         timeChunks(end)-timeChunks(1), param.plotThis);
 
     %% amplitude
-    qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveforms(thisUnit).spkMapMean(rawWaveforms(thisUnit).peakChan, :), ...
+    qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveforms(iUnit).spkMapMean(rawWaveforms(iUnit).peakChan, :), ...
         param.rawFolder);
 
     %% distance metrics
-    [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit)] = bc_getDistanceMetrics(pcFeatures, ...
-        pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
+    if param.computeDistanceMetrics
+        [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit)] = bc_getDistanceMetrics(pcFeatures, ...
+            pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
+    end
+end
+if param.computeDistanceMetrics
+    goodUnits = qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
+        qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
+        qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude; 
+else
+    goodUnits = qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
+        qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
+        qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude & qMetric.isoD >= param.isoDmin; 
 
 end
-goodUnits = qMetric.nSpikes > 300; 
+if plotThis 
+    % QQ plot histograms of each metric with the cutoffs set in params
+
 end
