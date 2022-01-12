@@ -28,21 +28,35 @@ end
 
 %% params
 param = struct;
+param.plotThis = 0;
+% refractory period parameters
 param.tauR = 0.0010; %refractory period time (s)
 param.tauC = 0.0002; %censored period time (s)
-param.maxPercSpikesMissing = 30;
+param.maxRPVviolations = 0.3;
+% percentage spikes missing parameters 
+param.maxPercSpikesMissing = 50;
+param.computeTimeChunks = 0;
+param.deltaTimeChunk = NaN; 
+% number of spikes
 param.minNumSpikes = 300;
-param.maxNtroughsPeaks = 3;
+% waveform parameters
+param.maxNPeaks = 2;
+param.maxNTroughs = 1;
 param.axonal = 0; 
-param.maxRPVviolations = 0.2;
-param.minAmplitude = 70; 
-param.plotThis = 0;
-param.rawFolder = d1_rawfolder;
-param.deltaTimeChunk = 600; % 10 min time chunk
+% amplitude parameters
+param.rawFolder = d1_rawFolder;
+param.nRawSpikesToExtract = 100; 
+param.minAmplitude = 20; 
+% recording parametrs
 param.ephys_sample_rate = 30000;
 param.nChannels = 385;
-param.nRawSpikesToExtract = 100; 
-param.nChannelsIsoDist = 4;
+% distance metric parameters
+param.computeDistanceMetrics = 0;
+param.nChannelsIsoDist = NaN;
+param.isoDmin = NaN;
+param.lratioMin = NaN;
+param.ssMin = NaN; 
+
 %% run and save qualityMetrics 
 iDay = 1;
 qMetrics = bc_runAllQualityMetrics(param, spike_times{iDay}, spike_templates{iDay}, ...
