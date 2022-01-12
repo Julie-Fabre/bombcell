@@ -139,7 +139,7 @@ else
         qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude; 
 
 end
-if plotThis 
+if param.plotThis 
     % QQ plot histograms of each metric with the cutoffs set in params
 
 end

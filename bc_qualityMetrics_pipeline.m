@@ -59,5 +59,5 @@ param.ssMin = NaN;
 
 %% run and save qualityMetrics 
 iDay = 1;
-qMetrics = bc_runAllQualityMetrics(param, spike_times{iDay}, spike_templates{iDay}, ...
+[qMetrics, goodUnits] = bc_runAllQualityMetrics(param, spike_times{iDay}, spike_templates{iDay}, ...
     templates{iDay}, template_amplitude{iDay},pc_features{iDay},pc_feature_ind{iDay});

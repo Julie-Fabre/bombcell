@@ -41,7 +41,7 @@ for iUnit = 1:length(uniqueTemplates)
     %% bursting things
 end
 
-if plotThis
+if param.plotThis
     % QQ plot histograms of each metric with the cutoffs set in params
 
 end
