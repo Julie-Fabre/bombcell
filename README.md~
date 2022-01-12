@@ -31,7 +31,7 @@ Amplitude of the mean raw waveformelfor a unit, to eliminate noisy, further away
 
 #### distance metrics  
 
-Compute measure of unit isolation quality: the isolation distance (see Harris et al., 2001), l-ratio (see Schmitzer-Torbert and Redish, 2004) and silhouette-score (see Rousseeuw, 1987). 
+Amplitude of the mean raw waveformelfor a unit, to eliminate noisy, further away units, that are more likely to be MUA. 
 
 ### ephys properties 
 
@@ -41,7 +41,12 @@ Compute measure of unit isolation quality: the isolation distance (see Harris et
 
 #### proportion long ISIs 
 
-### Used in Peters et al., 2021
+
+## Additional
+
+### quality metrics 
+
+### ephys properties 
 
 
 ## dependancies:
