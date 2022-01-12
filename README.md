@@ -9,6 +9,8 @@ Quality metrics for neuropixels data, used in Peters et al., 2021 to get some bo
 
 estimate the percent of spikes missing (false nagatives) by fitting a gaussian the distribution of amplitudes, with a cutoff parameter. This assumes the spike amplitudes follow a gaussian distribution, which is not strictly true for bursty cells, like MSNs. This can then define which epochs of the recording to keep for a unit, if it has for example drifted relative to the recording sites and in only some recording epochs a substantial amount of spikes are missing.
 
+![alt text](https://github.com/Julie-Fabre/bombcell/blob/master/images/percSpikesMissingDrift.png?raw=true)
+
 #### number of spikes 
 
 Number of spikes over the recording. Below a certain amount of spikes, ephys properties like ACGs will not be reliable. A good minimum to use is 300 empirically, because Kilosort2 does not attempt to split any clusters that have less than 300 spikes in the post-processing phase.

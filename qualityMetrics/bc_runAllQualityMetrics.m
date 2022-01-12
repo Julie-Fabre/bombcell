@@ -62,7 +62,7 @@ function [qMetric, goodUnits] = bc_runAllQualityMetrics(param, spikeTimes, spike
 
 maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 
-rawWaveforms = bc_extractRawWaveformsFast(rawWaveformFolder, param.nChannels, param.nRawSpikesToExtract, spikeTimes, spikeTemplates, param.rawFolder, 1); % takes ~10'
+rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, spikeTimes, spikeTemplates, param.rawFolder, 1); % takes ~10'
 
 %% loop through units and get quality metrics
 qMetric = struct;
