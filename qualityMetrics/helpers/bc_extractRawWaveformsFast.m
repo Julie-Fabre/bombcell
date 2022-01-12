@@ -1,4 +1,4 @@
-function rawWaveforms = bc_extractRawWaveformsFast(rawFolder, nChannels, nSpikesToExtract, spikeTimes, spikeTemplates, rawFolder, verbose)
+function rawWaveforms = bc_extractRawWaveformsFast(rawFolder, nChannels, nSpikesToExtract, spikeTimes, spikeTemplates, verbose)
 % JF, Get raw waveforms for all templates
 % ------
 % Inputs
@@ -20,10 +20,10 @@ function rawWaveforms = bc_extractRawWaveformsFast(rawFolder, nChannels, nSpikes
 %   amplitude
 
 %% check if waveforms already extracted
-rawWaveformFolder = dir(fullfile(param.rawFolder, 'rawWaveforms.mat'));
+rawWaveformFolder = dir(fullfile(rawFolder, 'rawWaveforms.mat'));
 
 if ~isempty(rawWaveformFolder)
-    load(fullfile(param.rawFolder, 'rawWaveforms.mat'));
+    load(fullfile(rawFolder, 'rawWaveforms.mat'));
 else
 
     %% Intitialize

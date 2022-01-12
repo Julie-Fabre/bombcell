@@ -1,9 +1,11 @@
 # bombcell
 
+![alt text](https://github.com/Julie-Fabre/bombcell/blob/master/images/bomcell.svg?raw=true)
+
 Quality metrics for neuropixels data, used in Peters et al., 2021 to get some bombshell cells! 
 
 
-### quality metrics 
+### Quality metrics 
 
 ####  % spikes missing 
 
@@ -54,9 +56,9 @@ Below: examples of a unit with high isolation distance (left) and one with low i
 
 ![alt text](https://github.com/Julie-Fabre/bombcell/blob/master/images/isolationDistance.png?raw=true)
 
-### ephys properties - work in progress 
+### Ephys properties - work in progress 
 
-#### post spike suppresssion 
+#### post spike suppression 
 
 #### waveform duration
 
@@ -66,7 +68,7 @@ Below: examples of a unit with high isolation distance (left) and one with low i
 
 work in progress
 
-## dependancies:
+## Dependancies:
 
 - https://github.com/kwikteam/npy-matlab (to load data in)
 

@@ -20,7 +20,8 @@ function [qMetric, goodUnits] = bc_runAllQualityMetrics(param, spikeTimes, spike
 %   plotThis: boolean, whether to plot figures for each metric and unit
 %   rawFolder: string containing the location of the raw .dat or .bin file 
 %   deltaTimeChunk: size of time chunks to cut the recording in, in seconds
-%       (eg 600 for 10 min time chunks)
+%       (eg 600 for 10 min time chunks or duration of recording if you don't 
+%       want time chunks)
 %   ephys_sample_rate: recording sample rate (eg 30000)
 %   nChannels: number of recorded channels, including any sync channels (eg
 %       385)
@@ -28,17 +29,28 @@ function [qMetric, goodUnits] = bc_runAllQualityMetrics(param, spikeTimes, spike
 %       each waveform (eg 100)
 %   nChannelsIsoDist: number of channels on which to compute the distance
 %       metrics (eg 4)
+%   computeDistanceMetrics: boolean, whether to compute distance metrics or not
+%   isoDmin: minimum isolation distance to classify unit as good
+%   lratioMin: minimum l-ratio to classify unit as good 
+%   ssMin: silhouette score to classify unit as good  
+%
 % spikeTimes: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
+%
 % spikeTemplates: nSpikes × 1 uint32 vector giving the identity of each
 %   spike's matched template
+%
 % templateWaveforms: nTemplates × nTimePoints × nChannels single matrix of
 %   template waveforms for each template and channel
+%
 % templateAmplitudes: nSpikes × 1 double vector of the amplitude scaling factor
 %   that was applied to the template when extracting that spike
+%
 % pcFeatures: nSpikes × nFeaturesPerChannel × nPCFeatures  single 
-%   matrix giving the PC values for each spike.
+%   matrix giving the PC values for each spike
+%
 % pcFeatureIdx: nTemplates × nPCFeatures uint32  matrix specifying which 
 %   channels contribute to each entry in dim 3 of the pc_features matrix
+%
 % ------
 % Outputs
 % ------
@@ -55,6 +67,7 @@ function [qMetric, goodUnits] = bc_runAllQualityMetrics(param, spikeTimes, spike
 %   isoD
 %   Lratio
 %   silhouetteScore
+% 
 % goodUnits: boolean nUnits x 1 vector indicating whether each unit met the
 %   threshold criterion to be classified as good
 
@@ -62,7 +75,9 @@ function [qMetric, goodUnits] = bc_runAllQualityMetrics(param, spikeTimes, spike
 
 maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 
-rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, spikeTimes, spikeTemplates, param.rawFolder, 1); % takes ~10'
+verbose=1;
+rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
+    spikeTimes, spikeTemplates, verbose); % takes ~10'
 
 %% loop through units and get quality metrics
 qMetric = struct;
@@ -101,7 +116,7 @@ for iUnit = 1:length(uniqueTemplates)
 
     %% distance metrics
     [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit)] = bc_getDistanceMetrics(pcFeatures, ...
-        pcFeatureIdx, thisUnit, qMetric.nSpikes(iUnit), spikeTemplates == thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
+        pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
 
 end
 goodUnits = qMetric.nSpikes > 300; 
