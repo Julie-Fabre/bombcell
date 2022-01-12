@@ -84,7 +84,11 @@ rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, para
 qMetric = struct;
 uniqueTemplates = unique(spikeTemplates);
 spikeTimes = spikeTimes ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
-timeChunks = min(spikeTimes):param.deltaTimeChunk:max(spikeTimes);
+if param.computeTimeChunks
+    timeChunks = min(spikeTimes):param.deltaTimeChunk:max(spikeTimes);
+else
+    timeChunks = [min(spikeTimes), max(spikeTimes)];
+end
 
 for iUnit = 1:length(uniqueTemplates)
     clearvars thisUnit theseSpikeTimes theseAmplis

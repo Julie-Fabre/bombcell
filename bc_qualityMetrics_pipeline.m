@@ -44,7 +44,7 @@ param.maxNPeaks = 2;
 param.maxNTroughs = 1;
 param.axonal = 0; 
 % amplitude parameters
-param.rawFolder = d1_rawFolder;
+param.rawFolder = d1_rawfolder;
 param.nRawSpikesToExtract = 100; 
 param.minAmplitude = 20; 
 % recording parametrs
