@@ -15,9 +15,12 @@ estimate the percent of spikes missing (false nagatives) by fitting a gaussian t
 
 Number of spikes over the recording. Below a certain amount of spikes, ephys properties like ACGs will not be reliable. A good minimum to use is 300 empirically, because Kilosort2 does not attempt to split any clusters that have less than 300 spikes in the post-processing phase.
 
+
 #### refractory period violations
 
 Estimate fraction of refractory period violations (false positives) using  r = 2*(tauR - tauC) * N^2 * (1-Fp) * Fp / T , solving for Fp, with tauR the refractory period, tauC the censored period, T the total experiment duration, r the number of refractory period violations, Fp the fraction of contamination. method from Hill et al., 2011. 
+
+![alt text](https://github.com/Julie-Fabre/bombcell/blob/master/images/rpv.png?raw=true)
 
 #### axonal
 
@@ -27,13 +30,19 @@ Axonal waveforms are defined as waveforms where the largest peak precedes the la
 
 Count the number of peaks and troughs to eliminate non-cell-like waveforms due to noise.
 
+![alt text](https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png?raw=true)
+
 #### amplitude 
 
 Amplitude of the mean raw waveformelfor a unit, to eliminate noisy, further away units, that are more likely to be MUA. 
 
+![alt text](https://github.com/Julie-Fabre/bombcell/blob/master/images/amplitude.png?raw=true)
+
 #### distance metrics  
 
 Compute measure of unit isolation quality: the isolation distance (see Harris et al., 2001), l-ratio (see Schmitzer-Torbert and Redish, 2004) and silhouette-score (see Rousseeuw, 1987). 
+
+![alt text](https://github.com/Julie-Fabre/bombcell/blob/master/images/isolationDistance.png?raw=true)
 
 ### ephys properties 
 
