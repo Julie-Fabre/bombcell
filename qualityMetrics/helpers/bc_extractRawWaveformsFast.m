@@ -20,10 +20,16 @@ function rawWaveforms = bc_extractRawWaveformsFast(rawFolder, nChannels, nSpikes
 %   amplitude
 
 %% check if waveforms already extracted
-rawWaveformFolder = dir(fullfile(rawFolder, 'rawWaveforms.mat'));
+% Get binary file name
+    spikeFile = dir(fullfile(rawFolder, '*.ap.bin'));
+    if isempty(spikeFile)
+        spikeFile = dir(fullfile(rawFolder, '/*.dat')); %openEphys format
+    end
+    
+rawWaveformFolder = dir(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
 
 if ~isempty(rawWaveformFolder)
-    load(fullfile(rawFolder, 'rawWaveforms.mat'));
+    load(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
 else
 
     %% Intitialize
@@ -35,13 +41,9 @@ else
     clustInds = unique(spikeTemplates);
     nClust = numel(clustInds);
 
-    % Get binary file name
-    spikeFile = dir(fullfile(rawFolder, '*.ap.bin'));
-    if isempty(spikeFile)
-        spikeFile = dir(fullfile(rawFolder, '*.dat')); %openEphys format
-    end
+    
     fname = spikeFile.name;
-    fid = fopen(fullfile(rawFolder, fname), 'r');
+    fid = fopen(fullfile(spikeFile.folder, fname), 'r');
     d = dir(fullfile(rawFolder, fname));
 
     dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
@@ -84,14 +86,14 @@ else
 
         [~, rawWaveforms(iCluster).peakChan] = max(max(abs(spkMapMean_sm), [], 2), [], 1);
 
-        clf;
-        for iSpike = 1:10
-            plot(spikeMap(1, :, iSpike));
-            hold on;
-        end
-        clf;
-        plot(rawWaveforms(iCluster).spkMapMean(1, :));
-        hold on;
+%         clf;
+%         for iSpike = 1:10
+%             plot(spikeMap(1, :, iSpike));
+%             hold on;
+%         end
+%         clf;
+%         plot(rawWaveforms(iCluster).spkMapMean(1, :));
+%         hold on;
         if (mod(iCluster, 20) == 0 || iCluster == nClust) && verbose
             fprintf(['\n   Finished ', num2str(iCluster), ' of ', num2str(nClust), ' units.']);
             %figure; imagesc(spkMapMean_sm)
@@ -102,9 +104,9 @@ else
     end
 
     fclose(fid);
-    rawWaveformFolder = dir(fullfile(rawFolder, 'rawWaveforms.mat'));
+    rawWaveformFolder = dir(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
     if isempty(rawWaveformFolder)
-        save(fullfile(rawFolder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
+        save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
     end
 end
 end

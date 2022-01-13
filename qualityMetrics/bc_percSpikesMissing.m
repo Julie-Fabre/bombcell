@@ -52,7 +52,11 @@ for iTimeChunk = 1:numel(timeChunks)-1
 
 
     f = @(x, xdata)gaussian_cut(x, xdata); % get anonymous function handle
-    fitOutput = lsqcurvefit(f, p0, bin_centers, num);
+    
+    options = optimoptions('lsqcurvefit','MaxFunctionEvaluations', 10000, 'MaxIterations', 1000);
+    lb = [];
+    ub = [];
+    fitOutput = lsqcurvefit(f, p0, bin_centers, num,lb, ub, options);
 
     %norm area calculated by fit parameters
     norm_area_ndtr = normcdf((fitOutput(2) - fitOutput(4))/fitOutput(3)); %ndtr((popt[1] - min_amplitude) /popt[2])

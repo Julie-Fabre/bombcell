@@ -13,8 +13,8 @@ for iUnit = 1:length(uniqueTemplates)
     theseSpikeTimes = spikeTimes(spikeTemplates == thisUnit);
 
     %% compute ACG
-    [ccg, ~] = CCGBz([double(theseSpikes); double(theseSpikeTimes)], [ones(size(theseSpikeTimes, 1), 1); ...
-        ones(size(theseSpikes, 1), 1) * 2], 'binSize', param.ACGbinSize, 'duration', param.ACGduration, 'norm', 'rate'); %function
+    [ccg, ~] = CCGBz([double(theseSpikeTimes); double(theseSpikeTimes)], [ones(size(theseSpikeTimes, 1), 1); ...
+        ones(size(theseSpikeTimes, 1), 1) * 2], 'binSize', param.ACGbinSize, 'duration', param.ACGduration, 'norm', 'rate'); %function
     ephysProp.acg(iUnit, :) = ccg(:, 1, 1);
     
     %% compute post spike suppression

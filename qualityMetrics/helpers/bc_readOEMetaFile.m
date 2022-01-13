@@ -4,6 +4,6 @@ filetext = fileread(fullfile(metaFileDir.folder, metaFileDir.name));
 expr = '"bit_volts": ';
 [~,endIndex] =  regexp(filetext,expr);
 
-scalingFactor = filetext(endIndex(1)+1 : endIndex(1)+8);
+scalingFactor = str2num(filetext(endIndex(1)+1 : endIndex(1)+8));
 
 end

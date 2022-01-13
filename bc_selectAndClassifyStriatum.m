@@ -7,17 +7,17 @@ experiments = AP_find_experimentsJF(animal, 'rating', 1);
 experiments =experiments(1); 
 [ephys_path, ~] = AP_cortexlab_filenameJF(animal, experiments.day, experiments.experiment(2), 'ephys', 1);
 [ephysap_path, ~] = AP_cortexlab_filenameJF(animal, experiments.day, experiments.experiment(2), 'ephys_ap', 1);
-for iDay = 1:size(foldersAll, 1)
+
     
-    templates = readNPY([ephys_path, filesep, 'templates.npy']);
-    channel_positions = readNPY([ephys_path, filesep, 'channel_positions.npy']);
-    spike_times = double(readNPY([ephys_path, filesep, 'spike_times.npy'])); % sample rate hard-coded as 30000 - should load this in from params 
-    spike_templates = readNPY([ephys_path, filesep, 'spike_templates.npy']) + 1; % 0-idx -> 1-idx
-    template_amplitude = readNPY([ephys_path, filesep, 'amplitudes.npy']);
-    spike_clusters = readNPY([ephys_path, filesep, 'spike_clusters.npy']) + 1;
-    pc_features = readNPY([ephys_path, filesep, 'pc_features.npy']) ;
-    pc_feature_ind = readNPY([ephys_path, filesep, 'pc_feature_ind.npy']) + 1;
-end
+templates = readNPY([ephys_path, filesep, 'templates.npy']);
+channel_positions = readNPY([ephys_path, filesep, 'channel_positions.npy']);
+spike_times = double(readNPY([ephys_path, filesep, 'spike_times.npy'])); % sample rate hard-coded as 30000 - should load this in from params 
+spike_templates = readNPY([ephys_path, filesep, 'spike_templates.npy']) + 1; % 0-idx -> 1-idx
+template_amplitude = readNPY([ephys_path, filesep, 'amplitudes.npy']);
+spike_clusters = readNPY([ephys_path, filesep, 'spike_clusters.npy']) + 1;
+pc_features = readNPY([ephys_path, filesep, 'pc_features.npy']) ;
+pc_feature_ind = readNPY([ephys_path, filesep, 'pc_feature_ind.npy']) + 1;
+
 
 %% parameters
 param = struct;
@@ -39,7 +39,7 @@ param.axonal = 0;
 % amplitude parameters
 param.rawFolder = [ephysap_path, '/..'];
 param.nRawSpikesToExtract = 100; 
-param.minAmplitude = 77; 
+param.minAmplitude = 20; 
 % recording parametrs
 param.ephys_sample_rate = 30000;
 param.nChannels = 385;
@@ -57,13 +57,13 @@ param.longISI = 2;
 % cell classification parameters
 param.propISI = 0.1;
 param.templateDuration = 400;
-
+param.pss = 40;
 %% compute quality metrics 
 [qMetric, goodUnits] = bc_runAllQualityMetrics(param, spike_times, spike_templates, ...
     templates, template_amplitude,pc_features,pc_feature_ind);
 
 %% compute ephys properties 
-ephysProp = bc_computeAllEphysProperties(spikeTimes, spikeTemplates, templateWaveforms, param);
+ephysProp = bc_computeAllEphysProperties(spike_times, spike_templates, templates, param);
 
 %% classify striatal cells 
-cellTypes = bc_classifyStriatalCells(ephysProp, goodUnits);
+cellTypes = bc_classifyStriatalCells(ephysProp, qMetric, param);
