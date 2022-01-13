@@ -48,10 +48,10 @@ param.rawFolder = d1_rawfolder; % string containing the location of the raw *.bi
 param.nRawSpikesToExtract = 100; % number of spikes to extract from the raw trace to compute mean waveform
 param.minAmplitude = 15; % minimum amplitude in microVolts to classify unit as good 
 % recording parametrs
-param.ephys_sample_rate = 30000; % recording sampling rate 
-param.nChannels = 385; % number of recorded channels (including sync)
+param.ephys_sample_rate = 30000;
+param.nChannels = 385;
 % distance metric parameters
-param.computeDistanceMetrics = 0; % boolean, cpmpute distance metrics 
+param.computeDistanceMetrics = 0;
 param.nChannelsIsoDist = NaN;
 param.isoDmin = NaN;
 param.lratioMin = NaN;
