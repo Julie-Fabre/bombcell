@@ -270,7 +270,8 @@ if block_exists
     end
 
     % SPECIFIC TO PROTOCOL
-    [~, expDef] = fileparts(block.expDef);
+    expDef = split(block.expDef, '\');
+    expDef = expDef{end}(1:end-2);
     switch expDef
         case {'vanillaChoiceworld', 'vanillaChoiceworldBias', 'vanillaChoiceworldNoRepeats'}
             % Hit/miss recorded for last trial, circshift to align
@@ -658,7 +659,8 @@ if block_exists
             % Get rid of the first one for now
             trial_conditions = trial_conditions(2:end);
             stimIDs = stimIDs(2:end);
-        case {'JF_GratingPassive', 'JF_GratingPassiveVarITI', 'JF_GratingPassiveVarITI_moreComb', 'JF_GratingPassiveVarITI_moreCombnew'}
+        case {'JF_GratingPassive', 'JF_GratingPassiveVarITI', 'JF_GratingPassiveVarITI_moreComb', 'JF_GratingPassiveVarITI_moreCombnew',...
+                 'JF_GratingPassiveVarITI_moreCombnew_correct'}
             stimOn_times = photodiode_flip_times(2:2:end);
             %n_trials = length(signals_events.endTrialTimes);
             % sanity check: times between stim on times in signals

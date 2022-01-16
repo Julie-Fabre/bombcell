@@ -92,7 +92,7 @@ end
 
 for iUnit = 1:length(uniqueTemplates)
     clearvars thisUnit theseSpikeTimes theseAmplis
-    
+    iUnit=iUnit+1
     thisUnit = uniqueTemplates(iUnit);
     qMetric.clusterID(iUnit) = thisUnit;
     theseSpikeTimes = spikeTimes(spikeTemplates == thisUnit);
