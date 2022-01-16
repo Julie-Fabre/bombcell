@@ -46,7 +46,7 @@ If NO, label as MUA (Alt+M) and move to next cluster.
 
 ## Workflow flowchart
 
-<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/phyWorflow.png" width=80% height=80%>
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/phyWorkflow.png" width=80% height=80%>
 
 ## Examples
 
