@@ -1,5 +1,5 @@
 function [spikeTimes, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx] = loadEphysDataJF(ephys_path)
+    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx] = bc_loadEphysData(ephys_path)
 
 spike_templates_0idx = readNPY([ephys_path filesep 'spike_templates.npy']);
 spikeTemplates = spike_templates_0idx + 1;
@@ -11,8 +11,6 @@ templateWaveforms = readNPY([ephys_path filesep 'templates.npy']);
 
 pcFeatures = readNPY([ephys_path filesep  'pc_features.npy']);
 pcFeatureIdx = readNPY([ephys_path filesep  'pc_feature_ind.npy']) + 1;
-
-
 
 
 end
