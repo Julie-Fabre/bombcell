@@ -1,4 +1,4 @@
-function [nPeaks, nTroughs, axonal] = bc_troughsPeaks(thisWaveform, ephys_sample_rate, plotThis)
+function [nPeaks, nTroughs, axonal, peakLocs, troughLocs] = bc_troughsPeaks(thisWaveform, ephys_sample_rate, plotThis)
 % JF, Get the number of troughs and peaks for each waveform, and determine
 % whether waveform is likely axonal (biggest peak before biggest trough)
 % ------
@@ -20,9 +20,9 @@ function [nPeaks, nTroughs, axonal] = bc_troughsPeaks(thisWaveform, ephys_sample
 % 
 minProminence = 0.2 * max(abs(squeeze(thisWaveform))); % minimum threshold to detcet peaks/troughs
 
-[PKS, LOCS] = findpeaks(squeeze(thisWaveform), 'MinPeakProminence', minProminence); % get peaks
+[PKS, peakLocs] = findpeaks(squeeze(thisWaveform), 'MinPeakProminence', minProminence); % get peaks
 
-[TRS, LOCST] = findpeaks(squeeze(thisWaveform)*-1, 'MinPeakProminence', minProminence); % get troughs
+[TRS, troughLocs] = findpeaks(squeeze(thisWaveform)*-1, 'MinPeakProminence', minProminence); % get troughs
 
 if isempty(TRS) % if there is no detected trough, just take minimum value as trough
     TRS = min(squeeze(thisWaveform));
@@ -33,7 +33,7 @@ if isempty(TRS) % if there is no detected trough, just take minimum value as tro
             TRS = TRS(1);
         end
     
-    LOCST = find(squeeze(thisWaveform) == TRS);
+    troughLocs = find(squeeze(thisWaveform) == TRS);
 else
     nTroughs = numel(TRS);
 end
@@ -45,19 +45,19 @@ if isempty(PKS) % if there is no detected peak, just take maximum value as peak
             % by looking for location where the data is most tightly distributed
             PKS = PKS(1);
         end
-    LOCS = find(squeeze(thisWaveform) == PKS);
+    peakLocs = find(squeeze(thisWaveform) == PKS);
 else
     nPeaks = numel(PKS);
 end
 
 
-peakLoc = LOCS(PKS == max(PKS)); %QQ should change to better:
+peakLoc = peakLocs(PKS == max(PKS)); %QQ should change to better:
             % by looking for location where the data is most tightly distributed
 if numel(peakLoc) > 1
     peakLoc = peakLoc(1);
 
 end
-troughLoc = LOCST(TRS == max(TRS)); %QQ should change to better:
+troughLoc = troughLocs(TRS == max(TRS)); %QQ should change to better:
             % by looking for location where the data is most tightly distributed
 if numel(troughLoc) > 1
     troughLoc = troughLoc(1);
@@ -82,7 +82,7 @@ if plotThis
     pbad = plot(1e3*((0:size(thisWaveform, 2) - 1) / ephys_sample_rate), ...
         thisWaveform);
 
-    pbb.XData([LOCS, LOCST]) = pbad.XData([LOCS, LOCST]);
+    pbb.XData([peakLocs, troughLocs]) = pbad.XData([peakLocs, troughLocs]);
     %pbb.YData(~[PKS,-TRS])=NaN;
 
     set(pbb, 'Marker', 'v');
@@ -91,5 +91,5 @@ if plotThis
     legend('detected peaks/troughs')
     makepretty;
 end
-
 end
+

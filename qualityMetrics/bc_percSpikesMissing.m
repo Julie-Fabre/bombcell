@@ -1,4 +1,4 @@
-function percent_missing  = bc_percSpikesMissing(theseAmplitudes, theseSpikeTimes, timeChunks, plotThis)
+function [percent_missing, bin_centers, num, n_fit_no_cut]  = bc_percSpikesMissing(theseAmplitudes, theseSpikeTimes, timeChunks, plotThis)
 % JF, Estimate the amount of spikes missing (below the detection threshold)
 % by fitting a gaussian to the amplitude distribution for each timeChunk
 % defined in timeChunks
@@ -61,12 +61,12 @@ for iTimeChunk = 1:numel(timeChunks)-1
     %norm area calculated by fit parameters
     norm_area_ndtr = normcdf((fitOutput(2) - fitOutput(4))/fitOutput(3)); %ndtr((popt[1] - min_amplitude) /popt[2])
     percent_missing(iTimeChunk) = 100 * (1 - norm_area_ndtr);
-
+    n_fit_no_cut = JF_gaussian_cut(bin_centers, fitOutput(1), fitOutput(2), fitOutput(3), 0);
+        
     if plotThis
         subplot(2,numel(timeChunks)-1, numel(timeChunks)-1+iTimeChunk)
         barh(bin_centers, num);
         hold on;
-        n_fit_no_cut = JF_gaussian_cut(bin_centers, fitOutput(1), fitOutput(2), fitOutput(3), 0);
         plot(n_fit_no_cut, bin_centers, 'r');
         if iTimeChunk == 1
         xlabel('count')

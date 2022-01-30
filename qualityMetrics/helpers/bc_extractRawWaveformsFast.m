@@ -91,6 +91,7 @@ else
 %             plot(spikeMap(1, :, iSpike));
 %             hold on;
 %         end
+figure()
 %         clf;
 %         plot(rawWaveforms(iCluster).spkMapMean(1, :));
 %         hold on;

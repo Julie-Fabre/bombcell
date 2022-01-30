@@ -75,15 +75,19 @@ function [qMetric, goodUnits] = bc_runAllQualityMetrics(param, spikeTimes, spike
 %% if some manual curation already performed, remove bad units 
 
 %% prepare for quality metrics computations: get waveform max_channel and raw waveforms
-
+qMetric = struct;
 maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
+qMetric.maxChannels = maxChannels; 
 
 verbose=1;
-rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
-    spikeTimes, spikeTemplates, verbose); % takes ~10'
+%qMetric.rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
+%    spikeTimes, spikeTemplates, verbose); % takes ~10' - QQ but bug in this
+%    method I need to fix, reverting back to slow method for now
+qMetric.rawWaveforms = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
+    spikeTimes, spikeTemplates, verbose);
 
 %% loop through units and get quality metrics
-qMetric = struct;
+
 uniqueTemplates = unique(spikeTemplates);
 spikeTimes = spikeTimes ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
 if param.computeTimeChunks
@@ -100,11 +104,12 @@ for iUnit = 1:length(uniqueTemplates)
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
 
     %% percentage spikes missing
-    percSpikesMissing = bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotThis);
+    [percSpikesMissing, qMetric.ampliBinCenters{iUnit}, qMetric.ampliBinCounts{iUnit}, qMetric.ampliFit{iUnit}] = ...
+        bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotThis);
 
     %% define timechunks to keep
     if param.computeTimeChunks
-        [qMetric.percSpikesMissing(iUnit), theseSpikeTimes, theseAmplis, timeChunks, qMetric.useTheseTimes{iUnit}] = bc_defineTimechunksToKeep(percSpikesMissing, ...
+        [qMetric.percSpikesMissing(iUnit), theseSpikeTimes, ~, timeChunks, qMetric.useTheseTimes{iUnit}] = bc_defineTimechunksToKeep(percSpikesMissing, ...
             param.maxPercSpikesMissing, theseAmplis, theseSpikeTimes, timeChunks);
     else
         qMetric.percSpikesMissing(iUnit) = percSpikesMissing;
@@ -113,7 +118,8 @@ for iUnit = 1:length(uniqueTemplates)
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
 
     %% waveform: number peaks/troughs and is peak before trough (= axonal)
-    [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.axonal(iUnit)] = bc_troughsPeaks(templateWaveforms(thisUnit, :, maxChannels(iUnit)), ...
+    [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.axonal(iUnit), ...
+        qMetric.peakLocs{iUnit}, qMetric.troughLocs{iUnit}] = bc_troughsPeaks(templateWaveforms(thisUnit, :, maxChannels(iUnit)), ...
         param.ephys_sample_rate, param.plotThis);
 
     %% fraction contam (false postives)
@@ -121,12 +127,13 @@ for iUnit = 1:length(uniqueTemplates)
         timeChunks(end)-timeChunks(1), param.plotThis);
 
     %% amplitude
-    qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveforms(iUnit).spkMapMean(rawWaveforms(iUnit).peakChan, :), ...
+    qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(qMetric.rawWaveforms(iUnit).spkMapMean(qMetric.rawWaveforms(iUnit).peakChan, :), ...
         param.rawFolder);
 
     %% distance metrics
     if param.computeDistanceMetrics
-        [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit)] = bc_getDistanceMetrics(pcFeatures, ...
+        [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit), ...
+            qMetric.d2_mahal{iUnit}, qMetric.Xplot{iUnit}, qMetric.Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
     end
 end
@@ -141,8 +148,9 @@ else
         qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude; 
 
 end
-if exist('savePath', 'var')
-    save(fullfile(savePath, 'qMetric.mat'),qMetric)
+if exist('savePath', 'var') %save qualityMetrics
+    save(fullfile(savePath, 'qMetric.mat'), 'qMetric')
+    save(fullfile(savePath, 'param.mat'), 'param')
 end
 if param.plotThis 
     % QQ plot histograms of each metric with the cutoffs set in params

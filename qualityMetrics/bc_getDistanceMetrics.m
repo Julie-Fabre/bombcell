@@ -1,4 +1,4 @@
-function [isoD, Lratio, silhouetteScore] = bc_getDistanceMetrics(pc_features, ...
+function [isoD, Lratio, silhouetteScore, d2_mahal, Xplot, Yplot] = bc_getDistanceMetrics(pc_features, ...
     pc_feature_ind, thisUnit, numberSpikes, spikesIdx, allSpikesIdx, nChansToUse, plotThis)
 % JF, Get distance metrics
 % ------
@@ -132,14 +132,17 @@ else
     silhouetteScore = NaN;
 
 end
+
+Yplot = reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse);
+Xplot = theseFeatures;
+d2_mahal = mahal(Yplot, Xplot);
+    
 if plotThis
-    Y = reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse);
-    X = theseFeatures;
-    d2_mahal = mahal(Y, X);
+    
     figure();
-    scatter(X(:, 1), X(:, 2), 10, '.k') % Scatter plot with points of size 10
+    scatter(Xplot(:, 1), Xplot(:, 2), 10, '.k') % Scatter plot with points of size 10
     hold on
-    scatter(Y(:, 1), Y(:, 2), 10, d2_mahal, 'o', 'filled')
+    scatter(Yplot(:, 1), Yplot(:, 2), 10, d2_mahal, 'o', 'filled')
     hb = colorbar;
     ylabel(hb, 'Mahalanobis Distance')
     legend('this cluster', 'other clusters', 'Location', 'best');

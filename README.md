@@ -76,3 +76,5 @@ work in progress
 - https://uk.mathworks.com/matlabcentral/fileexchange/181-keep 
 
 - https://uk.mathworks.com/matlabcentral/fileexchange/1805-rgb-m
+
+- https://github.com/tuckermcclure/matlab-plot-big
