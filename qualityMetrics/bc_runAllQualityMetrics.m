@@ -83,7 +83,7 @@ verbose=1;
 %qMetric.rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
 %    spikeTimes, spikeTemplates, verbose); % takes ~10' - QQ but bug in this
 %    method I need to fix, reverting back to slow method for now
-qMetric.rawWaveforms = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
+[qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
     spikeTimes, spikeTemplates, usedChannels, verbose);
 
 %% loop through units and get quality metrics
@@ -127,6 +127,9 @@ for iUnit = 1:length(uniqueTemplates)
         timeChunks(end)-timeChunks(1), param.plotThis);
 
     %% amplitude
+    if size(qMetric.rawWaveforms(iUnit).spkMapMean,1) ==1
+        qMetric.rawWaveforms(iUnit).spkMapMean = permute(squeeze(qMetric.rawWaveforms(iUnit).spkMapMean),[2,1]);
+    end
     qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(qMetric.rawWaveforms(iUnit).spkMapMean(qMetric.rawWaveforms(iUnit).peakChan, :), ...
         param.rawFolder);
 
@@ -137,7 +140,7 @@ for iUnit = 1:length(uniqueTemplates)
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
     end
 end
-if param.computeDistanceMetrics
+if param.computeDistanceMetrics & ~isnan(param.nChannelsIsoDist)
 
     goodUnits = qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
         qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
@@ -152,7 +155,7 @@ if exist('savePath', 'var') %save qualityMetrics
     save(fullfile(savePath, 'qMetric.mat'), 'qMetric')
     save(fullfile(savePath, 'param.mat'), 'param')
 end
-if param.plotThis 
+if param.plotGlobal 
     % QQ plot histograms of each metric with the cutoffs set in params
 
 end

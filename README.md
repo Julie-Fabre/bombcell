@@ -6,6 +6,13 @@ Used in Peters et al., 2021 to classify striatal units .
 
 ### Quality metrics 
 
+Run all quality metrics with the function bc_runAllQualityMetrics. Eg:
+				[qMetric, goodUnits] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
+    					templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,usedChannels, savePath);
+    					
+Then, plot a GUI to flip through the quality metrics for each cell with the function bc_unitQualityGUI Eg:
+				bc_unitQualityGUI(memMapData, ephysData, qMetrics, param, probeLocation)
+						
 ####  % spikes missing 
 
 estimate the percent of spikes missing (false nagatives) by fitting a gaussian the distribution of amplitudes, with a cutoff parameter. This assumes the spike amplitudes follow a gaussian distribution, which is not strictly true for bursty cells, like MSNs. This can then define which epochs of the recording to keep for a unit, if it has for example drifted relative to the recording sites and in only some recording epochs a substantial amount of spikes are missing.

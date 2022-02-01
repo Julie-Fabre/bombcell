@@ -1,4 +1,4 @@
-function rawWaveforms = bc_extractRawWaveforms(rawFolder, nChannels, nSpikesToExtract, spikeTimes, spikeTemplates, used_channels_idx, verbose)
+function [rawWaveforms, ap_data] = bc_extractRawWaveforms(rawFolder, nChannels, nSpikesToExtract, spikeTimes, spikeTemplates, used_channels_idx, verbose)
 % JF, Get raw waveforms for all templates
 % ------
 % Inputs
@@ -28,14 +28,10 @@ end
 
 rawWaveformFolder = dir(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
 
-if ~isempty(rawWaveformFolder)
-    load(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
-else
-
     %% Intitialize
     % Get spike times and indices
 
-    pull_spikeT = [-41, 40];
+    pull_spikeT = -41:40;
 
     clustInds = unique(spikeTemplates);
     nClust = numel(clustInds);
@@ -44,8 +40,20 @@ else
     fname = spikeFile.name;
 
     dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
-    n_samples = spikeFile.bytes/ (nChannels * dataTypeNBytes);
-    ap_data = memmapfile(fullfile(spikeFile.folder, fname),'Format',{'int16',[nChannels,n_samples],'data'});
+    try
+        n_samples = spikeFile.bytes/ (nChannels * dataTypeNBytes);
+        ap_data = memmapfile(fullfile(spikeFile.folder, fname),'Format',{'int16',[nChannels,n_samples],'data'});
+    catch
+        nChannels = nChannels -1;
+        n_samples = spikeFile.bytes/ (nChannels * dataTypeNBytes);
+        ap_data = memmapfile(fullfile(spikeFile.folder, fname),'Format',{'int16',[nChannels,n_samples],'data'});n_samples = spikeFile.bytes/ (nChannels * dataTypeNBytes);
+    end
+    
+if ~isempty(rawWaveformFolder)
+   load(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
+else
+
+
     
 
     %% Interate over spike clusters and find all the data associated with them
@@ -92,8 +100,8 @@ else
 
 
                 end
-                figure()
-                plot(rawWaveforms(iCluster).spkMapMean(rawWaveforms(iCluster).peakChan, :))
+%                 figure()
+%                 plot(rawWaveforms(iCluster).spkMapMean(rawWaveforms(iCluster).peakChan, :))
             end
         end
 
@@ -105,10 +113,10 @@ else
     end
 
 
-    fclose(fid);
+%    fclose(fid);
     rawWaveformFolder = dir(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
-    if isempty(rawWaveformFolder)
+    %if isempty(rawWaveformFolder)
         save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
-    end
+    %end
 end
 end

@@ -34,14 +34,14 @@ ephysParams = struct;
 
 probeLocation=[];
 unitQualityGUI(ap_data.data.data,ephysData,qMetric, param, probeLocation);
-
-allen_atlas_path = '/home/julie/Dropbox/Atlas/allenCCF';
-tv = readNPY([allen_atlas_path, filesep, 'template_volume_10um.npy']);
-av = readNPY([allen_atlas_path, filesep, 'annotation_volume_10um_by_index.npy']);
-st = loadStructureTreeJF([allen_atlas_path, filesep, 'structure_tree_safe_2017.csv']);  
-
- trajectory_area_boundaries = ...
-        [1;find(diff(probe_ccf(curr_probe).trajectory_areas) ~= 0);length(probe_ccf(curr_probe).trajectory_areas)];    
-    trajectory_area_centers = trajectory_area_boundaries(1:end-1) + diff(trajectory_area_boundaries)/2;
-    trajectory_area_labels = st.safe_name(probe_ccf(curr_probe).trajectory_areas(round(trajectory_area_centers)));
-     
+% 
+% allen_atlas_path = '/home/julie/Dropbox/Atlas/allenCCF';
+% tv = readNPY([allen_atlas_path, filesep, 'template_volume_10um.npy']);
+% av = readNPY([allen_atlas_path, filesep, 'annotation_volume_10um_by_index.npy']);
+% st = loadStructureTreeJF([allen_atlas_path, filesep, 'structure_tree_safe_2017.csv']);  
+% 
+%  trajectory_area_boundaries = ...
+%         [1;find(diff(probe_ccf(curr_probe).trajectory_areas) ~= 0);length(probe_ccf(curr_probe).trajectory_areas)];    
+%     trajectory_area_centers = trajectory_area_boundaries(1:end-1) + diff(trajectory_area_boundaries)/2;
+%     trajectory_area_labels = st.safe_name(probe_ccf(curr_probe).trajectory_areas(round(trajectory_area_centers)));
+%      
