@@ -133,6 +133,7 @@ else
 
 end
 
+if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
 Yplot = reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse);
 Xplot = theseFeatures;
 d2_mahal = mahal(Yplot, Xplot);
@@ -147,5 +148,9 @@ if plotThis
     ylabel(hb, 'Mahalanobis Distance')
     legend('this cluster', 'other clusters', 'Location', 'best');
 end
-
+else
+    d2_mahal = NaN;
+    Yplot = NaN;
+    Xplot = NaN;
+end
 end
