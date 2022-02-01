@@ -7,10 +7,12 @@ Used in Peters et al., 2021 to classify striatal units .
 ### Quality metrics 
 
 Run all quality metrics with the function bc_runAllQualityMetrics. Eg:
+
 				[qMetric, goodUnits] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
     					templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,usedChannels, savePath);
     					
 Then, plot a GUI to flip through the quality metrics for each cell with the function bc_unitQualityGUI Eg:
+
 				bc_unitQualityGUI(memMapData, ephysData, qMetrics, param, probeLocation)
 						
 ####  % spikes missing 
