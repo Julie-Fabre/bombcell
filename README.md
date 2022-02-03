@@ -15,7 +15,7 @@ Then, plot a GUI to flip through the quality metrics for each cell with the func
 
     bc_unitQualityGUI(memMapData, ephysData, qMetrics, param, probeLocation)
 
-<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI.png" width=40% height=40%>
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI.png" width=80% height=80%>
 
 
 						
