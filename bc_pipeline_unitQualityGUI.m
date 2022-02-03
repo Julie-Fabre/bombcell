@@ -33,7 +33,7 @@ ephysData.waveform_t = 1e3*((0:size(templateWaveforms, 2) - 1) / 30000);
 ephysParams = struct;
 
 probeLocation=[];
-unitQualityGUI(ap_data.data.data,ephysData,qMetric, param, probeLocation);
+unitQualityGUI(ap_data.data.data,ephysData,qMetric, param, probeLocation, goodUnits);
 % 
 % allen_atlas_path = '/home/julie/Dropbox/Atlas/allenCCF';
 % tv = readNPY([allen_atlas_path, filesep, 'template_volume_10um.npy']);

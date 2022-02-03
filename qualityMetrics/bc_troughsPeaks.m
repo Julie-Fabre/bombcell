@@ -64,9 +64,9 @@ if numel(troughLoc) > 1
 end
 
 if peakLoc > troughLoc
-    axonal = 1;
-else
     axonal = 0;
+else
+    axonal = 1;
 end
 
 if plotThis

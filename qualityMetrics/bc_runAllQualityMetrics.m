@@ -140,7 +140,7 @@ for iUnit = 1:length(uniqueTemplates)
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
     end
 end
-if param.computeDistanceMetrics & ~isnan(param.nChannelsIsoDist)
+if param.computeDistanceMetrics && ~isnan(param.isoDmin)
 
     goodUnits = qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
         qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
@@ -152,10 +152,10 @@ else
 
 end
 if exist('savePath', 'var') %save qualityMetrics
-    save(fullfile(savePath, 'qMetric.mat'), 'qMetric')
+    save(fullfile(savePath, 'qMetric.mat'), 'qMetric','-v7.3')
     save(fullfile(savePath, 'param.mat'), 'param')
 end
-if param.plotGlobal 
+% if param.plotGlobal 
     % QQ plot histograms of each metric with the cutoffs set in params
 
 end

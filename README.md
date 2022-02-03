@@ -14,6 +14,10 @@ Run all quality metrics with the function bc_runAllQualityMetrics. Eg:
 Then, plot a GUI to flip through the quality metrics for each cell with the function bc_unitQualityGUI Eg:
 
     bc_unitQualityGUI(memMapData, ephysData, qMetrics, param, probeLocation)
+
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI.png" width=40% height=40%>
+
+
 						
 ####  % spikes missing 
 

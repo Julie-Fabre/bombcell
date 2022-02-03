@@ -140,7 +140,7 @@ for iUnit = 1:length(uniqueTemplates)
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
     end
 end
-if param.computeDistanceMetrics && ~isnan(param.nChannelsIsoDist)
+if param.computeDistanceMetrics && ~isnan(param.isoDmin)
 
     goodUnits = qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
         qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
