@@ -1,4 +1,4 @@
-function rawWaveforms = bc_extractRawWaveformsFast(rawFolder, nChannels, nSpikesToExtract, spikeTimes, spikeTemplates, verbose)
+function [rawWaveforms, ap_data] = bc_extractRawWaveformsFast(rawFolder, nChannels, nSpikesToExtract, spikeTimes, spikeTemplates, verbose)
 % JF, Get raw waveforms for all templates
 % ------
 % Inputs
@@ -47,7 +47,15 @@ else
     d = dir(fullfile(rawFolder, fname));
 
     dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
-    n_samples = d.bytes / (nChannels * dataTypeNBytes);
+    try %hacky way of figuring out if sync channel present or not 
+        n_samples = spikeFile.bytes/ (nChannels * dataTypeNBytes);
+        ap_data = memmapfile(fullfile(spikeFile.folder, fname),'Format',{'int16',[nChannels,n_samples],'data'});
+    catch
+        nChannels = nChannels -1;
+        n_samples = spikeFile.bytes/ (nChannels * dataTypeNBytes);
+        ap_data = memmapfile(fullfile(spikeFile.folder, fname),'Format',{'int16',[nChannels,n_samples],'data'});n_samples = spikeFile.bytes/ (nChannels * dataTypeNBytes);
+    end
+    
 
     %% Interate over spike clusters and find all the data associated with them
     rawWaveforms = struct;

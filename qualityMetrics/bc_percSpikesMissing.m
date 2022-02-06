@@ -1,4 +1,4 @@
-function [percent_missing, bin_centers, num, n_fit_no_cut]  = bc_percSpikesMissing(theseAmplitudes, theseSpikeTimes, timeChunks, plotThis)
+function [percent_missing, bin_centers, num, n_fit_cut]  = bc_percSpikesMissing(theseAmplitudes, theseSpikeTimes, timeChunks, plotThis)
 % JF, Estimate the amount of spikes missing (below the detection threshold)
 % by fitting a gaussian to the amplitude distribution for each timeChunk
 % defined in timeChunks
@@ -53,21 +53,27 @@ for iTimeChunk = 1:numel(timeChunks)-1
 
     f = @(x, xdata)gaussian_cut(x, xdata); % get anonymous function handle
     
-    options = optimoptions('lsqcurvefit','OptimalityTolerance', 1e-32, 'FunctionTolerance', 1e-32);%'MaxFunctionEvaluations', 10000, 'MaxIterations', 1000);
+    options = optimoptions('lsqcurvefit','OptimalityTolerance', 1e-32, 'FunctionTolerance', 1e-32,'Display','off');%,'StepTolerance', 1e-20,...
+        %'MaxFunctionEvaluations', 5000);%'MaxFunctionEvaluations', 10000, 'MaxIterations', 1000);
     lb = [];
     ub = [];
     fitOutput = lsqcurvefit(f, p0, bin_centers, num,lb, ub, options); %QQ need to fix local minimum error
 
     %norm area calculated by fit parameters
+    
+    n_fit_cut = JF_gaussian_cut(bin_centers, fitOutput(1), fitOutput(2), fitOutput(3), fitOutput(4));
+%    n_fit_no_cut = JF_gaussian_cut(bin_centers, fitOutput(1), fitOutput(2), fitOutput(3), 0);
+    %Int1 = cumtrapz(bin_centers,n_fit_no_cut);
+    %Int2 = 
     norm_area_ndtr = normcdf((fitOutput(2) - fitOutput(4))/fitOutput(3)); %ndtr((popt[1] - min_amplitude) /popt[2])
     percent_missing(iTimeChunk) = 100 * (1 - norm_area_ndtr);
-    n_fit_no_cut = JF_gaussian_cut(bin_centers, fitOutput(1), fitOutput(2), fitOutput(3), 0);
+   
         
     if plotThis
         subplot(2,numel(timeChunks)-1, numel(timeChunks)-1+iTimeChunk)
         barh(bin_centers, num);
         hold on;
-        plot(n_fit_no_cut, bin_centers, 'r');
+        plot(n_fit_cut, bin_centers, 'r');
         if iTimeChunk == 1
         xlabel('count')
         ylabel('amplitude')

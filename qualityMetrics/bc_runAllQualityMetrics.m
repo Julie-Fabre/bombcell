@@ -80,11 +80,11 @@ maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 qMetric.maxChannels = maxChannels; 
 
 verbose=1;
-%qMetric.rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
-%    spikeTimes, spikeTemplates, verbose); % takes ~10' - QQ but bug in this
+qMetric.rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
+   spikeTimes, spikeTemplates, verbose); % takes ~10' - QQ but bug in this
 %    method I need to fix, reverting back to slow method for now
-[qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
-    spikeTimes, spikeTemplates, usedChannels, verbose);
+% [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
+%     spikeTimes, spikeTemplates, usedChannels, verbose);
 
 %% loop through units and get quality metrics
 

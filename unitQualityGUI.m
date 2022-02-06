@@ -6,14 +6,15 @@ set(h, 'KeyPressFcn', @KeyPressCb);
 %initial conditions
 iCluster = 1;
 iCount = 1;
-timeSecs = 1;
+timeSecs = 0.1;
 timeChunkStart = 1000;
 timeChunk = timeSecs * ephysData.ephys_sample_rate;
 timeChunkStop = timeSecs * ephysData.ephys_sample_rate;
 uniqueTemps = unique(ephysData.spike_templates);
 %plot initial conditions
+iChunk = 1;
 plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, probeLocation, ...
-    uniqueTemps, goodUnits);
+    uniqueTemps, goodUnits, iChunk);
 
 %change on keypress
     function KeyPressCb(~, evnt)
@@ -22,34 +23,64 @@ plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChu
             iCluster = iCluster + 1;
             clf;
             plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
-                probeLocation,uniqueTemps, goodUnits);
+                probeLocation,uniqueTemps, goodUnits, iChunk);
         elseif strcmpi(evnt.Key, 'leftarrow')
             iCluster = iCluster - 1;
             clf;
             plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
-                probeLocation,uniqueTemps, goodUnits);
+                probeLocation,uniqueTemps, goodUnits, iChunk);
         elseif strcmpi(evnt.Key, 'uparrow')
-            timeChunkStart = timeChunkStop;
-            timeChunkStop = timeChunkStop + timeChunk;
+            iChunk = iChunk + 1;
             clf;
             plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
-                probeLocation,uniqueTemps, goodUnits);
+                probeLocation,uniqueTemps, goodUnits, iChunk);
         elseif strcmpi(evnt.Key, 'downarrow')
-            timeChunkStop = timeChunkStart;
-            timeChunkStart = timeChunkStart - timeChunk;
+            iChunk = iChunk - 1;
             clf;
             plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
-                probeLocation,uniqueTemps, goodUnits);
+                probeLocation,uniqueTemps, goodUnits, iChunk);
 
         end
     end
 end
 
+function initializePlot(ephysData, qMetrics, goodUnits)
+%% initialize and plot units over depth
+unitsOverDepthAxis = subplot(6, 13, [1, 14, 27, 40, 53, 66], 'YDir', 'reverse');
+hold on;
+unitCmap = zeros(length(goodUnits),3);
+unitCmap(goodUnits ==1 ,:,:) = repmat([0, 0.5, 0], length(find(goodUnits==1)),1);
+unitCmap(goodUnits ==0 ,:,:) = repmat([1, 0 , 0], length(find(goodUnits==0)),1);
+norm_spike_n = mat2gray(log10(accumarray(ephysData.spike_templates, 1)+1));
+unitDots = plot(norm_spike_n(uniqueTemps), ephysData.channel_positions(qMetrics.maxChannels(uniqueTemps), 2),5, unitCmap, ...
+     'filled', 'ButtonDownFcn', @unit_click);
+currUnitDots = scatter(0, 0, 100, unitCmap(iCluster,:,:), ...
+     'filled','MarkerEdgeColor',[0 0 0],'LineWidth',4);
+xlim([-0.1, 1.1]);
+ylim([min(ephysData.channel_positions(:, 2)) - 50, max(ephysData.channel_positions(:, 2)) + 50]);
+ylabel('Depth (\mum)')
+xlabel('Normalized log rate')
+title('Location on probe')
+
+%% save all handles 
+guiData = struct;
+guiData.unitDots = unitDots;
+guiData.currUnitDots = currUnitDots;
+
+end
+
+function updateUnit()
+end
+
+function updateRawSnippet()
+end
 
 function plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
-    probeLocation,uniqueTemps, goodUnits)
+    probeLocation,uniqueTemps, goodUnits, iChunk)
 thisUnit = uniqueTemps(iCluster);
+tic
 clf;
+toc
 set(gcf, 'color', 'white')
 if goodUnits(iCluster) ==1
     sgtitle(['\color[rgb]{0 .5 0}Unit ', num2str(iCluster), ', good']);
@@ -68,6 +99,7 @@ end
 %     title([num2str(probe2ephys(curr_probe).day) num2str(probe2ephys(curr_probe).site)]);
 
 %% 1. plot unit location on probe qq: replace by unit * spike rate
+tic
 %code below from the lovely AP_cellraster
 subplot(6, 13, [1, 14, 27, 40, 53, 66], 'YDir', 'reverse');
 hold on;
@@ -75,7 +107,7 @@ unitCmap = zeros(length(goodUnits),3);
 unitCmap(goodUnits ==1 ,:,:) = repmat([0, 0.5, 0], length(find(goodUnits==1)),1);
 unitCmap(goodUnits ==0 ,:,:) = repmat([1, 0 , 0], length(find(goodUnits==0)),1);
 norm_spike_n = mat2gray(log10(accumarray(ephysData.spike_templates, 1)+1));
-unit_dots = scatter(norm_spike_n(uniqueTemps), ephysData.channel_positions(qMetrics.maxChannels(uniqueTemps), 2),20, unitCmap, ...
+unit_dots = scatter(norm_spike_n(uniqueTemps), ephysData.channel_positions(qMetrics.maxChannels(uniqueTemps), 2),5, unitCmap, ...
      'filled', 'ButtonDownFcn', @unit_click);
 curr_unit_dots = scatter(norm_spike_n(thisUnit), ephysData.channel_positions(qMetrics.maxChannels(thisUnit), 2),100, unitCmap(iCluster,:,:), ...
      'filled','MarkerEdgeColor',[0 0 0],'LineWidth',4);
@@ -85,9 +117,9 @@ ylabel('Depth (\mum)')
 xlabel('Normalized log rate')
 % plot allenCCF map alongside
 title('Location on probe')
-
+toc
 %% 2. plot unit template waveform and detected peaks
-
+tic
 subplot(6, 13, [2:7, 15:20])
 cla;
 maxChan = qMetrics.maxChannels(thisUnit);
@@ -101,7 +133,7 @@ for iChanToPlot = 1:size(chansToPlot, 1)
     if maxChan == chansToPlot(iChanToPlot)
         plot((ephysData.waveform_t + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
             -squeeze(ephysData.templates(thisUnit, :, chansToPlot(iChanToPlot)))'+ ...
-            (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) ./ 100), 'Color', 'r');
+            (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) ./ 100), 'Color', 'b');
         hold on;
         scatter((ephysData.waveform_t(qMetrics.peakLocs{iCluster}) ...
             +(ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
@@ -144,8 +176,9 @@ else
 end
 TextLocation([num2str(qMetrics.nPeaks(iCluster)), ' peak(s), ', num2str(qMetrics.nTroughs(iCluster)), ' trough(s)', ...
     ' is somatic =', num2str(1 - qMetrics.axonal(iCluster))],'Location', 'North')
-
+toc
 %% 3. plot unit mean raw waveform (and individual traces)
+tic
 subplot(6, 13, [8:13, 21:26])
 cla;
 qMetrics.rawWaveforms(1).peakChan
@@ -153,7 +186,7 @@ for iChanToPlot = 1:size(chansToPlot, 1)
     if maxChan == chansToPlot(iChanToPlot)
         plot((ephysData.waveform_t + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
             -squeeze(qMetrics.rawWaveforms(iCluster).spkMapMean(chansToPlot(iChanToPlot), :))'+ ...
-            (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) * 10), 'Color', 'r');
+            (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) * 10), 'Color', 'b');
     else
         plot((ephysData.waveform_t + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
             -squeeze(qMetrics.rawWaveforms(iCluster).spkMapMean(chansToPlot(iChanToPlot), :))'+ ...
@@ -173,12 +206,14 @@ end
 set(gca, 'YDir', 'reverse')
 xlabel('Position+Time');
 ylabel('Position');
+toc
 
 %% 4. plot unit ACG
+tic
 theseSpikeTimes = ephysData.spike_times_timeline(ephysData.spike_templates == thisUnit);
 
-% [Fp, r, overestimate] = bc_fractionRPviolations(numel(theseSpikeTimes),theseSpikeTimes, param.tauR, ...
-%     param.tauC, max(theseSpikeTimes)-min(theseSpikeTimes), 1);
+%  [Fp, r, overestimate] = bc_fractionRPviolations(numel(theseSpikeTimes),theseSpikeTimes, param.tauR, ...
+%      param.tauC, max(theseSpikeTimes)-min(theseSpikeTimes), 1);
 
 
 [ccg, ccg_t] = CCGBz([double(theseSpikeTimes); double(theseSpikeTimes)], [ones(size(theseSpikeTimes, 1), 1); ...
@@ -187,18 +222,17 @@ theseSpikeTimes = ephysData.spike_times_timeline(ephysData.spike_templates == th
 
 subplot(6, 13, 28:31)
 area(ccg_t, ccg(:, 1, 1));
-xlim([-0.1, 0.1]); %Check FR
-xlabel('time (s)');
 hold on;
 line([0.002, 0.002], [0, max(ccg(:, 1, 1))], 'Color', 'r')
 line([-0.002, -0.002], [0, max(ccg(:, 1, 1))], 'Color', 'r')
-[ccg, ccg_t] = CCGBz([double(theseSpikeTimes); double(theseSpikeTimes)], [ones(size(theseSpikeTimes, 1), 1); ...
+[ccg, ~] = CCGBz([double(theseSpikeTimes); double(theseSpikeTimes)], [ones(size(theseSpikeTimes, 1), 1); ...
     ones(size(theseSpikeTimes, 1), 1) * 2], 'binSize', 0.01, 'duration', 10, 'norm', 'rate'); %function
 asymptoteLine = nanmean(ccg(end-100:end));
 line([-0.1, 0.1], [asymptoteLine, asymptoteLine], 'Color', 'r')
-
-makeprettyNoText;
-xlim([0, 0.1]); %Check FR
+tic
+makeprettyNoText
+toc
+xlim([0, 0.05]); %Check FR
 xlabel('time (s)');
 ylabel('sp/s');
 if qMetrics.Fp(iCluster) > param.maxRPVviolations
@@ -207,16 +241,17 @@ else
     title('\color[rgb]{0 .5 0}ACG');
 end
 
-
+toc
 %% 5. plot unit ISI (with refractory period and asymptote lines)
-    theseTimes = theseSpikeTimes- theseSpikeTimes(1);
-    theseISI = diff(theseSpikeTimes);
-    theseisiclean = theseISI(theseISI >= param.tauC); % removed duplicate spikes 
-    [isiProba, edgesISI] = histcounts(theseisiclean*1000, [0:0.5:50]);
-    subplot(6, 13, [32:35])
-    bar(edgesISI(1:end-1)+mean(diff(edgesISI)), isiProba); %Check FR
-    xlabel('Interspike interval (ms)')
-    ylabel('# of spikes')
+tic
+theseTimes = theseSpikeTimes- theseSpikeTimes(1);
+theseISI = diff(theseSpikeTimes);
+theseisiclean = theseISI(theseISI >= param.tauC); % removed duplicate spikes 
+[isiProba, edgesISI] = histcounts(theseisiclean*1000, [0:0.5:50]);
+subplot(6, 13, [32:35])
+bar(edgesISI(1:end-1)+mean(diff(edgesISI)), isiProba); %Check FR
+xlabel('Interspike interval (ms)')
+ylabel('# of spikes')
     
 hold on;
 yLim = ylim;
@@ -228,43 +263,67 @@ if qMetrics.Fp(iCluster) > param.maxRPVviolations
 else
     title('\color[rgb]{0 .5 0}ISI');
 end
-TextLocation([num2str(qMetrics.Fp(iCluster)*100), ' % r.p.v.'],'Location', 'North')
-
+TextLocation([num2str(qMetrics.Fp(iCluster)), ' % r.p.v.'],'Location', 'North')
+toc
 %% 6. plot isolation distance
+tic
 subplot(6, 13, 36:39)
 
-scatter(qMetrics.Xplot{iCluster}(:, 1), qMetrics.Xplot{iCluster}(:, 2), 10, '.k') % Scatter plot with points of size 10
+scatter(qMetrics.Xplot{iCluster}(:, 1), qMetrics.Xplot{iCluster}(:, 2), 10, '.b') % Scatter plot with points of size 10
 hold on
 scatter(qMetrics.Yplot{iCluster}(:, 1), qMetrics.Yplot{iCluster}(:, 2), 10, qMetrics.d2_mahal{iCluster}, 'o', 'filled')
+colormap(brewermap([], '*YlOrRd'))
 hb = colorbar;
 ylabel(hb, 'Mahalanobis Distance')
 legend('this cluster', 'other clusters', 'Location', 'best');
+toc
 %% 7. (optional) plot raster
 
+%% 10. plot ampli fit
+tic
+subplot(6, 13, [78])
+h = barh(qMetrics.ampliBinCenters{iCluster}, qMetrics.ampliBinCounts{iCluster}, 'red');
+hold on;
+h.FaceAlpha = 0.5;
+plot(qMetrics.ampliFit{iCluster}, qMetrics.ampliBinCenters{iCluster}, 'blue', 'LineWidth', 4)
+if qMetrics.percSpikesMissing(iCluster) > param.maxPercSpikesMissing
+    title('\color[rgb]{1 0 0}% spikes missing');
+else
+    title('\color[rgb]{0 .5 0}% spikes missing');
+end
+TextLocation([num2str(qMetrics.percSpikesMissing(iCluster)), ' % spikes missing'],'Location', 'SouthWest')
+toc
 %% 8. plot raw data
+tic
 subplot(6, 13, [41:52, 55:59, 60:65])
 title('Raw unwhitened data')
 hold on;
-plotSubRaw(memMapData, ephysData, iCluster, iCount, uniqueTemps, timeChunkStart, timeChunkStop);
-
+plotSubRaw(memMapData, ephysData, iCluster, iCount, uniqueTemps, timeChunkStart, timeChunkStop, iChunk);
+toc
 %% 9. plot template amplitudes and mean f.r. over recording (QQ: add experiment time epochs?)
+
+
+        tic
 subplot(6, 13, [67:70, 73:76])
 ephysData.recordingDuration = (max(ephysData.spike_times_timeline) - min(ephysData.spike_times_timeline));
 
 theseAmplis = ephysData.template_amplitudes(ephysData.spike_templates == thisUnit);
 theseSpikeTimes = theseSpikeTimes - theseSpikeTimes(1); %so doesn't start negative. QQ do alignement before
+timeChunks = [min(theseSpikeTimes), max(theseSpikeTimes)];
+
+    
 yyaxis left
-scatter(theseSpikeTimes, theseAmplis, 'blue', 'filled')
+scatter(theseSpikeTimes, theseAmplis, 'black', 'filled')
 hold on;
-currTimes = theseSpikeTimes(theseSpikeTimes > timeChunkStart/ephysData.recordingDuration & theseSpikeTimes < timeChunkStop/ephysData.recordingDuration);
-currAmplis = theseAmplis(theseSpikeTimes > timeChunkStart/ephysData.recordingDuration & theseSpikeTimes < timeChunkStop/ephysData.recordingDuration);
-scatter(currTimes, currAmplis, 'black', 'filled');
+currTimes = theseSpikeTimes(theseSpikeTimes >= theseSpikeTimes(iChunk)-0.1  & theseSpikeTimes <= theseSpikeTimes(iChunk)+0.1);
+currAmplis = theseAmplis(theseSpikeTimes >= theseSpikeTimes(iChunk)-0.1  & theseSpikeTimes <= theseSpikeTimes(iChunk)+0.1);
+scatter(currTimes, currAmplis, 'blue', 'filled');
 xlabel('Experiment time (s)');
 ylabel('Template amplitude scaling');
 axis tight
 hold on;
 ylim([0, round(max(theseAmplis))])
-set(gca, 'YColor', 'b')
+set(gca, 'YColor', 'k')
 yyaxis right
 binSize = 20;
 timeBins = 0:binSize:ceil(ephysData.spike_times(end)/ephysData.ephys_sample_rate);
@@ -283,24 +342,14 @@ else
 end
 TextLocation(['# spikes = ' num2str(qMetrics.nSpikes(iCluster))],'Location', 'SouthWest')
 
-%% 10. plot ampli fit
 
-subplot(6, 13, [78])
-h = barh(qMetrics.ampliBinCenters{iCluster}, qMetrics.ampliBinCounts{iCluster}, 'red');
-hold on;
-h.FaceAlpha = 0.5;
-plot(qMetrics.ampliFit{iCluster}, qMetrics.ampliBinCenters{iCluster}, 'blue', 'LineWidth', 4)
-if qMetrics.percSpikesMissing(iCluster) > param.maxPercSpikesMissing
-    title('\color[rgb]{1 0 0}% spikes missing');
-else
-    title('\color[rgb]{0 .5 0}% spikes missing');
-end
-TextLocation([num2str(qMetrics.percSpikesMissing(iCluster)), ' % spikes missing'],'Location', 'SouthWest')
-%% to add: MH, isodistance, CCG with n most similar templates
+toc
+
+%% to add: CCG with n most similar templates
 end
 
 
-function plotSubRaw(memMapData, ephysData, iCluster, iCount, uniqueTemps, timeChunkStart, timeChunkStop)
+function plotSubRaw(memMapData, ephysData, iCluster, iCount, uniqueTemps, timeChunkStart, timeChunkStop, iChunk)
 %get the used channels
 chanAmps = squeeze(max(ephysData.templates(iCluster, :, :))-min(ephysData.templates(iCluster, :, :)));
 maxChan = find(chanAmps == max(chanAmps), 1);
@@ -314,9 +363,13 @@ chansToPlot = find(chanDistances < 170);
 pull_spikeT = -40:41;
 thisC = uniqueTemps(iCluster);
 theseTimesCenter = ephysData.spike_times(ephysData.spike_templates == thisC)./ephysData.ephys_sample_rate;
-firstSpike=theseTimesCenter(1);%first spike occurance 
+if iChunk < 0
+    disp('Don''t do that')
+    iChunk = 1;
+end
+firstSpike=theseTimesCenter(iChunk)-0.1;%first spike occurance 
 theseTimesCenter = theseTimesCenter(theseTimesCenter >= firstSpike);
-theseTimesCenter = theseTimesCenter(theseTimesCenter < firstSpike + (timeChunkStop - timeChunkStart)/ephysData.ephys_sample_rate);
+theseTimesCenter = theseTimesCenter(theseTimesCenter <= firstSpike + 0.2);
 if ~isempty(theseTimesCenter)
     %theseTimesCenter=theseTimesCenter(1);
     theseTimesFull = theseTimesCenter * ephysData.ephys_sample_rate + pull_spikeT;
@@ -327,14 +380,14 @@ end
 cCount = cumsum(repmat(1000, size(chansToPlot, 1), 1), 1);
 
 
-t = timeChunkStart:timeChunkStop;
-LinePlotReducer(@plot, t, double(memMapData(chansToPlot, firstSpike*ephysData.ephys_sample_rate+timeChunkStart...
-    :firstSpike*ephysData.ephys_sample_rate+timeChunkStop))+double(cCount), 'k');
+t = (firstSpike*ephysData.ephys_sample_rate):((firstSpike+0.2)*ephysData.ephys_sample_rate);
+LinePlotReducer(@plot, t, double(memMapData(chansToPlot, firstSpike*ephysData.ephys_sample_rate...
+    :(firstSpike +0.2)*ephysData.ephys_sample_rate))+double(cCount), 'k');
 if ~isempty(theseTimesCenter)
     hold on;
     for iTimes = 1:size(theseTimesCenter, 1)
         if ~any(mod(theseTimesFull(iTimes, :), 1))
-            LinePlotReducer(@plot, theseTimesFull(iTimes, :), double(memMapData(chansToPlot, theseTimesFull(iTimes, :)))+double(cCount), 'r');
+            LinePlotReducer(@plot, theseTimesFull(iTimes, :) , double(memMapData(chansToPlot, theseTimesFull(iTimes, :)))+double(cCount), 'b');
 
         end
     end
