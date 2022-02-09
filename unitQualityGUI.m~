@@ -18,13 +18,11 @@ updateUnit(unitQualityGuiHandle,memMapData, ephysData, iCluster, iCount, timeChu
                 probeLocation,uniqueTemps, goodUnits, iChunk);
 %% change on keypress
     function KeyPressCb(~, evnt)
-        %fprintf('key pressed: %s\n', evnt.Key);
+        fprintf('key pressed: %s\n', evnt.Key);
         if strcmpi(evnt.Key, 'rightarrow')
             iCluster = iCluster + 1;
-            %tic
             updateUnit(unitQualityGuiHandle,memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
                 probeLocation,uniqueTemps, goodUnits, iChunk);
-            %toc
         elseif strcmpi(evnt.Key, 'leftarrow')
             iCluster = iCluster - 1;
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
@@ -69,7 +67,7 @@ function initializePlot(unitQualityGuiHandle, ephysData, qMetrics, goodUnits, un
     subplot(6, 13, [2:7, 15:20])
     hold on;
     max_n_channels_plot = 12;
-    templateWaveformLines = arrayfun(@(x) plot(nan(82,1),nan(82,1),'linewidth',2,'color','k'),1:max_n_channels_plot);
+    templateWaveformLines = arrayfun(@(x) plot(nan(82,1),nan(82,1),'linewidth',2,'color','k'),1:max_n_channels_plot-1);
     maxTemplateWaveformLines = arrayfun(@(x) plot(nan(82,1),nan(82,1),'linewidth',2,'color','b'),1);
     peaks = scatter(nan(10,1), nan(10,1), [],rgb('Orange'), 'v','filled');
     troughs = scatter(nan(10,1), nan(10,1), [],rgb('Gold'), 'v','filled');
@@ -82,7 +80,7 @@ function initializePlot(unitQualityGuiHandle, ephysData, qMetrics, goodUnits, un
     %% initialize raw waveforms 
     subplot(6, 13, [8:13, 21:26])
     hold on;
-    rawWaveformLines = arrayfun(@(x) plot(NaN,NaN,'linewidth',2,'color','k'),1:max_n_channels_plot);
+    rawWaveformLines = arrayfun(@(x) plot(NaN,NaN,'linewidth',2,'color','k'),1:max_n_channels_plot-1);
     maxRawWaveformLines = arrayfun(@(x) plot(nan(82,1),nan(82,1),'linewidth',2,'color','b'),1);
     set(gca, 'YDir', 'reverse')
     xlabel('Position+Time');
@@ -124,9 +122,10 @@ function initializePlot(unitQualityGuiHandle, ephysData, qMetrics, goodUnits, un
     %% initialize raw data
     rawPlotH = subplot(6, 13, [41:52, 55:59, 60:65]);
     title('Raw unwhitened data')
+    hold on;
 
     %% initialize amplitude * spikes 
-    ampliAx = subplot(6, 13, [67:70, 73:76]);
+    subplot(6, 13, [67:70, 73:76])
     hold on;
     yyaxis left;
     tempAmpli = scatter(NaN, NaN, 'black', 'filled');
@@ -144,7 +143,7 @@ function initializePlot(unitQualityGuiHandle, ephysData, qMetrics, goodUnits, un
     ampliLegend = legend([tempAmpli],{''});
 
     %% initialize amplitude fit 
-    ampliFitAx = subplot(6, 13, [78]);
+    subplot(6, 13, [78])
     hold on;
     ampliBins = barh(NaN, NaN, 'blue');
     ampliBins.FaceAlpha = 0.5;
@@ -190,14 +189,12 @@ function initializePlot(unitQualityGuiHandle, ephysData, qMetrics, goodUnits, un
     % raw data
     guiData.rawPlotH = rawPlotH;
     % amplitudes * spikes
-    guiData.ampliAx = ampliAx;
     guiData.tempAmpli = tempAmpli;
     guiData.currTempAmpli = currTempAmpli;
     guiData.spikeFR = spikeFR;
     guiData.ampliTitle = ampliTitle;
     guiData.ampliLegend = ampliLegend;
     % amplitude fit 
-    guiData.ampliFitAx = ampliFitAx;
     guiData.ampliBins = ampliBins;
     guiData.ampliFit = ampliFit;
     guiData.ampliFitTitle = ampliFitTitle;
@@ -235,7 +232,7 @@ maxYC = ephysData.channel_positions(maxChan, 2);
 chanDistances = ((ephysData.channel_positions(:, 1) - maxXC).^2 ...
     +(ephysData.channel_positions(:, 2) - maxYC).^2).^0.5;
 chansToPlot = find(chanDistances < 100);
-for iChanToPlot = 1:min(12, size(chansToPlot, 1))
+for iChanToPlot = 1:size(chansToPlot, 1)
 
     if maxChan == chansToPlot(iChanToPlot)
         set(guiData.maxTemplateWaveformLines, 'XData',(ephysData.waveform_t + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
@@ -251,8 +248,6 @@ for iChanToPlot = 1:min(12, size(chansToPlot, 1))
             +(ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
             'YData', -squeeze(ephysData.templates(thisUnit, qMetrics.troughLocs{iCluster}, chansToPlot(iChanToPlot)))'+ ...
             (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) ./ 100));
-        set(guiData.templateWaveformLines(iChanToPlot), 'XData', nan(82,1), ...
-            'YData', nan(82,1));
 
     else
         set(guiData.templateWaveformLines(iChanToPlot), 'XData', (ephysData.waveform_t + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
@@ -284,14 +279,11 @@ set(guiData.tempLegend,'String', {['is somatic =', num2str(1 - qMetrics.axonal(i
 
 %% plot 3: plot unit mean raw waveform (and individual traces)
 
-for iChanToPlot = 1:min(12, size(chansToPlot, 1))
+for iChanToPlot = 1:size(chansToPlot, 1)
     if maxChan == chansToPlot(iChanToPlot)
         set(guiData.maxRawWaveformLines, 'XData', (ephysData.waveform_t + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
             'YData',-squeeze(qMetrics.rawWaveforms(iCluster).spkMapMean(chansToPlot(iChanToPlot), :))'+ ...
             (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) * 10));
-        set(guiData.rawWaveformLines(iChanToPlot), 'XData', nan(82,1), ...
-            'YData', nan(82,1));
-        
     else
         set(guiData.rawWaveformLines(iChanToPlot), 'XData', (ephysData.waveform_t + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
             'YData', -squeeze(qMetrics.rawWaveforms(iCluster).spkMapMean(chansToPlot(iChanToPlot), :))'+ ...
@@ -360,8 +352,11 @@ else
     set(guiData.ampliFitTitle, 'String', '\color[rgb]{0 .5 0}% spikes missing');
 end
 set(guiData.ampliFitLegend, 'String', [num2str(qMetrics.percSpikesMissing(iCluster)), ' % spikes missing'])
-set(guiData.ampliFitAx, 'YLim', [min(qMetrics.ampliBinCenters{iCluster}),max(qMetrics.ampliBinCenters{iCluster})])
 
+%% 8. plot raw data
+
+subplot(6, 13, [41:52, 55:59, 60:65])
+plotSubRaw(memMapData, ephysData, iCluster, iCount, uniqueTemps, timeChunkStart, timeChunkStop, iChunk);
 
 %% 9. plot template amplitudes and mean f.r. over recording (QQ: add experiment time epochs?)
 % guiData.tempAmpli = tempAmpli;
@@ -375,7 +370,7 @@ set(guiData.tempAmpli, 'XData', theseSpikeTimes, 'YData', theseAmplis)
 currTimes = theseSpikeTimes(theseSpikeTimes >= theseSpikeTimes(iChunk)-0.1  & theseSpikeTimes <= theseSpikeTimes(iChunk)+0.1);
 currAmplis = theseAmplis(theseSpikeTimes >= theseSpikeTimes(iChunk)-0.1  & theseSpikeTimes <= theseSpikeTimes(iChunk)+0.1);
 set(guiData.currTempAmpli, 'XData', currTimes, 'YData', currAmplis);
-set(guiData.ampliAx.YAxis(1), 'Limits', [0, round(max(theseAmplis))])
+ylim([0, round(max(theseAmplis))])
 
 binSize = 20;
 timeBins = 0:binSize:ceil(ephysData.spike_times(end)/ephysData.ephys_sample_rate);
@@ -383,7 +378,7 @@ timeBins = 0:binSize:ceil(ephysData.spike_times(end)/ephysData.ephys_sample_rate
 n = n./binSize;
 
 set(guiData.spikeFR, 'XData',  x, 'YData', n);
-set(guiData.ampliAx.YAxis(2), 'Limits', [0,2*round(max(n))])
+ylim([0,2*round(max(n))])
 
 
 if qMetrics.nSpikes(iCluster) > param.minNumSpikes
@@ -392,11 +387,6 @@ else
     set(guiData.ampliTitle, 'String','\color[rgb]{1 0 0}Spikes');
 end
 set(guiData.ampliLegend, 'String', ['# spikes = ' num2str(qMetrics.nSpikes(iCluster))])
-
-%% 8. plot raw data
-
-subplot(6, 13, [41:52, 55:59, 60:65])
-%plotSubRaw(memMapData, ephysData, iCluster, iCount, uniqueTemps, timeChunkStart, timeChunkStop, iChunk);
 
 end
 
@@ -423,7 +413,7 @@ set(guiData.tempAmpli, 'XData', theseSpikeTimes, 'YData', theseAmplis)
 currTimes = theseSpikeTimes(theseSpikeTimes >= theseSpikeTimes(iChunk)-0.1  & theseSpikeTimes <= theseSpikeTimes(iChunk)+0.1);
 currAmplis = theseAmplis(theseSpikeTimes >= theseSpikeTimes(iChunk)-0.1  & theseSpikeTimes <= theseSpikeTimes(iChunk)+0.1);
 set(guiData.currTempAmpli, 'XData', currTimes, 'YData', currAmplis);
-set(guiData.ampliAx.YAxis(1), 'Limits', [0, round(max(theseAmplis))])
+ylim([0, round(max(theseAmplis))])
 
 binSize = 20;
 timeBins = 0:binSize:ceil(ephysData.spike_times(end)/ephysData.ephys_sample_rate);
@@ -431,7 +421,7 @@ timeBins = 0:binSize:ceil(ephysData.spike_times(end)/ephysData.ephys_sample_rate
 n = n./binSize;
 
 set(guiData.spikeFR, 'XData',  x, 'YData', n);
-set(guiData.ampliAx.YAxis(2), 'Limits', [0,2*round(max(n))])
+ylim([0,2*round(max(n))])
 
 
 if qMetrics.nSpikes(iCluster) > param.minNumSpikes

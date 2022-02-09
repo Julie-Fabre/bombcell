@@ -22,8 +22,10 @@ plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChu
         if strcmpi(evnt.Key, 'rightarrow')
             iCluster = iCluster + 1;
             clf;
+            tic
             plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
                 probeLocation,uniqueTemps, goodUnits, iChunk);
+            toc
         elseif strcmpi(evnt.Key, 'leftarrow')
             iCluster = iCluster - 1;
             clf;
@@ -48,9 +50,9 @@ end
 function plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
     probeLocation,uniqueTemps, goodUnits, iChunk)
 thisUnit = uniqueTemps(iCluster);
-tic
+
 clf;
-toc
+
 set(gcf, 'color', 'white')
 if goodUnits(iCluster) ==1
     sgtitle(['\color[rgb]{0 .5 0}Unit ', num2str(iCluster), ', good']);
@@ -69,7 +71,7 @@ end
 %     title([num2str(probe2ephys(curr_probe).day) num2str(probe2ephys(curr_probe).site)]);
 
 %% 1. plot unit location on probe qq: replace by unit * spike rate
-tic
+
 %code below from the lovely AP_cellraster
 subplot(6, 13, [1, 14, 27, 40, 53, 66], 'YDir', 'reverse');
 hold on;
@@ -87,9 +89,9 @@ ylabel('Depth (\mum)')
 xlabel('Normalized log rate')
 % plot allenCCF map alongside
 title('Location on probe')
-toc
+
 %% 2. plot unit template waveform and detected peaks
-tic
+
 subplot(6, 13, [2:7, 15:20])
 cla;
 maxChan = qMetrics.maxChannels(thisUnit);
@@ -129,26 +131,26 @@ set(gca, 'YDir', 'reverse')
 if qMetrics.nPeaks(iCluster) > param.maxNPeaks || qMetrics.nTroughs(iCluster) > param.maxNTroughs
     if qMetrics.axonal(iCluster) == 1
         title(['\fontsize{9}Template waveform: {\color[rgb]{1 0 0}# detected peaks/troughs, '...
-            '\color[rgb]{1 0 0}is somatic \color{red}}'])
+            '\color[rgb]{1 0 0}is soma \color{red}}'])
     else
        title(['\fontsize{9}Template waveform: {\color[rgb]{1 0 0}# detected peaks/troughs, '...
-            '\color[rgb]{0 .5 0}is somatic \color{red}}'])
+            '\color[rgb]{0 .5 0}is soma \color{red}}'])
     end
 else
     if qMetrics.axonal(iCluster) == 1
         title(['\fontsize{9}Template waveform: {\color[rgb]{0 .5 0}# detected peaks/troughs, '...
-            '\color[rgb]{1 0 0}is somatic \color{red}}'])
+            '\color[rgb]{1 0 0}is soma \color{red}}'])
     else
         title(['\fontsize{9}Template waveform: {\color[rgb]{0 .5 0}# detected peaks/troughs, '...
-            '\color[rgb]{0 .5 0}is somatic \color{red}}'])
+            '\color[rgb]{0 .5 0}is soma \color{red}}'])
     end
     
 end
 TextLocation([num2str(qMetrics.nPeaks(iCluster)), ' peak(s), ', num2str(qMetrics.nTroughs(iCluster)), ' trough(s)', ...
-    ' is somatic =', num2str(1 - qMetrics.axonal(iCluster))],'Location', 'North')
-toc
+    ' is soma =', num2str(1 - qMetrics.axonal(iCluster))],'Location', 'North')
+
 %% 3. plot unit mean raw waveform (and individual traces)
-tic
+
 subplot(6, 13, [8:13, 21:26])
 cla;
 qMetrics.rawWaveforms(1).peakChan
@@ -176,10 +178,10 @@ end
 set(gca, 'YDir', 'reverse')
 xlabel('Position+Time');
 ylabel('Position');
-toc
+
 
 %% 4. plot unit ACG
-tic
+
 theseSpikeTimes = ephysData.spike_times_timeline(ephysData.spike_templates == thisUnit);
 
 %  [Fp, r, overestimate] = bc_fractionRPviolations(numel(theseSpikeTimes),theseSpikeTimes, param.tauR, ...
@@ -199,9 +201,9 @@ line([-0.002, -0.002], [0, max(ccg(:, 1, 1))], 'Color', 'r')
     ones(size(theseSpikeTimes, 1), 1) * 2], 'binSize', 0.01, 'duration', 10, 'norm', 'rate'); %function
 asymptoteLine = nanmean(ccg(end-100:end));
 line([-0.1, 0.1], [asymptoteLine, asymptoteLine], 'Color', 'r')
-tic
+
 makeprettyNoText
-toc
+
 xlim([0, 0.05]); %Check FR
 xlabel('time (s)');
 ylabel('sp/s');
@@ -211,9 +213,9 @@ else
     title('\color[rgb]{0 .5 0}ACG');
 end
 
-toc
+
 %% 5. plot unit ISI (with refractory period and asymptote lines)
-tic
+
 theseTimes = theseSpikeTimes- theseSpikeTimes(1);
 theseISI = diff(theseSpikeTimes);
 theseisiclean = theseISI(theseISI >= param.tauC); % removed duplicate spikes 
@@ -234,9 +236,9 @@ else
     title('\color[rgb]{0 .5 0}ISI');
 end
 TextLocation([num2str(qMetrics.Fp(iCluster)), ' % r.p.v.'],'Location', 'North')
-toc
+
 %% 6. plot isolation distance
-tic
+
 subplot(6, 13, 36:39)
 
 scatter(qMetrics.Xplot{iCluster}(:, 1), qMetrics.Xplot{iCluster}(:, 2), 10, '.b') % Scatter plot with points of size 10
@@ -246,11 +248,11 @@ colormap(brewermap([], '*YlOrRd'))
 hb = colorbar;
 ylabel(hb, 'Mahalanobis Distance')
 legend('this cluster', 'other clusters', 'Location', 'best');
-toc
+
 %% 7. (optional) plot raster
 
 %% 10. plot ampli fit
-tic
+
 subplot(6, 13, [78])
 h = barh(qMetrics.ampliBinCenters{iCluster}, qMetrics.ampliBinCounts{iCluster}, 'red');
 hold on;
@@ -262,18 +264,18 @@ else
     title('\color[rgb]{0 .5 0}% spikes missing');
 end
 TextLocation([num2str(qMetrics.percSpikesMissing(iCluster)), ' % spikes missing'],'Location', 'SouthWest')
-toc
+
 %% 8. plot raw data
-tic
+
 subplot(6, 13, [41:52, 55:59, 60:65])
 title('Raw unwhitened data')
 hold on;
 plotSubRaw(memMapData, ephysData, iCluster, iCount, uniqueTemps, timeChunkStart, timeChunkStop, iChunk);
-toc
+
 %% 9. plot template amplitudes and mean f.r. over recording (QQ: add experiment time epochs?)
 
 
-        tic
+        
 subplot(6, 13, [67:70, 73:76])
 ephysData.recordingDuration = (max(ephysData.spike_times_timeline) - min(ephysData.spike_times_timeline));
 
@@ -313,7 +315,7 @@ end
 TextLocation(['# spikes = ' num2str(qMetrics.nSpikes(iCluster))],'Location', 'SouthWest')
 
 
-toc
+
 
 %% to add: CCG with n most similar templates
 end
