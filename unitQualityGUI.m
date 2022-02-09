@@ -1,104 +1,191 @@
 function unitQualityGUI(memMapData, ephysData, qMetrics, param, probeLocation, goodUnits)
-%set up dynamic figure
-h = figure;
-set(h, 'KeyPressFcn', @KeyPressCb);
+%% set up dynamic figure
+unitQualityGuiHandle = figure('color','w');
+set(unitQualityGuiHandle, 'KeyPressFcn', @KeyPressCb);
 
-%initial conditions
+%% initial conditions
 iCluster = 1;
 iCount = 1;
 timeSecs = 0.1;
 timeChunkStart = 1000;
-timeChunk = timeSecs * ephysData.ephys_sample_rate;
 timeChunkStop = timeSecs * ephysData.ephys_sample_rate;
 uniqueTemps = unique(ephysData.spike_templates);
-%plot initial conditions
-iChunk = 1;
-plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, probeLocation, ...
-    uniqueTemps, goodUnits, iChunk);
 
-%change on keypress
+%% plot initial conditions
+iChunk = 1;
+initializePlot(ephysData, qMetrics, goodUnits)
+updateUnit(unitQualityGuiHandle,memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
+                probeLocation,uniqueTemps, goodUnits, iChunk);
+%% change on keypress
     function KeyPressCb(~, evnt)
         fprintf('key pressed: %s\n', evnt.Key);
         if strcmpi(evnt.Key, 'rightarrow')
             iCluster = iCluster + 1;
             clf;
-            plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
+            updateUnit(unitQualityGuiHandle,memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
                 probeLocation,uniqueTemps, goodUnits, iChunk);
         elseif strcmpi(evnt.Key, 'leftarrow')
             iCluster = iCluster - 1;
             clf;
-            plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
+            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
                 probeLocation,uniqueTemps, goodUnits, iChunk);
         elseif strcmpi(evnt.Key, 'uparrow')
             iChunk = iChunk + 1;
             clf;
-            plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
+            updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
                 probeLocation,uniqueTemps, goodUnits, iChunk);
         elseif strcmpi(evnt.Key, 'downarrow')
             iChunk = iChunk - 1;
             clf;
-            plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
+            updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
                 probeLocation,uniqueTemps, goodUnits, iChunk);
-
         end
     end
 end
 
 function initializePlot(ephysData, qMetrics, goodUnits)
-%% initialize and plot units over depth
-unitsOverDepthAxis = subplot(6, 13, [1, 14, 27, 40, 53, 66], 'YDir', 'reverse');
-hold on;
-unitCmap = zeros(length(goodUnits),3);
-unitCmap(goodUnits ==1 ,:,:) = repmat([0, 0.5, 0], length(find(goodUnits==1)),1);
-unitCmap(goodUnits ==0 ,:,:) = repmat([1, 0 , 0], length(find(goodUnits==0)),1);
-norm_spike_n = mat2gray(log10(accumarray(ephysData.spike_templates, 1)+1));
-unitDots = plot(norm_spike_n(uniqueTemps), ephysData.channel_positions(qMetrics.maxChannels(uniqueTemps), 2),5, unitCmap, ...
-     'filled', 'ButtonDownFcn', @unit_click);
-currUnitDots = scatter(0, 0, 100, unitCmap(iCluster,:,:), ...
-     'filled','MarkerEdgeColor',[0 0 0],'LineWidth',4);
-xlim([-0.1, 1.1]);
-ylim([min(ephysData.channel_positions(:, 2)) - 50, max(ephysData.channel_positions(:, 2)) + 50]);
-ylabel('Depth (\mum)')
-xlabel('Normalized log rate')
-title('Location on probe')
+    %% initialize and plot units over depth
+    subplot(6, 13, [1, 14, 27, 40, 53, 66], 'YDir', 'reverse');
+    hold on;
+    unitCmap = zeros(length(goodUnits),3);
+    unitCmap(goodUnits ==1 ,:,:) = repmat([0, 0.5, 0], length(find(goodUnits==1)),1);
+    unitCmap(goodUnits ==0 ,:,:) = repmat([1, 0 , 0], length(find(goodUnits==0)),1);
+    norm_spike_n = mat2gray(log10(accumarray(ephysData.spike_templates, 1)+1));
+    unitDots = plot(norm_spike_n(uniqueTemps), ephysData.channel_positions(qMetrics.maxChannels(uniqueTemps), 2),5, unitCmap, ...
+         'filled', 'ButtonDownFcn', @unit_click);
+    currUnitDots = scatter(0, 0, 100, unitCmap(iCluster,:,:), ...
+         'filled','MarkerEdgeColor',[0 0 0],'LineWidth',4);
+    xlim([-0.1, 1.1]);
+    ylim([min(ephysData.channel_positions(:, 2)) - 50, max(ephysData.channel_positions(:, 2)) + 50]);
+    ylabel('Depth (\mum)')
+    xlabel('Normalized log rate')
+    title('Location on probe')
 
-%% save all handles 
-guiData = struct;
-guiData.unitDots = unitDots;
-guiData.currUnitDots = currUnitDots;
+    %% initialize template waveforms
+    subplot(6, 13, [2:7, 15:20])
+    hold on;
+    max_n_channels_plot = 12;
+    templateWaveformLines = arrayfun(@(x) plot(nan(82,1),nan(82,1),'linewidth',2,'color','k'),1:max_n_channels_plot-1);
+    maxTemplateWaveformLines = arrayfun(@(x) plot(nan(82,1),nan(82,1),'linewidth',2,'color','b'),1);
+    xlabel('Position+Time');
+    ylabel('Position');
+    set(gca, 'YDir', 'reverse')
 
+    %% initialize raw waveforms 
+    subplot(6, 13, [8:13, 21:26])
+    rawWaveformLines = arrayfun(@(x) plot(nan(82,1),nan(82,1),'linewidth',2,'color','k'),1:max_n_channels_plot);
+    maxRawWaveformLines = arrayfun(@(x) plot(nan(82,1),nan(82,1),'linewidth',2,'color','b'),1);
+    set(gca, 'YDir', 'reverse')
+    xlabel('Position+Time');
+    ylabel('Position');
+    
+    %% initialize ACG 
+    subplot(6, 13, 28:31)
+    hold on;
+    acgBar = arrayfun(@(x) bar(nan(51:101,1),nan(51:101,1)),1);
+    acgRefLine = line([NaN, NaN], [NaN, NaN], 'Color', 'r','linewidth',1.2);
+    acgAsyLine = line([NaN, NaN], [NaN, NaN], 'Color', 'r','linewidth',1.2);
+    xlabel('time (s)');
+    ylabel('sp/s');
+    
+    %% initialize ISI
+    subplot(6, 13, [32:35])
+    hold on;
+    isiBar = arrayfun(@(x) bar(nan(100,1),nan(100,1)),1);
+    isiRefLine = line([NaN, NaN], [NaN, NaN], 'Color', 'r','linewidth',1.2);
+    xlabel('Interspike interval (ms)')
+    ylabel('# of spikes')
+    
+    %% initialize isoDistance
+    subplot(6, 13, 36:39)
+    hold on;
+    currIsoD = scatter(NaN, NaN, 10, '.b'); % Scatter plot with points of size 10
+    otherIsoD = scatter(NaN, NaN, 10, NaN, 'o', 'filled');
+    colormap(brewermap([], '*YlOrRd'))
+    hb = colorbar;
+    ylabel(hb, 'Mahalanobis Distance')
+    legend('this cluster', 'other clusters', 'Location', 'best');
+    
+    %% initialize raw data
+    rawPlotH = subplot(6, 13, [41:52, 55:59, 60:65]);
+    title('Raw unwhitened data')
+    hold on;
+
+    %% initialize amplitude * spikes 
+    subplot(6, 13, [67:70, 73:76])
+    hold on;
+    yyaxis left;
+    tempAmpli = scatter(NaN, NaN, 'black', 'filled');
+    currTempAmpli = scatter(currTimes, currAmplis, 'blue', 'filled');
+    xlabel('Experiment time (s)');
+    ylabel('Template amplitude scaling');
+    axis tight
+    hold on;
+    set(gca, 'YColor', 'k')
+    yyaxis right
+    spikeFR = stairs(NaN,NaN, 'LineWidth', 2.0, 'Color', [1 0.5 0]);
+    set(gca,'YColor',[1 0.5 0])
+    ylabel('Firing rate (sp/sec)');
+
+
+    %% initialize amplitude fit 
+    subplot(6, 13, [78])
+    hold on;
+    ampliBins = barh(NaN, NaN, 'blue');
+    ampliBins.FaceAlpha = 0.5;
+    ampliFit = plot(NaN, NaN, [1.0000, 0.8398, 0], 'LineWidth', 4);
+
+    %% save all handles 
+    guiData = struct;
+    % location plot
+    guiData.unitDots = unitDots;
+    guiData.currUnitDots = currUnitDots;
+    % template waveforms
+    guiData.templateWaveformLines = templateWaveformLines; 
+    guiData.maxTemplateWaveformLines = maxTemplateWaveformLines;
+    % raw waveforms 
+    guiData.rawWaveformLines = rawWaveformLines;
+    guiData.maxRawWaveformLines = maxRawWaveformLines;
+    % ACG
+    guiData.acgBar= acgBar;
+    guiData.acgRefLine = acgRefLine;
+    guiData.acgAsyLine = acgAsyLine;
+    % ISI
+    guiData.isiBar= isiBar;
+    guiData.isiRefLine = isiRefLine;
+    % isoD 
+    guiData.currIsoD = currIsoD;
+    guiData.otherIsoD = otherIsoD;
+    % raw data
+    guiData.rawPlotH = rawPlotH;
+    % amplitudes * spikes
+    guiData.tempAmpli = tempAmpli;
+    guiData.currTempAmpli = currTempAmpli;
+    guiData.spikeFR = spikeFR;
+    % amplitude fit 
+    guiData.ampliBins = ampliBins;
+    guiData.ampliFit = ampliFit;
+    
+    % upload guiData 
+    guidata(unitQualityGuiHandle, guiData);
 end
 
-function updateUnit()
-end
+function updateUnit(unitQualityGuiHandle)
+% Get guidata
+guiData = guidata(unitQualityGuiHandle);
 
-function updateRawSnippet()
-end
-
-function plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
-    probeLocation,uniqueTemps, goodUnits, iChunk)
 thisUnit = uniqueTemps(iCluster);
-tic
-clf;
-toc
-set(gcf, 'color', 'white')
+
 if goodUnits(iCluster) ==1
     sgtitle(['\color[rgb]{0 .5 0}Unit ', num2str(iCluster), ', good']);
 else
     sgtitle(['\color{red}Unit ', num2str(iCluster), ', bad']);
 end
-%% red box = unit quality assessed by metric is below param threshold
 
-%% qq: 0. plot probe location in allenCCF
-%     subplot(6,13,[1,14,27,40,53, 66],'YDir','reverse');
-%         image(probe_ccf(curr_probe).trajectory_areas);
-%     colormap(curr_axes,cmap);
-%     caxis([1,size(cmap,1)])
-%     set(curr_axes,'YTick',trajectory_area_centers,'YTickLabels',trajectory_area_labels);
-%     set(curr_axes,'XTick',[]);
-%     title([num2str(probe2ephys(curr_probe).day) num2str(probe2ephys(curr_probe).site)]);
-
-%% 1. plot unit location on probe qq: replace by unit * spike rate
+curr_unit_dots = scatter(norm_spike_n(thisUnit), ephysData.channel_positions(qMetrics.maxChannels(thisUnit), 2),100, unitCmap(iCluster,:,:), ...
+     'filled','MarkerEdgeColor',[0 0 0],'LineWidth',4);
+ 
+ %% 1. plot unit location on probe qq: replace by unit * spike rate
 tic
 %code below from the lovely AP_cellraster
 subplot(6, 13, [1, 14, 27, 40, 53, 66], 'YDir', 'reverse');
@@ -217,7 +304,7 @@ theseSpikeTimes = ephysData.spike_times_timeline(ephysData.spike_templates == th
 
 
 [ccg, ccg_t] = CCGBz([double(theseSpikeTimes); double(theseSpikeTimes)], [ones(size(theseSpikeTimes, 1), 1); ...
-    ones(size(theseSpikeTimes, 1), 1) * 2], 'binSize', 0.001, 'duration', 0.5, 'norm', 'rate'); %function
+    ones(size(theseSpikeTimes, 1), 1) * 2], 'binSize', 0.001, 'duration', 0.05, 'norm', 'rate'); %function
 
 
 subplot(6, 13, 28:31)
@@ -226,7 +313,7 @@ hold on;
 line([0.002, 0.002], [0, max(ccg(:, 1, 1))], 'Color', 'r')
 line([-0.002, -0.002], [0, max(ccg(:, 1, 1))], 'Color', 'r')
 [ccg, ~] = CCGBz([double(theseSpikeTimes); double(theseSpikeTimes)], [ones(size(theseSpikeTimes, 1), 1); ...
-    ones(size(theseSpikeTimes, 1), 1) * 2], 'binSize', 0.01, 'duration', 10, 'norm', 'rate'); %function
+    ones(size(theseSpikeTimes, 1), 1) * 2], 'binSize', 0.1, 'duration', 10, 'norm', 'rate'); %function
 asymptoteLine = nanmean(ccg(end-100:end));
 line([-0.1, 0.1], [asymptoteLine, asymptoteLine], 'Color', 'r')
 tic
@@ -345,7 +432,12 @@ TextLocation(['# spikes = ' num2str(qMetrics.nSpikes(iCluster))],'Location', 'So
 
 toc
 
-%% to add: CCG with n most similar templates
+
+end
+
+function updateRawSnippet(unitQualityGuiHandle)
+% Get guidata
+guiData = guidata(unitQualityGuiHandle);
 end
 
 

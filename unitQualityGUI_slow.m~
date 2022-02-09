@@ -44,36 +44,6 @@ plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChu
     end
 end
 
-function initializePlot(ephysData, qMetrics, goodUnits)
-%% initialize and plot units over depth
-unitsOverDepthAxis = subplot(6, 13, [1, 14, 27, 40, 53, 66], 'YDir', 'reverse');
-hold on;
-unitCmap = zeros(length(goodUnits),3);
-unitCmap(goodUnits ==1 ,:,:) = repmat([0, 0.5, 0], length(find(goodUnits==1)),1);
-unitCmap(goodUnits ==0 ,:,:) = repmat([1, 0 , 0], length(find(goodUnits==0)),1);
-norm_spike_n = mat2gray(log10(accumarray(ephysData.spike_templates, 1)+1));
-unit_dots = plot(norm_spike_n(uniqueTemps), ephysData.channel_positions(qMetrics.maxChannels(uniqueTemps), 2),5, unitCmap, ...
-     'filled', 'ButtonDownFcn', @unit_click);
-%curr_unit_dots = plot(0,0,'.r','MarkerSize',20);
-curr_unit_dots = scatter(0, 0,100, unitCmap(iCluster,:,:), ...
-     'filled','MarkerEdgeColor',[0 0 0],'LineWidth',4);
-xlim([-0.1, 1]);
-ylim([min(ephysData.channel_positions(:, 2)) - 50, max(ephysData.channel_positions(:, 2)) + 50]);
-ylabel('Depth (\mum)')
-xlabel('Normalized log rate')
-title('Location on probe')
-
-%% save all handles 
-guiData = struct;
-guiData 
-
-end
-
-function updateUnit()
-end
-
-function updateRawSnippet()
-end
 
 function plotUnitQuality(memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
     probeLocation,uniqueTemps, goodUnits, iChunk)
@@ -217,11 +187,11 @@ theseSpikeTimes = ephysData.spike_times_timeline(ephysData.spike_templates == th
 
 
 [ccg, ccg_t] = CCGBz([double(theseSpikeTimes); double(theseSpikeTimes)], [ones(size(theseSpikeTimes, 1), 1); ...
-    ones(size(theseSpikeTimes, 1), 1) * 2], 'binSize', 0.001, 'duration', 0.5, 'norm', 'rate'); %function
+    ones(size(theseSpikeTimes, 1), 1) * 2], 'binSize', 0.001, 'duration', 0.1, 'norm', 'rate'); %function
 
 
 subplot(6, 13, 28:31)
-area(ccg_t, ccg(:, 1, 1));
+bar(ccg_t, ccg(:, 1, 1));
 hold on;
 line([0.002, 0.002], [0, max(ccg(:, 1, 1))], 'Color', 'r')
 line([-0.002, -0.002], [0, max(ccg(:, 1, 1))], 'Color', 'r')

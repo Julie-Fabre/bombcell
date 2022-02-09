@@ -148,13 +148,16 @@ if param.computeDistanceMetrics && ~isnan(param.isoDmin)
 else
      goodUnits = qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
         qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
-        qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude; 
+         qMetric.rawAmplitude > param.minAmplitude; %QQ add axonal 
 
 end
 if exist('savePath', 'var') %save qualityMetrics
+    mkdir(fullfile(savePath))
+    disp(['saving quality metrics to ', savePath])
     save(fullfile(savePath, 'qMetric.mat'), 'qMetric','-v7.3')
     save(fullfile(savePath, 'param.mat'), 'param')
 end
+disp('finished extracting quality metrics')
 % if param.plotGlobal 
     % QQ plot histograms of each metric with the cutoffs set in params
 

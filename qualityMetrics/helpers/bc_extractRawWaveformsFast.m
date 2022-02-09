@@ -21,11 +21,14 @@ function [rawWaveforms, ap_data] = bc_extractRawWaveformsFast(rawFolder, nChanne
 
 %% check if waveforms already extracted
 % Get binary file name
-    spikeFile = dir(fullfile(rawFolder, '*.ap.bin'));
-    if isempty(spikeFile)
-        spikeFile = dir(fullfile(rawFolder, '/*.dat')); %openEphys format
-    end
-    
+if size(rawFolder, 2) > 1
+    rawFolder = fileparts(rawFolder{1});
+end
+spikeFile = dir(fullfile(rawFolder, '*.ap.bin'));
+if isempty(spikeFile)
+    spikeFile = dir(fullfile(rawFolder, '/*.dat')); %openEphys format
+end
+
 rawWaveformFolder = dir(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
 
 if ~isempty(rawWaveformFolder)
@@ -41,21 +44,21 @@ else
     clustInds = unique(spikeTemplates);
     nClust = numel(clustInds);
 
-    
+
     fname = spikeFile.name;
     fid = fopen(fullfile(spikeFile.folder, fname), 'r');
     d = dir(fullfile(rawFolder, fname));
 
     dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
-    try %hacky way of figuring out if sync channel present or not 
-        n_samples = spikeFile.bytes/ (nChannels * dataTypeNBytes);
-        ap_data = memmapfile(fullfile(spikeFile.folder, fname),'Format',{'int16',[nChannels,n_samples],'data'});
+    try %hacky way of figuring out if sync channel present or not
+        n_samples = spikeFile.bytes / (nChannels * dataTypeNBytes);
+        ap_data = memmapfile(fullfile(spikeFile.folder, fname), 'Format', {'int16', [nChannels, n_samples], 'data'});
     catch
-        nChannels = nChannels -1;
-        n_samples = spikeFile.bytes/ (nChannels * dataTypeNBytes);
-        ap_data = memmapfile(fullfile(spikeFile.folder, fname),'Format',{'int16',[nChannels,n_samples],'data'});n_samples = spikeFile.bytes/ (nChannels * dataTypeNBytes);
+        nChannels = nChannels - 1;
+        n_samples = spikeFile.bytes / (nChannels * dataTypeNBytes);
+        ap_data = memmapfile(fullfile(spikeFile.folder, fname), 'Format', {'int16', [nChannels, n_samples], 'data'});
+        n_samples = spikeFile.bytes / (nChannels * dataTypeNBytes);
     end
-    
 
     %% Interate over spike clusters and find all the data associated with them
     rawWaveforms = struct;
@@ -82,8 +85,8 @@ else
                 if size(data, 2) == spikeWidth
                     spikeMap(:, :, iSpike) = data(1:nChannels-1, :, :); %remove sync channel
                 end
-            
-                
+
+
             end
         end
         spikeMapMean = nanmean(spikeMap, 3);
@@ -94,15 +97,15 @@ else
 
         [~, rawWaveforms(iCluster).peakChan] = max(max(abs(spkMapMean_sm), [], 2), [], 1);
 
-%         clf;
-%         for iSpike = 1:10
-%             plot(spikeMap(1, :, iSpike));
-%             hold on;
-%         end
-figure()
-%         clf;
-%         plot(rawWaveforms(iCluster).spkMapMean(1, :));
-%         hold on;
+        %         clf;
+        %         for iSpike = 1:10
+        %             plot(spikeMap(1, :, iSpike));
+        %             hold on;
+        %         end
+        %figure()
+        %         clf;
+        %         plot(rawWaveforms(iCluster).spkMapMean(1, :));
+        %         hold on;
         if (mod(iCluster, 20) == 0 || iCluster == nClust) && verbose
             fprintf(['\n   Finished ', num2str(iCluster), ' of ', num2str(nClust), ' units.']);
             %figure; imagesc(spkMapMean_sm)
