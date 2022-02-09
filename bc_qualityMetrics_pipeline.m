@@ -66,14 +66,17 @@ savePath = fullfile(ephysDirPath, 'qMetrics');
 qMetricsExist = dir(fullfile(savePath, 'qMetric*.mat'));
 
 if isempty(qMetricsExist) || rerun
-    [qMetric, goodUnits] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
+    [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
         templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,usedChannels, savePath);
 else
     load(fullfile(savePath, 'qMetric.mat'))
     load(fullfile(savePath, 'param.mat'))
-    goodUnits = qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
+    unitType = nan(length(qMetric.percSpikesMissing),1);
+    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs |qMetric.axonal == param.axonal) = 0; %NOISE OR AXONAL
+    unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
         qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
-        qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude;  
+        qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude) = 1;%SINGLE SEXY UNIT
+    unitType(isnan(unitType)) = 2;% MULTI UNIT 
 end
 %% unit quality GUI 
 
@@ -90,4 +93,4 @@ ephysData.waveform_t = 1e3*((0:size(templateWaveforms, 2) - 1) / 30000);
 ephysParams = struct;
 plotRaw = 1;
 probeLocation=[];
-unitQualityGUI(ap_data.data.data,ephysData,qMetric, param, probeLocation, goodUnits, plotRaw);
+unitQualityGUI(ap_data.data.data,ephysData,qMetric, param, probeLocation, unitType, plotRaw);

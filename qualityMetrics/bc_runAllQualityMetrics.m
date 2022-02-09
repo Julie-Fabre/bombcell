@@ -1,4 +1,4 @@
-function [qMetric, goodUnits] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
+function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, usedChannels, savePath)
 % JF
 % ------
@@ -69,8 +69,9 @@ function [qMetric, goodUnits] = bc_runAllQualityMetrics(param, spikeTimes, spike
 %   Lratio
 %   silhouetteScore
 % 
-% goodUnits: boolean nUnits x 1 vector indicating whether each unit met the
-%   threshold criterion to be classified as good
+% unitType: nUnits x 1 vector indicating whether each unit met the
+%   threshold criterion to be classified as a single unit (1), or is noise
+%   (0) or multi-unit (2) 
 
 %% if some manual curation already performed, remove bad units 
 
@@ -141,14 +142,20 @@ for iUnit = 1:length(uniqueTemplates)
     end
 end
 if param.computeDistanceMetrics && ~isnan(param.isoDmin)
+    unitType = nan(length(qMetric.percSpikesMissing),1);
+    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.axonal == param.axonal) = 0; %NOISE or AXONAL 
+    unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
+        qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
+        qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude & qMetric.isoDmin >= param.isoDmin) = 1;%SINGLE SEXY UNIT
+    unitType(isnan(unitType)) = 2;% MULTI UNIT
 
-    goodUnits = qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
-        qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
-        qMetric.rawAmplitude > param.minAmplitude & qMetric.isoDmin >= param.isoDmin; 
 else
-     goodUnits = qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
+    unitType = nan(length(qMetric.percSpikesMissing),1);
+    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.axonal == param.axonal) = 0; %NOISE or AXONAL
+    unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
         qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
-         qMetric.rawAmplitude > param.minAmplitude; %QQ add axonal 
+        qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude) = 1;%SINGLE SEXY UNIT
+    unitType(isnan(unitType)) = 2;% MULTI UNIT
 
 end
 if exist('savePath', 'var') %save qualityMetrics
