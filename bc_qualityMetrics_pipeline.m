@@ -1,7 +1,7 @@
 %% load data 
-animals = {'AP100','AP101','AP104','AP105','AP106'};
-passiveProtocol = 'AP_lcrGratingPassive';
-bhvProtocol = 'AP_stimWheelRight';
+animals = {'JF067'};
+passiveProtocol = 'choiceworld';
+bhvProtocol = 'stage';
 
 animal = animals{1};
 experiments = AP_find_experimentsJF(animal, bhvProtocol, true);
@@ -9,15 +9,17 @@ experiments = experiments([experiments.ephys]);
 
 day = experiments(1).day;
 experiment = experiments(1).experiment;
+site = 1;
 
-ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys');
+ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site);
 [spikeTimes, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, usedChannels] = bc_loadEphysData(ephysPath);
-ephysap_path = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_ap');
-ephysDirPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_dir');
+ephysap_path = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_ap',site);
+ephysDirPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_dir',site);
 savePath = fullfile(ephysDirPath, 'qMetrics'); 
 
 %% run qmetrics 
+rerun = 0;
 param = struct;
 param.plotThis = 0;
 param.plotGlobal =1;
@@ -59,11 +61,11 @@ param.templateDuration = 400;
 param.pss = 40;
 
 %% compute quality metrics 
-ephysDirPath = AP_cortexlab_filenameJF(animal, day, experiment, 'ephys_dir');
+ephysDirPath = AP_cortexlab_filenameJF(animal, day, experiment, 'ephys_dir',site);
 savePath = fullfile(ephysDirPath, 'qMetrics');
 qMetricsExist = dir(fullfile(savePath, 'qMetric*.mat'));
 
-if isempty(qMetricsExist)
+if isempty(qMetricsExist) || rerun
     [qMetric, goodUnits] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
         templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,usedChannels, savePath);
 else
@@ -74,11 +76,6 @@ else
         qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude;  
 end
 %% unit quality GUI 
-[spikeTimes, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, usedChannels] = bc_loadEphysData(ephysPath);
-ephysap_path = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_ap');
-ephysDirPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_dir');
-savePath = fullfile(ephysDirPath, 'qMetrics'); 
 
 % put ephys data into structure 
 ephysData = struct;
@@ -91,6 +88,6 @@ ephysData.channel_positions = readNPY([ephysPath filesep 'channel_positions.npy'
 ephysData.ephys_sample_rate = 30000;
 ephysData.waveform_t = 1e3*((0:size(templateWaveforms, 2) - 1) / 30000);
 ephysParams = struct;
-
+plotRaw = 1;
 probeLocation=[];
-unitQualityGUI(ap_data.data.data,ephysData,qMetric, param, probeLocation, goodUnits);
+unitQualityGUI(ap_data.data.data,ephysData,qMetric, param, probeLocation, goodUnits, plotRaw);

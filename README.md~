@@ -4,10 +4,7 @@ Used in Peters et al., 2021 to classify striatal units .
 
 <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell2.png" width=20% height=20%>
 
-See the script bc_qualityMetrics_pipeline for an example workflow: load ephys data, compute and save quality metrics, and flip through cells with an interactive GUI.
-
-See the script bc_selectAndClassifyStriatum to classify striatal cells as in Peters et al., 2021. 
-
+See the script bc_qualityMetrics
 ### Quality metrics 
 
 Run all quality metrics with the function bc_runAllQualityMetrics. Eg:
