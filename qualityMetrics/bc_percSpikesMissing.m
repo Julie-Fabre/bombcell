@@ -40,7 +40,7 @@ for iTimeChunk = 1:numel(timeChunks)-1
     bin_steps = diff(bins(1:2)); %size of a bin
     bin_centers = bins(1:end-1) + bin_steps / 2;
     next_low_bin = bin_centers(1) - bin_steps;
-    add_points = next_low_bin:-bin_steps:0; %add points so amplitude values starts at 0
+    add_points = 0:bin_steps:next_low_bin; %add points so amplitude values starts at 0
     bin_centers = [add_points, bin_centers];
     num = [zeros(size(add_points, 2), 1)', num];
 
