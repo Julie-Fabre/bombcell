@@ -19,9 +19,7 @@ Somatic waveforms are defined as waveforms where the largest trough precedes the
 
 #### number of peaks and troughs
 
-Count the number of peaks and troughs to eliminate non-cell-like waveforms due to noise. Right, examples of a unit with a a cell-like waveform (left) and a unit with a noise-like waveform (right). <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=60% height=60%>
-
-
+Count the number of peaks and troughs to eliminate non-cell-like waveforms due to noise. Right, examples of a unit with a a cell-like waveform (left) and a unit with a noise-like waveform (right). <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=30% height=30%>
 
     											
 ####  % spikes missing 
@@ -43,7 +41,7 @@ Estimate fraction of refractory period violations (false positives) using  r = 2
 
 Below: examples of a unit with a small fraction of refractory period violations (left) and one with a large fraction (right).
 
-<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/rpv.png" width=60% height=60%>
+<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/rpv.png" width=30% height=30%>
 
 
 #### amplitude 
