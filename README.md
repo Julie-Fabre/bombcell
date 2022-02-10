@@ -6,14 +6,14 @@ To start out, we suggest you compute quality metrics with default `param` values
 
 See the script `bc_qualityMetrics_pipeline` for an example workflow. 
 
-Used in [Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020-03166-8) to classify striatal units. See the script `bc_selectAndClassifyStriatum` to classify striatal cells in the same way. 
+Used in [Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020-03166-8) to classify striatal units. See the script `bc_selectAndClassifyStriatum`(work in progress) to classify striatal cells in the same way. 
 
 ### Quality metrics 
 
 Run all quality metrics with the function `bc_runAllQualityMetrics`. Eg:
 
-    [qMetric, goodUnits] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
-      templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,usedChannels, savePath);
+    [qMetric, unitTypes] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
+      templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, savePath);
 
 Set `param.plotThis = 1;` to plot figures for each quality metric (plot examples displayed below), and set `param.plotGlobal = 1;` to plot summary of the noise units' waveforms compared to single multi-units, distribution histograms of the units' quality metrics and numbers of units removed by each quality metric. 
 
@@ -94,11 +94,6 @@ Plot a GUI to flip through the quality metrics for each cell with the function `
 
 work in progress
 
-#### post spike suppression 
-
-#### waveform duration
-
-#### proportion long ISIs 
 
 ## Recommended pre-processing 
 
