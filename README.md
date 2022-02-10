@@ -1,16 +1,16 @@
-# bombcell: evaluate and plot the quality of neuropixel-recorded units & compute and plot electrophysiological characteristics
+# bombcell: evaluate neuropixel-recorded unit quality and ephys characteristics
 
-Used in Peters et al., 2021 to classify striatal units .
+Used in Peters et al., 2021 to classify striatal units.
 
-<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell2.png" width=20% height=20%>
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_nobg.png" width=20% height=20%>
 
-See the script bc_qualityMetrics_pipeline for an example workflow: load ephys data, compute and save quality metrics, and flip through cells with an interactive GUI.
+See the script `bc_qualityMetrics_pipeline` for an example workflow: load ephys data, compute and save quality metrics, and flip through cells with an interactive GUI.
 
-See the script bc_selectAndClassifyStriatum to classify striatal cells as in Peters et al., 2021. 
+See the script `bc_selectAndClassifyStriatum` to classify striatal cells as in Peters et al., 2021. 
 
 ### Quality metrics 
 
-Run all quality metrics with the function bc_runAllQualityMetrics. Eg:
+Run all quality metrics with the function `bc_runAllQualityMetrics`. Eg:
 
     [qMetric, goodUnits] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
       templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,usedChannels, savePath);
@@ -44,9 +44,9 @@ Below: examples of a unit with a small fraction of refractory period violations 
 
 ![alt text](https://github.com/Julie-Fabre/bombcell/blob/master/images/rpv.png?raw=true)
 
-#### axonal
+#### somatic
 
-Axonal waveforms are defined as waveforms where the largest peak precedes the largest trough (Deligkaris,Bullmann& Frey, 2016).
+Somatic waveforms are defined as waveforms where the largest trough precedes the largest peak (Deligkaris,Bullmann& Frey, 2016).
 
 #### number of peaks and troughs
 
@@ -72,7 +72,9 @@ Below: examples of a unit with high isolation distance (left) and one with low i
 
 ![alt text](https://github.com/Julie-Fabre/bombcell/blob/master/images/isolationDistance.png?raw=true)
 
-### Ephys properties - work in progress 
+### Ephys properties
+
+work in progress
 
 #### post spike suppression 
 
@@ -90,8 +92,4 @@ work in progress
 
 - https://github.com/buzsakilab/buzcode, modified from http://www.fieldtriptoolbox.org/ (to compute fast ACG/CCGs. download the repo and run compileBuzcode.m)
 
-- https://uk.mathworks.com/matlabcentral/fileexchange/181-keep 
-
-- https://uk.mathworks.com/matlabcentral/fileexchange/1805-rgb-m
-
-- https://github.com/tuckermcclure/matlab-plot-big
+- https://github.com/tuckermcclure/matlab-plot-big (to plot raw data) 

@@ -23,7 +23,8 @@ iCluster = 1;
 iCount = 1;
 uniqueTemps = unique(ephysData.spike_templates);
 goodUnit_idx = find(unitType==1); 
-multiUnit_idx = find(unitType==1); 
+multiUnit_idx = find(unitType==2); 
+noiseUnit_idx = find(unitType==0); 
 %% plot initial conditions
 iChunk = 1;
 initializePlot(unitQualityGuiHandle, ephysData, qMetrics, unitType, uniqueTemps, plotRaw)
@@ -37,11 +38,18 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, para
             iCluster = iCluster + 1;
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
-        elseif strcmpi(evnt.Key, 'g')
+        elseif strcmpi(evnt.Key, 'g') %toggle to next single-unit 
             iCluster = goodUnit_idx(iCluster + 1);
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
-            
+        elseif strcmpi(evnt.Key, 'm') %toggle to next multi-unit 
+            iCluster = multiUnit_idx(iCluster + 1);
+            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
+                probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
+        elseif strcmpi(evnt.Key, 'n') %toggle to next  noise/non-somatic unit
+            iCluster = noiseUnit_idx(iCluster + 1);
+            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
+                probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'leftarrow')
             iCluster = iCluster - 1;
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
@@ -54,7 +62,7 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, para
             iChunk = iChunk - 1;
             updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, qMetrics, param, ...
                 probeLocation, uniqueTemps, iChunk, plotRaw);
-        elseif strcmpi(evnt.Key, 'm')
+        elseif strcmpi(evnt.Key, 'u') %select particular unit 
             iCluster = str2num(cell2mat(inputdlg('Go to unit:')));
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
