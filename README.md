@@ -19,7 +19,7 @@ Somatic waveforms are defined as waveforms where the largest trough precedes the
 
 #### number of peaks and troughs
 
-<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=60% height=60%> Count the number of peaks and troughs to eliminate non-cell-like waveforms due to noise. Right, examples of a unit with a a cell-like waveform (left) and a unit with a noise-like waveform (right).
+Count the number of peaks and troughs to eliminate non-cell-like waveforms due to noise. Right, examples of a unit with a a cell-like waveform (left) and a unit with a noise-like waveform (right). <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=60% height=60%>
 
 
 
