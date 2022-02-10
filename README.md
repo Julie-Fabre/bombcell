@@ -85,11 +85,15 @@ Below: examples of a unit with high isolation distance (left) and one with low i
 
 #### Global output plots 
 
+work in progress 
+
 ### Quality metrics GUI guide 
 
 Plot a GUI to flip through the quality metrics for each cell with the function `bc_unitQualityGUI` Eg:
 
     bc_unitQualityGUI(memMapData, ephysData, qMetrics, param, probeLocation, unitType, plotRaw)
+    
+![](gui.gif)
     
 #### Unit location view
 

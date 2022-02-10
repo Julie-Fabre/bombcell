@@ -57,11 +57,11 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, para
         elseif strcmpi(evnt.Key, 'uparrow')
             iChunk = iChunk + 1;
             updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, qMetrics, param, ...
-                probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
+    probeLocation, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'downarrow')
             iChunk = iChunk - 1;
             updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, qMetrics, param, ...
-                probeLocation, uniqueTemps, iChunk, plotRaw);
+    probeLocation, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'u') %select particular unit 
             iCluster = str2num(cell2mat(inputdlg('Go to unit:')));
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
@@ -496,7 +496,7 @@ if plotRaw
 end
 end
 
-function updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, timeChunkStart, timeChunkStop, qMetrics, param, ...
+function updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, qMetrics, param, ...
     probeLocation, uniqueTemps, iChunk, plotRaw)
 
 if plotRaw % Get guidata
@@ -505,7 +505,7 @@ if plotRaw % Get guidata
 
     %% 8. plot raw data
 
-    plotSubRaw(uiData.rawPlotH, guiData.rawPlotLines, guiData.rawSpikeLines, memMapData, ephysData, iCluster, iCount, uniqueTemps, timeChunkStart, timeChunkStop, iChunk);
+    plotSubRaw(guiData.rawPlotH, guiData.rawPlotLines, guiData.rawSpikeLines, memMapData, ephysData, iCluster, uniqueTemps, iChunk);
 
     %% 9. plot template amplitudes and mean f.r. over recording (QQ: add experiment time epochs?)
     % guiData.tempAmpli = tempAmpli;
