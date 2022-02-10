@@ -1,12 +1,10 @@
-# bombcell: evaluate neuropixel-recorded unit quality and ephys characteristics
+# <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_nobg.png" width=10% height=10%> bombcell: evaluate unit quality and ephys characteristics
 
-Used in Peters et al., 2021 to classify striatal units.
+Work with units recorded with Neuropixel probes and spike-sorted with kilosort. See the script `bc_qualityMetrics_pipeline` for an example workflow: load ephys data, compute and save quality metrics, and flip through cells with an interactive GUI.
 
-<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_nobg.png" width=20% height=20%>
+Used in Peters et al., 2021 to classify striatal units. See the script `bc_selectAndClassifyStriatum` to classify striatal cells as in Peters et al., 2021. 
 
-See the script `bc_qualityMetrics_pipeline` for an example workflow: load ephys data, compute and save quality metrics, and flip through cells with an interactive GUI.
 
-See the script `bc_selectAndClassifyStriatum` to classify striatal cells as in Peters et al., 2021. 
 
 ### Quality metrics 
 
