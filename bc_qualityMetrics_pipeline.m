@@ -34,7 +34,7 @@ param.minAmplitude = 20;
 param.ephys_sample_rate = 30000;
 param.nChannels = 385;
 % distance metric parameters
-param.computeDistanceMetrics = 1;
+param.computeDistanceMetrics = 0;
 param.nChannelsIsoDist = 4;
 param.isoDmin = NaN;
 param.lratioMin = NaN;

@@ -25,7 +25,7 @@ multiUnit_idx = find(unitType==2);
 noiseUnit_idx = find(unitType==0); 
 %% plot initial conditions
 iChunk = 1;
-initializePlot(unitQualityGuiHandle, ephysData, qMetrics, unitType, uniqueTemps, plotRaw)
+initializePlot(unitQualityGuiHandle, ephysData, qMetrics, unitType, uniqueTemps, plotRaw, param)
 updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
     probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
 
@@ -70,7 +70,7 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, para
     end
 end
 
-function initializePlot(unitQualityGuiHandle, ephysData, qMetrics, unitType, uniqueTemps, plotRaw)
+function initializePlot(unitQualityGuiHandle, ephysData, qMetrics, unitType, uniqueTemps, plotRaw, param)
 
 %% main title
 
@@ -121,7 +121,7 @@ rawTitle = title('');
 rawLegend = legend([maxRawWaveformLines], {''});
 
 %% initialize ACG
-if plotRaw
+if plotRaw && param.computeDistanceMetrics
     subplot(6, 13, 28:31)
 else
     subplot(6, 13, 28:33)
@@ -135,10 +135,12 @@ ylabel('sp/s');
 acgTitle = title('');
 
 %% initialize ISI
-if plotRaw
+
+if plotRaw && param.computeDistanceMetrics
     subplot(6, 13, 32:35)
 else
     subplot(6, 13, 34:39)
+
 end
 hold on;
 isiBar = arrayfun(@(x) bar((0 + 0.25):0.5:(50 - 0.25), nan(100, 1)), 1);
@@ -149,6 +151,7 @@ isiTitle = title('');
 isiLegend = legend([isiBar], {''});
 
 %% initialize isoDistance
+if param.computeDistanceMetrics
 if plotRaw
     subplot(6, 13, 36:39)
 else
@@ -164,7 +167,7 @@ hb = colorbar;
 ylabel(hb, 'Mahalanobis Distance')
 legend('this cluster',  'rpv spikes', 'other clusters');
 isoDTitle = title('');
-
+end
 %% initialize raw data
 if plotRaw
     rawPlotH = subplot(6, 13, [41:52, 55:59, 60:65]);
@@ -235,10 +238,12 @@ guiData.isiRefLine = isiRefLine;
 guiData.isiTitle = isiTitle;
 guiData.isiLegend = isiLegend;
 % isoD
+if param.computeDistanceMetrics
 guiData.currIsoD = currIsoD;
 guiData.otherIsoD = otherIsoD;
 guiData.isoDTitle = isoDTitle;
 guiData.rpvIsoD = rpvIsoD;
+end
 % raw data
 if plotRaw
     guiData.rawPlotH = rawPlotH;
@@ -434,11 +439,11 @@ end
 set(guiData.isiLegend, 'String', [num2str(qMetrics.Fp(iCluster)), ' % r.p.v.'])
 
 %% 6. plot isolation distance
-
+if param.computeDistanceMetrics
 set(guiData.currIsoD, 'XData', qMetrics.Xplot{iCluster}(:, 1), 'YData', qMetrics.Xplot{iCluster}(:, 2))
 set(guiData.rpvIsoD, 'XData', qMetrics.Xplot{iCluster}(theseOffendingSpikes, 1), 'YData', qMetrics.Xplot{iCluster}(theseOffendingSpikes, 2))
 set(guiData.otherIsoD, 'XData', qMetrics.Yplot{iCluster}(:, 1), 'YData', qMetrics.Yplot{iCluster}(:, 2), 'CData', qMetrics.d2_mahal{iCluster})
-
+end
 %% 7. (optional) plot raster
 
 %% 10. plot ampli fit
