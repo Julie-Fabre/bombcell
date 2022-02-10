@@ -8,7 +8,6 @@ See the script `bc_qualityMetrics_pipeline` for an example workflow.
 
 Used in [Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020-03166-8) to classify striatal units. See the script `bc_selectAndClassifyStriatum`(work in progress) to classify striatal cells in the same way. 
 
-# Table of Contents
 1. [Quality metrics](#Quality-metrics)
 2. [Quality metrics GUI guide ](#Quality-metrics-GUI-guide )
 3. [Ephys properties](#Ephys-properties)
