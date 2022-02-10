@@ -19,11 +19,9 @@ Somatic waveforms are defined as waveforms where the largest trough precedes the
 
 #### number of peaks and troughs
 
-Count the number of peaks and troughs to eliminate non-cell-like waveforms due to noise.
+<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=60% height=60%> Count the number of peaks and troughs to eliminate non-cell-like waveforms due to noise. Right, examples of a unit with a a cell-like waveform (left) and a unit with a noise-like waveform (right).
 
-Below: examples of a unit with a a cell-like waveform (left) and a unit with a noise-like waveform (right).
 
-<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=60% height=60%>
 
     											
 ####  % spikes missing 
@@ -32,7 +30,7 @@ estimate the percent of spikes missing (false nagatives) by fitting a gaussian t
 
 Below: example of unit with many spikes below the detection threshold in the first two time chunks of the recording. 
 
-<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/imagespercSpikesMissingDrift.png" width=60% height=60%>
+<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/percSpikesMissingDrift.png" width=60% height=60%>
 
 #### number of spikes 
 
