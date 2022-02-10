@@ -1,4 +1,4 @@
-function [nPeaks, nTroughs, axonal, peakLocs, troughLocs] = bc_troughsPeaks(thisWaveform, ephys_sample_rate, plotThis)
+function [nPeaks, nTroughs, somatic, peakLocs, troughLocs] = bc_troughsPeaks(thisWaveform, ephys_sample_rate, plotThis)
 % JF, Get the number of troughs and peaks for each waveform, and determine
 % whether waveform is likely axonal (biggest peak before biggest trough)
 % ------
@@ -13,8 +13,8 @@ function [nPeaks, nTroughs, axonal, peakLocs, troughLocs] = bc_troughsPeaks(this
 % ------
 % nPeaks: number of detected peaks
 % nTroughs: number of detected troughs
-% axonal: boolean, is leargest detected peak before the largest detected
-%   trough (indicative of an axonal spike, cf: Deligkaris, K., Bullmann, T. & Frey, U. 
+% somatic: boolean, is largest detected peak after the largest detected
+%   trough (indicative of a somatic spike, cf: Deligkaris, K., Bullmann, T. & Frey, U. 
 %   Extracellularly recorded somatic and neuritic signal shapes and classification 
 %   algorithms for high-density microelectrode array electrophysiology. Front. Neurosci. 10, 421 (2016).)
 % 
@@ -64,9 +64,9 @@ if numel(troughLoc) > 1
 end
 
 if peakLoc > troughLoc
-    axonal = 0;
+    somatic = 1;
 else
-    axonal = 1;
+    somatic = 0;
 end
 
 if plotThis

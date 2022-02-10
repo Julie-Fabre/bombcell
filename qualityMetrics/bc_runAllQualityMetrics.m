@@ -13,7 +13,7 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeT
 %   minNumSpikes: minimum number of spikes (eg 300) for unit to classify it as good 
 %   maxNtroughsPeaks: maximum number of troughs and peaks (eg 3) to classify unit
 %       waveform as good
-%   axonal: boolean, whether to keep or not axonal spikes
+%   somatic: boolean, whether to keep only somatic spikes
 %   maxRPVviolations: maximum estimated fraction (eg 0.2) of refractory period violations to classify unit as good
 %   minAmplitude: minimum amplitude of raw waveform in microVolts to
 %       classify unit as good
@@ -61,7 +61,7 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeT
 %   nSpikes
 %   nPeaks
 %   nTroughs
-%   axonal
+%   somatic
 %   Fp
 %   rawAmplitude
 %   spatialDecay
@@ -118,8 +118,8 @@ for iUnit = 1:length(uniqueTemplates)
     %% number spikes
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
 
-    %% waveform: number peaks/troughs and is peak before trough (= axonal)
-    [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.axonal(iUnit), ...
+    %% waveform: number peaks/troughs and is peak before trough (= axonal/dendritic)
+    [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.somatic(iUnit), ...
         qMetric.peakLocs{iUnit}, qMetric.troughLocs{iUnit}] = bc_troughsPeaks(templateWaveforms(thisUnit, :, maxChannels(thisUnit)), ...
         param.ephys_sample_rate, param.plotThis);
 
@@ -143,18 +143,18 @@ for iUnit = 1:length(uniqueTemplates)
 end
 if param.computeDistanceMetrics && ~isnan(param.isoDmin)
     unitType = nan(length(qMetric.percSpikesMissing),1);
-    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.axonal == param.axonal) = 0; %NOISE or AXONAL 
+    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.somatic ~= param.somatic) = 0; %NOISE or AXONAL 
     unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
         qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
-        qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude & qMetric.isoDmin >= param.isoDmin) = 1;%SINGLE SEXY UNIT
+        qMetric.somatic == param.somatic & qMetric.rawAmplitude > param.minAmplitude & qMetric.isoDmin >= param.isoDmin) = 1;%SINGLE SEXY UNIT
     unitType(isnan(unitType)) = 2;% MULTI UNIT
 
 else
     unitType = nan(length(qMetric.percSpikesMissing),1);
-    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.axonal == param.axonal) = 0; %NOISE or AXONAL
+    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.somatic ~= param.somatic) = 0; %NOISE or AXONAL
     unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
         qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
-        qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude) = 1;%SINGLE SEXY UNIT
+        qMetric.somatic == param.somatic & qMetric.rawAmplitude > param.minAmplitude) = 1;%SINGLE SEXY UNIT
     unitType(isnan(unitType)) = 2;% MULTI UNIT
 
 end

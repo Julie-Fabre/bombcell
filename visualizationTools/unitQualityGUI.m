@@ -22,7 +22,8 @@ set(unitQualityGuiHandle, 'KeyPressFcn', @KeyPressCb);
 iCluster = 1;
 iCount = 1;
 uniqueTemps = unique(ephysData.spike_templates);
-
+goodUnit_idx = find(unitType==1); 
+multiUnit_idx = find(unitType==1); 
 %% plot initial conditions
 iChunk = 1;
 initializePlot(unitQualityGuiHandle, ephysData, qMetrics, unitType, uniqueTemps, plotRaw)
@@ -34,10 +35,13 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, para
         %fprintf('key pressed: %s\n', evnt.Key);
         if strcmpi(evnt.Key, 'rightarrow')
             iCluster = iCluster + 1;
-            tic
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
-            toc
+        elseif strcmpi(evnt.Key, 'g')
+            iCluster = goodUnit_idx(iCluster + 1);
+            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
+                probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
+            
         elseif strcmpi(evnt.Key, 'leftarrow')
             iCluster = iCluster - 1;
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
@@ -301,8 +305,8 @@ for iChanToPlot = 1:min(12, size(chansToPlot, 1))
             (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) ./ 100));
     end
 end
-% [nPeaks, nTroughs, axonal, peakLocs, troughLocs] = bc_troughsPeaks(ephysData.templates(thisUnit, :, qMetrics.maxChannels(thisUnit)), ...
-%         param.ephys_sample_rate, 1);
+ [nPeaks, nTroughs, axonal, peakLocs, troughLocs] = bc_troughsPeaks(ephysData.templates(thisUnit, :, qMetrics.maxChannels(thisUnit)), ...
+         param.ephys_sample_rate, 1);
     
 
 if qMetrics.nPeaks(iCluster) > param.maxNPeaks || qMetrics.nTroughs(iCluster) > param.maxNTroughs

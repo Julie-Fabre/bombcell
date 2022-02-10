@@ -12,7 +12,7 @@ function rawAmplitude = bc_getRawAmplitude(rawWaveforms, rawFolder)
 % rawAmplitude: raw amplitude in microVolts of the mean raw wwaveform for
 % this unit 
 % 
-if size(rawFolder, 2) > 1
+if iscell(rawFolder)
     rawFolder = fileparts(rawFolder{1});
 end
 spikeFile = dir(fullfile(rawFolder, '*.ap.bin')); % spikeGLX format 

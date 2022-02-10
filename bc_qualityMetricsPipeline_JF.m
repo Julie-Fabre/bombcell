@@ -1,4 +1,15 @@
 %% load data 
+animals = {'JF067'};
+passiveProtocol = 'choiceworld';
+bhvProtocol = 'stage';
+
+animal = animals{1};
+experiments = AP_find_experimentsJF(animal, bhvProtocol, true);
+experiments = experiments([experiments.ephys]);
+
+day = experiments(1).day;
+experiment = experiments(1).experiment;
+site = 1;
 
 ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site);
 [spikeTimes, spikeTemplates, ...
@@ -7,7 +18,7 @@ ephysap_path = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_ap',site);
 ephysDirPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_dir',site);
 savePath = fullfile(ephysDirPath, 'qMetrics'); 
 
-%% quality metric parameters and thresholds 
+%% run qmetrics 
 rerun = 0;
 param = struct;
 param.plotThis = 0;
@@ -50,6 +61,8 @@ param.templateDuration = 400;
 param.pss = 40;
 
 %% compute quality metrics 
+ephysDirPath = AP_cortexlab_filenameJF(animal, day, experiment, 'ephys_dir',site);
+savePath = fullfile(ephysDirPath, 'qMetrics');
 qMetricsExist = dir(fullfile(savePath, 'qMetric*.mat'));
 
 if isempty(qMetricsExist) || rerun
@@ -65,7 +78,7 @@ else
         qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude) = 1;%SINGLE SEXY UNIT
     unitType(isnan(unitType)) = 2;% MULTI UNIT 
 end
-%% view units + quality metrics in GUI 
+%% unit quality GUI 
 
 % put ephys data into structure 
 ephysData = struct;
@@ -80,6 +93,4 @@ ephysData.waveform_t = 1e3*((0:size(templateWaveforms, 2) - 1) / 30000);
 ephysParams = struct;
 plotRaw = 1;
 probeLocation=[];
-
-keep ephyData qMetric param probeLocation unitType plotRaw
 unitQualityGUI(ap_data.data.data,ephysData,qMetric, param, probeLocation, unitType, plotRaw);

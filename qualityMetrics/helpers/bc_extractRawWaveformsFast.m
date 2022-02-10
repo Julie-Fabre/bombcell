@@ -21,7 +21,7 @@ function [rawWaveforms, ap_data] = bc_extractRawWaveformsFast(rawFolder, nChanne
 
 %% check if waveforms already extracted
 % Get binary file name
-if size(rawFolder, 2) > 1
+if iscell(rawFolder)
     rawFolder = fileparts(rawFolder{1});
 end
 spikeFile = dir(fullfile(rawFolder, '*.ap.bin'));
@@ -31,9 +31,9 @@ end
 
 rawWaveformFolder = dir(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
 
-if ~isempty(rawWaveformFolder)
-    load(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
-else
+%if ~isempty(rawWaveformFolder)
+%    load(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
+%else
 
     %% Intitialize
     % Get spike times and indices
@@ -120,5 +120,5 @@ else
     if isempty(rawWaveformFolder)
         save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
     end
-end
+%end
 end

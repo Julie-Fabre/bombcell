@@ -22,7 +22,8 @@ set(unitQualityGuiHandle, 'KeyPressFcn', @KeyPressCb);
 iCluster = 1;
 iCount = 1;
 uniqueTemps = unique(ephysData.spike_templates);
-
+goodUnit_idx = find(unitType==1); 
+multiUnit_idx = find(unitType==1); 
 %% plot initial conditions
 iChunk = 1;
 initializePlot(unitQualityGuiHandle, ephysData, qMetrics, unitType, uniqueTemps, plotRaw)
@@ -34,10 +35,13 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, para
         %fprintf('key pressed: %s\n', evnt.Key);
         if strcmpi(evnt.Key, 'rightarrow')
             iCluster = iCluster + 1;
-            tic
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
-            toc
+        elseif strcmpi(evnt.Key, 'g')
+            iCluster = goodUnits(iCluster + 1;
+            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
+                probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
+            
         elseif strcmpi(evnt.Key, 'leftarrow')
             iCluster = iCluster - 1;
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
@@ -144,12 +148,13 @@ else
 end
 hold on;
 currIsoD = scatter(NaN, NaN, 10, '.b'); % Scatter plot with points of size 10
-otherIsoD = scatter(NaN, NaN, 10, NaN, 'o', 'filled');
 rpvIsoD = scatter(NaN, NaN, 10, '.m'); % Scatter plot with points of size 10
+otherIsoD = scatter(NaN, NaN, 10, NaN, 'o', 'filled');
+
 colormap(brewermap([], '*YlOrRd'))
 hb = colorbar;
 ylabel(hb, 'Mahalanobis Distance')
-legend('this cluster', 'other clusters');
+legend('this cluster',  'rpv spikes', 'other clusters');
 isoDTitle = title('');
 
 %% initialize raw data
@@ -372,7 +377,8 @@ end
 
 theseISI = diff(theseSpikeTimes);
 theseISIclean = theseISI(theseISI >= param.tauC); % removed duplicate spikes
-theseOffendingSpikes = theseISIclean < (2/1000); 
+theseOffendingSpikes = find(theseISIclean < (2/1000)); 
+theseOffendingSpikes = [theseOffendingSpikes; theseOffendingSpikes-1];
 [isiProba, edgesISI] = histcounts(theseISIclean*1000, [0:0.5:50]);
 
 set(guiData.isiBar, 'XData', edgesISI(1:end-1)+mean(diff(edgesISI)), 'YData', isiProba); %Check FR
@@ -387,8 +393,8 @@ set(guiData.isiLegend, 'String', [num2str(qMetrics.Fp(iCluster)), ' % r.p.v.'])
 
 %% 6. plot isolation distance
 
-set(guiData.currIsoD, 'XData', qMetrics.Xplot{iCluster}(:, 1), 'YData', qMetrics.Xplot{iCluster}(:, 2)) % Scatter plot with points of size 10
-
+set(guiData.currIsoD, 'XData', qMetrics.Xplot{iCluster}(:, 1), 'YData', qMetrics.Xplot{iCluster}(:, 2))
+set(guiData.rpvIsoD, 'XData', qMetrics.Xplot{iCluster}(theseOffendingSpikes, 1), 'YData', qMetrics.Xplot{iCluster}(theseOffendingSpikes, 2))
 set(guiData.otherIsoD, 'XData', qMetrics.Yplot{iCluster}(:, 1), 'YData', qMetrics.Yplot{iCluster}(:, 2), 'CData', qMetrics.d2_mahal{iCluster})
 
 %% 7. (optional) plot raster
@@ -415,6 +421,7 @@ theseAmplis = ephysData.template_amplitudes(ephysData.spike_templates == thisUni
 % for debugging if wierd amplitude fit results: bc_percSpikesMissing(theseAmplis, theseSpikeTimes, [min(theseSpikeTimes), max(theseSpikeTimes)], 1);
 
 set(guiData.tempAmpli, 'XData', theseSpikeTimes, 'YData', theseAmplis)
+set(guiData.rpvAmpli, 'XData', theseSpikeTimes(theseOffendingSpikes), 'YData', theseAmplis(theseOffendingSpikes))
 currTimes = theseSpikeTimes(theseSpikeTimes >= theseSpikeTimes(iChunk)-0.1 & theseSpikeTimes <= theseSpikeTimes(iChunk)+0.1);
 currAmplis = theseAmplis(theseSpikeTimes >= theseSpikeTimes(iChunk)-0.1 & theseSpikeTimes <= theseSpikeTimes(iChunk)+0.1);
 set(guiData.currTempAmpli, 'XData', currTimes, 'YData', currAmplis);
