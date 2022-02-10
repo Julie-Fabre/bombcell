@@ -1,4 +1,4 @@
-# <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_nobg_blue.png" width=20% height=20%>: evaluate unit quality and ephys characteristics
+# <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_nobg_blue.png" width=20% height=20%> evaluate unit quality and ephys properties
 
 Work with units recorded with Neuropixel probes and spike-sorted with kilosort. See the script `bc_qualityMetrics_pipeline` for an example workflow: load ephys data, compute and save quality metrics, and flip through cells with an interactive GUI.
 
