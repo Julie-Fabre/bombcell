@@ -1,6 +1,6 @@
 # <img style="float: left;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_nobg_blue.png" width=20% height=20%> evaluate unit quality and ephys properties
 
-Bombcell work with units recorded with Neuropixel probes and spike-sorted with kilosort. It classifies the unit into three categories: single units, multi-units and noise units, with an option to keep or remove non-somatic spikes. `param` is the structure that defines how to compute the quality metrics and which thresholds to use to classify units. 
+Bombcell work with units recorded with Neuropixel probes and spike-sorted with kilosort. It classifies the unit into three categories: single units, multi-units and noise units, with an option to keep or remove non-somatic spikes. `param` is the structure that defines how to compute the quality metrics and which thresholds to use to classify units. To install, clone repository in MATLAB, change directory to bombcell\ephysProperties\helpers in matlab and run `mex -O CCGHeart.c`. 
 
 To start out, we suggest you compute quality metrics with default `param` values, and then adjust the thresholds for your particular neuronal region and needs by looking at (1) individual units, in the interactive GUI (2) distribution histograms of the units' quality metrics, (3) numbers of units removed by each quality metric. It may also be useful to plot the quantity you which to measure as a function of each quality metric (see [Fig. 2 Harris et al., Nat. Neuro, 2016](https://www.nature.com/articles/nn.4365/figures/2)) 
 
@@ -102,12 +102,10 @@ work in progress
 
 ## Recommended pre-processing 
 
-We recommend temporally aligning your channels with each other and common-averaging you data with Bill Karsh's function [`CatGT`](https://billkarsh.github.io/SpikeGLX/ CatGT), and then feeding this data into kilosort. We then recommend looking at your raw data and spikes detected by kilosort, to assess whether all spikes are being detected. If not, consider lowering kilosort's detection thresholds. 
+We recommend temporally aligning your channels with each other and common-averaging you data with Bill Karsh's function [`CatGT`](https://billkarsh.github.io/SpikeGLX/), and then feeding this data into kilosort. We then recommend looking at your raw data and spikes detected by kilosort, to assess whether all spikes are being detected. If not, consider lowering kilosort's detection thresholds. 
 
 ## Dependancies:
 
 - https://github.com/kwikteam/npy-matlab (to load data in)
-
-- https://github.com/buzsakilab/buzcode, modified from http://www.fieldtriptoolbox.org/ (to compute fast ACG/CCGs. download the repo and run compileBuzcode.m)
 
 - https://github.com/tuckermcclure/matlab-plot-big (to plot raw data) 
