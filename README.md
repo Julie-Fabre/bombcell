@@ -1,18 +1,24 @@
 # <img style="float: left;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_nobg_blue.png" width=20% height=20%> evaluate unit quality and ephys properties
 
-Bombcell work with units recorded with Neuropixel probes and spike-sorted with kilosort. It classifies the unit into three categories: single units, multi-units and noise units, with an option to keep or remove non-somatic spikes. `param` is the structure that defines how to compute the quality metrics and which thresholds to use to classify units. To install, clone repository in MATLAB, change directory to bombcell\ephysProperties\helpers in matlab and run `mex -O CCGHeart.c`. 
+Bombcell work with units recorded with Neuropixel probes and spike-sorted with kilosort. It classifies the unit into three categories: single units, multi-units and noise units, with an option to keep or remove non-somatic spikes. `param` is the structure that defines how to compute the quality metrics and which thresholds to use to classify units.
+
+Used in [Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020-03166-8) to classify striatal units. See the script `bc_selectAndClassifyStriatum`(work in progress) to classify striatal cells in the same way. 
+
+
+1. [Getting started](#Getting-started)
+2. [Quality metrics](#Quality-metrics)
+3. [Quality metrics GUI guide ](#Quality-metrics-GUI-guide )
+4. [Ephys properties](#Ephys-properties)
+5. [Recommended pre-processing](#Recommended-pre-processing)
+6. [Dependancies](#Dependancies)
+
+### Getting started 
+
+To install, clone repository in MATLAB, change directory to bombcell\ephysProperties\helpers in matlab and run `mex -O CCGHeart.c`. 
 
 To start out, we suggest you compute quality metrics with default `param` values, and then adjust the thresholds for your particular neuronal region and needs by looking at (1) individual units, in the interactive GUI (2) distribution histograms of the units' quality metrics, (3) numbers of units removed by each quality metric. It may also be useful to plot the quantity you which to measure as a function of each quality metric (see [Fig. 2 Harris et al., Nat. Neuro, 2016](https://www.nature.com/articles/nn.4365/figures/2)) 
 
 See the script `bc_qualityMetrics_pipeline` for an example workflow. 
-
-Used in [Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020-03166-8) to classify striatal units. See the script `bc_selectAndClassifyStriatum`(work in progress) to classify striatal cells in the same way. 
-
-1. [Quality metrics](#Quality-metrics)
-2. [Quality metrics GUI guide ](#Quality-metrics-GUI-guide )
-3. [Ephys properties](#Ephys-properties)
-4. [Recommended pre-processing](#Recommended-pre-processing)
-5. [Dependancies](#Dependancies)
 
 ### Quality metrics 
 
