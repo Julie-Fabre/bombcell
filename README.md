@@ -114,14 +114,14 @@ This view plot the mean raw waveforms for the current unit. The maximum waveform
 
 This view plot the auto-correlogram (ACG) for the current unit. The horizontal red line indicates the ACG asymptote, which corresponds to the unit's firing rate. The vertical red line plot the refractory period location. 
 
-<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_acg.png" width=30% height=30%>
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_acg.png" width=40% height=40%>
 
 
 #### ISI view
 
 This view plot the inter-spike-intervals (ISI) for the current unit. The vertical red line plot the refractory period location. 
 
-<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_isi.png" width=30% height=30%>
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_isi.png" width=60% height=60%>
 
 #### Isolation distance view
 
