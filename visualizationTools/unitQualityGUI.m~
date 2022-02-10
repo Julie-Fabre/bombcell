@@ -268,7 +268,7 @@ thisUnit = uniqueTemps(iCluster);
 if unitType(iCluster) == 1
     set(guiData.mainTitle, 'String', ['Unit ', num2str(iCluster), ', single unit'], 'Color', [0, .5, 0]);
 elseif unitType(iCluster) == 0
-    set(guiData.mainTitle, 'String', ['Unit ', num2str(iCluster), ', noise/axonal'], 'Color', [1, 0, 0]);
+    set(guiData.mainTitle, 'String', ['Unit ', num2str(iCluster), ', noise/non-somatic'], 'Color', [1, 0, 0]);
 elseif unitType(iCluster) == 2
     set(guiData.mainTitle, 'String', ['Unit ', num2str(iCluster), ', multi-unit'], 'Color', [1, 0, 1]);
 end
@@ -313,12 +313,12 @@ for iChanToPlot = 1:min(12, size(chansToPlot, 1))
             (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) ./ 100));
     end
 end
- [nPeaks, nTroughs, axonal, peakLocs, troughLocs] = bc_troughsPeaks(ephysData.templates(thisUnit, :, qMetrics.maxChannels(thisUnit)), ...
-         param.ephys_sample_rate, 1);
+%  [nPeaks, nTroughs, somatic, peakLocs, troughLocs] = bc_troughsPeaks(ephysData.templates(thisUnit, :, qMetrics.maxChannels(thisUnit)), ...
+%          param.ephys_sample_rate, 1);
     
 
 if qMetrics.nPeaks(iCluster) > param.maxNPeaks || qMetrics.nTroughs(iCluster) > param.maxNTroughs
-    if qMetrics.axonal(iCluster) == 1
+    if qMetrics.somatic(iCluster) == 0
         set(guiData.tempTitle, 'String', ['\fontsize{9}Template waveform: {\color[rgb]{1 0 0}# detected peaks/troughs, ', ...
             '\color[rgb]{1 0 0}is somatic \color{red}}'])
     else
@@ -326,7 +326,7 @@ if qMetrics.nPeaks(iCluster) > param.maxNPeaks || qMetrics.nTroughs(iCluster) > 
             '\color[rgb]{0 .5 0}is somatic \color{red}}'])
     end
 else
-    if qMetrics.axonal(iCluster) == 1
+    if qMetrics.somatic(iCluster) == 0
         set(guiData.tempTitle, 'String', ['\fontsize{9}Template waveform: {\color[rgb]{0 .5 0}# detected peaks/troughs, ', ...
             '\color[rgb]{1 0 0}is somatic \color{red}}'])
     else
@@ -335,7 +335,7 @@ else
     end
 
 end
-set(guiData.tempLegend, 'String', {['is somatic =', num2str(1-qMetrics.axonal(iCluster))], ...
+set(guiData.tempLegend, 'String', {['is somatic =', num2str(1-qMetrics.somatic(iCluster))], ...
     [num2str(qMetrics.nPeaks(iCluster)), ' peak(s)'], [num2str(qMetrics.nTroughs(iCluster)), ' trough(s)']})
 
 %% plot 3: plot unit mean raw waveform (and individual traces)

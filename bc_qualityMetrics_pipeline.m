@@ -66,6 +66,8 @@ else
     unitType(isnan(unitType)) = 2;% MULTI UNIT 
 end
 %% view units + quality metrics in GUI 
+%get memmap
+memMapData = bc_getRawMemMap(param.rawFolder, param.nChannels);
 
 % put ephys data into structure 
 ephysData = struct;
@@ -82,4 +84,4 @@ plotRaw = 1;
 probeLocation=[];
 
 keep ephyData qMetric param probeLocation unitType plotRaw
-unitQualityGUI(ap_data.data.data,ephysData,qMetric, param, probeLocation, unitType, plotRaw);
+unitQualityGUI(memMapData,ephysData,qMetric, param, probeLocation, unitType, plotRaw);

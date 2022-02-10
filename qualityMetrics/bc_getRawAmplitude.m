@@ -14,6 +14,8 @@ function rawAmplitude = bc_getRawAmplitude(rawWaveforms, rawFolder)
 % 
 if iscell(rawFolder)
     rawFolder = fileparts(rawFolder{1});
+elseif sum(rawFolder(end-2:end) == '/..')==3
+    rawFolder = fileparts(rawFolder(1:end-3));
 end
 spikeFile = dir(fullfile(rawFolder, '*.ap.bin')); % spikeGLX format 
 if isempty(spikeFile)

@@ -1,4 +1,4 @@
-function [rawWaveforms, apdata] = bc_extractRawWaveformsFast(rawFolder, nChannels, nSpikesToExtract, spikeTimes, spikeTemplates, verbose)
+function [rawWaveforms, ap_data] = bc_extractRawWaveformsFast(rawFolder, nChannels, nSpikesToExtract, spikeTimes, spikeTemplates, verbose)
 % JF, Get raw waveforms for all templates
 % ------
 % Inputs
@@ -23,7 +23,7 @@ function [rawWaveforms, apdata] = bc_extractRawWaveformsFast(rawFolder, nChannel
 % Get binary file name
 if iscell(rawFolder)
     rawFolder = fileparts(rawFolder{1});
-elseif sum(rawFolder(end-2:end) == '/..') == 3
+elseif rawFolder(end) == '.'
     rawFolder = fileparts(rawFolder(1:end-3));
 end
 spikeFile = dir(fullfile(rawFolder, '*.ap.bin'));
@@ -40,17 +40,28 @@ nClust = numel(clustInds);
 
 
 fname = spikeFile.name;
+fid = fopen(fullfile(spikeFile.folder, fname), 'r');
 d = dir(fullfile(rawFolder, fname));
 
 dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
+try %hacky way of figuring out if sync channel present or not
+    n_samples = spikeFile.bytes / (nChannels * dataTypeNBytes);
+    ap_data = memmapfile(fullfile(spikeFile.folder, fname), 'Format', {'int16', [nChannels, n_samples], 'data'});
+catch
+    nChannels = nChannels - 1;
+    n_samples = spikeFile.bytes / (nChannels * dataTypeNBytes);
+    ap_data = memmapfile(fullfile(spikeFile.folder, fname), 'Format', {'int16', [nChannels, n_samples], 'data'});
+    n_samples = spikeFile.bytes / (nChannels * dataTypeNBytes);
+end
+ap_data = ap_data.Data.data;
 
 if ~isempty(rawWaveformFolder)
     load(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
 else
 
     %% Intitialize
+    % Get spike times and indices
 
-    fid = fopen(fullfile(spikeFile.folder, fname), 'r');
     %% Interate over spike clusters and find all the data associated with them
     rawWaveforms = struct;
     allSpikeTimes = spikeTimes;
