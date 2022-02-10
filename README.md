@@ -6,21 +6,21 @@ Used in [Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020
 
 
 1. [Getting started](#Getting-started)
-2. [Quality metrics](#Quality-metrics)
-3. [Quality metrics GUI guide ](#Quality-metrics-GUI-guide )
-4. [Ephys properties](#Ephys-properties)
+2. [Quality metrics guide ](#Quality-metrics-guide)
+3. [Quality metrics GUI guide ](#Quality-metrics-GUI-guide)
+4. [Ephys properties guide](#Ephys-properties-guide)
 5. [Recommended pre-processing](#Recommended-pre-processing)
 6. [Dependancies](#Dependancies)
 
 ### Getting started 
 
-To install, clone repository in MATLAB, change directory to bombcell\ephysProperties\helpers in matlab and run `mex -O CCGHeart.c`. 
+To install, clone this repository in MATLAB and the [dependancies](#Dependancies), change directory to bombcell\ephysProperties\helpers in matlab and run `mex -O CCGHeart.c`. 
 
-To start out, we suggest you compute quality metrics with default `param` values, and then adjust the thresholds for your particular neuronal region and needs by looking at (1) individual units, in the interactive GUI (2) distribution histograms of the units' quality metrics, (3) numbers of units removed by each quality metric. It may also be useful to plot the quantity you which to measure as a function of each quality metric (see [Fig. 2 Harris et al., Nat. Neuro, 2016](https://www.nature.com/articles/nn.4365/figures/2)) 
+To start out, we suggest you compute quality metrics with default `param` values, and then adjust the thresholds for your particular neuronal region and needs by looking at (1) individual units, in the interactive [GUI](#Quality-metrics-GUI-guide ) (2) distribution histograms of the units' quality metrics, (3) numbers of units removed by each quality metric. It may also be useful to plot the quantity you which to measure as a function of each quality metric (see [Fig. 2 Harris et al., Nat. Neuro, 2016](https://www.nature.com/articles/nn.4365/figures/2)) 
 
 See the script `bc_qualityMetrics_pipeline` for an example workflow. 
 
-### Quality metrics 
+### Quality metrics guide
 
 Run all quality metrics with the function `bc_runAllQualityMetrics`. Eg:
 
@@ -102,7 +102,7 @@ Plot a GUI to flip through the quality metrics for each cell with the function `
 
 #### Isolation distance view
     
-### Ephys properties
+### Ephys properties guide
 
 work in progress
 
