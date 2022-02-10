@@ -8,6 +8,13 @@ See the script `bc_qualityMetrics_pipeline` for an example workflow.
 
 Used in [Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020-03166-8) to classify striatal units. See the script `bc_selectAndClassifyStriatum`(work in progress) to classify striatal cells in the same way. 
 
+# Table of Contents
+1. [Quality metrics](#Quality metrics)
+2. [Quality metrics GUI guide ](#Quality metrics GUI guide )
+3. [Ephys properties](#Ephys properties)
+4. [Recommended pre-processing](#Recommended pre-processing)
+5. [Dependancies](#Dependancies)
+
 ### Quality metrics 
 
 Run all quality metrics with the function `bc_runAllQualityMetrics`. Eg:
@@ -68,9 +75,9 @@ Below: examples of a unit with high isolation distance (left) and one with low i
 <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/isolationDistance.png" width=60% height=60%>
 
 
-#### Global ouput plots 
+#### Global output plots 
 
-### Quality metrics' GUI guide 
+### Quality metrics GUI guide 
 
 Plot a GUI to flip through the quality metrics for each cell with the function `bc_unitQualityGUI` Eg:
 
@@ -95,11 +102,11 @@ Plot a GUI to flip through the quality metrics for each cell with the function `
 work in progress
 
 
-## Recommended pre-processing 
+### Recommended pre-processing 
 
 We recommend temporally aligning your channels with each other and common-averaging you data with Bill Karsh's function [`CatGT`](https://billkarsh.github.io/SpikeGLX/), and then feeding this data into kilosort. We then recommend looking at your raw data and spikes detected by kilosort, to assess whether all spikes are being detected. If not, consider lowering kilosort's detection thresholds. 
 
-## Dependancies:
+### Dependancies
 
 - https://github.com/kwikteam/npy-matlab (to load data in)
 
