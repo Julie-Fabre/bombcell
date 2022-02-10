@@ -30,7 +30,7 @@ estimate the percent of spikes missing (false nagatives) by fitting a gaussian t
 
 Below: example of unit with many spikes below the detection threshold in the first two time chunks of the recording. 
 
-<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/percSpikesMissingDrift.png" width=30% height=30%>
+<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/percSpikesMissingDrift.png" width=60% height=60%>
 
 #### number of spikes 
 
@@ -43,7 +43,7 @@ Estimate fraction of refractory period violations (false positives) using  r = 2
 
 Below: examples of a unit with a small fraction of refractory period violations (left) and one with a large fraction (right).
 
-<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/rpv.png" width=60% height=60%>
+<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/rpv.png" width=30% height=30%>
 
 
 #### amplitude 
