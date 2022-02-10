@@ -1,8 +1,8 @@
 # <img style="float: left;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_nobg_blue.png" width=20% height=20%> evaluate unit quality and ephys properties
 
-Bombcell work with units recorded with Neuropixel probes and spike-sorted with kilosort. It classifies the unit into three categories: single units, mutli-units and noise units, with an option to keep or remove non-somatic spikes. `param` is the structure that defines how to compute the quality metrics and which thresholds to use to classify units. We suggest you compute quality metrics with default `param` values, and then adjust the thresholds for your particular neuronal region and needs by looking at distribution histograms of the units' quality metrics and numbers of units removed by each quality metric and individual units in the interactive GUI  See the script `bc_qualityMetrics_pipeline` for an example workflow. 
+Bombcell work with units recorded with Neuropixel probes and spike-sorted with kilosort. It classifies the unit into three categories: single units, multi-units and noise units, with an option to keep or remove non-somatic spikes. `param` is the structure that defines how to compute the quality metrics and which thresholds to use to classify units. To start out, we suggest you compute quality metrics with default `param` values, and then adjust the thresholds for your particular neuronal region and needs by looking at distribution histograms of the units' quality metrics,  numbers of units removed by each quality metric and individual units, in the interactive GUI. See the script `bc_qualityMetrics_pipeline` for an example workflow. 
 
-Used in Peters et al., 2021 to classify striatal units. See the script `bc_selectAndClassifyStriatum` to classify striatal cells as in Peters et al., 2021. 
+Used in Peters et al., 2021 to classify striatal units. See the script `bc_selectAndClassifyStriatum` to classify striatal cells in the same way. 
 
 ### Quality metrics 
 
@@ -21,7 +21,7 @@ Somatic waveforms are defined as waveforms where the largest trough precedes the
 
 Count the number of peaks and troughs to eliminate non-cell-like waveforms due to noise. Right, examples of a unit with a a cell-like waveform (left) and a unit with a noise-like waveform (right). 
 
-<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks_nobg.png" width=30% height=30%>
+<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=30% height=30%>
 
     											
 ####  % spikes missing 
@@ -30,7 +30,7 @@ estimate the percent of spikes missing (false nagatives) by fitting a gaussian t
 
 Below: example of unit with many spikes below the detection threshold in the first two time chunks of the recording. 
 
-<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/percSpikesMissingDrift_nobg.png" width=60% height=60%>
+<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/percSpikesMissingDrift.png" width=60% height=60%>
 
 #### number of spikes 
 
@@ -43,7 +43,7 @@ Estimate fraction of refractory period violations (false positives) using  r = 2
 
 Below: examples of a unit with a small fraction of refractory period violations (left) and one with a large fraction (right).
 
-<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/rpv_nobg.png" width=30% height=30%>
+<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/rpv.png" width=30% height=30%>
 
 
 #### amplitude 
@@ -61,7 +61,7 @@ Compute measure of unit isolation quality: the isolation distance (see Harris et
 
 Below: examples of a unit with high isolation distance (left) and one with low isolation distance (right).
 
-<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/isolationDistance_nobg.png" width=60% height=60%>
+<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/isolationDistance.png" width=60% height=60%>
 
 
 #### 
@@ -71,6 +71,8 @@ Below: examples of a unit with high isolation distance (left) and one with low i
 Plot a GUI to flip through the quality metrics for each cell with the function `bc_unitQualityGUI` Eg:
 
     bc_unitQualityGUI(memMapData, ephysData, qMetrics, param, probeLocation)
+    
+    
     
 ### Ephys properties
 
