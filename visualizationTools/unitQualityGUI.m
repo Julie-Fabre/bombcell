@@ -188,7 +188,7 @@ spikeFR = stairs(NaN, NaN, 'LineWidth', 2.0, 'Color', [1, 0.5, 0]);
 set(gca, 'YColor', [1, 0.5, 0])
 ylabel('Firing rate (sp/sec)');
 ampliTitle = title('');
-ampliLegend = legend([tempAmpli], {''});
+ampliLegend = legend([tempAmpli,rpvAmpli], {'', ''});
 
 %% initialize amplitude fit
 ampliFitAx = subplot(6, 13, [78]);
@@ -418,7 +418,7 @@ if qMetrics.percSpikesMissing(iCluster) > param.maxPercSpikesMissing
 else
     set(guiData.ampliFitTitle, 'String', '\color[rgb]{0 .5 0}% spikes missing');
 end
-set(guiData.ampliFitLegend, 'String', [num2str(qMetrics.percSpikesMissing(iCluster)), ' % spikes missing'])
+set(guiData.ampliFitLegend, 'String', {[num2str(qMetrics.percSpikesMissing(iCluster)), ' % spikes missing'], 'rpv spikes'})
 set(guiData.ampliFitAx, 'YLim', [min(qMetrics.ampliBinCenters{iCluster}), max(qMetrics.ampliBinCenters{iCluster})])
 
 %% 9. plot template amplitudes and mean f.r. over recording (QQ: add experiment time epochs?)
