@@ -93,13 +93,13 @@ Plot a GUI to flip through the quality metrics for each cell with the function `
 
     bc_unitQualityGUI(memMapData, ephysData, qMetrics, param, probeLocation, unitType, plotRaw)
     
-![](https://github.com/Julie-Fabre/bombcell/blob/master/images/gui.gif)
+![Alt text](https://github.com/Julie-Fabre/bombcell/blob/master/images/gui.gif)
     
 #### Unit location view
 
 This view plots the depth of each unit on the probe in y, and it's log-normalized firing rate in x. Single units are plotted in green, multi-units in indigo and noise in red. The current unit is plotted larger and circled in black. 
 
-<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_location.png" width=70% height=70%>
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_location.png" width=30% height=30%>
 
 #### Template waveform view
 
