@@ -34,10 +34,8 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, para
         %fprintf('key pressed: %s\n', evnt.Key);
         if strcmpi(evnt.Key, 'rightarrow')
             iCluster = iCluster + 1;
-            tic
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
-            toc
         elseif strcmpi(evnt.Key, 'g') %toggle to next single-unit 
             iCluster = goodUnit_idx(iCluster + 1);
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
@@ -556,7 +554,7 @@ if iChunk < 0
     disp('Don''t do that')
     iChunk = 1;
 end
-firstSpike = theseTimesCenter(iChunk+10) - 0.05; %first spike occurance
+firstSpike = theseTimesCenter(iChunk) - 0.05; %first spike occurance
 theseTimesCenter = theseTimesCenter(theseTimesCenter >= firstSpike);
 theseTimesCenter = theseTimesCenter(theseTimesCenter <= firstSpike+timeToPlot);
 if ~isempty(theseTimesCenter)
@@ -568,7 +566,7 @@ end
 cCount = cumsum(repmat(1000, size(chansToPlot, 1), 1), 1);
 
 
-t = int32(firstSpike * ephysData.ephys_sample_rate):int32((firstSpike + timeToPlot) * ephysData.ephys_sample_rate);
+t = (firstSpike * ephysData.ephys_sample_rate):((firstSpike + timeToPlot) * ephysData.ephys_sample_rate);
 subplot(rawPlotH)
 thisMemMap = double(memMapData(chansToPlot, int32(firstSpike*ephysData.ephys_sample_rate) ...
     :int32((firstSpike + timeToPlot)*ephysData.ephys_sample_rate)))+double(cCount);
@@ -580,8 +578,8 @@ end
      if ~isempty(theseTimesCenter)
         for iTimes = 1:size(theseTimesCenter, 1)
             if ~any(mod(theseTimesFull(iTimes, :), 1))
-                set(rawSpikeLines(iChanToPlot), 'XData', theseTimesFull(iTimes, :),'YData',thisMemMap(iChanToPlot, ...
-                    int32(theseTimesFull(iTimes, :))-t(1)));
+                set(rawSpikeLines(iChanToPlot), 'XData', theseTimesFull(iTimes, :),'YData',thisMemMap(chansToPlot(iChanToPlot), ...
+                    int32(theseTimesFull(iTimes, :)-t(1))));
             end
         end
      end

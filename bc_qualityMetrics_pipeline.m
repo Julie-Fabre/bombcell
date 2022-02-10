@@ -67,7 +67,7 @@ else
 end
 %% view units + quality metrics in GUI 
 %get memmap
-memMapData = bc_getRawMemMap(param.rawFolder, param.nChannels);
+bc_getRawMemMap;
 
 % put ephys data into structure 
 ephysData = struct;
@@ -80,8 +80,13 @@ ephysData.channel_positions = readNPY([ephysPath filesep 'channel_positions.npy'
 ephysData.ephys_sample_rate = 30000;
 ephysData.waveform_t = 1e3*((0:size(templateWaveforms, 2) - 1) / 30000);
 ephysParams = struct;
-plotRaw = 1;
+plotRaw = 0;
 probeLocation=[];
 
 keep ephyData qMetric param probeLocation unitType plotRaw
-unitQualityGUI(memMapData,ephysData,qMetric, param, probeLocation, unitType, plotRaw);
+bc_unitQualityGUI(memMapData,ephysData,qMetric, param, probeLocation, unitType, plotRaw);
+
+
+
+
+

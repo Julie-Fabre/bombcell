@@ -39,6 +39,9 @@ Count the number of peaks and troughs to eliminate non-cell-like waveforms due t
 
 <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=30% height=30%>
 
+#### spatial decay
+
+work in progress
     											
 ####  % spikes missing 
 
@@ -90,18 +93,52 @@ Plot a GUI to flip through the quality metrics for each cell with the function `
     
 #### Unit location view
 
+This view plots the depth of each unit on the probe in y, and it's log-normalized firing rate in x. Single units are plotted in green, multi-units in indigo and noise in red. The current unit is plotted larger and circled in black. 
+
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_location.png" width=60% height=60%>
+
 #### Template waveform view
+
+This view plot the template waveforms for the current unit. The maximum waveform is in blue, and detected peaks are overlaid. 
+
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_tempWv.png" width=60% height=60%>
 
 #### Raw waveform view
 
+This view plot the mean raw waveforms for the current unit. The maximum waveform is in blue, and detected peaks are overlaid. 
+
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_rawWv.png" width=60% height=60%>
+
+
 #### ACG view
+
+This view plot the auto-correlogram (ACG) for the current unit. The horizontal red line indicates the ACG asymptote, which corresponds to the unit's firing rate. The vertical red line plot the refractory period location. 
+
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_acg.png" width=60% height=60%>
+
 
 #### ISI view
 
-#### Isolation distance view
+This view plot the inter-spike-intervals (ISI) for the current unit. The vertical red line plot the refractory period location. 
+
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_isi.png" width=60% height=60%>
 
 #### Isolation distance view
-    
+
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_isoD.png" width=60% height=60%>
+
+### Raw waveform view 
+
+Plots the raw data in black, with detected spikes for this unit in blue. 
+
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_raw.png" width=60% height=60%>
+
+#### Amplitude view
+
+This view plots the scaling factor applied to each spike by kilosort in black. Spikes currently displayed in the raw data view are shown in blue, and spikes that have an ISI < refractory period threshold are shown in purple. 
+
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_ampli.png" width=60% height=60%>
+
 ### Ephys properties guide
 
 work in progress
