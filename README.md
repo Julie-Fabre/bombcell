@@ -93,7 +93,7 @@ Plot a GUI to flip through the quality metrics for each cell with the function `
 
     bc_unitQualityGUI(memMapData, ephysData, qMetrics, param, probeLocation, unitType, plotRaw)
     
-<img src="https://media.giphy.com/media/HUA5AvgEilHWUK0SbQ/giphy.gif">
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/gui.gif">
     
 #### Unit location view
 
