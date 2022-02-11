@@ -1,92 +1,53 @@
-%% load data 
+%% loadData 
+load('/home/netshare/zserver-lab/Share/Celian/dataForJulie.mat')
+d1_folder = strrep(dat.d1.ephysSortingFolder, '\', filesep); % windows -> linux
+d2_folder = strrep(dat.d2.ephysSortingFolder, '\', filesep); % windows -> linux
+d1_folder = strrep(d1_folder, '/128.40.224.65/Subjects/', 'home/netshare/tempserver/'); % folder location
+d2_folder = strrep(d2_folder, '/128.40.224.65/Subjects/', 'home/netshare/tempserver/'); % folder location
+d1_rawfolder = strrep(dat.d1.ephysFolder, '\', filesep); % windows -> linux
+d2_rawfolder = strrep(dat.d2.ephysFolder, '\', filesep); % windows -> linux
+d1_rawfolder = strrep(d1_rawfolder, '/128.40.224.65/Subjects/', 'home/netshare/tempserver/'); % folder location
+d2_rawfolder = strrep(d2_rawfolder, '/128.40.224.65/Subjects/', 'home/netshare/tempserver/'); % folder location
+dat.d1.clu.ID = dat.d1.clu.ID + 1; % 0-idx -> 1-idx
+dat.d2.clu.ID = dat.d2.clu.ID + 1; % 0-idx -> 1-idx
+foldersAll = {d1_folder; d2_folder};
 
-ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site);
-[spikeTimes, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, usedChannels] = bc_loadEphysData(ephysPath);
-ephysap_path = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_ap',site);
-ephysDirPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_dir',site);
-savePath = fullfile(ephysDirPath, 'qMetrics'); 
+for iDay = 1:size(foldersAll, 1)
+    
+    templates{iDay} = readNPY([foldersAll{iDay, 1}, filesep, 'templates.npy']);
+    channel_positions{iDay} = readNPY([foldersAll{iDay, 1}, filesep, 'channel_positions.npy']);
+    spike_times_seconds{iDay} = double(readNPY([foldersAll{iDay, 1}, filesep, 'spike_times.npy']))./30000;
+    spike_times{iDay} = double(readNPY([foldersAll{iDay, 1}, filesep, 'spike_times.npy'])); % sample rate hard-coded as 30000 - should load this in from params 
+    spike_templates{iDay} = readNPY([foldersAll{iDay, 1}, filesep, 'spike_templates.npy']) + 1; % 0-idx -> 1-idx
+    template_amplitude{iDay} = readNPY([foldersAll{iDay, 1}, filesep, 'amplitudes.npy']);
+    spike_clusters{iDay} = readNPY([foldersAll{iDay, 1}, filesep, 'spike_clusters.npy']) + 1;
+    pc_features{iDay} = readNPY([foldersAll{iDay, 1}, filesep, 'pc_features.npy']) ;
+    pc_feature_ind{iDay} = readNPY([foldersAll{iDay, 1}, filesep, 'pc_feature_ind.npy']) + 1;
+    %mean_template_ampltiude
+end
 
-%% quality metric parameters and thresholds 
-rerun = 0;
+%% params
 param = struct;
-param.plotThis = 0;
-param.plotGlobal =1;
-% refractory period parameters
-param.tauR = 0.0020; %refractory period time (s)
-param.tauC = 0.0001; %censored period time (s)
-param.maxRPVviolations = 20;
-% percentage spikes missing parameters 
+param.tauR = 0.0010; %refractory period time (s)
+param.tauC = 0.0002; %censored period time (s)
 param.maxPercSpikesMissing = 30;
-param.computeTimeChunks = 0;
-param.deltaTimeChunk = NaN; 
-% number of spikes
 param.minNumSpikes = 300;
-% waveform parameters
-param.maxNPeaks = 2;
-param.maxNTroughs = 1;
+param.maxNtroughsPeaks = 3;
 param.axonal = 0; 
-% amplitude parameters
-param.rawFolder = [ephysap_path, '/..'];
-param.nRawSpikesToExtract = 100; 
-param.minAmplitude = 20; 
-% recording parametrs
+param.maxRPVviolations = 0.2;
+param.minAmplitude = 70; 
+param.plotThis = 0;
+param.rawFolder = d1_rawfolder;
+param.deltaTimeChunk = 600; % 10 min time chunk
 param.ephys_sample_rate = 30000;
 param.nChannels = 385;
-% distance metric parameters
-param.computeDistanceMetrics = 0;
+param.nRawSpikesToExtract = 100; 
 param.nChannelsIsoDist = 4;
-param.isoDmin = NaN;
-param.lratioMin = NaN;
-param.ssMin = NaN; 
-% ACG parameters
-param.ACGbinSize = 0.001;
-param.ACGduration = 1;
-% ISI parameters
-param.longISI = 2;
-% cell classification parameters
-param.propISI = 0.1;
-param.templateDuration = 400;
-param.pss = 40;
-
-%% compute quality metrics 
-qMetricsExist = dir(fullfile(savePath, 'qMetric*.mat'));
-
-if isempty(qMetricsExist) || rerun
-    [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
-        templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,usedChannels, savePath);
-else
-    load(fullfile(savePath, 'qMetric.mat'))
-    load(fullfile(savePath, 'param.mat'))
-    unitType = nan(length(qMetric.percSpikesMissing),1);
-    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs |qMetric.axonal == param.axonal) = 0; %NOISE OR AXONAL
-    unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
-        qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
-        qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude) = 1;%SINGLE SEXY UNIT
-    unitType(isnan(unitType)) = 2;% MULTI UNIT 
-end
-%% view units + quality metrics in GUI 
-%get memmap
-bc_getRawMemMap;
-
-% put ephys data into structure 
-ephysData = struct;
-ephysData.spike_times = spikeTimes;
-ephysData.spike_times_timeline = spikeTimes ./ 30000;
-ephysData.spike_templates = spikeTemplates;
-ephysData.templates = templateWaveforms;
-ephysData.template_amplitudes = templateAmplitudes;
-ephysData.channel_positions = readNPY([ephysPath filesep 'channel_positions.npy']);
-ephysData.ephys_sample_rate = 30000;
-ephysData.waveform_t = 1e3*((0:size(templateWaveforms, 2) - 1) / 30000);
-ephysParams = struct;
-plotRaw = 0;
-probeLocation=[];
-
-keep ephyData qMetric param probeLocation unitType plotRaw
-bc_unitQualityGUI(memMapData,ephysData,qMetric, param, probeLocation, unitType, plotRaw);
-
-
-
-
-
+param.computeDistanceMetrics = 1;
+param.isoDmin = 25;
+param.lratioMin = 0;
+param.ssMin = 0; 
+%% run and save qualityMetrics 
+iDay = 1;
+qMetrics = bc_runAllQualityMetrics(param, spike_times{iDay}, spike_templates{iDay}, ...
+    templates{iDay}, template_amplitude{iDay},pc_features{iDay},pc_feature_ind{iDay});

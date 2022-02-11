@@ -16,7 +16,7 @@ Used in [Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020
 
 To install: in MATLAB, clone this repository and the [dependancies](#Dependancies), change your working directory to bombcell\ephysProperties\helpers in matlab and run `mex -O CCGHeart.c`. 
 
-To start out, we suggest you compute quality metrics with default `param` values, and then adjust the thresholds for your particular neuronal region and needs by looking at (1) individual units, in the interactive [GUI](#Quality-metrics-GUI-guide ) (2) distribution histograms of the units' quality metrics, (3) numbers of units removed by each quality metric. It may also be useful to plot the quantity you which to measure as a function of each quality metric (see [Fig. 2 Harris et al., Nat. Neuro, 2016](https://www.nature.com/articles/nn.4365/figures/2)).
+To start out, we suggest you compute quality metrics with default `param` values, and then adjust the thresholds for your particular neuronal region and needs by looking at (1) individual units, in the interactive [GUI](#Quality-metrics-GUI-guide ) (2) distribution histograms of the units' quality metrics (see General plots), (3) numbers of units removed by each quality metric. It may also be useful to plot the quantity you which to measure as a function of each quality metric (see [Fig. 2 Harris et al., Nat. Neuro, 2016](https://www.nature.com/articles/nn.4365/figures/2)).
 
 See the script `bc_qualityMetrics_pipeline` for an example workflow. 
 
@@ -31,7 +31,7 @@ Set `param.plotThis = 1;` to plot figures for each quality metric (plot examples
 
 #### somatic
 
-Somatic waveforms are defined as waveforms where the largest trough precedes the largest peak (Deligkaris,Bullmann& Frey, 2016).
+Somatic waveforms are defined as waveforms where the largest trough precedes the largest peak (Deligkaris, Bullmann & Frey, 2016).
 
 #### number of peaks and troughs
 
@@ -85,7 +85,9 @@ Below: examples of a unit with high isolation distance (left) and one with low i
 
 #### Global output plots 
 
-work in progress 
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/unitRemovedEulerVenn.png">
+
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/generalPlotHist.png">
 
 ### Quality metrics GUI guide 
 
