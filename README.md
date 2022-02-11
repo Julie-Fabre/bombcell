@@ -87,9 +87,9 @@ Below: examples of a unit with high isolation distance (left) and one with low i
 
 <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/unitRemovedEulerVenn.png" width=80% height=80%>
 
-<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/waveformsSingleNoise.png" width=60% height=60%>
-
 <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/generalPlotHist.png">
+
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/waveformsSingleNoise.png" width=60% height=60%>
 
 ### Quality metrics GUI guide 
 
