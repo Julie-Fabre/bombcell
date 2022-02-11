@@ -148,9 +148,11 @@ This view plots the scaling factor applied to each spike by kilosort in black. S
 work in progress
 
 
-### Recommended pre-processing 
+### Recommended recording and pre-processing 
 
-We recommend temporally aligning your channels with each other and common-averaging you data with Bill Karsh's function [`CatGT`](https://billkarsh.github.io/SpikeGLX/), and then feeding this data into kilosort. We then recommend looking at your raw data and spikes detected by kilosort, to assess whether all spikes are being detected. If not, consider lowering kilosort's detection thresholds. 
+To reduce the noise units you obtain, we recommend recording with either both a ground wire and reference wire going from the probe to the mouse, or with a ground wire and the internal reference (if using probes other than the 3A - the internal reference on these doesn't work well). To remove artefacts from your recorded data, temporally align your channels with each other and common-average reference your data with Bill Karsh's function [`CatGT`](https://billkarsh.github.io/SpikeGLX/), before feeding this data into kilosort. 
+
+To maximize your number of single good units, we recommend looking at your raw data and spikes detected by kilosort, to assess whether most spikes are being detected. If not, consider lowering kilosort's detection thresholds. 
 
 ### Dependancies
 
