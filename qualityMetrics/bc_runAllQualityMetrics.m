@@ -168,7 +168,88 @@ if exist('savePath', 'var') %save qualityMetrics
     save(fullfile(savePath, 'param.mat'), 'param')
 end
 disp('finished extracting quality metrics')
-% if param.plotGlobal 
+if param.plotGlobal 
     % QQ plot histograms of each metric with the cutoffs set in params
+    colorMtx = [lines(7), repmat(0.6,7,1)];
+    qMetric.nPeaks(1)=3;
+    setsw = {find(qMetric.nPeaks > param.maxNPeaks),find(qMetric.nTroughs > param.maxNTroughs), ...
+        find(qMetric.somatic == 0), find(qMetric.Fp > param.maxRPVviolations), ...
+        find(qMetric.percSpikesMissing > param.maxPercSpikesMissing), ...
+        find(qMetric.nSpikes <= param.minNumSpikes), find(qMetric.rawAmplitude <= param.minAmplitude)}; 
+    
+    figure();
+    title('# of units classified as noise/mua/non-somatic with quality metrics')
+    subplot(1,5,1:4)
+    vennEulerDiagram(setsw,{'# peaks', '#troughs', 'non-somatic', 'refractory period violations','undetected spikes', '# spikes', 'waveform amplitude'},...
+        'ColorOrder', colorMtx(:,1:3), ...
+        'ShowIntersectionCounts',1);
+    subplot(1,5,5) % hacky way to get a legend 
+    set(gca, 'XColor', 'w','YColor', 'w')
+    hold on;
+    arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', colorMtx(x,:)), 1:7);
+    legend({'# peaks', '#troughs', 'non-somatic', 'refractory period violations','undetected spikes', '# spikes', 'waveform amplitude'})
+    set(gcf, 'color', 'w')
+    
+    figure();
+    set(gcf, 'color', 'w')
+    
+    subplot(4,2,1)
+    title('# peaks'); hold on;
+    histogram(qMetric.nPeaks, 'FaceColor', colorMtx(1,1:3), 'FaceAlpha', colorMtx(1,4));
+    yLim = ylim;
+    line([param.maxNPeaks+0.5, param.maxNPeaks+0.5], [0 yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    ylabel('unit count')
+    xlabel('# peaks')
+    
+    subplot(4,2,2)
+    title('# troughs'); hold on;
+    histogram(qMetric.nTroughs, 'FaceColor', colorMtx(2,1:3), 'FaceAlpha', colorMtx(2,4));
+    yLim = ylim;
+    line([param.maxNTroughs+0.5, param.maxNTroughs+0.5], [0 yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    ylabel('unit count')
+    xlabel('# troughs')
+    
+    subplot(4,2,3)
+    title('# non-somatic'); hold on;
+    histogram(1-qMetric.somatic, 'FaceColor', colorMtx(3,1:3), 'FaceAlpha', colorMtx(3,4));
+    yLim = ylim;
+    line([param.somatic-0.5, param.somatic-0.5], [0 yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    ylabel('unit count')
+    xlabel('non somatic')
+    
+    subplot(4,2,4)
+    title('% r.p.v.'); hold on;
+    histogram(qMetric.Fp, 'FaceColor', colorMtx(4,1:3), 'FaceAlpha', colorMtx(4,4),'BinEdges', [0:5:max(qMetric.Fp)]);
+    set(gca,'yscale','log')
+    yLim = ylim;
+    line([param.maxRPVviolations+0.5, param.maxRPVviolations+0.5], [yLim(1) yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    ylabel('unit count')
+    xlabel('refractory period violations (%)')
+    
+    subplot(4,2,5)
+    title('% undetected spikes'); hold on;
+    histogram(qMetric.percSpikesMissing, 'FaceColor', colorMtx(5,1:3), 'FaceAlpha', colorMtx(5,4),'BinEdges', [0:5:max(qMetric.percSpikesMissing)]);
+    yLim = ylim;
+    line([param.maxPercSpikesMissing+0.5, param.maxPercSpikesMissing+0.5], [yLim(1) yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    ylabel('unit count')
+    xlabel('spikes below detection threshold (%)')
+    
+    subplot(4,2,6)
+    title('# spikes'); hold on;
+    histogram(qMetric.nSpikes, 'FaceColor', colorMtx(6,1:3), 'FaceAlpha', colorMtx(6,4),'BinEdges', [0:300:max(qMetric.nSpikes)]);
+    yLim = ylim;
+    line([param.minNumSpikes+0.5, param.minNumSpikes+0.5], [yLim(1) yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    ylabel('unit count')
+    xlabel('# spikes')
+    
+    subplot(4,2,7)
+    title('waveform amplitude'); hold on;
+    histogram(qMetric.rawAmplitude, 'FaceColor', colorMtx(6,1:3), 'FaceAlpha', colorMtx(6,4),'BinEdges', [0:20:max(qMetric.rawAmplitude)]);
+    yLim = ylim;
+    line([param.minAmplitude+0.5, param.minAmplitude+0.5], [yLim(1) yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    ylabel('unit count')
+    xlabel('mean raw waveform peak amplitude (uV)')
+
+end
 
 end
