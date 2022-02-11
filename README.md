@@ -85,7 +85,7 @@ Below: examples of a unit with high isolation distance (left) and one with low i
 
 #### Global output plots 
 
-<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/unitRemovedEulerVenn.png">
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/unitRemovedEulerVenn.png" width=40% height=40%>
 
 <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/generalPlotHist.png">
 
