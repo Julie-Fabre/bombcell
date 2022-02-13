@@ -1,5 +1,63 @@
 % 1. multi-venn diagram of units classified as noise/mua by each quality metric
 if param.plotGlobal
+    figure();
+    if param.computeDistanceMetrics && ~isnan(param.isoDmin)
+        colorMtx = [lines(7), repmat(0.6, 7, 1)];
+        colorMtx = [colorMtx; [rgb('Orange'), 0.6]];
+
+        setsw = {find(qMetric.nPeaks > param.maxNPeaks), find(qMetric.nTroughs > param.maxNTroughs), ...
+            find(qMetric.somatic == 0), find(qMetric.Fp > param.maxRPVviolations), ...
+            find(qMetric.percSpikesMissing > param.maxPercSpikesMissing), ...
+            find(qMetric.nSpikes <= param.minNumSpikes), find(qMetric.rawAmplitude <= param.minAmplitude),...
+            find(qMetric.isoD <= param.isoDmin)};
+        emptyCell = find(cellfun(@isempty,setsw));
+        if ~isempty(emptyCell)
+            for iEC = 1:length(emptyCell)
+            setsw{emptyCell(iEC)} = 0;
+            end
+        end
+        title('# of units classified as noise/mua/non-somatic with quality metrics')
+        subplot(1, 5, 1:4)
+        vennEulerDiagram(setsw, {'# peaks', '#troughs', 'non-somatic', 'refractory period violations', ...
+            'undetected spikes', '# spikes', 'waveform amplitude', 'isolation distance'}, ...
+            'ColorOrder', colorMtx(:, 1:3), ...
+            'ShowIntersectionCounts', 1);
+        subplot(1, 5, 5) % hacky way to get a legend
+        set(gca, 'XColor', 'w', 'YColor', 'w')
+        hold on;
+        arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', colorMtx(x, :)), 1:8);
+        legend({'# peaks', '#troughs', 'non-somatic', 'refractory period violations', ...
+            'undetected spikes', '# spikes', 'waveform amplitude', 'isolation distance'})
+        set(gcf, 'color', 'w')
+
+    else
+        colorMtx = [lines(7), repmat(0.6, 7, 1)];
+
+        setsw = {find(qMetric.nPeaks > param.maxNPeaks), find(qMetric.nTroughs > param.maxNTroughs), ...
+            find(qMetric.somatic == 0), find(qMetric.Fp > param.maxRPVviolations), ...
+            find(qMetric.percSpikesMissing > param.maxPercSpikesMissing), ...
+            find(qMetric.nSpikes <= param.minNumSpikes), find(qMetric.rawAmplitude <= param.minAmplitude)};
+        title('# of units classified as noise/mua/non-somatic with quality metrics')
+        subplot(1, 5, 1:4)
+        emptyCell = find(cellfun(@isempty,setsw));
+        if ~isempty(emptyCell)
+            for iEC = 1:length(emptyCell)
+            setsw{emptyCell(iEC)} = 0;
+            end
+        end
+        
+        vennEulerDiagram(setsw, {'# peaks', '#troughs', 'non-somatic', 'refractory period violations', 'undetected spikes', '# spikes', 'waveform amplitude'}, ...
+            'ColorOrder', colorMtx(:, 1:3), ...
+            'ShowIntersectionCounts', 1);
+        subplot(1, 5, 5) % hacky way to get a legend
+        set(gca, 'XColor', 'w', 'YColor', 'w')
+        hold on;
+        arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', colorMtx(x, :)), 1:7);
+        legend({'# peaks', '#troughs', 'non-somatic', 'refractory period violations', 'undetected spikes', '# spikes', 'waveform amplitude'})
+        set(gcf, 'color', 'w')
+    end
+    
+    
     % 1. single/multi/noise/axonal waveforms 
     figure('Color', 'w');
     subplot(121)
@@ -113,62 +171,7 @@ if param.plotGlobal
         makepretty;
     end
     
-    figure();
-    if param.computeDistanceMetrics && ~isnan(param.isoDmin)
-        colorMtx = [lines(7), repmat(0.6, 7, 1)];
-        colorMtx = [colorMtx; [rgb('Orange'), 0.6]];
-
-        setsw = {find(qMetric.nPeaks > param.maxNPeaks), find(qMetric.nTroughs > param.maxNTroughs), ...
-            find(qMetric.somatic == 0), find(qMetric.Fp > param.maxRPVviolations), ...
-            find(qMetric.percSpikesMissing > param.maxPercSpikesMissing), ...
-            find(qMetric.nSpikes <= param.minNumSpikes), find(qMetric.rawAmplitude <= param.minAmplitude),...
-            find(qMetric.isoD <= param.isoDmin)};
-        emptyCell = find(cellfun(@isempty,setsw));
-        if ~isempty(emptyCell)
-            for iEC = 1:length(emptyCell)
-            setsw{emptyCell(iEC)} = 0;
-            end
-        end
-        title('# of units classified as noise/mua/non-somatic with quality metrics')
-        subplot(1, 5, 1:4)
-        vennEulerDiagram(setsw, {'# peaks', '#troughs', 'non-somatic', 'refractory period violations', ...
-            'undetected spikes', '# spikes', 'waveform amplitude', 'isolation distance'}, ...
-            'ColorOrder', colorMtx(:, 1:3), ...
-            'ShowIntersectionCounts', 1);
-        subplot(1, 5, 5) % hacky way to get a legend
-        set(gca, 'XColor', 'w', 'YColor', 'w')
-        hold on;
-        arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', colorMtx(x, :)), 1:8);
-        legend({'# peaks', '#troughs', 'non-somatic', 'refractory period violations', ...
-            'undetected spikes', '# spikes', 'waveform amplitude', 'isolation distance'})
-        set(gcf, 'color', 'w')
-
-    else
-        colorMtx = [lines(7), repmat(0.6, 7, 1)];
-
-        setsw = {find(qMetric.nPeaks > param.maxNPeaks), find(qMetric.nTroughs > param.maxNTroughs), ...
-            find(qMetric.somatic == 0), find(qMetric.Fp > param.maxRPVviolations), ...
-            find(qMetric.percSpikesMissing > param.maxPercSpikesMissing), ...
-            find(qMetric.nSpikes <= param.minNumSpikes), find(qMetric.rawAmplitude <= param.minAmplitude)};
-        title('# of units classified as noise/mua/non-somatic with quality metrics')
-        subplot(1, 5, 1:4)
-        emptyCell = find(cellfun(@isempty,setsw));
-        if ~isempty(emptyCell)
-            for iEC = 1:length(emptyCell)
-            setsw{emptyCell(iEC)} = 0;
-            end
-        end
-        
-        vennEulerDiagram(setsw, {'# peaks', '#troughs', 'non-somatic', 'refractory period violations', 'undetected spikes', '# spikes', 'waveform amplitude'}, ...
-            'ColorOrder', colorMtx(:, 1:3), ...
-            'ShowIntersectionCounts', 1);
-        subplot(1, 5, 5) % hacky way to get a legend
-        set(gca, 'XColor', 'w', 'YColor', 'w')
-        hold on;
-        arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', colorMtx(x, :)), 1:7);
-        legend({'# peaks', '#troughs', 'non-somatic', 'refractory period violations', 'undetected spikes', '# spikes', 'waveform amplitude'})
-        set(gcf, 'color', 'w')
-    end
+    
 
 
 
