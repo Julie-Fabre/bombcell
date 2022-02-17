@@ -28,6 +28,7 @@ param.maxNTroughs = 1;
 param.axonal = 0; 
 param.minWvDuration = 100; %ms
 param.maxWvDuration = 800; %ms
+param.minSpatialDecaySlope = -60;
 % amplitude parameters
 param.rawFolder = [ephysap_path, '/..'];
 param.nRawSpikesToExtract = 100; 
@@ -61,7 +62,8 @@ else
     load(fullfile(savePath, 'qMetric.mat'))
     load(fullfile(savePath, 'param.mat'))
     unitType = nan(length(qMetric.percSpikesMissing),1);
-    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs |qMetric.axonal == param.axonal) = 0; %NOISE OR AXONAL
+    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.somatic ~= param.somatic ...
+        | qMetric.spatialDecaySlope <=  param.minSpatialDecaySlope| qMetric.cellLikeDuration == 0 ) = 0; %NOISE or NON-SOMATIC
     unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
         qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
         qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude) = 1;%SINGLE SEXY UNIT
@@ -85,7 +87,7 @@ ephysParams = struct;
 plotRaw = 1;
 probeLocation=[];
 
-keep ephyData qMetric param probeLocation unitType plotRaw
+keep ephysData qMetric param probeLocation unitType plotRaw
 bc_unitQualityGUI(memMapData,ephysData,qMetric, param, probeLocation, unitType, plotRaw);
 
 

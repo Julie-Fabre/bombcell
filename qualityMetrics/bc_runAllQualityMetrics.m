@@ -149,7 +149,8 @@ for iUnit = 1:length(uniqueTemplates)
 end
 if param.computeDistanceMetrics && ~isnan(param.isoDmin)
     unitType = nan(length(qMetric.percSpikesMissing), 1);
-    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.somatic ~= param.somatic | qMetric.cellLikeDuration == 0) = 0; %NOISE or NON-SOMATIC
+    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.somatic ~= param.somatic ...
+        | qMetric.spatialDecaySlope <=  param.minSpatialDecaySlope| qMetric.cellLikeDuration == 0 ) = 0; %NOISE or NON-SOMATIC
     unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
         qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
         qMetric.somatic == param.somatic & qMetric.rawAmplitude > param.minAmplitude & qMetric.isoDmin >= param.isoDmin) = 1; %SINGLE SEXY UNIT
@@ -157,7 +158,8 @@ if param.computeDistanceMetrics && ~isnan(param.isoDmin)
 
 else
     unitType = nan(length(qMetric.percSpikesMissing), 1);
-    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.somatic ~= param.somatic | qMetric.cellLikeDuration == 0) = 0; %NOISE or AXONAL
+    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.somatic ~= param.somatic ...
+        | qMetric.spatialDecaySlope <=  param.minSpatialDecaySlope| qMetric.cellLikeDuration == 0 ) = 0; %NOISE or NON-SOMATIC
     unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
         qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
         qMetric.somatic == param.somatic & qMetric.rawAmplitude > param.minAmplitude) = 1; %SINGLE SEXY UNIT
