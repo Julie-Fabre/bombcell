@@ -1,4 +1,4 @@
-function [nPeaks, nTroughs, somatic, peakLocs, troughLocs, cellLikeDuration] = bc_troughsPeaks(thisWaveform, ephys_sample_rate, plotThis, minWvDuration, maxWvDuration)
+function [nPeaks, nTroughs, somatic, peakLocs, troughLocs] = bc_troughsPeaks(thisWaveform, ephys_sample_rate, plotThis)
 % JF, Get the number of troughs and peaks for each waveform, and determine
 % whether waveform is likely axonal (biggest peak before biggest trough)
 % ------
@@ -69,10 +69,8 @@ else
     somatic = 0;
 end
 
-if any(abs(thisWaveform(1:10))> 0.05) || abs(troughLoc-peakLoc)*0.0333 < minWvDuration || abs(troughLoc-peakLoc)*0.0333 > maxWvDuration
-    cellLikeDuration = 0;
+if any(thisWaveform(1:10)) || abs(troughLoc-peakLoc)*0.0333 < p.minDuration 
 else
-    cellLikeDuration = 1;
 end
 if plotThis
     figure();

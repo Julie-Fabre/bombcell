@@ -122,11 +122,12 @@ for iUnit = 1:length(uniqueTemplates)
     %% number spikes
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
 
-    %% waveform: number peaks/troughs and is peak before trough (= axonal/dendritic)
+    %% waveform: (1) number peaks/troughs, (2) is peak before trough (= axonal/dendritic), (3) is waveform duration cell-like, spatial decay
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.somatic(iUnit), ...
-        qMetric.peakLocs{iUnit}, qMetric.troughLocs{iUnit}] = bc_troughsPeaks(templateWaveforms(thisUnit, :, maxChannels(thisUnit)), ...
-        param.ephys_sample_rate, param.plotThis);
-
+        qMetric.peakLocs{iUnit}, qMetric.troughLocs{iUnit}, qMetric.cellLikeDuration{iUnit}] = bc_troughsPeaks(templateWaveforms(thisUnit, :, maxChannels(thisUnit)), ...
+        param.ephys_sample_rate, param.plotThis, param.minWvDuration, param.maxWvDuration);
+    
+ 
     %% fraction contam (false postives)
     [qMetric.Fp(iUnit), ~, ~] = bc_fractionRPviolations(numel(theseSpikeTimes), theseSpikeTimes, param.tauR, param.tauC, ...
         timeChunks(end)-timeChunks(1), param.plotThis);
@@ -147,7 +148,7 @@ for iUnit = 1:length(uniqueTemplates)
 end
 if param.computeDistanceMetrics && ~isnan(param.isoDmin)
     unitType = nan(length(qMetric.percSpikesMissing), 1);
-    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.somatic ~= param.somatic) = 0; %NOISE or NON-SOMATIC
+    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.somatic ~= param.somatic | qMetric.cellLikeDuration == 0) = 0; %NOISE or NON-SOMATIC
     unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
         qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
         qMetric.somatic == param.somatic & qMetric.rawAmplitude > param.minAmplitude & qMetric.isoDmin >= param.isoDmin) = 1; %SINGLE SEXY UNIT
@@ -155,7 +156,7 @@ if param.computeDistanceMetrics && ~isnan(param.isoDmin)
 
 else
     unitType = nan(length(qMetric.percSpikesMissing), 1);
-    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.somatic ~= param.somatic) = 0; %NOISE or AXONAL
+    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.somatic ~= param.somatic | qMetric.cellLikeDuration == 0) = 0; %NOISE or AXONAL
     unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
         qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
         qMetric.somatic == param.somatic & qMetric.rawAmplitude > param.minAmplitude) = 1; %SINGLE SEXY UNIT
