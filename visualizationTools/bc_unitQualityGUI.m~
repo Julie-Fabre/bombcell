@@ -10,7 +10,7 @@
 % - click on units 
 % - probe locations 
 
-function bc_unitQualityGUI(memMapData, ephysData, qMetrics, param, probeLocation, unitType, plotRaw)
+function bc_unitQualityGUI(memMapData, ephysData, qMetric, param, probeLocation, unitType, plotRaw)
 
 %% set up dynamic figure
 unitQualityGuiHandle = figure('color', 'w');
@@ -25,8 +25,8 @@ multiUnit_idx = find(unitType==2);
 noiseUnit_idx = find(unitType==0); 
 %% plot initial conditions
 iChunk = 1;
-initializePlot(unitQualityGuiHandle, ephysData, qMetrics, unitType, uniqueTemps, plotRaw, param)
-updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
+initializePlot(unitQualityGuiHandle, ephysData, qMetric, unitType, uniqueTemps, plotRaw, param)
+updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param, ...
     probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
 
 %% change on keypress
@@ -35,42 +35,42 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, para
         if strcmpi(evnt.Key, 'rightarrow')
             iCluster = iCluster + 1;
             tic
-            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
+            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
             toc
         elseif strcmpi(evnt.Key, 'g') %toggle to next single-unit 
             iCluster = goodUnit_idx(iCluster + 1);
-            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
+            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'm') %toggle to next multi-unit 
             iCluster = multiUnit_idx(iCluster + 1);
-            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
+            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'n') %toggle to next  noise/non-somatic unit
             iCluster = noiseUnit_idx(iCluster + 1);
-            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
+            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'leftarrow')
             iCluster = iCluster - 1;
-            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
+            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'uparrow')
             iChunk = iChunk + 1;
-            updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, qMetrics, param, ...
+            updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, qMetric, param, ...
     probeLocation, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'downarrow')
             iChunk = iChunk - 1;
-            updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, qMetrics, param, ...
+            updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, qMetric, param, ...
     probeLocation, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'u') %select particular unit 
             iCluster = str2num(cell2mat(inputdlg('Go to unit:')));
-            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
+            updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         end
     end
 end
 
-function initializePlot(unitQualityGuiHandle, ephysData, qMetrics, unitType, uniqueTemps, plotRaw, param)
+function initializePlot(unitQualityGuiHandle, ephysData, qMetric, unitType, uniqueTemps, plotRaw, param)
 
 %% main title
 
@@ -85,7 +85,7 @@ unitCmap(unitType == 1, :, :) = repmat([0, 0.5, 0], length(find(unitType == 1)),
 unitCmap(unitType == 0, :, :) = repmat([1, 0, 0], length(find(unitType == 0)), 1);
 unitCmap(unitType == 2, :, :) = repmat([0.29, 0, 0.51], length(find(unitType == 2)), 1);
 norm_spike_n = mat2gray(log10(accumarray(ephysData.spike_templates, 1)+1));
-unitDots = scatter(norm_spike_n(uniqueTemps), ephysData.channel_positions(qMetrics.maxChannels(uniqueTemps), 2), 5, unitCmap, ...
+unitDots = scatter(norm_spike_n(uniqueTemps), ephysData.channel_positions(qMetric.maxChannels(uniqueTemps), 2), 5, unitCmap, ...
     'filled', 'ButtonDownFcn', @unit_click);
 currUnitDots = scatter(0, 0, 100, unitCmap(1, :, :), ...
     'filled', 'MarkerEdgeColor', [0, 0, 0], 'LineWidth', 4);
@@ -107,7 +107,7 @@ xlabel('Position+Time');
 ylabel('Position');
 set(gca, 'YDir', 'reverse')
 tempTitle = title('');
-tempLegend = legend([maxTemplateWaveformLines, peaks, troughs], {'', '', ''});
+tempLegend = legend([maxTemplateWaveformLines, peaks, troughs, templateWaveformLines(1)], {'', '', '',''},'color','none');
 
 %% initialize raw waveforms
 subplot(6, 13, [8:13, 21:26])
@@ -118,7 +118,7 @@ set(gca, 'YDir', 'reverse')
 xlabel('Position+Time');
 ylabel('Position');
 rawTitle = title('');
-rawLegend = legend([maxRawWaveformLines], {''});
+rawLegend = legend([maxRawWaveformLines], {''},'color','none');
 
 %% initialize ACG
 if plotRaw && param.computeDistanceMetrics
@@ -268,13 +268,13 @@ guiData.rpvAmpli = rpvAmpli;
 guidata(unitQualityGuiHandle, guiData);
 end
 
-function updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetrics, param, ...
+function updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param, ...
     probeLocation, unitType, uniqueTemps, iChunk, plotRaw)
 
 %% Get guidata
 guiData = guidata(unitQualityGuiHandle);
 thisUnit = uniqueTemps(iCluster);
-
+colorsGdBad = [1, 0, 0; 0, 0.5, 0];
 %% main title
 if unitType(iCluster) == 1
     set(guiData.mainTitle, 'String', ['Unit ', num2str(iCluster), ', single unit'], 'Color', [0, .5, 0]);
@@ -285,30 +285,19 @@ elseif unitType(iCluster) == 2
 end
 
 %% plot 1: update curr unit location
-set(guiData.currUnitDots, 'XData', guiData.norm_spike_n(thisUnit), 'YData', ephysData.channel_positions(qMetrics.maxChannels(thisUnit), 2), 'CData', guiData.unitCmap(iCluster, :))
+set(guiData.currUnitDots, 'XData', guiData.norm_spike_n(thisUnit), 'YData', ephysData.channel_positions(qMetric.maxChannels(thisUnit), 2), 'CData', guiData.unitCmap(iCluster, :))
 
-%% reset wav
-max_n_channels_plot = 20;
-for iChanToPlot = 1:20
-set(guiData.maxTemplateWaveformLines, 'XData', nan(82, 1), 'YData', nan(82, 1));
-set(guiData.maxTemplateWaveformLines, 'XData', nan(82, 1), 'YData', nan(82, 1));
-
-
-rawWaveformLines = arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', 'k'), 1:max_n_channels_plot);
-maxRawWaveformLines = arrayfun(@(x) plot(nan(82, 1), nan(82, 1), 'linewidth', 2, 'color', 'b'), 1);
+for iCh = 1:20
+    set(guiData.templateWaveformLines(iCh), 'XData', nan(82, 1), 'YData', nan(82, 1))
+    set(guiData.rawWaveformLines(iCh), 'XData', nan(82, 1), 'YData', nan(82, 1))
 end
-
-
 %% plot 2: update unit template waveform and detected peaks
 % guiData.templateWaveformLines = templateWaveformLines;
 %     guiData.maxTemplateWaveformLines = maxTemplateWaveformLines;
 %     guiData.tempTitle = tempTitle;
 %     guiData.tempLegend = tempLegend;
-subplot(6, 13, [2:7, 15:20])
-hold on;
 
-
-maxChan = qMetrics.maxChannels(thisUnit);
+maxChan = qMetric.maxChannels(thisUnit);
 maxXC = ephysData.channel_positions(maxChan, 1);
 maxYC = ephysData.channel_positions(maxChan, 2);
 chanDistances = ((ephysData.channel_positions(:, 1) - maxXC).^2 ...
@@ -322,14 +311,14 @@ for iChanToPlot = 1:min(20, size(chansToPlot, 1))
             'YData', -squeeze(ephysData.templates(thisUnit, :, chansToPlot(iChanToPlot)))'+ ...
             (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) ./ 100));
         hold on;
-        set(guiData.peaks, 'XData', (ephysData.waveform_t(qMetrics.peakLocs{iCluster}) ...
+        set(guiData.peaks, 'XData', (ephysData.waveform_t(qMetric.peakLocs{iCluster}) ...
             +(ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
-            'YData', -squeeze(ephysData.templates(thisUnit, qMetrics.peakLocs{iCluster}, chansToPlot(iChanToPlot)))'+ ...
+            'YData', -squeeze(ephysData.templates(thisUnit, qMetric.peakLocs{iCluster}, chansToPlot(iChanToPlot)))'+ ...
             (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) ./ 100));
 
-        set(guiData.troughs, 'XData', (ephysData.waveform_t(qMetrics.troughLocs{iCluster}) ...
+        set(guiData.troughs, 'XData', (ephysData.waveform_t(qMetric.troughLocs{iCluster}) ...
             +(ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
-            'YData', -squeeze(ephysData.templates(thisUnit, qMetrics.troughLocs{iCluster}, chansToPlot(iChanToPlot)))'+ ...
+            'YData', -squeeze(ephysData.templates(thisUnit, qMetric.troughLocs{iCluster}, chansToPlot(iChanToPlot)))'+ ...
             (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) ./ 100));
         set(guiData.templateWaveformLines(iChanToPlot), 'XData', nan(82, 1), ...
             'YData', nan(82, 1));
@@ -340,76 +329,53 @@ for iChanToPlot = 1:min(20, size(chansToPlot, 1))
             (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) ./ 100));
     end
 end
-%  [nPeaks, nTroughs, somatic, peakLocs, troughLocs] = bc_troughsPeaks(ephysData.templates(thisUnit, :, qMetrics.maxChannels(thisUnit)), ...
-%          param.ephys_sample_rate, 1);
 
-% ff=find(chansToPlot == maxChan);
-% disp(vals(ff))
-% if ff>4 && ff<min(20, size(chansToPlot, 1))-4
-%     disp(nanmean(vals([ff-2, ff-1, ff+1, ff+2])))
-%     disp(nanmean(vals([ff-4, ff-3, ff+4, ff+3])))
-% elseif ff<min(20, size(chansToPlot, 1))-4
-%     disp(nanmean(vals([ff+1, ff+2])))
-%     disp(nanmean(vals([ff+4, ff+3])))
-% elseif ff>4
-%     disp(nanmean(vals([ff-2, ff-1])))
-%     disp(nanmean(vals([ff-4, ff-3])))
-% end
+tempWvTitleText = '\\fontsize{9}Template waveform: {\\color[rgb]{%s}# detected peaks/troughs, '
+       
+str = sprintf(tempWvTitleText,colorsGdBad(double(qMetric.nPeaks(iCluster) > param.maxNPeaks)+1,:))
+colorsGdBad
 
-% 
-% figure();    
-% scatter3(vals, ephysData.channel_positions(chansToPlot(1:min(12, size(chansToPlot, 1))),1), ...
-%     ephysData.channel_positions(chansToPlot(1:min(12, size(chansToPlot,1))),2))
+if qMetric.nPeaks(iCluster) > param.maxNPeaks || qMetric.nTroughs(iCluster) > param.maxNTroughs
+    if qMetric.somatic(iCluster) == 0
 
-% X_ave=mean([vals', ephysData.channel_positions(chansToPlot(1:min(12, size(chansToPlot, 1))),1), ...
-%     ephysData.channel_positions(chansToPlot(1:min(12, size(chansToPlot,1))),2)],1);            
-% % mean; line of best fit will pass through this point  
-% dX=bsxfun(@minus,[vals', ephysData.channel_positions(chansToPlot(1:min(12, size(chansToPlot, 1))),1), ...
-%     ephysData.channel_positions(chansToPlot(1:min(12, size(chansToPlot,1))),2)],X_ave);  % residuals
-% C=(dX'*dX)/(numel(vals)-1);           % variance-covariance matrix of X
-% [R,D]=svd(C,0);             % singular value decomposition of C; C=R*D*R'
-% D=diag(D);
-% R2=D(1)/sum(D);
-
-if qMetrics.nPeaks(iCluster) > param.maxNPeaks || qMetrics.nTroughs(iCluster) > param.maxNTroughs
-    if qMetrics.somatic(iCluster) == 0
-        set(guiData.tempTitle, 'String', ['\fontsize{9}Template waveform: {\color[rgb]{1 0 0}# detected peaks/troughs, ', ...
+        set(guiData.tempTitle, 'String', ['\fontsize{9}Template waveform: {\color[rgb]{1 0 0}# detected peaks/troughs, ', newline,...
             '\color[rgb]{1 0 0}is somatic \color{red}}'])
     else
-        set(guiData.tempTitle, 'String', ['\fontsize{9}Template waveform: {\color[rgb]{1 0 0}# detected peaks/troughs, ', ...
+        set(guiData.tempTitle, 'String', ['\fontsize{9}Template waveform: {\color[rgb]{1 0 0}# detected peaks/troughs, ', newline,...
             '\color[rgb]{0 .5 0}is somatic \color{red}}'])
     end
 else
-    if qMetrics.somatic(iCluster) == 0
-        set(guiData.tempTitle, 'String', ['\fontsize{9}Template waveform: {\color[rgb]{0 .5 0}# detected peaks/troughs, ', ...
+    if qMetric.somatic(iCluster) == 0
+        set(guiData.tempTitle, 'String', ['\fontsize{9}Template waveform: {\color[rgb]{0 .5 0}# detected peaks/troughs, ', newline,...
             '\color[rgb]{1 0 0}is somatic \color{red}}'])
     else
-        set(guiData.tempTitle, 'String', ['\fontsize{9}Template waveform: {\color[rgb]{0 .5 0}# detected peaks/troughs, ', ...
+        set(guiData.tempTitle, 'String', ['\fontsize{9}Template waveform: {\color[rgb]{0 .5 0}# detected peaks/troughs, ', newline,...
             '\color[rgb]{0 .5 0}is somatic \color{red}}'])
     end
 
 end
-set(guiData.tempLegend, 'String', {['is somatic =', num2str(qMetrics.somatic(iCluster))], ...
-    [num2str(qMetrics.nPeaks(iCluster)), ' peak(s)'], [num2str(qMetrics.nTroughs(iCluster)), ' trough(s)']})
+set(guiData.tempLegend, 'String', {['is somatic =', num2str(qMetric.somatic(iCluster)), newline, 'cell-like duration =', num2str(qMetric.cellLikeDuration(iCluster))], ...
+    [num2str(qMetric.nPeaks(iCluster)), ' peak(s)'], [num2str(qMetric.nTroughs(iCluster)), ...
+    ' trough(s)'], ['spatial decay slope =' , num2str(qMetric.spatialDecaySlope(iCluster))]})
 
 %% plot 3: plot unit mean raw waveform (and individual traces)
 
 for iChanToPlot = 1:min(20, size(chansToPlot, 1))
     if maxChan == chansToPlot(iChanToPlot)
         set(guiData.maxRawWaveformLines, 'XData', (ephysData.waveform_t + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
-            'YData', -squeeze(qMetrics.rawWaveforms(iCluster).spkMapMean(chansToPlot(iChanToPlot), :))'+ ...
+            'YData', -squeeze(qMetric.rawWaveforms(iCluster).spkMapMean(chansToPlot(iChanToPlot), :))'+ ...
             (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) * 10));
         set(guiData.rawWaveformLines(iChanToPlot), 'XData', nan(82, 1), ...
             'YData', nan(82, 1));
 
     else
         set(guiData.rawWaveformLines(iChanToPlot), 'XData', (ephysData.waveform_t + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
-            'YData', -squeeze(qMetrics.rawWaveforms(iCluster).spkMapMean(chansToPlot(iChanToPlot), :))'+ ...
+            'YData', -squeeze(qMetric.rawWaveforms(iCluster).spkMapMean(chansToPlot(iChanToPlot), :))'+ ...
             (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) * 10));
     end
 end
-set(guiData.rawLegend, 'String', ['Amplitude =', num2str(qMetrics.rawAmplitude(iCluster)), 'uV'])
-if qMetrics.rawAmplitude(iCluster) < param.minAmplitude
+set(guiData.rawLegend, 'String', ['Amplitude =', num2str(qMetric.rawAmplitude(iCluster)), 'uV'])
+if qMetric.rawAmplitude(iCluster) < param.minAmplitude
     set(guiData.rawTitle, 'String', '\color[rgb]{1 0 1}Mean raw waveform');
 else
     set(guiData.rawTitle, 'String', '\color[rgb]{0 .5 0}Mean raw waveform');
@@ -429,7 +395,7 @@ set(guiData.acgRefLine, 'XData', [2, 2], 'YData', [0, max(ccg(:, 1, 1))])
 asymptoteLine = nanmean(ccg2(end-100:end));
 set(guiData.acgAsyLine, 'XData', [0, 250], 'YData', [asymptoteLine, asymptoteLine])
 
-if qMetrics.Fp(iCluster) > param.maxRPVviolations
+if qMetric.Fp(iCluster) > param.maxRPVviolations
     set(guiData.acgTitle, 'String', '\color[rgb]{1 0 1}ACG');
 else
     set(guiData.acgTitle, 'String', '\color[rgb]{0 .5 0}ACG');
@@ -446,34 +412,34 @@ theseOffendingSpikes = [theseOffendingSpikes; theseOffendingSpikes-1];
 set(guiData.isiBar, 'XData', edgesISI(1:end-1)+mean(diff(edgesISI)), 'YData', isiProba); %Check FR
 set(guiData.isiRefLine, 'XData', [2, 2], 'YData', [0, max(isiProba)])
 
-if qMetrics.Fp(iCluster) > param.maxRPVviolations
+if qMetric.Fp(iCluster) > param.maxRPVviolations
     set(guiData.isiTitle, 'String', '\color[rgb]{1 0 1}ISI');
 else
     set(guiData.isiTitle, 'String', '\color[rgb]{0 .5 0}ISI');
 end
-set(guiData.isiLegend, 'String', [num2str(qMetrics.Fp(iCluster)), ' % r.p.v.'])
+set(guiData.isiLegend, 'String', [num2str(qMetric.Fp(iCluster)), ' % r.p.v.'])
 
 %% 6. plot isolation distance
 if param.computeDistanceMetrics
-set(guiData.currIsoD, 'XData', qMetrics.Xplot{iCluster}(:, 1), 'YData', qMetrics.Xplot{iCluster}(:, 2))
-set(guiData.rpvIsoD, 'XData', qMetrics.Xplot{iCluster}(theseOffendingSpikes, 1), 'YData', qMetrics.Xplot{iCluster}(theseOffendingSpikes, 2))
-set(guiData.otherIsoD, 'XData', qMetrics.Yplot{iCluster}(:, 1), 'YData', qMetrics.Yplot{iCluster}(:, 2), 'CData', qMetrics.d2_mahal{iCluster})
+set(guiData.currIsoD, 'XData', qMetric.Xplot{iCluster}(:, 1), 'YData', qMetric.Xplot{iCluster}(:, 2))
+set(guiData.rpvIsoD, 'XData', qMetric.Xplot{iCluster}(theseOffendingSpikes, 1), 'YData', qMetric.Xplot{iCluster}(theseOffendingSpikes, 2))
+set(guiData.otherIsoD, 'XData', qMetric.Yplot{iCluster}(:, 1), 'YData', qMetric.Yplot{iCluster}(:, 2), 'CData', qMetric.d2_mahal{iCluster})
 end
 %% 7. (optional) plot raster
 
 %% 10. plot ampli fit
 
     
-set(guiData.ampliBins, 'XData', qMetrics.ampliBinCenters{iCluster}, 'YData', qMetrics.ampliBinCounts{iCluster});
+set(guiData.ampliBins, 'XData', qMetric.ampliBinCenters{iCluster}, 'YData', qMetric.ampliBinCounts{iCluster});
 
-set(guiData.ampliFit, 'XData', qMetrics.ampliFit{iCluster}, 'YData', qMetrics.ampliBinCenters{iCluster})
-if qMetrics.percSpikesMissing(iCluster) > param.maxPercSpikesMissing
+set(guiData.ampliFit, 'XData', qMetric.ampliFit{iCluster}, 'YData', qMetric.ampliBinCenters{iCluster})
+if qMetric.percSpikesMissing(iCluster) > param.maxPercSpikesMissing
     set(guiData.ampliFitTitle, 'String', '\color[rgb]{1 0 1}% spikes missing');
 else
     set(guiData.ampliFitTitle, 'String', '\color[rgb]{0 .5 0}% spikes missing');
 end
-set(guiData.ampliFitLegend, 'String', {[num2str(qMetrics.percSpikesMissing(iCluster)), ' % spikes missing'], 'rpv spikes'})
-set(guiData.ampliFitAx, 'YLim', [min(qMetrics.ampliBinCenters{iCluster}), max(qMetrics.ampliBinCenters{iCluster})])
+set(guiData.ampliFitLegend, 'String', {[num2str(qMetric.percSpikesMissing(iCluster)), ' % spikes missing'], 'rpv spikes'})
+set(guiData.ampliFitAx, 'YLim', [min(qMetric.ampliBinCenters{iCluster}), max(qMetric.ampliBinCenters{iCluster})])
 
 %% 9. plot template amplitudes and mean f.r. over recording (QQ: add experiment time epochs?)
 
@@ -498,12 +464,12 @@ set(guiData.spikeFR, 'XData', x, 'YData', n);
 set(guiData.ampliAx.YAxis(2), 'Limits', [0, 2 * ceil(max(n))])
 
 
-if qMetrics.nSpikes(iCluster) > param.minNumSpikes
+if qMetric.nSpikes(iCluster) > param.minNumSpikes
     set(guiData.ampliTitle, 'String', '\color[rgb]{0 .5 0}Spikes');
 else
     set(guiData.ampliTitle, 'String', '\color[rgb]{1 0 1}Spikes');
 end
-set(guiData.ampliLegend, 'String', {['# spikes = ', num2str(qMetrics.nSpikes(iCluster))], 'rpv spikes'})
+set(guiData.ampliLegend, 'String', {['# spikes = ', num2str(qMetric.nSpikes(iCluster))], 'rpv spikes'})
 
 %% 8. plot raw data
 if plotRaw
@@ -511,7 +477,7 @@ if plotRaw
 end
 end
 
-function updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, qMetrics, param, ...
+function updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, qMetric, param, ...
     probeLocation, uniqueTemps, iChunk, plotRaw)
 
 if plotRaw % Get guidata
@@ -546,12 +512,12 @@ if plotRaw % Get guidata
     set(guiData.ampliAx.YAxis(2), 'Limits', [0, 2 * round(max(n))])
 
 
-    if qMetrics.nSpikes(iCluster) > param.minNumSpikes
+    if qMetric.nSpikes(iCluster) > param.minNumSpikes
         set(guiData.ampliTitle, 'String', '\color[rgb]{0 .5 0}Spikes');
     else
         set(guiData.ampliTitle, 'String', '\color[rgb]{1 0 0}Spikes');
     end
-    set(guiData.ampliLegend, 'String', ['# spikes = ', num2str(qMetrics.nSpikes(iCluster))])
+    set(guiData.ampliLegend, 'String', ['# spikes = ', num2str(qMetric.nSpikes(iCluster))])
 
 end
 end
