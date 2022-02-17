@@ -81,7 +81,7 @@ else
     spatialDecayPoints = max(abs(squeeze(templateWaveforms(thisUnit, :, maxChannel:2:10))));
 end
 spatialDecaySlope = polyfit(spatialDecayPoints, 1:5,1); 
-
+spatialDecaySlope = spatialDecaySlope(1);
 if plotThis
     figure();
     clf;
