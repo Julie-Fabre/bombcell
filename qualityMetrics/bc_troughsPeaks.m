@@ -1,4 +1,4 @@
-function [nPeaks, nTroughs, somatic, peakLocs, troughLocs, cellLikeDuration] = bc_troughsPeaks(thisWaveform, ephys_sample_rate, plotThis, minWvDuration, maxWvDuration)
+function [nPeaks, nTroughs, somatic, peakLocs, troughLocs, cellLikeDuration, spatialDecayPoints, spatialDecaySlope] = bc_troughsPeaks(templateWaveforms, thisUnit, maxChannel, ephys_sample_rate, plotThis, minWvDuration, maxWvDuration)
 % JF, Get the number of troughs and peaks for each waveform, and determine
 % whether waveform is likely axonal (biggest peak before biggest trough)
 % ------
@@ -18,6 +18,7 @@ function [nPeaks, nTroughs, somatic, peakLocs, troughLocs, cellLikeDuration] = b
 %   Extracellularly recorded somatic and neuritic signal shapes and classification 
 %   algorithms for high-density microelectrode array electrophysiology. Front. Neurosci. 10, 421 (2016).)
 % 
+thisWaveform = templateWaveforms(thisUnit, :, maxChannel);
 minProminence = 0.2 * max(abs(squeeze(thisWaveform))); % minimum threshold to detcet peaks/troughs
 
 [PKS, peakLocs] = findpeaks(squeeze(thisWaveform), 'MinPeakProminence', minProminence); % get peaks
@@ -69,11 +70,18 @@ else
     somatic = 0;
 end
 
-if any(abs(thisWaveform(1:10))> 0.05) || abs(troughLoc-peakLoc)*0.0333 < minWvDuration || abs(troughLoc-peakLoc)*0.0333 > maxWvDuration
+if any(abs(thisWaveform(1:10))> 0.05) || abs(troughLoc-peakLoc)*0.0333 < minWvDuration*0.001 || abs(troughLoc-peakLoc)*0.0333 > maxWvDuration*0.001 
     cellLikeDuration = 0;
 else
     cellLikeDuration = 1;
 end
+if maxChannel > 10
+    spatialDecayPoints = max(abs(squeeze(templateWaveforms(thisUnit, :, maxChannel:-2:maxChannel-10))));
+else
+    spatialDecayPoints = max(abs(squeeze(templateWaveforms(thisUnit, :, maxChannel:2:10))));
+end
+spatialDecaySlope = polyfit(spatialDecayPoints, 1:5,1); 
+
 if plotThis
     figure();
     clf;
