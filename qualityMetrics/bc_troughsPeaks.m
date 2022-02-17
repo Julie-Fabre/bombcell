@@ -1,4 +1,4 @@
-function [nPeaks, nTroughs, somatic, peakLocs, troughLocs, cellLikeDuration, spatialDecayPoints, spatialDecaySlope, peakWidths] = bc_troughsPeaks(templateWaveforms, thisUnit, maxChannel, ephys_sample_rate, plotThis, minWvDuration, maxWvDuration)
+function [nPeaks, nTroughs, somatic, peakLocs, troughLocs, waveformDuration, spatialDecayPoints, spatialDecaySlope] = bc_troughsPeaks(templateWaveforms, thisUnit, maxChannel, ephys_sample_rate, plotThis, minWvDuration, maxWvDuration)
 % JF, Get the number of troughs and peaks for each waveform, and determine
 % whether waveform is likely axonal (biggest peak before biggest trough)
 % ------
@@ -71,11 +71,11 @@ if peakLoc > troughLoc
 else
     somatic = 0;
 end
-
-if any(abs(thisWaveform(1:10))> 0.05) || abs(troughLoc-peakLoc)*0.0333 < minWvDuration*0.001 || abs(troughLoc-peakLoc)*0.0333 > maxWvDuration*0.001 
-    cellLikeDuration = 0;
+if ~isempty(troughLoc) && ~isempty(peakLoc)
+waveformDuration = abs(troughLoc-peakLoc)*0.0333*1000; %in ms 
 else
-    cellLikeDuration = 1;
+    waveformDuration = abs(min(thisWaveform)-max(thisWaveform))*0.0333*1000; %in ms
+    waveformDuration = waveformDuration(1);
 end
 if maxChannel > 10
     spatialDecayPoints = max(abs(squeeze(templateWaveforms(thisUnit, :, maxChannel:-2:maxChannel-10))));
