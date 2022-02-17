@@ -1,4 +1,4 @@
-function [nPeaks, nTroughs, somatic, peakLocs, troughLocs, cellLikeDuration, spatialDecayPoints, spatialDecaySlope] = bc_troughsPeaks(templateWaveforms, thisUnit, maxChannel, ephys_sample_rate, plotThis, minWvDuration, maxWvDuration)
+function [nPeaks, nTroughs, somatic, peakLocs, troughLocs, cellLikeDuration, spatialDecayPoints, spatialDecaySlope, peakWidths] = bc_troughsPeaks(templateWaveforms, thisUnit, maxChannel, ephys_sample_rate, plotThis, minWvDuration, maxWvDuration)
 % JF, Get the number of troughs and peaks for each waveform, and determine
 % whether waveform is likely axonal (biggest peak before biggest trough)
 % ------
@@ -21,7 +21,7 @@ function [nPeaks, nTroughs, somatic, peakLocs, troughLocs, cellLikeDuration, spa
 thisWaveform = templateWaveforms(thisUnit, :, maxChannel);
 minProminence = 0.2 * max(abs(squeeze(thisWaveform))); % minimum threshold to detcet peaks/troughs
 
-[PKS, peakLocs] = findpeaks(squeeze(thisWaveform), 'MinPeakProminence', minProminence); % get peaks
+[PKS, peakLocs, peakWidths] = findpeaks(squeeze(thisWaveform), 'MinPeakProminence', minProminence); % get peaks
 
 [TRS, troughLocs] = findpeaks(squeeze(thisWaveform)*-1, 'MinPeakProminence', minProminence); % get troughs
 
@@ -45,8 +45,10 @@ if isempty(PKS) % if there is no detected peak, just take maximum value as peak
         if numel(PKS) > 1 % if more than one peak, take the first (usually the correct one) %QQ should change to better:
             % by looking for location where the data is most tightly distributed
             PKS = PKS(1);
+            %peakWidths = peakWidths(1);
         end
     peakLocs = find(squeeze(thisWaveform) == PKS);
+    
 else
     nPeaks = numel(PKS);
 end
@@ -78,9 +80,9 @@ end
 if maxChannel > 10
     spatialDecayPoints = max(abs(squeeze(templateWaveforms(thisUnit, :, maxChannel:-2:maxChannel-10))));
 else
-    spatialDecayPoints = max(abs(squeeze(templateWaveforms(thisUnit, :, maxChannel:2:10))));
+    spatialDecayPoints = max(abs(squeeze(templateWaveforms(thisUnit, :, maxChannel:2:maxChannel+10))));
 end
-spatialDecaySlope = polyfit(spatialDecayPoints, 1:5,1); 
+spatialDecaySlope = polyfit(spatialDecayPoints, 1:6,1); 
 spatialDecaySlope = spatialDecaySlope(1);
 if plotThis
     figure();
