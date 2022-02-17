@@ -28,7 +28,7 @@ param.maxNTroughs = 1;
 param.axonal = 0; 
 param.minWvDuration = 100; %ms
 param.maxWvDuration = 800; %ms
-param.minSpatialDecaySlope = -60;
+param.minSpatialDecaySlope = -45;
 % amplitude parameters
 param.rawFolder = [ephysap_path, '/..'];
 param.nRawSpikesToExtract = 100; 
