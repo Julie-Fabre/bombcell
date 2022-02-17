@@ -39,9 +39,9 @@ Count the number of peaks and troughs to eliminate non-cell-like waveforms due t
 
 <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=30% height=30%>
 
-#### spatial decay
+#### spatial decay + 'cell-like' shape 
 
-work in progress
+work in progress - currently noise units are underestimatd /!\
     											
 ####  % spikes missing 
 
