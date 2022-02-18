@@ -30,6 +30,9 @@ spikeFile = dir(fullfile(rawFolder, '*.ap.bin'));
 if isempty(spikeFile)
     spikeFile = dir(fullfile(rawFolder, '/*.dat')); %openEphys format
 end
+if size(spikeFile,1) > 1
+   spikeFile = dir(fullfile(rawFolder, '*tcat*.ap.bin'));
+end 
 
 rawWaveformFolder = dir(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
 spikeWidth = 82;

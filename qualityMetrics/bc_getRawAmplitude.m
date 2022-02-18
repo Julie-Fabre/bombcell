@@ -17,7 +17,11 @@ if iscell(rawFolder)
 elseif sum(rawFolder(end-2:end) == '/..')==3
     rawFolder = fileparts(rawFolder(1:end-3));
 end
-spikeFile = dir(fullfile(rawFolder, '*.ap.bin')); % spikeGLX format 
+spikeFile = dir(fullfile(rawFolder, '*.ap.bin'));
+if size(spikeFile,1) > 1
+   spikeFile = dir(fullfile(rawFolder, '*tcat*.ap.bin'));
+end
+% spikeGLX format
 if isempty(spikeFile)
     spikeFile = dir(fullfile(rawFolder, '*.dat')); %openEphys format 
     metaFileDir = dir([rawFolder, '/../../*.oebin']);
@@ -27,9 +31,24 @@ if isempty(spikeFile)
 else
     % 1.0 or 2.0? 
     metaFileDir = dir([rawFolder, '/*.ap.meta']);
-    scalingFactor = bc_readSpikeGLXMetaFile(metaFileDir);
+    scalingFactor = bc_readSpikeGLXMetaFile(metaFileDir(1));
 end
 rawWaveforms = rawWaveforms .* scalingFactor;
 rawAmplitude = abs(max(rawWaveforms)) + abs(min(rawWaveforms));
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
