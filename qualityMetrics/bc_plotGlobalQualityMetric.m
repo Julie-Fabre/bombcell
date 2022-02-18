@@ -89,13 +89,6 @@ if param.plotGlobal
     title('Noise unit template waveforms');hold on;
     noiseUnitLines = arrayfun(@(x) plot(squeeze(templateWaveforms(noiseU(x),:,qMetric.maxChannels(noiseU(x)))), 'linewidth', 1, 'Color', 'k'), 1:size(noiseU,1));
 
-    % goes beyond certain percentage waveform = no good 
-    nn = squeeze(nanmean(templateWaveforms(noiseU,:,qMetric.maxChannels(noiseU))));
-    figure();plot(nn)
-    
-    
-    clf;
-    plot(nn(:, find(any(abs(nn(20:30,:))>0.001, 1))))
     % 2. histogram for each quality metric, red line indicates
     % classification threshold
     figure();
