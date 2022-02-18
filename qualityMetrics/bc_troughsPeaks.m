@@ -1,4 +1,5 @@
-function [nPeaks, nTroughs, somatic, peakLocs, troughLocs, waveformDuration, spatialDecayPoints, spatialDecaySlope] = bc_troughsPeaks(templateWaveforms, thisUnit, maxChannel, ephys_sample_rate, plotThis, minWvDuration, maxWvDuration)
+function [nPeaks, nTroughs, somatic, peakLocs, troughLocs, waveformDuration, spatialDecayPoints, spatialDecaySlope, ...
+    waveformGoodShape] = bc_troughsPeaks(templateWaveforms, thisUnit, maxChannel, ephys_sample_rate, plotThis)
 % JF, Get the number of troughs and peaks for each waveform, and determine
 % whether waveform is likely axonal (biggest peak before biggest trough)
 % ------
@@ -21,7 +22,7 @@ function [nPeaks, nTroughs, somatic, peakLocs, troughLocs, waveformDuration, spa
 thisWaveform = templateWaveforms(thisUnit, :, maxChannel);
 minProminence = 0.2 * max(abs(squeeze(thisWaveform))); % minimum threshold to detcet peaks/troughs
 
-[PKS, peakLocs, peakWidths] = findpeaks(squeeze(thisWaveform), 'MinPeakProminence', minProminence); % get peaks
+[PKS, peakLocs, ~] = findpeaks(squeeze(thisWaveform), 'MinPeakProminence', minProminence); % get peaks
 
 [TRS, troughLocs] = findpeaks(squeeze(thisWaveform)*-1, 'MinPeakProminence', minProminence); % get troughs
 
@@ -84,6 +85,12 @@ else
 end
 spatialDecaySlope = polyfit(spatialDecayPoints, 1:6,1); 
 spatialDecaySlope = spatialDecaySlope(1);
+
+if any(abs(thisWaveform(20:30)>0.001, 1))
+    waveformGoodShape = 0;
+else
+    waveformGoodShape = 1;
+end
 if plotThis
     figure();
     clf;
