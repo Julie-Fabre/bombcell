@@ -86,7 +86,7 @@ end
 spatialDecaySlope = polyfit(spatialDecayPoints, 1:6,1); 
 spatialDecaySlope = spatialDecaySlope(1);
 
-if any(abs(thisWaveform(20:30))>(0.4*max(thisWaveform)))
+if any(abs(thisWaveform(20:30))>(0.2*max(thisWaveform)))
     waveformGoodShape = 0;
 else
     waveformGoodShape = 1;
@@ -109,8 +109,8 @@ if plotThis
     %pbb.YData(~[PKS,-TRS])=NaN;
 
     set(pbb, 'Marker', 'v');
-    l1 = line([wvTime(1) wvTime(30)],[0.3*max(thisWaveform), 0.4*max(thisWaveform)], 'Color', 'red');
-    line([wvTime(1) wvTime(30)],[-0.3*max(thisWaveform), -0.4*max(thisWaveform)], 'Color', 'red')
+    l1 = line([wvTime(1) wvTime(30)],[0.2*max(thisWaveform), 0.2*max(thisWaveform)], 'Color', 'red');
+    line([wvTime(1) wvTime(30)],[-0.2*max(thisWaveform), -0.2*max(thisWaveform)], 'Color', 'red')
     xlabel('time (ms)')
     ylabel('amplitude (a.u.)')
     legend([pbb, l1], {'detected peaks/troughs', 'cell-like baseline threshold'})

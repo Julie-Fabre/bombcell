@@ -1,10 +1,14 @@
 %% load data 
+ephysPath = pathToFolderYourEphysDataIsIn; % eg /home/netshare/zinu/JF067/2022-02-17/ephys/kilosort2/site1, whre this path contains 
+                                           % kilosort output
 
-ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site);
+% ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site);
 [spikeTimes, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, usedChannels] = bc_loadEphysData(ephysPath);
-ephysap_path = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_ap',site);
-ephysDirPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_dir',site);
+ephysap_path = pathToEphysRawFile; %eg /home/netshare/zinu/JF067/2022-02-17/ephys/site1/2022_02_17-JF067_g0_t0.imec0.ap.bin 
+ephysDirPath = pathToEphysRawFileFolder ;% eg /home/netshare/zinu/JF067/2022-02-17/ephys/site1
+% ephysap_path = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_ap',site);
+% ephysDirPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_dir',site);
 savePath = fullfile(ephysDirPath, 'qMetrics'); 
 
 %% quality metric parameters and thresholds 

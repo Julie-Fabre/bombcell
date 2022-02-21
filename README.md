@@ -39,9 +39,13 @@ Count the number of peaks and troughs to eliminate non-cell-like waveforms due t
 
 <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=30% height=30%>
 
-#### spatial decay + 'cell-like' shape 
+#### spatial decay 
 
-work in progress - currently noise units are underestimatd /!\
+Fit a line to the absolute maximum amplitudes of the unit's max channel and 5 closest channels, to assess spatial decay. Highly negeative values indicate there is no/little spatial decay. 
+
+#### 'cell-like' shape 
+
+Assess whether the waveform baseline is flat or not.  
     											
 ####  % spikes missing 
 

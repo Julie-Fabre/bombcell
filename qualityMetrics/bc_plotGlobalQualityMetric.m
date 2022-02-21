@@ -201,8 +201,5 @@ if param.plotGlobal
         makepretty;
     end
     
-    
-
-
 
 end

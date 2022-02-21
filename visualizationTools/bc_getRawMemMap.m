@@ -8,7 +8,7 @@ spikeFile = dir(fullfile(param.rawFolder, '*.ap.bin'));
 if isempty(spikeFile)
     spikeFile = dir(fullfile(param.rawFolder, '/*.dat')); %openEphys format
 end
-
+spikeFile=spikeFile(1);
 
 fname = spikeFile.name;
 
