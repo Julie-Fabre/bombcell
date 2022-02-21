@@ -160,6 +160,13 @@ Plot a GUI to flip through the quality metrics for each cell with the function `
 
 work in progress
 
+### Classifying cell types
+
+- striatal cells
+
+- GPe cells
+
+- cortical cells
 
 ### Recommended recording and pre-processing 
 
