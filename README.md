@@ -106,7 +106,7 @@ Plot a GUI to flip through the quality metrics for each cell with the function `
 
     bc_unitQualityGUI(memMapData, ephysData, qMetrics, param, probeLocation, unitType, plotRaw)
    
-Toggle units by using the <font size="25"> <kbd>→</kbd> </font> and <kbd>←</kbd> keys. Navigate in time through the raw data to see this units' individual spikes with the  <kbd>↑</kbd> and <kbd>↓</kbd> keys.
+Toggle units by using the <kbd>↑</kbd> and <kbd>↓</kbd> keys. Navigate in time through the raw data to see this units' individual spikes with the <kbd>→</kbd> and <kbd>←</kbd> keys.
     
 - Unit location view
 
