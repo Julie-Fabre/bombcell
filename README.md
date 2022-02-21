@@ -76,7 +76,7 @@ Below: examples of a unit with high amplitude (blue) and one with low amplitude 
 
 - distance metrics are above `param.minIsoD` for the isolation distance, `param.lratioMin` for l-ratio, `param.ssMin` for the silhouette score
 
-Disabled by deafult. This is if the most time-consuming part of the script. See [Harris et al., Neuron, 2001](https://www.sciencedirect.com/science/article/pii/S0896627301004470?via%3Dihub) for more information on isolation distance, (see [Schmitzer-Torbert and Redish, 2004](https://journals.physiology.org/doi/full/10.1152/jn.00687.2003)) for more information on l-ratio and (see [Rousseeuw, 1987](https://www.sciencedirect.com/science/article/pii/0377042787901257) for more information on silhouette-score. 
+Disabled by default. This is if the most time-consuming part of the script. See [Harris et al., Neuron, 2001](https://www.sciencedirect.com/science/article/pii/S0896627301004470?via%3Dihub) for more information on isolation distance, (see [Schmitzer-Torbert and Redish, 2004](https://journals.physiology.org/doi/full/10.1152/jn.00687.2003)) for more information on l-ratio and (see [Rousseeuw, 1987](https://www.sciencedirect.com/science/article/pii/0377042787901257) for more information on silhouette-score. 
 
 Below: examples of a unit with high isolation distance (left) and one with low isolation distance (right).
 
@@ -85,9 +85,17 @@ Below: examples of a unit with high isolation distance (left) and one with low i
 
 #### Global output plots 
 
-<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/unitRemovedEulerVenn.png" width=80% height=80%>
+If `param.plotGlobal` is set to true, after computing quality metrics, the script will output 3 summary plots :
 
-<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/generalPlotHist.png">
+- a multi-venn diagram of the number of units classifyed as noise/multi-unit. 
+
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/unitRemovedEulerVenn.png" width=60% height=60%>
+
+- for each a quality metric, a histogram of the distribution of values for all units. The red lines indicate classification thresholds. 
+
+<img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/generalPlotHist.png" width=60% height=60%>
+
+- template waveforms for each unit classiyed as good, multi-unit and noise, overlaid on top of each other. This is a quick way of checking there is no odd, noisy unit that has mistakenly been classifyed as either good or multi-unit. 
 
 <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/waveformsSingleNoise.png" width=60% height=60%>
 
