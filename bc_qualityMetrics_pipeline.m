@@ -4,7 +4,7 @@ ephysPath = pathToFolderYourEphysDataIsIn; % eg /home/netshare/zinu/JF067/2022-0
 
 % ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site);
 [spikeTimes, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, usedChannels] = bc_loadEphysData(ephysPath);
+    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysPath);
 ephysap_path = pathToEphysRawFile; %eg /home/netshare/zinu/JF067/2022-02-17/ephys/site1/2022_02_17-JF067_g0_t0.imec0.ap.bin 
 ephysDirPath = pathToEphysRawFileFolder ;% eg /home/netshare/zinu/JF067/2022-02-17/ephys/site1
 % ephysap_path = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_ap',site);
@@ -61,7 +61,7 @@ qMetricsExist = dir(fullfile(savePath, 'qMetric*.mat'));
 
 if isempty(qMetricsExist) || rerun
     [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
-        templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,usedChannels, savePath);
+        templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
 else
     load(fullfile(savePath, 'qMetric.mat'))
     load(fullfile(savePath, 'param.mat'))
@@ -70,8 +70,8 @@ else
         | qMetric.spatialDecaySlope <=  param.minSpatialDecaySlope | qMetric.waveformDuration < param.minWvDuration |...
         qMetric.waveformDuration > param.maxWvDuration | qMetric.waveformGoodShape == 0) = 0; %NOISE or NON-SOMATIC
     unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
-        qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
-        qMetric.axonal == param.axonal & qMetric.rawAmplitude > param.minAmplitude) = 1;%SINGLE SEXY UNIT
+        qMetric.Fp <= param.maxRPVviolations & ...
+        qMetric.rawAmplitude > param.minAmplitude & isnan(unitType)) = 1; %SINGLE SEXY UNIT
     unitType(isnan(unitType)) = 2;% MULTI UNIT 
 end
 %% view units + quality metrics in GUI 
@@ -85,7 +85,7 @@ ephysData.spike_times_timeline = spikeTimes ./ 30000;
 ephysData.spike_templates = spikeTemplates;
 ephysData.templates = templateWaveforms;
 ephysData.template_amplitudes = templateAmplitudes;
-ephysData.channel_positions = readNPY([ephysPath filesep 'channel_positions.npy']);
+ephysData.channel_positions = channelPositions;
 ephysData.ephys_sample_rate = 30000;
 ephysData.waveform_t = 1e3*((0:size(templateWaveforms, 2) - 1) / 30000);
 ephysParams = struct;

@@ -1,5 +1,5 @@
 function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, savePath)
+    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath)
 % JF
 % ------
 % Inputs
@@ -101,6 +101,7 @@ else
 end
 
 for iUnit = 1:length(uniqueTemplates)
+    
     clearvars thisUnit theseSpikeTimes theseAmplis
     thisUnit = uniqueTemplates(iUnit);
     qMetric.clusterID(iUnit) = thisUnit;
@@ -126,8 +127,8 @@ for iUnit = 1:length(uniqueTemplates)
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.somatic(iUnit), ...
         qMetric.peakLocs{iUnit}, qMetric.troughLocs{iUnit}, qMetric.waveformDuration(iUnit), ...
         qMetric.spatialDecayPoints(iUnit,:), qMetric.spatialDecaySlope(iUnit), qMetric.waveformGoodShape(iUnit)] = bc_troughsPeaks(templateWaveforms, thisUnit, maxChannels(thisUnit), ...
-        param.ephys_sample_rate, param.plotThis);
-    
+        param.ephys_sample_rate, channelPositions,  param.plotThis);
+
  
     %% fraction contam (false postives)
     [qMetric.Fp(iUnit), ~, ~] = bc_fractionRPviolations(numel(theseSpikeTimes), theseSpikeTimes, param.tauR, param.tauC, ...
@@ -153,8 +154,8 @@ if param.computeDistanceMetrics && ~isnan(param.isoDmin)
         | qMetric.spatialDecaySlope <=  param.minSpatialDecaySlope | qMetric.waveformDuration < param.minWvDuration |...
         qMetric.waveformDuration > param.maxWvDuration | qMetric.waveformGoodShape == 0) = 0; %NOISE or NON-SOMATIC
     unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
-        qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
-        qMetric.somatic == param.somatic & qMetric.rawAmplitude > param.minAmplitude & qMetric.isoDmin >= param.isoDmin) = 1; %SINGLE SEXY UNIT
+        qMetric.Fp <= param.maxRPVviolations & ...
+        qMetric.rawAmplitude > param.minAmplitude & qMetric.isoDmin >= param.isoDmin & isnan(unitType)) = 1; %SINGLE SEXY UNIT
     unitType(isnan(unitType)) = 2; % MULTI UNIT
 
 else
@@ -163,8 +164,8 @@ else
         | qMetric.spatialDecaySlope <=  param.minSpatialDecaySlope | qMetric.waveformDuration < param.minWvDuration |...
         qMetric.waveformDuration > param.maxWvDuration | qMetric.waveformGoodShape == 0) = 0; %NOISE or NON-SOMATIC
     unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
-        qMetric.nPeaks <= param.maxNPeaks & qMetric.nTroughs <= param.maxNTroughs & qMetric.Fp <= param.maxRPVviolations & ...
-        qMetric.somatic == param.somatic & qMetric.rawAmplitude > param.minAmplitude) = 1; %SINGLE SEXY UNIT
+        qMetric.Fp <= param.maxRPVviolations & ...
+        qMetric.rawAmplitude > param.minAmplitude & isnan(unitType)) = 1; %SINGLE SEXY UNIT
     unitType(isnan(unitType)) = 2; % MULTI UNIT
 
 end

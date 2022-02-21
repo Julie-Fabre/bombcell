@@ -1,5 +1,5 @@
 function [nPeaks, nTroughs, somatic, peakLocs, troughLocs, waveformDuration, spatialDecayPoints, spatialDecaySlope, ...
-    waveformGoodShape] = bc_troughsPeaks(templateWaveforms, thisUnit, maxChannel, ephys_sample_rate, plotThis)
+    waveformGoodShape] = bc_troughsPeaks(templateWaveforms, thisUnit, maxChannel, ephys_sample_rate, channelPositions, plotThis)
 % JF, Get the number of troughs and peaks for each waveform, and determine
 % whether waveform is likely axonal (biggest peak before biggest trough)
 % ------
@@ -93,28 +93,60 @@ else
 end
 if plotThis
     figure();
-    clf;
-    wvTime = 1e3*((0:size(thisWaveform, 2) - 1) / ephys_sample_rate);
-    % hacky way of plotting - but hey it works
-    pbad = plot(wvTime, ...
-        thisWaveform);
+    set(gca, 'YDir', 'reverse');
     hold on;
-    mm = max(thisWaveform);
-    pbb = pbad;
-    pbb.XData(1:end) = NaN;
-    pbad = plot(wvTime, ...
-        thisWaveform, 'Color', 'k');
+    set(gca, 'XColor', 'w', 'YColor', 'w')
+    maxChan = maxChannel;
+    maxXC = channelPositions(maxChan, 1);
+    maxYC = channelPositions(maxChan, 2);
+    chanDistances = ((channelPositions(:, 1) - maxXC).^2 ...
+        +(channelPositions(:, 2) - maxYC).^2).^0.5;
+    chansToPlot = find(chanDistances < 70);
+    vals =[];
+    wvTime = 1e3*((0:size(thisWaveform, 2) - 1) / ephys_sample_rate);
+    for iChanToPlot = 1:min(20, size(chansToPlot, 1))
+        vals(iChanToPlot) = max(abs(squeeze(templateWaveforms(thisUnit, :, chansToPlot(iChanToPlot)))));
+        if maxChan == chansToPlot(iChanToPlot)
+            p1 = plot( (wvTime + (channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
+                 -squeeze(templateWaveforms(thisUnit, :, chansToPlot(iChanToPlot)))'+ ...
+                (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100), 'Color', 'b');
+            hold on;
+            peak = scatter(  (wvTime(peakLocs) ...
+                +(channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
+                -squeeze(templateWaveforms(thisUnit, peakLocs, chansToPlot(iChanToPlot)))'+ ...
+                (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100), [],rgb('Orange'), 'v', 'filled');
 
-    pbb.XData([peakLocs, troughLocs]) = pbad.XData([peakLocs, troughLocs]);
-    %pbb.YData(~[PKS,-TRS])=NaN;
+            trough = scatter((wvTime(troughLocs) ...
+                +(channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
+                 -squeeze(templateWaveforms(thisUnit, troughLocs, chansToPlot(iChanToPlot)))'+ ...
+                (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100), [],rgb('Gold'), 'v', 'filled');
+            l1 = line([(wvTime(1) +(channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10) ...
+                (wvTime(30) +(channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10)],...
+                [0.4*-max(squeeze(templateWaveforms(thisUnit, :, chansToPlot(iChanToPlot))))'+ ...
+                (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100), 0.4*-max(squeeze(templateWaveforms(thisUnit, :, chansToPlot(iChanToPlot))))'+ ...
+                (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100)], 'Color', 'red');
+            line([(wvTime(1) +(channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10) ...
+                (wvTime(30) +(channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10)],...
+                [-0.4*-max(squeeze(templateWaveforms(thisUnit, :, chansToPlot(iChanToPlot))))'+ ...
+                (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100), -0.4*-max(squeeze(templateWaveforms(thisUnit, :, chansToPlot(iChanToPlot))))'+ ...
+                (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100)], 'Color', 'red');
+        else
+            p2 = plot( (wvTime + (channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
+                -squeeze(templateWaveforms(thisUnit, :, chansToPlot(iChanToPlot)))'+ ...
+                (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100), 'Color', 'k');
+            hold on;
+        end
+    end
 
-    set(pbb, 'Marker', 'v');
-    l1 = line([wvTime(1) wvTime(30)],[0.3*max(thisWaveform), 0.4*max(thisWaveform)], 'Color', 'red');
-    line([wvTime(1) wvTime(30)],[-0.3*max(thisWaveform), -0.4*max(thisWaveform)], 'Color', 'red')
-    xlabel('time (ms)')
-    ylabel('amplitude (a.u.)')
-    legend([pbb, l1], {'detected peaks/troughs', 'cell-like baseline threshold'})
+    tempWvTitleText = ['\\fontsize{9}Template waveform: {\\color[rgb]{%s}# detected peaks/troughs, ', newline,...
+                '\\color[rgb]{%s}is somatic \\color[rgb]{%s} cell-like duration \\color[rgb]{%s}spatial decay}'];
+
+
+    legend([p1, peak, trough, p2, l1 ], {['is somatic =', num2str(somatic), newline], ...
+        [num2str(nPeaks), ' peak(s)'], [num2str(nTroughs), ...
+        ' trough(s)'], ['spatial decay slope =' , num2str(spatialDecaySlope)], ['cell-like baseline line']}, 'Color', 'none')
     makepretty;
+   
 end
 end
 

@@ -35,15 +35,23 @@ Set `param.plotThis = 1;` to plot figures for each quality metric (plot examples
 - Noise units are classified as noise if any of the following are true
     - the number of peaks or troughs detected in the max channel template waveform for the unit exceeds the defined threshold
     - the baseline of the max channel template waveform for the unit is not flat (exceeds the defined threshold)
-    - the slope template waveform spatial decay is above a defined threshold. 
+    - the sp
 
+#### number of peaks and troughs
+
+Count the number of peaks and troughs to eliminate non-cell-like waveforms due to noise. Right, examples of a unit with a a cell-like waveform (left) and a unit with a noise-like waveform (right). 
 
 <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=30% height=30%>
- 
-    											
-####  Classifying multi-units 
 
-- % spikes missing 
+#### spatial decay 
+
+Fit a line to the absolute maximum amplitudes of the unit's max channel and 5 closest channels, to assess spatial decay. Highly negeative values indicate there is no/little spatial decay. 
+
+#### 'cell-like' shape 
+
+Assess whether the waveform baseline is flat or not.  
+    											
+####  % spikes missing 
 
 estimate the percent of spikes missing (false nagatives) by fitting a gaussian the distribution of amplitudes, with a cutoff parameter. This assumes the spike amplitudes follow a gaussian distribution, which is not strictly true for bursty cells, like MSNs. This can then define which epochs of the recording to keep for a unit, if it has for example drifted relative to the recording sites and in only some recording epochs a substantial amount of spikes are missing.
 
@@ -51,12 +59,12 @@ Below: example of unit with many spikes below the detection threshold in the fir
 
 <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/percSpikesMissingDrift.png" width=60% height=60%>
 
-- number of spikes 
+#### number of spikes 
 
 Number of spikes over the recording. Below a certain amount of spikes, ephys properties like ACGs will not be reliable. A good minimum to use is 300 empirically, because Kilosort2 does not attempt to split any clusters that have less than 300 spikes in the post-processing phase.
 
 
-- refractory period violations
+#### refractory period violations
 
 Estimate fraction of refractory period violations (false positives) using  r = 2*(tauR - tauC) * N^2 * (1-Fp) * Fp / T , solving for Fp, with tauR the refractory period, tauC the censored period, T the total experiment duration, r the number of refractory period violations, Fp the fraction of contamination. method from [Hill et al., J. Neuro, 2011](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3123734/). 
 
@@ -65,7 +73,7 @@ Below: examples of a unit with a small fraction of refractory period violations 
 <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/rpv.png" width=60% height=60%>
 
 
-- amplitude 
+#### amplitude 
 
 Amplitude of the mean raw waveformelfor a unit, to eliminate noisy, further away units, that are more likely to be MUA. 
 
@@ -74,7 +82,7 @@ Below: examples of a unit with high amplitude (blue) and one with low amplitude 
 <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/amplitude.png" width=30% height=30%>
 
 
-- distance metrics  
+#### distance metrics  
 
 Compute measure of unit isolation quality: the isolation distance (see [Harris et al., Neuron, 2001](https://www.sciencedirect.com/science/article/pii/S0896627301004470?via%3Dihub)), l-ratio (see [Schmitzer-Torbert and Redish, 2004](https://journals.physiology.org/doi/full/10.1152/jn.00687.2003)) and silhouette-score (see [Rousseeuw, 1987](https://www.sciencedirect.com/science/article/pii/0377042787901257)). 
 
