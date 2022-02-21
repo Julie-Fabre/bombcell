@@ -86,7 +86,7 @@ end
 spatialDecaySlope = polyfit(spatialDecayPoints, 1:6,1); 
 spatialDecaySlope = spatialDecaySlope(1);
 
-waveformBaseline = max(abs(thisWaveform(20:30));
+waveformBaseline = max(abs(thisWaveform(20:30)));
 
 if plotThis
     figure();
