@@ -31,11 +31,11 @@ Set `param.plotThis = 1;` to plot figures for each quality metric (plot examples
 
 #### Classifying noise/non-somatic units 
 
-- Somatic waveforms are defined as waveforms where the largest trough precedes the largest peak (Deligkaris, Bullmann & Frey, 2016).
+- Somatic waveforms are defined as waveforms where the largest trough precedes the largest peak (Deligkaris, Bullmann & Frey, 2016). They are lumped together in the 'noise' catefory if `param.somatic` is set to True. 
 - Noise units are classified as noise if any of the following are true
-    - the number of peaks or troughs detected in the max channel template waveform for the unit exceeds the defined threshold
-    - the baseline of the max channel template waveform for the unit is not flat (exceeds the defined threshold)
-    - the slope template waveform spatial decay is above a defined threshold. 
+    - the number of peaks or troughs detected in the max channel template waveform for the unit exceeds the defined thresholds : `param.maxNPeaks` and `param.maxNTroughs`.
+    - the baseline of the max channel template waveform for the unit is not flat (exceeds the defined threshold `param.wvBaselinePercent`).
+    - the slope template waveform spatial decay is above a defined threshold `param.minSpatialDecaySlope`. 
 
 
 <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=100% height=100%>
@@ -43,40 +43,40 @@ Set `param.plotThis = 1;` to plot figures for each quality metric (plot examples
     											
 ####  Classifying multi-units 
 
-- % spikes missing 
+After classifying noise units, the remaining units are classifyed as good single units if the criteria below are met. They are classifying as multi-units otherwise. 
 
-estimate the percent of spikes missing (false nagatives) by fitting a gaussian the distribution of amplitudes, with a cutoff parameter. This assumes the spike amplitudes follow a gaussian distribution, which is not strictly true for bursty cells, like MSNs. This can then define which epochs of the recording to keep for a unit, if it has for example drifted relative to the recording sites and in only some recording epochs a substantial amount of spikes are missing.
+- the estimated percentage of spikes missing is below the `param.maxPercSpikesMissing`
 
+The percent of spikes missing (false negatives) is estimated by fitting a gaussian the distribution of amplitudes, with a cutoff parameter. This assumes the spike amplitudes follow a gaussian distribution, which is not strictly true for bursty cells, like MSNs. Optionally, if `param.computeTimeChunks` is true, the recording is split in time chunks of size `param.deltaTimeChunk`, and the percentage of spikes missing is estimated seperately on these time chunks. Then, only the time chunks with a percent of spikes missing below the threshold are kept, and the rest of the quality metrics are computed on these epochs. This can be of use in cases where there is a lot of drift during the recording. 
 Below: example of unit with many spikes below the detection threshold in the first two time chunks of the recording. 
 
 <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/percSpikesMissingDrift.png" width=60% height=60%>
 
-- number of spikes 
+- number of spikes is above `param.minSpikes`
 
-Number of spikes over the recording. Below a certain amount of spikes, ephys properties like ACGs will not be reliable. A good minimum to use is 300 empirically, because Kilosort2 does not attempt to split any clusters that have less than 300 spikes in the post-processing phase.
+Below a certain amount of spikes, ephys properties like ACGs will not be reliable. A good minimum to use is 300 empirically, because Kilosort2 does not attempt to split any clusters that have less than 300 spikes in the post-processing phase.
 
+- the estimated percent of refractory period violations is below `param.maxRPVviolations`
 
-- refractory period violations
-
-Estimate fraction of refractory period violations (false positives) using  r = 2*(tauR - tauC) * N^2 * (1-Fp) * Fp / T , solving for Fp, with tauR the refractory period, tauC the censored period, T the total experiment duration, r the number of refractory period violations, Fp the fraction of contamination. method from [Hill et al., J. Neuro, 2011](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3123734/). 
+The fraction of refractory period violations (false positives) is estimated using  r = 2*(tauR - tauC) * N^2 * (1-Fp) * Fp / T , solving for Fp, with tauR the refractory period, tauC the censored period, T the total experiment duration, r the number of refractory period violations, Fp the fraction of contamination. method from [Hill et al., J. Neuro, 2011](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3123734/). 
 
 Below: examples of a unit with a small fraction of refractory period violations (left) and one with a large fraction (right).
 
 <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/rpv.png" width=60% height=60%>
 
 
-- amplitude 
+- the raw mean waveform maximum amplitude is above `param.minAmplitude`
 
-Amplitude of the mean raw waveformelfor a unit, to eliminate noisy, further away units, that are more likely to be MUA. 
+Units with low amplitude are noisy, further away units, that are more likely to be MUA. 
 
 Below: examples of a unit with high amplitude (blue) and one with low amplitude (red).
 
 <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/amplitude.png" width=30% height=30%>
 
 
-- distance metrics  
+- distance metrics are above `param.minIsoD` for the isolation distance, `param.lratioMin` for l-ratio, `param.ssMin` for the silhouette score
 
-Compute measure of unit isolation quality: the isolation distance (see [Harris et al., Neuron, 2001](https://www.sciencedirect.com/science/article/pii/S0896627301004470?via%3Dihub)), l-ratio (see [Schmitzer-Torbert and Redish, 2004](https://journals.physiology.org/doi/full/10.1152/jn.00687.2003)) and silhouette-score (see [Rousseeuw, 1987](https://www.sciencedirect.com/science/article/pii/0377042787901257)). 
+Disabled by deafult. This is if the most time-consuming part of the script. See [Harris et al., Neuron, 2001](https://www.sciencedirect.com/science/article/pii/S0896627301004470?via%3Dihub) for more information on isolation distance, (see [Schmitzer-Torbert and Redish, 2004](https://journals.physiology.org/doi/full/10.1152/jn.00687.2003)) for more information on l-ratio and (see [Rousseeuw, 1987](https://www.sciencedirect.com/science/article/pii/0377042787901257) for more information on silhouette-score. 
 
 Below: examples of a unit with high isolation distance (left) and one with low isolation distance (right).
 
