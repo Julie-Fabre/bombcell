@@ -38,7 +38,7 @@ Set `param.plotThis = 1;` to plot figures for each quality metric (plot examples
     - the slope template waveform spatial decay is above a defined threshold. 
 
 
-<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=30% height=30%>
+<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=100% height=100%>
  
     											
 ####  Classifying multi-units 
