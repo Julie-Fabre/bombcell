@@ -148,27 +148,9 @@ for iUnit = 1:length(uniqueTemplates)
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
     end
 end
-if param.computeDistanceMetrics && ~isnan(param.isoDmin)
-    unitType = nan(length(qMetric.percSpikesMissing), 1);
-    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.somatic ~= param.somatic ...
-        | qMetric.spatialDecaySlope <=  param.minSpatialDecaySlope | qMetric.waveformDuration < param.minWvDuration |...
-        qMetric.waveformDuration > param.maxWvDuration | qMetric.waveformGoodShape == 0) = 0; %NOISE or NON-SOMATIC
-    unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
-        qMetric.Fp <= param.maxRPVviolations & ...
-        qMetric.rawAmplitude > param.minAmplitude & qMetric.isoDmin >= param.isoDmin & isnan(unitType)) = 1; %SINGLE SEXY UNIT
-    unitType(isnan(unitType)) = 2; % MULTI UNIT
 
-else
-    unitType = nan(length(qMetric.percSpikesMissing), 1);
-    unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | qMetric.somatic ~= param.somatic ...
-        | qMetric.spatialDecaySlope <=  param.minSpatialDecaySlope | qMetric.waveformDuration < param.minWvDuration |...
-        qMetric.waveformDuration > param.maxWvDuration | qMetric.waveformGoodShape == 0) = 0; %NOISE or NON-SOMATIC
-    unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
-        qMetric.Fp <= param.maxRPVviolations & ...
-        qMetric.rawAmplitude > param.minAmplitude & isnan(unitType)) = 1; %SINGLE SEXY UNIT
-    unitType(isnan(unitType)) = 2; % MULTI UNIT
+bc_getQualityUnitType;
 
-end
 if exist('savePath', 'var') %save qualityMetrics
     mkdir(fullfile(savePath))
     disp(['saving quality metrics to ', savePath])

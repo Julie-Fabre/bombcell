@@ -34,7 +34,7 @@ Set `param.plotThis = 1;` to plot figures for each quality metric (plot examples
 - Somatic waveforms are defined as waveforms where the largest trough precedes the largest peak (Deligkaris, Bullmann & Frey, 2016). They are lumped together in the 'noise' catefory if `param.somatic` is set to True. 
 - Noise units are classified as noise if any of the following are true
     - the number of peaks or troughs detected in the max channel template waveform for the unit exceeds the defined thresholds : `param.maxNPeaks` and `param.maxNTroughs`.
-    - the baseline of the max channel template waveform for the unit is not flat (exceeds the defined threshold `param.wvBaselinePercent`).
+    - the baseline of the max channel template waveform for the unit is not flat (exceeds the defined threshold `param.maxWvBaselineFraction`).
     - the slope template waveform spatial decay is above a defined threshold `param.minSpatialDecaySlope`. 
 
 
@@ -105,8 +105,8 @@ If `param.plotGlobal` is set to true, after computing quality metrics, the scrip
 Plot a GUI to flip through the quality metrics for each cell with the function `bc_unitQualityGUI` Eg:
 
     bc_unitQualityGUI(memMapData, ephysData, qMetrics, param, probeLocation, unitType, plotRaw)
-    
-    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/gui.gif">
+   
+Toggle units by using the <kbd>→</kbd> and <kbd>←</kbd> keys. Navigate in time through the raw data to see this units' individual spikes with the  <kbd>↑</kbd> and <kbd>↓</kbd> keys.
     
 - Unit location view
 
