@@ -15,7 +15,7 @@ param.minNumSpikes = 300;
 % waveform parameters
 param.maxNPeaks = 2;
 param.maxNTroughs = 1;
-param.axonal = 0; 
+param.somatic = 1; 
 param.minWvDuration = 100; %ms
 param.maxWvDuration = 800; %ms
 param.minSpatialDecaySlope = -45;

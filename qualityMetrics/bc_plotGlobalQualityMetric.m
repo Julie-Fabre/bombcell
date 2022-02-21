@@ -3,8 +3,8 @@ if param.plotGlobal
     figure();
     if param.computeDistanceMetrics && ~isnan(param.isoDmin)
         colorMtx = [rgb('Maroon'); rgb('Chocolate'); rgb('Orange'); rgb('OrangeRed'); ...
-            rgb('DarkKhaki'); rgb('Green'); rgb('Teal'); rgb('RoyalBlue'); rgb('Indigo'); rgb('FireBrick')];
-        colorMtx = [colorMtx, repmat(0.6, 10, 1)];
+            rgb('DarkKhaki'); rgb('Green'); rgb('Teal'); rgb('RoyalBlue'); rgb('Indigo'); rgb('FireBrick'); rgb('HotPink')];
+        colorMtx = [colorMtx, repmat(0.6, 11, 1)];
 
         setsw = {find(qMetric.nPeaks > param.maxNPeaks), find(qMetric.nTroughs > param.maxNTroughs), ...
             find(qMetric.somatic == 0), find(qMetric.Fp > param.maxRPVviolations), ...
@@ -12,7 +12,7 @@ if param.plotGlobal
             find(qMetric.nSpikes <= param.minNumSpikes), find(qMetric.rawAmplitude <= param.minAmplitude),...
             find(qMetric.spatialDecaySlope <=  param.minSpatialDecaySlope), ...
             find(qMetric.waveformDuration < param.minWvDuration | qMetric.waveformDuration > param.maxWvDuration), ...
-            find(qMetric.isoD <= param.isoDmin)};
+            find(qMetric.waveformBaseline >= param.maxWvBaselineFraction), find(qMetric.isoD <= param.isoDmin)};
         emptyCell = find(cellfun(@isempty,setsw));
         if ~isempty(emptyCell)
             for iEC = 1:length(emptyCell)
@@ -23,7 +23,7 @@ if param.plotGlobal
         subplot(1, 5, 1:4)
         vennEulerDiagram(setsw, {'# peaks', '#troughs', 'non-somatic', 'refractory period violations', ...
             'undetected spikes', '# spikes', 'waveform amplitude', 'spatial decay slope', 'waveform duration', ...
-            'isolation distance'}, ...
+            '','isolation distance'}, ...
             'ColorOrder', colorMtx(:, 1:3), ...
             'ShowIntersectionCounts', 1);
         subplot(1, 5, 5) % hacky way to get a legend
@@ -37,15 +37,16 @@ if param.plotGlobal
 
     else
         colorMtx = [rgb('Maroon'); rgb('Chocolate'); rgb('Orange'); rgb('OrangeRed'); ...
-            rgb('DarkKhaki'); rgb('Green'); rgb('Teal'); rgb('RoyalBlue'); rgb('Indigo')];
-        colorMtx = [colorMtx, repmat(0.6, 9, 1)];
+            rgb('DarkKhaki'); rgb('Green'); rgb('Teal'); rgb('RoyalBlue'); rgb('Indigo'); rgb('DarkRed')];
+        colorMtx = [colorMtx, repmat(0.6, 10, 1)];
 
         setsw = {find(qMetric.nPeaks > param.maxNPeaks), find(qMetric.nTroughs > param.maxNTroughs), ...
             find(qMetric.somatic == 0), find(qMetric.Fp > param.maxRPVviolations), ...
             find(qMetric.percSpikesMissing > param.maxPercSpikesMissing), ...
             find(qMetric.nSpikes <= param.minNumSpikes), find(qMetric.rawAmplitude <= param.minAmplitude),...
             find(qMetric.spatialDecaySlope <=  param.minSpatialDecaySlope), ...
-            find(qMetric.waveformDuration < param.minWvDuration | qMetric.waveformDuration > param.maxWvDuration)};
+            find(qMetric.waveformDuration < param.minWvDuration | qMetric.waveformDuration > param.maxWvDuration),...
+            find(qMetric.waveformBaseline >= param.maxWvBaselineFraction)};
         title('# of units classified as noise/mua/non-somatic with quality metrics')
         subplot(1, 5, 1:4)
         emptyCell = find(cellfun(@isempty,setsw));
@@ -56,7 +57,7 @@ if param.plotGlobal
         end
         
         vennEulerDiagram(setsw, {'# peaks', '#troughs', 'non-somatic', 'refractory period violations', ...
-            'undetected spikes', '# spikes', 'waveform amplitude', 'spatial decay slope', 'waveform duration'}, ...
+            'undetected spikes', '# spikes', 'waveform amplitude', 'spatial decay slope', 'waveform duration', 'waveform baseline'}, ...
             'ColorOrder', colorMtx(:, 1:3), ...
             'ShowIntersectionCounts', 1);
         subplot(1, 5, 5) % hacky way to get a legend
@@ -95,7 +96,7 @@ if param.plotGlobal
     suptitle([num2str(sum(unitType==1)) ' single units, ', num2str(sum(unitType==2)), ' multi-units, ', num2str(sum(unitType==0)), ' noise units'])
     set(gcf, 'color', 'w')
 
-    subplot(2, 5, 1)
+    subplot(3, 5,  1)
     
     hold on;
     histogram(qMetric.nPeaks, 'FaceColor', colorMtx(1, 1:3), 'FaceAlpha', colorMtx(1, 4));
@@ -105,7 +106,7 @@ if param.plotGlobal
     xlabel('# peaks')
     makepretty;
 
-    subplot(2, 5, 2)
+    subplot(3, 5,  2)
     
     hold on;
     histogram(qMetric.nTroughs, 'FaceColor', colorMtx(2, 1:3), 'FaceAlpha', colorMtx(2, 4));
@@ -115,7 +116,7 @@ if param.plotGlobal
     xlabel('# troughs')
     makepretty;
 
-    subplot(2, 5, 3)
+    subplot(3, 5,  3)
     
     hold on;
     histogram(1-qMetric.somatic, 'FaceColor', colorMtx(3, 1:3), 'FaceAlpha', colorMtx(3, 4));
@@ -125,7 +126,7 @@ if param.plotGlobal
     xlabel('non somatic')
     makepretty;
 
-    subplot(2, 5, 4)
+    subplot(3, 5,  4)
     
     hold on;
     histogram(qMetric.Fp, 'FaceColor', colorMtx(4, 1:3), 'FaceAlpha', colorMtx(4, 4), 'BinEdges', [0:5:max(qMetric.Fp)]);
@@ -136,7 +137,7 @@ if param.plotGlobal
     xlabel(['refractory period' newline 'violations (%)'])
     makepretty;
 
-    subplot(2, 5, 5)
+    subplot(3, 5,  5)
     
     hold on;
     histogram(qMetric.percSpikesMissing, 'FaceColor', colorMtx(5, 1:3), 'FaceAlpha', colorMtx(5, 4), 'BinEdges', [0:5:max(qMetric.percSpikesMissing)]);
@@ -147,7 +148,7 @@ if param.plotGlobal
     xlabel(['spikes below' newline 'detection threshold (%)'])
     makepretty;
 
-    subplot(2, 5, 6)
+    subplot(3, 5,  6)
     
     hold on;
     set(gca, 'xscale', 'log')
@@ -159,7 +160,7 @@ if param.plotGlobal
     xlabel('# spikes')
     makepretty;
 
-    subplot(2, 5, 7)
+    subplot(3, 5,  7)
     
     hold on;
      set(gca, 'xscale', 'log')
@@ -170,7 +171,7 @@ if param.plotGlobal
     xlabel(['mean raw waveform' newline ' peak amplitude (uV)'])
     makepretty;
     
-    subplot(2, 5, 8) 
+    subplot(3, 5,  8) 
     hold on;
     histogram(qMetric.spatialDecaySlope, 'FaceColor', colorMtx(8, 1:3), 'FaceAlpha', colorMtx(8, 4), 'BinEdges', [min(qMetric.spatialDecaySlope):10:max(qMetric.spatialDecaySlope)]);
     yLim = ylim;
@@ -179,7 +180,7 @@ if param.plotGlobal
     xlabel('spatial decay slope')
     makepretty;
         
-    subplot(2, 5, 9)
+    subplot(3, 5,  9)
     hold on;
     histogram(qMetric.waveformDuration, 'FaceColor', colorMtx(9, 1:3), 'FaceAlpha', colorMtx(9, 4), 'BinEdges', [0:40:max(qMetric.waveformDuration)]);
     yLim = ylim;
@@ -188,12 +189,22 @@ if param.plotGlobal
     ylabel('unit count')
     xlabel('waveform duration')
     makepretty;
+    
+    subplot(3, 5,  10)
+    hold on;
+    histogram(qMetric.waveformBaseline, 'FaceColor', colorMtx(10, 1:3), 'FaceAlpha', colorMtx(10, 4), 'BinEdges', [0:0.05:max(qMetric.waveformBaseline)]);
+    yLim = ylim;
+    line([param.maxWvBaselineFraction + 0.5, param.maxWvBaselineFraction + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    ylabel('unit count')
+    xlabel('waveform baseline ''flatness''')
+    makepretty;
+    
         
     if param.computeDistanceMetrics && ~isnan(param.isoDmin)
-        subplot(2, 5, 10)
+        subplot(3, 5,  11)
         
         hold on;
-        histogram(qMetric.isoD, 'FaceColor', colorMtx(10, 1:3), 'FaceAlpha', colorMtx(8, 4), 'BinEdges', [0:10:max(qMetric.isoD)]);
+        histogram(qMetric.isoD, 'FaceColor', colorMtx(11, 1:3), 'FaceAlpha', colorMtx(11, 4), 'BinEdges', [0:10:max(qMetric.isoD)]);
         yLim = ylim;
         line([param.isoDmin + 0.5, param.isoDmin + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         ylabel('unit count')
