@@ -94,11 +94,11 @@ If `param.plotGlobal` is set to true, after computing quality metrics, the scrip
 
 - for each a quality metric, a histogram of the distribution of values for all units. The red lines indicate classification thresholds. 
 
-    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/generalPlotHist.png" width=60% height=60%>
+    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/generalPlotHist.png" width=100% height=100%>
 
 - template waveforms for each unit classiyed as good, multi-unit and noise, overlaid on top of each other. This is a quick way of checking there is no odd, noisy unit that has mistakenly been classifyed as either good or multi-unit. 
 
-    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/waveformsSingleNoise.png" width=60% height=60%>
+    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/waveformsSingleNoise.png" width=70% height=70%>
 
 ### Quality metrics GUI guide 
 
