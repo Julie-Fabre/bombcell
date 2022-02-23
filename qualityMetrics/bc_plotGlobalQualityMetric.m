@@ -23,7 +23,7 @@ if param.plotGlobal
         subplot(1, 5, 1:4)
         vennEulerDiagram(setsw, {'# peaks', '#troughs', 'non-somatic', 'refractory period violations', ...
             'undetected spikes', '# spikes', 'waveform amplitude', 'spatial decay slope', 'waveform duration', ...
-            '','isolation distance'}, ...
+            'waveform baseline','isolation distance'}, ...
             'ColorOrder', colorMtx(:, 1:3), ...
             'ShowIntersectionCounts', 1);
         subplot(1, 5, 5) % hacky way to get a legend
@@ -32,7 +32,7 @@ if param.plotGlobal
         arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', colorMtx(x, :)), 1:8);
         legend({'# peaks', '#troughs', 'non-somatic', 'refractory period violations', ...
             'undetected spikes', '# spikes', 'waveform amplitude', 'spatial decay slope', 'waveform duration',...
-            'isolation distance'})
+            'waveform baseline','isolation distance'})
         set(gcf, 'color', 'w')
 
     else
@@ -72,23 +72,45 @@ if param.plotGlobal
     
     % 1. single/multi/noise/axonal waveforms 
     figure('Color', 'w');
-    subplot(131)
+    try
+    uniqueTemplates = unique(spikeTemplates);
+    subplot(231)
     title('Single unit template waveforms');hold on;
     singleU = uniqueTemplates(find(unitType==1));
     set(gca, 'XColor', 'w', 'YColor', 'w')
     singleUnitLines = arrayfun(@(x) plot(squeeze(templateWaveforms(singleU(x),:,qMetric.maxChannels(singleU(x)))), 'linewidth', 1, 'Color', 'k'), 1:size(singleU,1));
     
-    subplot(132)
+    subplot(232)
     set(gca, 'XColor', 'w', 'YColor', 'w')
     multiU = uniqueTemplates(find(unitType==2));
     title('Multi unit template waveforms');hold on;
     multiUnitLines = arrayfun(@(x) plot(squeeze(templateWaveforms(multiU(x),:,qMetric.maxChannels(multiU(x)))), 'linewidth', 1, 'Color', 'k'), 1:size(multiU,1));
     
-    subplot(133)
+    subplot(233)
     set(gca, 'XColor', 'w', 'YColor', 'w')
     noiseU = uniqueTemplates(find(unitType==0));
     title('Noise unit template waveforms');hold on;
     noiseUnitLines = arrayfun(@(x) plot(squeeze(templateWaveforms(noiseU(x),:,qMetric.maxChannels(noiseU(x)))), 'linewidth', 1, 'Color', 'k'), 1:size(noiseU,1));
+    catch
+    end
+    subplot(234)
+    set(gca, 'XColor', 'w', 'YColor', 'w')
+    singleUidx = find(unitType == 1); hold on;
+    rawSingleUnitLines = arrayfun(@(x) plot(squeeze(qMetric.rawWaveforms(singleUidx(x)).spkMapMean(qMetric.maxChannels(singleUidx(x)),:)), 'linewidth', 1, 'Color', 'k'), ...
+         1:size(singleUidx,1));
+    
+    subplot(235)
+    set(gca, 'XColor', 'w', 'YColor', 'w')
+    multiUidx = find(unitType == 2); hold on;
+    rawMultiUnitLines = arrayfun(@(x) plot(squeeze(qMetric.rawWaveforms(multiUidx(x)).spkMapMean(qMetric.maxChannels(multiUidx(x)),:)), 'linewidth', 1, 'Color', 'k'), ...
+         1:size(multiUidx,1));
+    
+    subplot(236)
+    set(gca, 'XColor', 'w', 'YColor', 'w')
+    noiseUidx = find(unitType == 0); hold on;
+    rawNoiseUnitLines = arrayfun(@(x) plot(squeeze(qMetric.rawWaveforms(noiseUidx(x)).spkMapMean(qMetric.maxChannels(noiseUidx(x)),:)), 'linewidth', 1, 'Color', 'k'), ...
+         1:size(noiseUidx,1));
+    
 
     % 2. histogram for each quality metric, red line indicates
     % classification threshold
@@ -194,7 +216,7 @@ if param.plotGlobal
     hold on;
     histogram(qMetric.waveformBaseline, 'FaceColor', colorMtx(10, 1:3), 'FaceAlpha', colorMtx(10, 4), 'BinEdges', [0:0.05:max(qMetric.waveformBaseline)]);
     yLim = ylim;
-    line([param.maxWvBaselineFraction + 0.5, param.maxWvBaselineFraction + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    line([param.maxWvBaselineFraction , param.maxWvBaselineFraction ], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')
     xlabel('waveform baseline ''flatness''')
     makepretty;

@@ -35,10 +35,17 @@ if size(spikeFile,1) > 1
 end 
 
 rawWaveformFolder = dir(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
+spikeWidth = 82;
+halfWidth = spikeWidth / 2;
+
+clustInds = unique(spikeTemplates);
+nClust = numel(clustInds);
+
 
 fname = spikeFile.name;
 d = dir(fullfile(rawFolder, fname));
 
+dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
 
 if ~isempty(rawWaveformFolder) && reExtract == 0
     load(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
@@ -48,8 +55,8 @@ else
     
 
     fid = fopen(fullfile(spikeFile.folder, fname), 'r');
-    spikeWidth = 82;
-    halfWidth = spikeWidth / 2;
+        pull_spikeT = -41:40;
+
     clustInds = unique(spikeTemplates);
     nClust = numel(clustInds);
 
@@ -62,6 +69,7 @@ else
         memmapfile(fullfile(spikeFile.folder, fname),'Format',{'int16',[nChannels,n_samples],'data'});
     catch
         nChannels = nChannels - 1;
+        n_samples = spikeFile.bytes/ (nChannels * dataTypeNBytes);  
     end
     
     %% Interate over spike clusters and find all the data associated with them

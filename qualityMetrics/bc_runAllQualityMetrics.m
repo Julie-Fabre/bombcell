@@ -85,8 +85,7 @@ qMetric.maxChannels = maxChannels;
 
 verbose = 1;
 qMetric.rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
-    spikeTimes, spikeTemplates, verbose); % takes ~10' - QQ but bug in this
-%    method I need to fix, reverting back to slow method for now
+    spikeTimes, spikeTemplates, 1, verbose); % takes ~10' for an average dataset
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
 %     spikeTimes, spikeTemplates, usedChannels, verbose);
 
