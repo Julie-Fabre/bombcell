@@ -88,7 +88,7 @@ After classifying noise units, the remaining units are classifyed as good single
 
 If `param.plotGlobal` is set to true, after computing quality metrics, the script will output 3 summary plots :
 
-- a [Euler diagram](https://en.wikipedia.org/wiki/Euler_diagram) of the number of units classifyed as noise/multi-unit with each quality metric. CNumbers in the circles indicate the number of units classifying as noise/multi-unit by that quality metric/intersection of quality metrics. 
+- a [Euler diagram](https://en.wikipedia.org/wiki/Euler_diagram) of the number of units classifyed as noise/multi-unit with each quality metric. Numbers in the circles indicate the number of units classifying as noise/multi-unit by that quality metric/intersection of quality metrics. 
 
     <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/unitRemovedEulerVenn.png" width=60% height=60%>
 

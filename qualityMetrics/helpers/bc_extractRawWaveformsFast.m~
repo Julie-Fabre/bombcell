@@ -35,17 +35,10 @@ if size(spikeFile,1) > 1
 end 
 
 rawWaveformFolder = dir(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
-spikeWidth = 82;
-halfWidth = spikeWidth / 2;
-
-clustInds = unique(spikeTemplates);
-nClust = numel(clustInds);
-
 
 fname = spikeFile.name;
 d = dir(fullfile(rawFolder, fname));
 
-dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
 
 if ~isempty(rawWaveformFolder) && reExtract == 0
     load(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
@@ -55,8 +48,8 @@ else
     
 
     fid = fopen(fullfile(spikeFile.folder, fname), 'r');
-        pull_spikeT = -41:40;
-
+    spikeWidth = 82;
+    halfWidth = spikeWidth / 2;
     clustInds = unique(spikeTemplates);
     nClust = numel(clustInds);
 
@@ -68,8 +61,8 @@ else
         n_samples = spikeFile.bytes/ (nChannels * dataTypeNBytes);
         memmapfile(fullfile(spikeFile.folder, fname),'Format',{'int16',[nChannels,n_samples],'data'});
     catch
+        disp(['Guessing correct number of channels is ', num2str(nChannels-1)])
         nChannels = nChannels - 1;
-        n_samples = spikeFile.bytes/ (nChannels * dataTypeNBytes);  
     end
     
     %% Interate over spike clusters and find all the data associated with them
@@ -90,13 +83,15 @@ else
         for iSpike = 1:nSpikesEctractHere
             thisSpikeIdx = spikeIndices(iSpike);
             if thisSpikeIdx > halfWidth && (thisSpikeIdx + halfWidth) * dataTypeNBytes < int64(d.bytes) % check that it's not out of bounds
-                byteIdx = int64(((thisSpikeIdx - halfWidth) * nChannels) * dataTypeNBytes); % int64 to prevent overflow on crappy windows machines that are incredibly inferior to linux
+                byteIdx = (((thisSpikeIdx - halfWidth) * nChannels) * dataTypeNBytes); % int64 to prevent overflow on crappy windows machines that are incredibly inferior to linux
                 fseek(fid, byteIdx, 'bof'); % from beginning of file
                 data = fread(fid, [nChannels, spikeWidth], 'int16=>int16'); % read individual waveform from binary file
                 frewind(fid);
                 %data = reshape(data0, nChannels, spikeWidth);
-                if size(data, 2) == spikeWidth
+                if size(data, 2) == spikeWidth && nChannels == 385
                     spikeMap(:, :, iSpike) = data(1:nChannels-1, :, :); %remove sync channel
+                else
+                    spikeMap(:, :, iSpike) = data(1:nChannels, :, :); %remove sync channel
                 end
 
 
@@ -110,14 +105,14 @@ else
 
         [~, rawWaveforms(iCluster).peakChan] = max(max(abs(spkMapMean_sm), [], 2), [], 1);
 
-%                 clf;
-%                 for iSpike = 1:100
-%                     plot(spikeMap(1, :, iSpike));
-%                     hold on;
-%                 end
+                clf;
+                for iSpike = 1:10
+                    plot(spikeMap(1, :, iSpike));
+                    hold on;
+                end
 %         figure()
 %                 clf;
-%                 plot(rawWaveforms(iCluster).spkMapMean(1, :));
+%                 plot(rawWaveforms(iCluster).spkMapMean(rawWaveforms(iCluster).peakChan, :));
 %                 hold on;
         if (mod(iCluster, 20) == 0 || iCluster == nClust) && verbose
             fprintf(['\n   Extracted ', num2str(iCluster), '/', num2str(nClust), ' raw waveforms']);

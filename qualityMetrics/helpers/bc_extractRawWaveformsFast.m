@@ -57,12 +57,13 @@ else
     fname = spikeFile.name;
 
     dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
-    try % memMap to check you have correct number of channels, if not remove one channel 
-        n_samples = spikeFile.bytes/ (nChannels * dataTypeNBytes);
-        memmapfile(fullfile(spikeFile.folder, fname),'Format',{'int16',[nChannels,n_samples],'data'});
-    catch
-        nChannels = nChannels - 1;
-    end
+%     try % memMap to check you have correct number of channels, if not remove one channel 
+%         n_samples = spikeFile.bytes/ (nChannels * dataTypeNBytes);
+%         memmapfile(fullfile(spikeFile.folder, fname),'Format',{'int16',[nChannels,n_samples],'data'});
+%     catch
+%         disp(['Guessing correct number of channels is ', num2str(nChannels-1)])
+%         nChannels = nChannels - 1;
+%     end
     
     %% Interate over spike clusters and find all the data associated with them
     rawWaveforms = struct;
@@ -77,18 +78,24 @@ else
             spikeIndices = spikeIndices(spksubi);
         end
         nSpikesEctractHere = numel(spikeIndices);
-
-        spikeMap = nan(nChannels-1, spikeWidth, nSpikesEctractHere);
+        if nChannels == 385
+            spikeMap = nan(nChannels-1, spikeWidth, nSpikesEctractHere);
+        else
+            spikeMap = nan(nChannels, spikeWidth, nSpikesEctractHere);
+       
+        end
         for iSpike = 1:nSpikesEctractHere
             thisSpikeIdx = spikeIndices(iSpike);
-            if thisSpikeIdx > halfWidth && (thisSpikeIdx + halfWidth) * dataTypeNBytes < int64(d.bytes) % check that it's not out of bounds
+            if thisSpikeIdx > halfWidth && (thisSpikeIdx + halfWidth) * dataTypeNBytes < d.bytes % check that it's not out of bounds
                 byteIdx = int64(((thisSpikeIdx - halfWidth) * nChannels) * dataTypeNBytes); % int64 to prevent overflow on crappy windows machines that are incredibly inferior to linux
                 fseek(fid, byteIdx, 'bof'); % from beginning of file
                 data = fread(fid, [nChannels, spikeWidth], 'int16=>int16'); % read individual waveform from binary file
                 frewind(fid);
                 %data = reshape(data0, nChannels, spikeWidth);
-                if size(data, 2) == spikeWidth
+                if size(data, 2) == spikeWidth && nChannels == 385
                     spikeMap(:, :, iSpike) = data(1:nChannels-1, :, :); %remove sync channel
+                elseif size(data, 2) == spikeWidth
+                    spikeMap(:, :, iSpike) = data(1:nChannels, :, :); %remove sync channel
                 end
 
 
@@ -100,14 +107,14 @@ else
 
         spkMapMean_sm = smoothdata(spikeMapMean, 1, 'gaussian', 5);
 
-        [~, rawWaveforms(iCluster).peakChan] = max(max(abs(spkMapMean_sm), [], 2), [], 1);
+        [~, rawWaveforms(iCluster).peakChan] = max(max(abs(spkMapMean_sm), [], 2), [], 1);%QQ buggy sometimes
 
 %                 clf;
-%                 for iSpike = 1:100
+%                 for iSpike = 1:10
 %                     plot(spikeMap(1, :, iSpike));
 %                     hold on;
 %                 end
-%         figure()
+%                 figure()
 %                 clf;
 %                 plot(rawWaveforms(iCluster).spkMapMean(1, :));
 %                 hold on;
