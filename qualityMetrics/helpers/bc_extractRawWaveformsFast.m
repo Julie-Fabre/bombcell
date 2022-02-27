@@ -91,7 +91,7 @@ else
                 fseek(fid, byteIdx, 'bof'); % from beginning of file
                 data = fread(fid, [nChannels, spikeWidth], 'int16=>int16'); % read individual waveform from binary file
                 frewind(fid);
-                %data = reshape(data0, nChannels, spikeWidth);
+
                 if size(data, 2) == spikeWidth && nChannels == 385
                     spikeMap(:, :, iSpike) = data(1:nChannels-1, :, :); %remove sync channel
                 elseif size(data, 2) == spikeWidth

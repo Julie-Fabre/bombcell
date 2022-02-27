@@ -1,7 +1,7 @@
 %bc_qualityParamValues
 param = struct;
 param.plotThis = 0;
-param.plotGlobal =1;
+param.plotGlobal = 1;
 % refractory period parameters
 param.tauR = 0.0020; %refractory period time (s)
 param.tauC = 0.0001; %censored period time (s)
@@ -23,7 +23,7 @@ param.maxWvBaselineFraction = 0.3;
 % amplitude parameters
 param.rawFolder = [ephysap_path, '/..'];
 param.nRawSpikesToExtract = 100; 
-param.minAmplitude = 40; 
+param.minAmplitude = 20; 
 % recording parametrs
 param.ephys_sample_rate = 30000;
 param.nChannels = 385;

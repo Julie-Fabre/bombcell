@@ -18,6 +18,6 @@ else
     unitType(qMetric.percSpikesMissing <= param.maxPercSpikesMissing & qMetric.nSpikes > param.minNumSpikes & ...
         qMetric.Fp <= param.maxRPVviolations & ...
         qMetric.rawAmplitude > param.minAmplitude & isnan(unitType)') = 1; %SINGLE SEXY UNIT
-    unitType(isnan(unitType)) = 2; % MULTI UNIT
+    unitType(isnan(unitType)') = 2; % MULTI UNIT
 
 end
