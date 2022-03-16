@@ -8,8 +8,8 @@ param.tauC = 0.0001; %censored period time (s)
 param.maxRPVviolations = 10;
 % percentage spikes missing parameters 
 param.maxPercSpikesMissing = 20;
-param.computeTimeChunks = 0;
-param.deltaTimeChunk = NaN; 
+param.computeTimeChunks = 1;
+param.deltaTimeChunk = 1200; %time in seconds 
 % number of spikes
 param.minNumSpikes = 300;
 % waveform parameters
