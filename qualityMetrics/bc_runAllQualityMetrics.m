@@ -117,7 +117,7 @@ for iUnit = 1:length(uniqueTemplates)
     
     %% define timechunks to keep: if param.computeTimeChunks, keep times with low percentage spikes missing and low fraction contam
     if param.computeTimeChunks
-        [theseSpikeTimes, ~, timeChunks, qMetric.useTheseTimes{iUnit}] = bc_defineTimechunksToKeep(qMetric.percSpikesMissing(iUnit,:), ...
+        [theseSpikeTimes, ~, ~, qMetric.useTheseTimes{iUnit}] = bc_defineTimechunksToKeep(qMetric.percSpikesMissing(iUnit,:), ...
             qMetric.Fp(iUnit,:), param.maxPercSpikesMissing, param.maxRPVviolations, theseAmplis, theseSpikeTimes, timeChunks);
     end
     
@@ -129,9 +129,6 @@ for iUnit = 1:length(uniqueTemplates)
         qMetric.peakLocs{iUnit}, qMetric.troughLocs{iUnit}, qMetric.waveformDuration(iUnit), ...
         qMetric.spatialDecayPoints(iUnit,:), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaseline(iUnit), qMetric.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms, thisUnit, maxChannels(thisUnit), ...
         param.ephys_sample_rate, channelPositions,  param.maxWvBaselineFraction, param.plotThis);
-
- 
-
 
     %% amplitude
     if size(qMetric.rawWaveforms(iUnit).spkMapMean, 1) == 1
