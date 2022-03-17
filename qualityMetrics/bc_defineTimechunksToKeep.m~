@@ -5,13 +5,9 @@ function [theseSpikeTimes, theseAmplis, timeChunksKeep, useTheseTimes ] = bc_def
         useTheseTimes_temp = find(percSpikesMissing < maxPercSpikesMissing & Fp < maxFp);
         if numel(useTheseTimes_temp) > 1
             continousTimes=find(diff(useTheseTimes_temp)==1); %get continous time chunks to use 
-            if ~isempty(continousTimes)
-                [continousTimesUseLength,jmax]=max(continousTimes) ;
-                continousTimesUseStart=continousTimes(1,jmax);
-                useTheseTimes  = useTheseTimes_temp(continousTimesUseStart:continousTimesUseStart + (continousTimesUseLength -min(continousTimes)));
-            else
-                useTheseTimes = useTheseTimes_temp(1);
-            end
+            [continousTimesUseLength,jmax]=max(continousTimes) ;
+            continousTimesUseStart=continousTimes(1,jmax);
+            useTheseTimes  = useTheseTimes_temp(continousTimesUseStart:continousTimesUseStart + (continousTimesUseLength -min(continousTimes)));
         else
             useTheseTimes = useTheseTimes_temp;
         end
@@ -25,5 +21,5 @@ function [theseSpikeTimes, theseAmplis, timeChunksKeep, useTheseTimes ] = bc_def
         useTheseTimes = ones(numel(percSpikesMissing), 1);
         timeChunksKeep = NaN;
     end
-
+dbcont;
 end
