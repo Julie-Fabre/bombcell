@@ -117,6 +117,7 @@ for iUnit = 1:length(uniqueTemplates)
     
     %% define timechunks to keep: if param.computeTimeChunks, keep times with low percentage spikes missing and low fraction contam
     if param.computeTimeChunks
+        %dbstop in bc_defineTimechunksToKeep
         [theseSpikeTimes, ~, ~, qMetric.useTheseTimes{iUnit}] = bc_defineTimechunksToKeep(qMetric.percSpikesMissing(iUnit,:), ...
             qMetric.Fp(iUnit,:), param.maxPercSpikesMissing, param.maxRPVviolations, theseAmplis, theseSpikeTimes, timeChunks);
     end

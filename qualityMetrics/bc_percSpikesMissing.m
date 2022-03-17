@@ -34,7 +34,7 @@ for iTimeChunk = 1:numel(timeChunks)-1
     nBins = 50;
     [num, bins] = histcounts(theseAmplitudes(theseSpikeTimes >= timeChunks(iTimeChunk) &...
         theseSpikeTimes < timeChunks(iTimeChunk+1)), nBins);
-
+    if sum(num) > 0 
     %fit a gaussian to the histogram
     mode_seed = bins(num == max(num)); %guess mode - this is only accurate if mode is present in histogram
     bin_steps = diff(bins(1:2)); %size of a bin
@@ -67,7 +67,9 @@ for iTimeChunk = 1:numel(timeChunks)-1
     %Int2 = 
     norm_area_ndtr = normcdf((fitOutput(2) - fitOutput(4))/fitOutput(3)); %ndtr((popt[1] - min_amplitude) /popt[2])
     percent_missing(iTimeChunk) = 100 * (1 - norm_area_ndtr);
-   
+    else
+        percent_missing(iTimeChunk) = 100;
+    end
         
     if plotThis
         subplot(2,numel(timeChunks)-1, numel(timeChunks)-1+iTimeChunk)

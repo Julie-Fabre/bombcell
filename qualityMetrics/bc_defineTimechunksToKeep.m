@@ -3,27 +3,27 @@ function [theseSpikeTimes, theseAmplis, timeChunksKeep, useTheseTimes ] = bc_def
     if any(percSpikesMissing < maxPercSpikesMissing) && any(Fp < maxFp)  % if there are some good time chunks, keep those
         
         useTheseTimes_temp = find(percSpikesMissing < maxPercSpikesMissing & Fp < maxFp);
-        if numel(useTheseTimes_temp) > 1
-            continousTimes=find(diff(useTheseTimes_temp)==1); %get continous time chunks to use 
+        if numel(useTheseTimes_temp) > 0
+            continousTimes=find(diff([0, useTheseTimes_temp, 0])==1); %get continous time chunks to use 
             if ~isempty(continousTimes)
-                [continousTimesUseLength,jmax]=max(continousTimes) ;
-                continousTimesUseStart=continousTimes(1,jmax);
-                useTheseTimes  = useTheseTimes_temp(continousTimesUseStart:continousTimesUseStart + (continousTimesUseLength -min(continousTimes)));
+                [continousTimesUseLength,jmax]=max(continousTimes);
+                continousTimesUseStart=continousTimes(1,useTheseTimes_temp(jmax) - continousTimesUseLength +1);
+                useTheseTimes  = timeChunks(continousTimesUseStart:continousTimesUseStart + (continousTimesUseLength));
             else
-                useTheseTimes = useTheseTimes_temp(1);
+                useTheseTimes = timeChunks(useTheseTimes_temp(1):useTheseTimes_temp(1)+1);
             end
         else
-            useTheseTimes = useTheseTimes_temp;
+            useTheseTimes = timeChunks;
         end
-        theseAmplis = theseAmplis(theseSpikeTimes < timeChunks(useTheseTimes(end)+1) & ...
-            theseSpikeTimes > timeChunks(useTheseTimes(1)));
-        theseSpikeTimes = theseSpikeTimes(theseSpikeTimes < timeChunks(useTheseTimes(end)+1) & ...
-            theseSpikeTimes > timeChunks(useTheseTimes(1)));
+        theseAmplis = theseAmplis(theseSpikeTimes < useTheseTimes(end) & ...
+            theseSpikeTimes > useTheseTimes(1));
+        theseSpikeTimes = theseSpikeTimes(theseSpikeTimes < useTheseTimes(end) & ...
+            theseSpikeTimes > useTheseTimes(1));
         %QQ change non continous
-        timeChunksKeep = timeChunks(useTheseTimes(1):useTheseTimes(end)+1);
+        timeChunksKeep = useTheseTimes(1):useTheseTimes(end);
     else %otherwise, keep all chunks to compute quality metrics on, uni will defined as below percSpikesMissing and Fp criteria thresholds later 
         useTheseTimes = ones(numel(percSpikesMissing), 1);
         timeChunksKeep = NaN;
     end
-
+%dbcont;
 end
