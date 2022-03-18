@@ -84,6 +84,8 @@ maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 qMetric.maxChannels = maxChannels;
 
 verbose = 1;
+%QQ extract raw waveforms based on 'good' timechunks defined later
+%QQ differences axonal raw waveforms ?
 qMetric.rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
     spikeTimes, spikeTemplates, 0, verbose); % takes ~10' for an average dataset
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
@@ -98,6 +100,8 @@ if param.computeTimeChunks
 else
     timeChunks = [min(spikeTimes), max(spikeTimes)];
 end
+
+disp([newline, 'extracting quality metrics ...'])
 
 for iUnit = 1:length(uniqueTemplates)
     
@@ -150,11 +154,11 @@ bc_getQualityUnitType;
 
 if exist('savePath', 'var') %save qualityMetrics
     mkdir(fullfile(savePath))
-    disp(['saving quality metrics to ', savePath])
+    disp([newline, 'saving quality metrics to ', savePath])
     save(fullfile(savePath, 'qMetric.mat'), 'qMetric', '-v7.3')
     save(fullfile(savePath, 'param.mat'), 'param')
 end
-disp('finished extracting quality metrics')
+disp([newline, 'finished extracting quality metrics'])
 
 bc_plotGlobalQualityMetric;
 end

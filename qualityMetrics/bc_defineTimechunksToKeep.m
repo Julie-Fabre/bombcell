@@ -3,11 +3,12 @@ function [theseSpikeTimes, theseAmplis, timeChunksKeep, useTheseTimes ] = bc_def
     if any(percSpikesMissing < maxPercSpikesMissing) && any(Fp < maxFp)  % if there are some good time chunks, keep those
         
         useTheseTimes_temp = find(percSpikesMissing < maxPercSpikesMissing & Fp < maxFp);
-        if numel(useTheseTimes_temp) > 0
-            continousTimes=find(diff([0, useTheseTimes_temp, 0])==1); %get continous time chunks to use 
-            if ~isempty(continousTimes)
-                [continousTimesUseLength,jmax]=max(continousTimes);
-                continousTimesUseStart=continousTimes(1,useTheseTimes_temp(jmax) - continousTimesUseLength +1);
+        if numel(useTheseTimes_temp) > 0 
+            continousTimes = diff(useTheseTimes_temp);
+             if any(continousTimes == 1)
+                f = find(diff([false,continousTimes==1,false])~=0);
+                [continousTimesUseLength,ix] = max(f(2:2:end)-f(1:2:end-1));
+                continousTimesUseStart = useTheseTimes_temp(continousTimes(f(2*ix-1)));
                 useTheseTimes  = timeChunks(continousTimesUseStart:continousTimesUseStart + (continousTimesUseLength));
             else
                 useTheseTimes = timeChunks(useTheseTimes_temp(1):useTheseTimes_temp(1)+1);
