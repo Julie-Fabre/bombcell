@@ -58,7 +58,7 @@ end
 peakLoc = peakLocs(PKS == max(PKS)); %QQ should change to better:
             % by looking for location where the data is most tightly distributed
 if numel(peakLoc) > 1
-    peakLoc = peakLoc(end);
+    peakLoc = peakLoc(1);
 
 end
 troughLoc = troughLocs(TRS == max(TRS)); %QQ should change to better:

@@ -129,7 +129,7 @@ else
 
     fclose(fid);
     rawWaveformFolder = dir(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
-    if isempty(rawWaveformFolder)
+    if isempty(rawWaveformFolder) || reExtract
         save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
     end
 end
