@@ -106,7 +106,7 @@ verbose = 1;
 %QQ differences axonal raw waveforms ?
 
 qMetric.rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
-    spikeTimes, spikeTemplates,1 ,templateWaveforms,uniqueTemplates,goodChannels, verbose); % takes ~10' for an average dataset
+    spikeTimes, spikeTemplates,0 , verbose); % takes ~10' for an average dataset
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
 %     spikeTimes, spikeTemplates, usedChannels, verbose);
 
