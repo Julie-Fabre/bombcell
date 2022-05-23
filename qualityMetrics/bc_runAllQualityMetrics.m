@@ -64,27 +64,28 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeT
 %       percentage of spikes below the spike-sorting detection threshold - will
 %       slightly underestimate in the case of 'bursty' cells with burst
 %       adaptation (eg see Fig 5B of Harris/Buzsaki 2000 DOI: 10.1152/jn.2000.84.1.401) 
-% Fp: percentage of false positives, ie spikes within the refractory period
+%   Fp: percentage of false positives, ie spikes within the refractory period
 %       defined by param.tauR of anotehr spike. This also excludes
 %       duplicated spikes that occur within param.tauC of another spike. 
-% useTheseTimes : param.computeTimeChunks, this defines the time chunks 
+%   useTheseTimes : param.computeTimeChunks, this defines the time chunks 
 %       (deivding the recording in time of chunks of param.deltaTimeChunk size)
 %       where the percentage of spike missing and percentage of false positives
 %       is below param.maxPercSpikesMissing and param.maxRPVviolations
-% nSpikes : number of spikes for each unit 
-% nPeaks : number of detected peaks in each units template waveform
-% nTroughs : number of detected troughs in each units template waveform
-% somatic : a unit is defined as somatic of its trough precedes its main
+%   nSpikes : number of spikes for each unit 
+%   nPeaks : number of detected peaks in each units template waveform
+%   nTroughs : number of detected troughs in each units template waveform
+%   somatic : a unit is defined as somatic of its trough precedes its main
 %       peak (see Deligkaris/Frey DOI: 10.3389/fnins.2016.00421)
-% rawAmplitude : amplitude in uV of the units mean raw waveform at its peak
+%   rawAmplitude : amplitude in uV of the units mean raw waveform at its peak
 %       channel. The peak channel is defined by the template waveform. 
-% spatialDecay : 
-% isoD : isolation distance, a measure of how well a units spikes are seperate from
+%   spatialDecay : gets the minumum amplitude for each unit 5 channels from
+%       the peak channel and calculates the slope of this decrease in amplitude.
+%   isoD : isolation distance, a measure of how well a units spikes are seperate from
 %       other nearby units spikes
-% Lratio : l-ratio, a similar measure to isolation distance. see
+%   Lratio : l-ratio, a similar measure to isolation distance. see
 %       Schmitzer-Torbert/Redish 2005  DOI: 10.1016/j.neuroscience.2004.09.066 
 %       for a comparison of l-ratio/isolation distance
-% silhouetteScore : another measure similar ti isolation distance and
+%   silhouetteScore : another measure similar ti isolation distance and
 %       l-ratio. See Rousseeuw 1987 DOI: 10.1016/0377-0427(87)90125-7)
 %
 % unitType: nUnits x 1 vector indicating whether each unit met the
