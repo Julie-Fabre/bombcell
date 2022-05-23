@@ -159,7 +159,7 @@ for iUnit = 1:length(uniqueTemplates)
     if size(qMetric.rawWaveforms(iUnit).spkMapMean, 1) == 1
         qMetric.rawWaveforms(iUnit).spkMapMean = permute(squeeze(qMetric.rawWaveforms(iUnit).spkMapMean), [2, 1]);
     end
-    qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(qMetric.rawWaveforms(iUnit).spkMapMean(rawWaveforms(thisUnit).peakChan, :), ...
+    qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(qMetric.rawWaveforms(iUnit).spkMapMean(qMetric.rawWaveforms(thisUnit).peakChan, :), ...
         param.rawFolder);
 
     %% distance metrics
