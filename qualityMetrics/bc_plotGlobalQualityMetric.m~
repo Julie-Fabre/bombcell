@@ -137,13 +137,13 @@ if param.plotGlobal
     subplot(234)
     set(gca, 'XColor', 'w', 'YColor', 'w')
     singleUidx = find(unitType == 1); hold on;
-    rawSingleUnitLines = arrayfun(@(x) plot(squeeze(qMetric.rawWaveforms(singleUidx(x)).spkMapMean(qMetric.rawWaveforms(singleUidx(x)).peakChan,:)), 'linewidth', 1, 'Color', 'k'), ...
+    rawSingleUnitLines = arrayfun(@(x) plot(squeeze(qMetric.rawWaveforms(singleUidx(x)).spkMapMean(qMetric.rawWaveforms(singleUidx(x)),:)), 'linewidth', 1, 'Color', 'k'), ...
          1:size(singleUidx,1));
     
     subplot(235)
     set(gca, 'XColor', 'w', 'YColor', 'w')
     multiUidx = find(unitType == 2); hold on;
-    rawMultiUnitLines = arrayfun(@(x) plot(squeeze(qMetric.rawWaveforms(multiUidx(x)).spkMapMean(qMetric.rawWaveforms(multiUidx(x)).peakChan,:)), 'linewidth', 1, 'Color', 'k'), ...
+    rawMultiUnitLines = arrayfun(@(x) plot(squeeze(qMetric.rawWaveforms(multiUidx(x)).spkMapMean(qMetric.maxChannels(multiUidx(x)),:)), 'linewidth', 1, 'Color', 'k'), ...
          1:size(multiUidx,1));
     
     subplot(236)
