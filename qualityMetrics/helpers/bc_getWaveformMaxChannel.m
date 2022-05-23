@@ -10,5 +10,9 @@ function maxChannels = bc_getWaveformMaxChannel(templateWaveforms)
 % ------
 % maxChannels: nTemplates * 1 vector of max channels for each template
 % 
-    [~, maxChannels] = max(max(abs(templateWaveforms), [], 2), [], 3);
+% templateWaveforms_baselineSub = spikeMapMean - mean(spikeMapMean(:, 1:10), 2); %subtract baseline from template 
+% 
+% templateWaveforms_baselineSub_smooth = smoothdata(spikeMapMean, 1, 'gaussian', 5);
+%   
+[~, maxChannels] = max(max(abs(templateWaveforms), [], 2), [], 3);
 end

@@ -1,5 +1,5 @@
 function [spikeTimes, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephys_path)
+    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, channelMap] = bc_loadEphysData(ephys_path)
 
 spike_templates_0idx = readNPY([ephys_path filesep 'spike_templates.npy']);
 spikeTemplates = spike_templates_0idx + 1;
@@ -16,5 +16,5 @@ catch
     pcFeatureIdx = NaN;
 end 
 channelPositions = readNPY([ephys_path filesep  'channel_positions.npy']) + 1;
-
+channelMap = readNPY([ephys_path filesep  'channel_map.npy']) + 1;
 end

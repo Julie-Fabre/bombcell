@@ -1,5 +1,5 @@
 function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath)
+    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, goodChannels, savePath)
 % JF
 % ------
 % Inputs
@@ -55,7 +55,9 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeT
 % pcFeatureIdx: nTemplates × nPCFeatures uint32  matrix specifying which
 %   channels contribute to each entry in dim 3 of the pc_features matrix
 %
-% ------
+% channelPositions
+% goodChannels 
+%------
 % Outputs
 % ------
 % qMetric: structure with fields:
@@ -102,8 +104,9 @@ qMetric.maxChannels = maxChannels;
 verbose = 1;
 %QQ extract raw waveforms based on 'good' timechunks defined later
 %QQ differences axonal raw waveforms ?
+
 qMetric.rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
-    spikeTimes, spikeTemplates, 0, verbose); % takes ~10' for an average dataset
+    spikeTimes, spikeTemplates,1 ,templateWaveforms,uniqueTemplates,goodChannels, verbose); % takes ~10' for an average dataset
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
 %     spikeTimes, spikeTemplates, usedChannels, verbose);
 
@@ -148,14 +151,15 @@ for iUnit = 1:length(uniqueTemplates)
     %% waveform: (1) number peaks/troughs, (2) is peak before trough (= axonal/dendritic), (3) is waveform duration cell-like, (4) spatial decay, (5) waveformShape
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.somatic(iUnit), ...
         qMetric.peakLocs{iUnit}, qMetric.troughLocs{iUnit}, qMetric.waveformDuration(iUnit), ...
-        qMetric.spatialDecayPoints(iUnit,:), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaseline(iUnit), qMetric.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms, thisUnit, maxChannels(thisUnit), ...
+        qMetric.spatialDecayPoints(iUnit,:), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaseline(iUnit), qMetric.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms, ...
+        thisUnit, maxChannels(thisUnit), ...
         param.ephys_sample_rate, channelPositions,  param.maxWvBaselineFraction, param.plotThis);
 
     %% amplitude
     if size(qMetric.rawWaveforms(iUnit).spkMapMean, 1) == 1
         qMetric.rawWaveforms(iUnit).spkMapMean = permute(squeeze(qMetric.rawWaveforms(iUnit).spkMapMean), [2, 1]);
     end
-    qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(qMetric.rawWaveforms(iUnit).spkMapMean(maxChannels(thisUnit), :), ...
+    qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(qMetric.rawWaveforms(iUnit).spkMapMean(rawWaveforms(thisUnit).peakChan, :), ...
         param.rawFolder);
 
     %% distance metrics
