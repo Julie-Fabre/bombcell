@@ -34,10 +34,8 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param
         %fprintf('key pressed: %s\n', evnt.Key);
         if strcmpi(evnt.Key, 'rightarrow')
             iCluster = iCluster + 1;
-            tic
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
-            toc
         elseif strcmpi(evnt.Key, 'g') %toggle to next single-unit 
             iCluster = goodUnit_idx(iCluster + 1);
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param, ...
