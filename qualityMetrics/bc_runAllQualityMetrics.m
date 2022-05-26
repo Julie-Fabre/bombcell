@@ -102,11 +102,11 @@ maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 qMetric.maxChannels = maxChannels;
 
 verbose = 1;
-%QQ extract raw waveforms based on 'good' timechunks defined later
-%QQ differences axonal raw waveforms ?
+% QQ extract raw waveforms based on 'good' timechunks defined later ? 
 
 qMetric.rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
     spikeTimes, spikeTemplates,0 , verbose); % takes ~10' for an average dataset
+% previous, slower method: 
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
 %     spikeTimes, spikeTemplates, usedChannels, verbose);
 
@@ -134,13 +134,12 @@ for iUnit = 1:length(uniqueTemplates)
     [qMetric.percSpikesMissing(iUnit,:), qMetric.ampliBinCenters{iUnit}, qMetric.ampliBinCounts{iUnit}, qMetric.ampliFit{iUnit}] = ...
         bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotThis);
 
-    %% fraction contam (false postives)
+    %% fraction contamination (false positives)
     [qMetric.Fp(iUnit,:), ~, ~] = bc_fractionRPviolations(numel(theseSpikeTimes), theseSpikeTimes, theseAmplis, param.tauR, param.tauC, ...
-        timeChunks, param.plotThis); %add timeChunk QQ
+        timeChunks, param.plotThis);
     
     %% define timechunks to keep: if param.computeTimeChunks, keep times with low percentage spikes missing and low fraction contam
     if param.computeTimeChunks
-        %dbstop in bc_defineTimechunksToKeep
         [theseSpikeTimes, ~, ~, qMetric.useTheseTimes{iUnit}] = bc_defineTimechunksToKeep(qMetric.percSpikesMissing(iUnit,:), ...
             qMetric.Fp(iUnit,:), param.maxPercSpikesMissing, param.maxRPVviolations, theseAmplis, theseSpikeTimes, timeChunks);
     end
