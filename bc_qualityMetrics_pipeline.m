@@ -44,7 +44,13 @@ ephysParams = struct;
 plotRaw = 1;
 probeLocation=[];
 
-%keep memMapData ephysData qMetric param probeLocation unitType plotRaw
+% GUI guide: 
+% left/right arrow: toggle between units 
+% g : go to next good unit 
+% m : go to next multi-unit 
+% n : go to next noise unit 
+% up/down arrow: toggle between time chunks in the raw data
+% u: brings up a input dialog to enter the unit you want to go to 
 bc_unitQualityGUI(memMapData,ephysData,qMetric, param, probeLocation, unitType, plotRaw);
 
 
