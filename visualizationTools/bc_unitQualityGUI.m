@@ -389,7 +389,7 @@ end
 theseISI = diff(theseSpikeTimes);
 theseISIclean = theseISI(theseISI >= param.tauC); % removed duplicate spikes
 theseOffendingSpikes = find(theseISIclean < (2/1000)); 
-theseOffendingSpikes = [theseOffendingSpikes; theseOffendingSpikes-1];
+%theseOffendingSpikes = [theseOffendingSpikes; theseOffendingSpikes-1];
 [isiProba, edgesISI] = histcounts(theseISIclean*1000, [0:0.5:50]);
 
 set(guiData.isiBar, 'XData', edgesISI(1:end-1)+mean(diff(edgesISI)), 'YData', isiProba); %Check FR
