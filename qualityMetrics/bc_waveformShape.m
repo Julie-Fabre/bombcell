@@ -83,7 +83,7 @@ if maxChannel > 10
 else
     spatialDecayPoints = max(abs(squeeze(templateWaveforms(thisUnit, :, maxChannel:2:maxChannel+10))));
 end
-spatialDecaySlope = polyfit(spatialDecayPoints, 1:6,1); 
+spatialDecaySlope = polyfit(spatialDecayPoints, 1:6,1); % fit first order polynomial to data. first output is slope of polynomial, second is a constant
 spatialDecaySlope = spatialDecaySlope(1);
 
 waveformBaseline = max(abs(thisWaveform(20:30)))/max(abs(thisWaveform));

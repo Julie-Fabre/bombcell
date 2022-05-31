@@ -29,4 +29,6 @@ hold on;
 tS = lick_times_aligned_samples(106) + [int32(-42):int32(42)];
 thisMemMapS = double(memMapData(100:110, reshape(tS, [], 1)))+double(cCount(100:110));
 plot(double(reshape(tS, [], 1)), thisMemMapS,'r')
+
+
 %% make so you flip through xx channels + flip through stim times 

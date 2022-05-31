@@ -1,5 +1,5 @@
 function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath)
+    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, goodChannels, savePath)
 % JF
 % ------
 % Inputs
@@ -55,22 +55,40 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeT
 % pcFeatureIdx: nTemplates × nPCFeatures uint32  matrix specifying which
 %   channels contribute to each entry in dim 3 of the pc_features matrix
 %
-% ------
+% channelPositions
+% goodChannels 
+%------
 % Outputs
 % ------
 % qMetric: structure with fields:
-%   percSpikesMissing
-%   useTheseTimes
-%   nSpikes
-%   nPeaks
-%   nTroughs
-%   somatic
-%   Fp
-%   rawAmplitude
-%   spatialDecay
-%   isoD
-%   Lratio
-%   silhouetteScore
+%   percSpikesMissing : a gaussian is fit to the spike amplitudes with a
+%       'cutoff' parameter below which there are no spikes to estimate the
+%       percentage of spikes below the spike-sorting detection threshold - will
+%       slightly underestimate in the case of 'bursty' cells with burst
+%       adaptation (eg see Fig 5B of Harris/Buzsaki 2000 DOI: 10.1152/jn.2000.84.1.401) 
+%   Fp: percentage of false positives, ie spikes within the refractory period
+%       defined by param.tauR of anotehr spike. This also excludes
+%       duplicated spikes that occur within param.tauC of another spike. 
+%   useTheseTimes : param.computeTimeChunks, this defines the time chunks 
+%       (deivding the recording in time of chunks of param.deltaTimeChunk size)
+%       where the percentage of spike missing and percentage of false positives
+%       is below param.maxPercSpikesMissing and param.maxRPVviolations
+%   nSpikes : number of spikes for each unit 
+%   nPeaks : number of detected peaks in each units template waveform
+%   nTroughs : number of detected troughs in each units template waveform
+%   somatic : a unit is defined as somatic of its trough precedes its main
+%       peak (see Deligkaris/Frey DOI: 10.3389/fnins.2016.00421)
+%   rawAmplitude : amplitude in uV of the units mean raw waveform at its peak
+%       channel. The peak channel is defined by the template waveform. 
+%   spatialDecay : gets the minumum amplitude for each unit 5 channels from
+%       the peak channel and calculates the slope of this decrease in amplitude.
+%   isoD : isolation distance, a measure of how well a units spikes are seperate from
+%       other nearby units spikes
+%   Lratio : l-ratio, a similar measure to isolation distance. see
+%       Schmitzer-Torbert/Redish 2005  DOI: 10.1016/j.neuroscience.2004.09.066 
+%       for a comparison of l-ratio/isolation distance
+%   silhouetteScore : another measure similar ti isolation distance and
+%       l-ratio. See Rousseeuw 1987 DOI: 10.1016/0377-0427(87)90125-7)
 %
 % unitType: nUnits x 1 vector indicating whether each unit met the
 %   threshold criterion to be classified as a single unit (1), noise
@@ -84,10 +102,11 @@ maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 qMetric.maxChannels = maxChannels;
 
 verbose = 1;
-%QQ extract raw waveforms based on 'good' timechunks defined later
-%QQ differences axonal raw waveforms ?
+% QQ extract raw waveforms based on 'good' timechunks defined later ? 
+
 qMetric.rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
-    spikeTimes, spikeTemplates, 0, verbose); % takes ~10' for an average dataset
+    spikeTimes, spikeTemplates,0 , verbose); % takes ~10' for an average dataset
+% previous, slower method: 
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
 %     spikeTimes, spikeTemplates, usedChannels, verbose);
 
@@ -115,13 +134,12 @@ for iUnit = 1:length(uniqueTemplates)
     [qMetric.percSpikesMissing(iUnit,:), qMetric.ampliBinCenters{iUnit}, qMetric.ampliBinCounts{iUnit}, qMetric.ampliFit{iUnit}] = ...
         bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotThis);
 
-    %% fraction contam (false postives)
+    %% fraction contamination (false positives)
     [qMetric.Fp(iUnit,:), ~, ~] = bc_fractionRPviolations(numel(theseSpikeTimes), theseSpikeTimes, theseAmplis, param.tauR, param.tauC, ...
-        timeChunks, param.plotThis); %add timeChunk QQ
+        timeChunks, param.plotThis);
     
     %% define timechunks to keep: if param.computeTimeChunks, keep times with low percentage spikes missing and low fraction contam
     if param.computeTimeChunks
-        %dbstop in bc_defineTimechunksToKeep
         [theseSpikeTimes, ~, ~, qMetric.useTheseTimes{iUnit}] = bc_defineTimechunksToKeep(qMetric.percSpikesMissing(iUnit,:), ...
             qMetric.Fp(iUnit,:), param.maxPercSpikesMissing, param.maxRPVviolations, theseAmplis, theseSpikeTimes, timeChunks);
     end
@@ -132,14 +150,15 @@ for iUnit = 1:length(uniqueTemplates)
     %% waveform: (1) number peaks/troughs, (2) is peak before trough (= axonal/dendritic), (3) is waveform duration cell-like, (4) spatial decay, (5) waveformShape
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.somatic(iUnit), ...
         qMetric.peakLocs{iUnit}, qMetric.troughLocs{iUnit}, qMetric.waveformDuration(iUnit), ...
-        qMetric.spatialDecayPoints(iUnit,:), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaseline(iUnit), qMetric.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms, thisUnit, maxChannels(thisUnit), ...
+        qMetric.spatialDecayPoints(iUnit,:), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaseline(iUnit), qMetric.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms, ...
+        thisUnit, maxChannels(thisUnit), ...
         param.ephys_sample_rate, channelPositions,  param.maxWvBaselineFraction, param.plotThis);
 
     %% amplitude
     if size(qMetric.rawWaveforms(iUnit).spkMapMean, 1) == 1
         qMetric.rawWaveforms(iUnit).spkMapMean = permute(squeeze(qMetric.rawWaveforms(iUnit).spkMapMean), [2, 1]);
     end
-    qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(qMetric.rawWaveforms(iUnit).spkMapMean(maxChannels(thisUnit), :), ...
+    qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(qMetric.rawWaveforms(iUnit).spkMapMean(qMetric.rawWaveforms(iUnit).peakChan, :), ...
         param.rawFolder);
 
     %% distance metrics

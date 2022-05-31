@@ -8,7 +8,7 @@ function maxChannels = bc_getWaveformMaxChannel(templateWaveforms)
 % ------
 % Outputs
 % ------
-% maxChannels: nTemplates * 1 vector of max channels for each template
-% 
-    [~, maxChannels] = max(max(abs(templateWaveforms), [], 2), [], 3);
+
+ 
+[~, maxChannels] = max(max(abs(templateWaveforms), [], 2), [], 3);
 end

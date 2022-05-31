@@ -73,7 +73,7 @@ else
     for iCluster = 1:nClust
 
         spikeIndices = allSpikeTimes(spikeTemplates == clustInds(iCluster));
-        if numel(spikeIndices) >= nSpikesToExtract % QQ implement better spike selection selection method
+        if numel(spikeIndices) >= nSpikesToExtract % extract a random subset of regularly spaced raw waveforms
             spksubi = round(linspace(1, numel(spikeIndices), nSpikesToExtract))';
             spikeIndices = spikeIndices(spksubi);
         end
@@ -95,7 +95,7 @@ else
                 if size(data, 2) == spikeWidth && nChannels == 385
                     spikeMap(:, :, iSpike) = data(1:nChannels-1, :, :); %remove sync channel
                 elseif size(data, 2) == spikeWidth
-                    spikeMap(:, :, iSpike) = data(1:nChannels, :, :); %remove sync channel
+                    spikeMap(:, :, iSpike) = data(1:nChannels, :, :); 
                 end
 
 
@@ -109,15 +109,27 @@ else
 
         [~, rawWaveforms(iCluster).peakChan] = max(max(abs(spkMapMean_sm), [], 2), [], 1);%QQ buggy sometimes
 
+%         [~, maxChannels] = max(max(abs(templateWaveforms), [], 2), [], 3);
+%         close all;
+%         
 %                 clf;
 %                 for iSpike = 1:10
-%                     plot(spikeMap(1, :, iSpike));
+%                     plot(spikeMap(rawWaveforms(iCluster).peakChan, :, iSpike));
 %                     hold on;
 %                 end
 %                 figure()
 %                 clf;
-%                 plot(rawWaveforms(iCluster).spkMapMean(1, :));
+%                 plot(rawWaveforms(iCluster).spkMapMean(rawWaveforms(iCluster).peakChan, :));
 %                 hold on;
+%                 
+%                 
+%                 figure()
+%                 clf;
+%                 plot(squeeze(templateWaveforms(uniqueTemplates(iCluster),:,maxChannels(uniqueTemplates(iCluster)))));
+%                 hold on;
+%                 plot(squeeze(templateWaveforms(uniqueTemplates(iCluster),:,goodChannels(rawWaveforms(iCluster).peakChan))));
+                
+                
         if (mod(iCluster, 20) == 0 || iCluster == nClust) && verbose
             fprintf(['\n   Extracted ', num2str(iCluster), '/', num2str(nClust), ' raw waveforms']);
             %figure; imagesc(spkMapMean_sm)
