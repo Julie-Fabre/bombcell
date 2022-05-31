@@ -106,8 +106,7 @@ Plot a GUI to flip through the quality metrics for each cell with the function `
 
     bc_unitQualityGUI(memMapData, ephysData, qMetrics, param, probeLocation, unitType, plotRaw)
    
-Toggle units by using the <kbd>→</kbd> and <kbd>←</kbd> keys. Pressing <kbd>g</kbd>, <kbd>m</kbd>, <kbd>n</kbd> brings you to the next good, multi-unit or noise unit, respectively. 
-Press <kbd>u</kbd> to select a particular unit. Navigate in time through the raw data to see this units' individual spikes with the <kbd>↑</kbd> and <kbd>↓</kbd> keys.
+Toggle units by using the <kbd>↑</kbd> and <kbd>↓</kbd> keys. Pressing 'g'Navigate in time through the raw data to see this units' individual spikes with the <kbd>→</kbd> and <kbd>←</kbd> keys.
     
 - Unit location view
 
