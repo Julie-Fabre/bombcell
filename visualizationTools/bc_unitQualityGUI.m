@@ -10,7 +10,7 @@
 % - click on units 
 % - probe locations 
 
-function bc_unitQualityGUI(memMapData, ephysData, qMetric, param, probeLocation, unitType, plotRaw)
+function unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, param, probeLocation, unitType, plotRaw)
 
 %% set up dynamic figure
 unitQualityGuiHandle = figure('color', 'w');
@@ -39,15 +39,15 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
             toc
         elseif strcmpi(evnt.Key, 'g') %toggle to next single-unit 
-            iCluster = goodUnit_idx(iCluster + 1);
+            iCluster = goodUnit_idx(find(goodUnit_idx>iCluster,1,'first'));
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'm') %toggle to next multi-unit 
-            iCluster = multiUnit_idx(iCluster + 1);
+            iCluster = multiUnit_idx(find(multiUnit_idx>iCluster,1,'first'));
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'n') %toggle to next  noise/non-somatic unit
-            iCluster = noiseUnit_idx(iCluster + 1);
+            iCluster = noiseUnit_idx(find(noiseUnit_idx>iCluster,1,'first'));
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'leftarrow')
@@ -56,10 +56,16 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, iCluster, qMetric, param
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'uparrow')
             iChunk = iChunk + 1;
+            if iChunk> length(ephysData.spike_times_timeline(ephysData.spike_templates == iCluster));
+                iChunk=1;
+            end
             updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, qMetric, param, ...
     probeLocation, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'downarrow')
             iChunk = iChunk - 1;
+            if iChunk==0
+                iChunk = length(ephysData.spike_times_timeline(ephysData.spike_templates == iCluster));
+            end
             updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, qMetric, param, ...
     probeLocation, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'u') %select particular unit 
@@ -389,7 +395,7 @@ end
 theseISI = diff(theseSpikeTimes);
 theseISIclean = theseISI(theseISI >= param.tauC); % removed duplicate spikes
 theseOffendingSpikes = find(theseISIclean < (2/1000)); 
-theseOffendingSpikes = [theseOffendingSpikes; theseOffendingSpikes-1];
+% theseOffendingSpikes = [theseOffendingSpikes; theseOffendingSpikes-1];
 [isiProba, edgesISI] = histcounts(theseISIclean*1000, [0:0.5:50]);
 
 set(guiData.isiBar, 'XData', edgesISI(1:end-1)+mean(diff(edgesISI)), 'YData', isiProba); %Check FR
@@ -440,6 +446,10 @@ set(guiData.ampliAx.YAxis(1), 'Limits', [0, round(max(theseAmplis))])
 
 binSize = 20;
 timeBins = 0:binSize:ceil(ephysData.spike_times(end)/ephysData.ephys_sample_rate);
+while length(timeBins)==1    
+    binSize = binSize/2;
+    timeBins = 0:binSize:ceil(ephysData.spike_times(end)/ephysData.ephys_sample_rate);
+end
 [n, x] = hist(theseSpikeTimes, timeBins);
 n = n ./ binSize;
 
@@ -525,7 +535,12 @@ if iChunk < 0
     disp('Don''t do that')
     iChunk = 1;
 end
-firstSpike = theseTimesCenter(iChunk+10) - 0.05; %first spike occurance
+if length(theseTimesCenter)>10+iChunk
+    firstSpike = theseTimesCenter(iChunk+10) - 0.05; %tenth spike occurance %
+else
+    firstSpike = theseTimesCenter(iChunk)-0.05; %first spike occurance
+end
+% Not sure why this was +10?
 theseTimesCenter = theseTimesCenter(theseTimesCenter >= firstSpike);
 theseTimesCenter = theseTimesCenter(theseTimesCenter <= firstSpike+timeToPlot);
 if ~isempty(theseTimesCenter)
@@ -539,10 +554,17 @@ cCount = cumsum(repmat(1000, size(chansToPlot, 1), 1), 1);
 
 t = int32(firstSpike * ephysData.ephys_sample_rate):int32((firstSpike + timeToPlot) * ephysData.ephys_sample_rate);
 subplot(rawPlotH)
-thisMemMap = double(memMapData(chansToPlot, int32(firstSpike*ephysData.ephys_sample_rate) ...
-    :int32((firstSpike + timeToPlot)*ephysData.ephys_sample_rate)))+double(cCount);
+plotidx =  int32(firstSpike*ephysData.ephys_sample_rate) ...
+    :int32((firstSpike + timeToPlot)*ephysData.ephys_sample_rate);
+t(plotidx<1|plotidx>size(memMapData,2))=[];
+plotidx(plotidx<1|plotidx>size(memMapData,2))=[];
+thisMemMap = double(memMapData(chansToPlot,plotidx))+double(cCount);
 for iClear = 1:length(rawSpikeLines)
      set(rawSpikeLines(iClear), 'XData', NaN,'YData',NaN)
+end
+if length(rawSpikeLines)<length(chansToPlot)
+    rawSpikeLines(end+1:length(chansToPlot))=rawSpikeLines(end);
+    rawPlotLines(end+1:length(chansToPlot))=rawPlotLines(end);
 end
  for iChanToPlot = 1:length(chansToPlot)
      set(rawPlotLines(iChanToPlot), 'XData', t,'YData',thisMemMap(iChanToPlot,:));
