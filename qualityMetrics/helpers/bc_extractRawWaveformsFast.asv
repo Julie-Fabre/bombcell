@@ -86,7 +86,6 @@ else
     disp('Extracting raw waveforms ...')
     % array
     for iCluster = 1:nClust
-        disp(['Cluster ' num2str(iCluster) '/' num2str(nClust)])
         spikeIndices = allSpikeTimes(spikeTemplates == clustInds(iCluster)).*str2num(SR); %Shouldn't this be in byte??
         if numel(spikeIndices) >= nSpikesToExtract % extract a random subset of regularly spaced raw waveforms
             spksubi = round(linspace(1, numel(spikeIndices), nSpikesToExtract))';
@@ -94,9 +93,9 @@ else
         end
         nSpikesEctractHere = numel(spikeIndices);
         if nChannels == 385
-            spikeMap = nan(nChannels-1, spikeWidth, nSpikesEctractHere,'single');
+            spikeMap = nan(nChannels-1, spikeWidth, nSpikesEctractHere);
         else
-            spikeMap = nan(nChannels, spikeWidth, nSpikesEctractHere,'single');
+            spikeMap = nan(nChannels, spikeWidth, nSpikesEctractHere);
         end
         for iSpike = 1:nSpikesEctractHere
             thisSpikeIdx = spikeIndices(iSpike);

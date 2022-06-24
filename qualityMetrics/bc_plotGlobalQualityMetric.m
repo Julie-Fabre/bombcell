@@ -156,7 +156,7 @@ if param.plotGlobal
     % 2. histogram for each quality metric, red line indicates
     % classification threshold
     figure();
-    suptitle([num2str(sum(unitType==1)) ' single units, ', num2str(sum(unitType==2)), ' multi-units, ', num2str(sum(unitType==0)), ' noise units'])
+    title([num2str(sum(unitType==1)) ' single units, ', num2str(sum(unitType==2)), ' multi-units, ', num2str(sum(unitType==0)), ' noise units'])
     set(gcf, 'color', 'w')
 
     subplot(3, 5,  1)

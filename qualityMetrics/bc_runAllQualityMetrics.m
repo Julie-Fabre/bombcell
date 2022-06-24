@@ -1,5 +1,5 @@
 function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, goodChannels, savePath)
+    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath)
 % JF
 % ------
 % Inputs
@@ -105,7 +105,7 @@ verbose = 1;
 % QQ extract raw waveforms based on 'good' timechunks defined later ? 
 
 qMetric.rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
-    spikeTimes, spikeTemplates,0 , verbose); % takes ~10' for an average dataset
+    spikeTimes, spikeTemplates,0 , verbose, maxChannels); % takes ~10' for an average dataset
 % previous, slower method: 
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
 %     spikeTimes, spikeTemplates, usedChannels, verbose);
@@ -172,7 +172,9 @@ end
 bc_getQualityUnitType;
 
 if exist('savePath', 'var') %save qualityMetrics
-    mkdir(fullfile(savePath))
+    if ~exist(savePath,'dir')
+        mkdir(fullfile(savePath))
+    end
     disp([newline, 'saving quality metrics to ', savePath])
     save(fullfile(savePath, 'qMetric.mat'), 'qMetric', '-v7.3')
     save(fullfile(savePath, 'param.mat'), 'param')
