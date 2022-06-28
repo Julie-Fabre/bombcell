@@ -1,11 +1,12 @@
-function rawWaveforms = bc_extractRawWaveformsFast(param, spikeTimes, spikeTemplates, reExtract, verbose, maxChannels)
+
+function rawWaveforms = bc_extractRawWaveformsFast(param, spikeTimes_samples, spikeTemplates, reExtract, verbose, maxChannels)
 % JF, Get raw waveforms for all templates
 % ------
 % Inputs
 % ------
 % nChannels: number of recorded channels (including sync), (eg 385)
 % nSpikesToExtract: number of spikes to extract per template
-% spikeTimes: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
+% spikeTimes_samples: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
 % spikeTemplates: nSpikes × 1 uint32 vector giving the identity of each
 %   spike's matched template
 % rawFolder: string containing the location of the raw .dat or .bin file
@@ -18,7 +19,7 @@ function rawWaveforms = bc_extractRawWaveformsFast(param, spikeTimes, spikeTempl
 %   mean raw waveforms for each unit and channel
 %   peakChan: nUnits x 1 vector of each unit's channel with the maximum
 %   amplitude
-if nargin<8 %only apply when decompressing ' on the fly' 
+if nargin<6%only apply when decompressing ' on the fly' 
     UseMaxChannels = 0;
 else
     UseMaxChannels = 1;
@@ -97,7 +98,7 @@ else
 
     %% Interate over spike clusters and find all the data associated with them
     rawWaveforms = struct;
-    allSpikeTimes = spikeTimes;
+    allSpikeTimes = spikeTimes_samples;
     disp('Extracting raw waveforms ...')
     % array
     for iCluster = 1:nClust

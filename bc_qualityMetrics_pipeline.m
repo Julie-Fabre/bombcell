@@ -3,7 +3,7 @@ ephysPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/kilosort2/site1';%pathTo
                                            % kilosort output
 
 % ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site);
-[spikeTimes, spikeTemplates, ...
+[spikeTimes_samples, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysPath);
 ephysap_path = '/home/netshare/zinu/JF078/2022-05-25/ephys/site1/2022_05_25-JF078-1_g0_t0.imec0.ap.bin';%pathToEphysRawFile; %eg /home/netshare/zinu/JF067/2022-02-17/ephys/site1/2022_02_17-JF067_g0_t0.imec0.ap.bin 
 ephysDirPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/site1';%pathToEphysRawFileFolder ;% eg /home/netshare/zinu/JF067/2022-02-17/ephys/site1
@@ -19,7 +19,7 @@ rerun = 0;
 qMetricsExist = dir(fullfile(savePath, 'qMetric*.mat'));
 
 if isempty(qMetricsExist) || rerun
-    [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
+    [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
         templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
 else
     load(fullfile(savePath, 'qMetric.mat'))
