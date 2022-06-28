@@ -1,4 +1,4 @@
-function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeTemplates, ...
+function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, goodChannels, savePath)
 % JF
 % ------
@@ -38,7 +38,7 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes, spikeT
 %   ssMin: silhouette score to classify unit as single-unit
 %   computeTimeChunks
 %
-% spikeTimes: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
+% spikeTimes_samples: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
 %
 % spikeTemplates: nSpikes × 1 uint32 vector giving the identity of each
 %   spike's matched template
@@ -105,7 +105,7 @@ verbose = 1;
 % QQ extract raw waveforms based on 'good' timechunks defined later ? 
 
 qMetric.rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
-    spikeTimes, spikeTemplates,0 , verbose); % takes ~10' for an average dataset
+    spikeTimes_samples, spikeTemplates,0 , verbose); % takes ~10' for an average dataset
 % previous, slower method: 
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
 %     spikeTimes, spikeTemplates, usedChannels, verbose);
@@ -113,11 +113,11 @@ qMetric.rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChanne
 %% loop through units and get quality metrics
 
 uniqueTemplates = unique(spikeTemplates);
-spikeTimes = spikeTimes ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
+spikeTimes_seconds = spikeTimes_samples ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
 if param.computeTimeChunks
-    timeChunks = [min(spikeTimes):param.deltaTimeChunk:max(spikeTimes), max(spikeTimes)];
+    timeChunks = [min(spikeTimes_seconds):param.deltaTimeChunk:max(spikeTimes_seconds), max(spikeTimes_seconds)];
 else
-    timeChunks = [min(spikeTimes), max(spikeTimes)];
+    timeChunks = [min(spikeTimes_seconds), max(spikeTimes_seconds)];
 end
 
 disp([newline, 'extracting quality metrics ...'])
@@ -127,7 +127,7 @@ for iUnit = 1:length(uniqueTemplates)
     clearvars thisUnit theseSpikeTimes theseAmplis
     thisUnit = uniqueTemplates(iUnit);
     qMetric.clusterID(iUnit) = thisUnit;
-    theseSpikeTimes = spikeTimes(spikeTemplates == thisUnit);
+    theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
 
     %% percentage spikes missing (false negatives)

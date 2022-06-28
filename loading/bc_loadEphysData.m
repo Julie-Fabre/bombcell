@@ -1,9 +1,9 @@
-function [spikeTimes, spikeTemplates, ...
+function [spikeTimes_samples, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, channelMap] = bc_loadEphysData(ephys_path)
 
 spike_templates_0idx = readNPY([ephys_path filesep 'spike_templates.npy']);
 spikeTemplates = spike_templates_0idx + 1;
-spikeTimes = double(readNPY([ephys_path filesep  'spike_times.npy']));
+spikeTimes_samples = double(readNPY([ephys_path filesep  'spike_times.npy']));
 
 templateAmplitudes = readNPY([ephys_path filesep 'amplitudes.npy']);
 
