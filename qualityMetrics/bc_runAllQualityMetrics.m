@@ -101,11 +101,12 @@ qMetric = struct;
 maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 qMetric.maxChannels = maxChannels;
 
-verbose = 1;
+verbose = 1; % update user on progress
+reextract = 1; %Re extract raw waveforms
 % QQ extract raw waveforms based on 'good' timechunks defined later ? 
 
-qMetric.rawWaveforms = bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
-    spikeTimes, spikeTemplates,0 , verbose, maxChannels); % takes ~10' for an average dataset
+qMetric.rawWaveforms = bc_extractRawWaveformsFast(param, ...
+    spikeTimes, spikeTemplates,reextract , verbose, maxChannels); % takes ~10' for an average dataset
 % previous, slower method: 
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
 %     spikeTimes, spikeTemplates, usedChannels, verbose);

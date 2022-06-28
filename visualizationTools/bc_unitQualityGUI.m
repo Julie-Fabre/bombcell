@@ -10,7 +10,7 @@
 % - click on units 
 % - probe locations 
 
-function bc_unitQualityGUI(memMapData, ephysData, qMetric, param, probeLocation, unitType, plotRaw)
+function unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, param, probeLocation, unitType, plotRaw)
 
 if isempty(memMapData)
     display('Extracting data on the fly using python. You need Matlab version 2022a or higher, and have it pointed to the correct (Anaconda) environment')
