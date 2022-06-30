@@ -1,5 +1,5 @@
 
-function rawWaveforms = bc_extractRawWaveformsFast(param, spikeTimes_samples, spikeTemplates, reExtract, verbose, maxChannels)
+function rawWaveforms = bc_extractRawWaveformsFast(param, spikeTimes_samples, spikeTemplates, reExtract, verbose)
 % JF, Get raw waveforms for all templates
 % ------
 % Inputs
@@ -19,11 +19,7 @@ function rawWaveforms = bc_extractRawWaveformsFast(param, spikeTimes_samples, sp
 %   mean raw waveforms for each unit and channel
 %   peakChan: nUnits x 1 vector of each unit's channel with the maximum
 %   amplitude
-if nargin<6%only apply when decompressing ' on the fly' 
-    UseMaxChannels = 0;
-else
-    UseMaxChannels = 1;
-end
+
 rawFolder = param.rawFolder;
 if isfield(param,'tmpFolder')
     tmpFolder = param.tmpFolder;
@@ -62,7 +58,7 @@ dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
 
 if any(strfind(fname,'cbin'))
     disp('This is compressed data. Use Python integration... If you don''t have that option please uncompress data first')
-    UsePython = 1; %Choose if you want to compress or usepython integration 
+    UsePython = 1; %Choose if you want to compress or usepython integration
     % Read original bytes
     meta = ReadMeta2(spikeFile.folder);
     n_samples = round(str2num(meta.fileSizeBytes)/dataTypeNBytes/nChannels);
@@ -80,9 +76,6 @@ else
 
     %% Intitialize
 
-    if ~UsePython
-        fid = fopen(fullfile(spikeFile.folder, fname), 'r');
-    end
     spikeWidth = 83;
     halfWidth = floor(spikeWidth / 2);
     clustInds = unique(spikeTemplates);
@@ -96,77 +89,84 @@ else
     %         nChannels = nChannels - 1;
     %     end
 
-    %% Interate over spike clusters and find all the data associated with them
+    %% Iterate over spike clusters and find all the data associated with them
     rawWaveforms = struct;
     allSpikeTimes = spikeTimes_samples;
     disp('Extracting raw waveforms ...')
+
+    if nChannels == 385
+        spikeMap = nan(nClust,nChannels-1, spikeWidth, nSpikesToExtract,'single');
+        ch2take = 1:nChannels-1;
+    else
+        spikeMap = nan(nClust,nChannels, spikeWidth, nSpikesToExtract,'single');
+        ch2take = 1:nChannels;
+    end
+    % find n spike times for all units
+    spikeIndices = arrayfun(@(X)  allSpikeTimes(spikeTemplates == clustInds(X)),1:nClust,'UniformOutput',0); % %Find spike samples per unit
+    spikeIndices = cellfun(@(X) sort(datasample(X,nSpikesToExtract)),spikeIndices,'UniformOutput',0); % find nSpikesToExtract of these % with replacement on purpose for nspikes<100. Will be fixed later
+    spikeIndices = cat(2,spikeIndices{:});
+
     % array
-    for iCluster = 1:nClust
-        spikeIndices = allSpikeTimes(spikeTemplates == clustInds(iCluster)); %
-        if numel(spikeIndices) >= nSpikesToExtract % extract a random subset of regularly spaced raw waveforms
-            spikeIndices = sort(datasample(spikeIndices, nSpikesToExtract));
 
-            %             spksubi = round(linspace(1, numel(spikeIndices), nSpikesToExtract))';
-            %             spikeIndices = spikeIndices(spksubi);
-        end
-        nSpikesEctractHere = numel(spikeIndices);
-        if nChannels == 385
-            spikeMap = nan(nChannels-1, spikeWidth, nSpikesEctractHere,'single');
-        else
-            spikeMap = nan(nChannels, spikeWidth, nSpikesEctractHere,'single');
-        end
-        if UsePython
-            allsamples = arrayfun(@(X) spikeIndices(X)-halfWidth:spikeIndices(X)+halfWidth,1:length(spikeIndices),'UniformOutput',0);
-            allsamples = cat(1,allsamples{:})';
-            batchsize = 65000;
-            batchn = ceil((max(allsamples(:))-min(allsamples(:)))./batchsize);
-            allsamplestmp = min(allsamples(:)):max(allsamples(:))+batchsize;
-            batchidx = arrayfun(@(X) allsamplestmp(batchsize*(X-1)+1):allsamplestmp(batchsize*X),1:batchn,'UniformOutput',0);
-            batchidx = find(cell2mat(cellfun(@(X) any(ismember(X,allsamples)),batchidx,'UniformOutput',0)));
-           
-            if UseMaxChannels
-                channels2take = maxChannels(iCluster)-2:maxChannels(iCluster)+2;
-                channels2take(channels2take<1|channels2take>nChannels-1) = [];
-            else
-                channels2take = 1:nChannels;
+    if UsePython
+        allsamples = arrayfun(@(X) spikeIndices(X)-halfWidth:spikeIndices(X)+halfWidth,1:length(spikeIndices(:)),'UniformOutput',0);
+        allsamples = cat(1,allsamples{:})';
+        batchsize = 2*round(str2num(SR))-spikeWidth+1; %batches of 1second used for compression, probably optimal to extract 1 second at a time
+        batchn = ceil((max(allsamples(:))-min(allsamples(:)))./batchsize);
+        allsamplestmp = min(allsamples(:)):max(allsamples(:)+batchsize);
+        batchidx = arrayfun(@(X) allsamplestmp(batchsize*(X-1)+1):allsamplestmp(batchsize*X),1:batchn,'UniformOutput',0);
+        %             batchidx = find(cell2mat(cellfun(@(X) any(ismember(X,allsamples)),batchidx,'UniformOutput',0)));
+        timethis = tic;
+        for bid = 1:length(batchidx)
+            % Find which units have a spike in this batch
+            [spkidx,unitidx] = find(ismember(spikeIndices,batchidx{bid}));
+            if ~any(spkidx)
+                continue
             end
-            for bid = 1:length(batchidx)
-                try
-                    endidx = batchsize*batchidx(bid)+spikeWidth;
-                    if endidx>length(allsamplestmp) || allsamplestmp(endidx)>n_samples
-                        endidx=min([length(allsamplestmp) find(allsamplestmp==n_samples)]);
-                    end
-                    tmpdataidx = arrayfun(@(X) find(ismember(allsamplestmp(batchsize*(batchidx(bid)-1)+1):allsamplestmp(endidx),allsamples(:,X))),1:size(allsamples,2),'UniformOutput',0);
-                    tmpdata = zeros(1,length(allsamplestmp(batchsize*(batchidx(bid)-1)+1):allsamplestmp(endidx)),'uint16');
-                    tmpdata = cellfun(@(X) tmpdata(X),tmpdataidx,'UniformOutput',0);
-                    tmpdataidx2 = find(~cell2mat(cellfun(@isempty,tmpdataidx,'UniformOutput',0)));
-                    tmpdataidx2(cell2mat(arrayfun(@(X) length(tmpdata{X})<spikeWidth,tmpdataidx2,'UniformOutput',0))) = [];
+            try
+                endidx = batchidx{bid}(end)+spikeWidth;
+                if endidx>length(allsamplestmp) || allsamplestmp(endidx)>n_samples
+                    endidx=min([length(allsamplestmp) find(allsamplestmp==n_samples)]);
+                end
 
-                    if isempty(tmpdataidx2)
+                % Extract piece of data using ephys_reader python
+                % integration
+                tmpdata = pyrunfile("Ephys_Reader_FromMatlab.py","chunk",...
+                    datapath = strrep(fullfile(spikeFile.folder,fname),'\','/'),start_time=batchidx{bid}(1),end_time=endidx); %0-indexed!!
+                tmpdata=uint16(tmpdata);
+
+                    % Loop over clusters and spikes and put them in the
+                % correct position in the matrix
+
+                for spkid = 1:length(spkidx)
+                    % Put it back in the correct order
+                    tmpid = find(ismember(batchidx{bid},spikeIndices(spkidx(spkid),unitidx(spkid))));
+                    if tmpid<=halfWidth || tmpid+halfWidth>size(tmpdata,1)
                         continue
                     end
-                catch ME
-                    keyboard
-                    disp(ME)
-                    disp('Make sure to use MATLAB>2022a and compatible python version, in an environment that has the modules phylib, pathlib, and matlab installed')
-                    disp('e.g. pyversion("C:\Users\EnnyB\anaconda3\envs\phy\pythonw.exe")')
-                    disp('Also make sure you input the path in a python-compatible way!')
+                    spikeMap(unitidx(spkid),:,:,spkidx(spkid))= tmpdata(tmpid-halfWidth:tmpid+halfWidth,ch2take)';
                 end
 
-                for chid=channels2take
-                    tmpdata = pyrunfile("Ephys_Reader_FromMatlab.py","chunk",...
-                        datapath = strrep(fullfile(spikeFile.folder,fname),'\','/'),start_time=allsamplestmp(batchsize*(batchidx(bid)-1)+1)-1,end_time=allsamplestmp(endidx),channel=chid-1); %0-indexed!!
-                    tmpdata=uint16(tmpdata);
-                    tmpdata = cellfun(@(X) tmpdata(X),tmpdataidx,'UniformOutput',0);
-
-                    % Put it back in the correct order
-                    spikeMap(chid,:,tmpdataidx2)=cat(1,tmpdata{tmpdataidx2})';
-                end
-
+            catch ME
+                keyboard
+                disp(ME)
+                disp('Make sure to use MATLAB>2022a and compatible python version, in an environment that has the modules phylib, pathlib, and matlab installed')
+                disp('e.g. pyversion("C:\Users\EnnyB\anaconda3\envs\phy\pythonw.exe")')
+                disp('Also make sure you input the path in a python-compatible way!')
             end
-        else
-            for iSpike = 1:nSpikesEctractHere
-                thisSpikeIdx = spikeIndices(iSpike);
+            if (mod(bid, 100) == 0 || bid == length(batchidx)) && verbose
+                disp(['Extracted ', num2str(round(bid./length(batchidx).*1000)./10), '% Elapsed time ' num2str(round(toc(timethis)./60.*100)./100) ' minutes']);
+                %figure; imagesc(spkMapMean_sm)
+                %title(['Unit ID: ', num2str(i)]);
+                %colorbar;
+            end
+        end
+    else
+        fid = fopen(fullfile(spikeFile.folder, fname), 'r');
+        for iCluster = 1:nClust
+            spikeIndicestmp = unique(spikeIndices(:,iCluster)); %  Get rid of duplicate spikes
+            for iSpike = 1:length(spikeIndicestmp)
+                thisSpikeIdx = spikeIndicestmp(iSpike);
                 if thisSpikeIdx > halfWidth && (thisSpikeIdx + halfWidth) * dataTypeNBytes < d.bytes % check that it's not out of bounds
 
                     byteIdx = int64(((thisSpikeIdx - halfWidth) * nChannels) * dataTypeNBytes); % int64 to prevent overflow on crappy windows machines that are incredibly inferior to linux
@@ -174,52 +174,58 @@ else
                     data = fread(fid, [nChannels, spikeWidth], 'int16=>int16'); % read individual waveform from binary file
                     frewind(fid);
                     if size(data, 2) == spikeWidth && nChannels == 385
-                        spikeMap(:, :, iSpike) = data(1:nChannels-1, :, :); %remove sync channel
+                        spikeMap(iCluster,:, :, iSpike) = data(1:nChannels-1, :, :); %remove sync channel
                     elseif size(data, 2) == spikeWidth
-                        spikeMap(:, :, iSpike) = data(1:nChannels, :, :);
+                        spikeMap(iCluster,:, :, iSpike) = data(1:nChannels, :, :);
                     end
                 end
             end
+            if (mod(iCluster, 20) == 0 || iCluster == nClust) && verbose
+                fprintf(['\n   Extracted ', num2str(iCluster), '/', num2str(nClust), ' raw waveforms.']);
+                %figure; imagesc(spkMapMean_sm)
+                %title(['Unit ID: ', num2str(i)]);
+                %colorbar;
+            end
         end
-        spikeMapMean = nanmean(spikeMap, 3);
-        spikeMap = permute(spikeMap,[1,3,2]);
-        rawWaveforms(iCluster).spkMap = permute(spikeMap - mean(spikeMap(:,:,1:10),3),[1,3,2]);
-        rawWaveforms(iCluster).spkMapMean = spikeMapMean - mean(spikeMapMean(:, 1:10), 2);
+        fclose(fid);
 
+    end
+    spikeMapMean = nanmean(spikeMap, 4);
+    spikeMap = permute(spikeMap,[1,2,4,3]);
+    spikeMap = permute(spikeMap - mean(spikeMap(:,:,:,1:10),4),[1,2,4,3]);
+    spikeMapMean=spikeMapMean - mean(spikeMapMean(:, :, 1:10), 3);
+    for iCluster = 1:nClust
+        rawWaveforms(iCluster).spkMap = squeeze(spikeMap(iCluster,:,:,:));
+        rawWaveforms(iCluster).spkMapMean = squeeze(spikeMapMean(iCluster,:,:));
         spkMapMean_sm = smoothdata(rawWaveforms(iCluster).spkMapMean, 2, 'gaussian', 5); %Switched the dimension here. I guess you want the waveform to be smooth??
 
         [~, rawWaveforms(iCluster).peakChan] = max(max(abs(spkMapMean_sm), [], 2), [], 1);%QQ buggy sometimes
-
-        %         [~, maxChannels] = max(max(abs(templateWaveforms), [], 2), [], 3);
-        %         close all;
-        %
-        %                 clf;
-        %                 for iSpike = 1:10
-        %                     plot(spikeMap(rawWaveforms(iCluster).peakChan, :, iSpike));
-        %                     hold on;
-        %                 end
-        %                 figure()
-        %                 clf;
-        %                 plot(rawWaveforms(iCluster).spkMapMean(rawWaveforms(iCluster).peakChan, :));
-        %                 hold on;
-        %
-        %
-        %                 figure()
-        %                 clf;
-        %                 plot(squeeze(templateWaveforms(uniqueTemplates(iCluster),:,maxChannels(uniqueTemplates(iCluster)))));
-        %                 hold on;
-        %                 plot(squeeze(templateWaveforms(uniqueTemplates(iCluster),:,goodChannels(rawWaveforms(iCluster).peakChan))));
-
-
-        if (mod(iCluster, 20) == 0 || iCluster == nClust) && verbose
-            fprintf(['\n   Extracted ', num2str(iCluster), '/', num2str(nClust), ' raw waveforms.']);
-            %figure; imagesc(spkMapMean_sm)
-            %title(['Unit ID: ', num2str(i)]);
-            %colorbar;
-        end
     end
 
-    fclose(fid);
+    %         [~, maxChannels] = max(max(abs(templateWaveforms), [], 2), [], 3);
+    %         close all;
+    %
+    %                 clf;
+    %                 for iSpike = 1:10
+    %                     plot(spikeMap(rawWaveforms(iCluster).peakChan, :, iSpike));
+    %                     hold on;
+    %                 end
+    %                 figure()
+    %                 clf;
+    %                 plot(rawWaveforms(iCluster).spkMapMean(rawWaveforms(iCluster).peakChan, :));
+    %                 hold on;
+    %
+    %
+    %                 figure()
+    %                 clf;
+    %                 plot(squeeze(templateWaveforms(uniqueTemplates(iCluster),:,maxChannels(uniqueTemplates(iCluster)))));
+    %                 hold on;
+    %                 plot(squeeze(templateWaveforms(uniqueTemplates(iCluster),:,goodChannels(rawWaveforms(iCluster).peakChan))));
+
+
+  
+    %     end
+
     rawWaveformFolder = dir(fullfile(rawFolder, 'rawWaveforms.mat'));
     if isempty(rawWaveformFolder) || reExtract
         save(fullfile(rawFolder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');

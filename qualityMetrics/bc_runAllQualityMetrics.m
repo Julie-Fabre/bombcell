@@ -1,6 +1,6 @@
 
 function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, goodChannels, savePath)
+    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath)
 % JF
 % ------
 % Inputs
@@ -107,7 +107,7 @@ reextract = 1; %Re extract raw waveforms
 % QQ extract raw waveforms based on 'good' timechunks defined later ? 
 
 qMetric.rawWaveforms = bc_extractRawWaveformsFast(param, ...
-    spikeTimes_samples, spikeTemplates,0 , verbose); % takes ~10' for an average dataset
+    spikeTimes_samples, spikeTemplates,reextract , verbose); % takes ~10' for an average dataset
 % previous, slower method: 
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
 %     spikeTimes, spikeTemplates, usedChannels, verbose);
