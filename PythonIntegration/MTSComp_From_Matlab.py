@@ -6,7 +6,7 @@ from mtscomp import decompress
 def MTSCOMP_From_Matlab(datapath,JsonPath,savepath):
 	
 	# Use decompress from mtscomp
-	decompress(datapath,cmeta=JsonPath,out=savepath)
+	decompress(datapath,cmeta=JsonPath,out=savepath, check_after_decompress = False)
 	
 	success=1
 	#print(chunk)

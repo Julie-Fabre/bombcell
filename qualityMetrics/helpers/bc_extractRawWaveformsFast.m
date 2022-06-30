@@ -148,7 +148,6 @@ else
                 end
 
             catch ME
-                keyboard
                 disp(ME)
                 disp('Make sure to use MATLAB>2022a and compatible python version, in an environment that has the modules phylib, pathlib, and matlab installed')
                 disp('e.g. pyversion("C:\Users\EnnyB\anaconda3\envs\phy\pythonw.exe")')
