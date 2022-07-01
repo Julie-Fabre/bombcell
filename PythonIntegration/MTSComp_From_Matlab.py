@@ -10,7 +10,7 @@ def MTSCOMP_From_Matlab(datapath,JsonPath,savepath):
 	
 	success=1
 	#print(chunk)
-	return succes
+	return success
 
 #datapath = '//128.40.198.18/Subjects/EB014/2022-05-05/ephys/2022-05-05_EB014_1_g0/2022-05-05_EB014_1_g0_imec0/2022-05-05_EB014_1_g0_t0.imec0.ap.cbin'
 #start_time = 0
