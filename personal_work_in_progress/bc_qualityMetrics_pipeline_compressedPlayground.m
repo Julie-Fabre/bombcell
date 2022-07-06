@@ -1,12 +1,12 @@
 %% load data 
-ephysPath = '/home/netshare/zinu/JF070/2022-06-18/ephys/kilosort2/site1';%pathToFolderYourEphysDataIsIn; % eg /home/netshare/zinu/JF067/2022-02-17/ephys/kilosort2/site1, whre this path contains 
+ephysPath = '/home/netshare/zinu/XG006/2022-06-30/ephys/kilosort2/site1';%pathToFolderYourEphysDataIsIn; % eg /home/netshare/zinu/JF067/2022-02-17/ephys/kilosort2/site1, whre this path contains 
                                            % kilosort output
 
 % ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site);
 [spikeTimes_samples, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysPath);
-ephysap_path = '/home/netshare/zinu/JF067/2022-02-17/ephys/site1/2022-05-13_EB014_1_g0_t0.imec0.ap.cbin';%pathToEphysRawFile; %eg /home/netshare/zinu/JF067/2022-02-17/ephys/site1/2022_02_17-JF067_g0_t0.imec0.ap.bin 
-ephysDirPath = '/home/netshare/zinu/JF070/2022-06-18/ephys/site1';%pathToEphysRawFileFolder ;% eg /home/netshare/zinu/JF067/2022-02-17/ephys/site1
+ephysap_path = '/home/netshare/zinu/XG006/2022-06-30/ephys/site1/2022-06_30_xg006_g0_t0.imec0.ap.bin';%pathToEphysRawFile; %eg /home/netshare/zinu/JF067/2022-02-17/ephys/site1/2022_02_17-JF067_g0_t0.imec0.ap.bin 
+ephysDirPath = '/home/netshare/zinu/XG006/2022-06-30/ephys/site1';%pathToEphysRawFileFolder ;% eg /home/netshare/zinu/JF067/2022-02-17/ephys/site1
 % ephysap_path = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_ap',site);
 % ephysDirPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_dir',site);
 savePath = fullfile(ephysDirPath, 'qMetrics'); 
@@ -26,7 +26,11 @@ if isempty(qMetricsExist) || rerun
         templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
 else
     load(fullfile(savePath, 'qMetric.mat'))
-    load(fullfile(savePath, 'param.mat'))
+    try
+        load(fullfile(savePath, 'param.mat'))
+    catch
+        param = parquetread([fullfile(savePath, '_jf_parameters._jf_qMetrics.parquet')]);
+    end
     bc_getQualityUnitType;
 end
 %% view units + quality metrics in GUI 

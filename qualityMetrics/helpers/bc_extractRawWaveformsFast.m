@@ -1,4 +1,4 @@
-function rawWaveforms = bc_extractRawWaveformsFast(rawFolder, nChannels, nSpikesToExtract, spikeTimes_samples, spikeTemplates, reExtract, verbose)
+function [rawWaveformsFull, rawWaveformsPeakChan] = bc_extractRawWaveformsFast(rawFolder, nChannels, nSpikesToExtract, spikeTimes_samples, spikeTemplates, reExtract, verbose)
 % JF, Get raw waveforms for all templates
 % ------
 % Inputs
@@ -34,14 +34,18 @@ if size(spikeFile,1) > 1
    spikeFile = dir(fullfile(rawFolder, '*tcat*.ap.bin'));
 end 
 
-rawWaveformFolder = dir(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
+rawWaveformFolder = dir(fullfile(spikeFile.folder, 'templates.jf_rawWaveforms.npy'));
 
 fname = spikeFile.name;
 d = dir(fullfile(rawFolder, fname));
 
 
 if ~isempty(rawWaveformFolder) && reExtract == 0
-    load(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
+
+    rawWaveformsFull = readNPY(fullfile(spikeFile.folder, 'templates.jf_rawWaveforms.npy'));
+    rawWaveformsPeakChan = readNPY(fullfile(spikeFile.folder, 'templates.jf_rawWaveformPeakChannels.npy'));
+   
+
 else
 
     %% Intitialize
@@ -103,11 +107,11 @@ else
         end
         spikeMapMean = nanmean(spikeMap, 3);
 
-        rawWaveforms(iCluster).spkMapMean = spikeMapMean - mean(spikeMapMean(:, 1:10), 2);
+        rawWaveformsFull(iCluster,:,:) = spikeMapMean - mean(spikeMapMean(:, 1:10), 2);
 
-        spkMapMean_sm = smoothdata(spikeMapMean, 1, 'gaussian', 5);
+        spkMapMean_sm = smoothdata(rawWaveformsFull(iCluster, :,:), 1, 'gaussian', 5);
 
-        [~, rawWaveforms(iCluster).peakChan] = max(max(abs(spkMapMean_sm), [], 2), [], 1);%QQ buggy sometimes
+        [~, rawWaveformsPeakChan(iCluster,:)] = max(max(abs(squeeze(spkMapMean_sm)), [], 2), [], 1);%QQ buggy sometimes
 
 %         [~, maxChannels] = max(max(abs(templateWaveforms), [], 2), [], 3);
 %         close all;
@@ -142,7 +146,9 @@ else
     fclose(fid);
     rawWaveformFolder = dir(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
     if isempty(rawWaveformFolder) || reExtract
-        save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
+        %save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
+      writeNPY(rawWaveformsFull, fullfile(spikeFile.folder, 'templates.jf_rawWaveforms.npy'))
+        writeNPY(rawWaveformsPeakChan, fullfile(spikeFile.folder, 'templates.jf_rawWaveformPeakChannels.npy'))
     end
 end
 end
