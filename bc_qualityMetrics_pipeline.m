@@ -16,14 +16,13 @@ bc_qualityParamValues;
 
 %% compute quality metrics 
 rerun = 0;
-qMetricsExist = dir(fullfile(savePath, 'qMetric*.mat'));
+qMetricsExist = ~isempty(dir(fullfile(savePath, 'qMetric*.mat'))) || ~isempty(dir(fullfile(savePath, 'templates._jf_qMetrics.parquet')));
 
-if isempty(qMetricsExist) || rerun
+if qMetricsExist == 0 || rerun
     [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
         templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
 else
-    load(fullfile(savePath, 'qMetric.mat'))
-    load(fullfile(savePath, 'param.mat'))
+    bc_loadSavedMetrics; 
     bc_getQualityUnitType;
 end
 %% view units + quality metrics in GUI 
