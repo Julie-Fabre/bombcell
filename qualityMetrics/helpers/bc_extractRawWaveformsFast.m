@@ -34,7 +34,7 @@ if size(spikeFile,1) > 1
    spikeFile = dir(fullfile(rawFolder, '*tcat*.ap.bin'));
 end 
 
-rawWaveformFolder = dir(fullfile(spikeFile.folder, 'templates.jf_rawWaveforms.npy'));
+rawWaveformFolder = dir(fullfile(spikeFile.folder, 'templates._jf_rawWaveforms.npy'));
 
 fname = spikeFile.name;
 d = dir(fullfile(rawFolder, fname));
@@ -42,8 +42,8 @@ d = dir(fullfile(rawFolder, fname));
 
 if ~isempty(rawWaveformFolder) && reExtract == 0
 
-    rawWaveformsFull = readNPY(fullfile(spikeFile.folder, 'templates.jf_rawWaveforms.npy'));
-    rawWaveformsPeakChan = readNPY(fullfile(spikeFile.folder, 'templates.jf_rawWaveformPeakChannels.npy'));
+    rawWaveformsFull = readNPY(fullfile(spikeFile.folder, 'templates._jf_rawWaveforms.npy'));
+    rawWaveformsPeakChan = readNPY(fullfile(spikeFile.folder, 'templates._jf_rawWaveformPeakChannels.npy'));
    
 
 else
@@ -147,8 +147,8 @@ else
     rawWaveformFolder = dir(fullfile(spikeFile.folder, 'rawWaveforms.mat'));
     if isempty(rawWaveformFolder) || reExtract
         %save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
-      writeNPY(rawWaveformsFull, fullfile(spikeFile.folder, 'templates.jf_rawWaveforms.npy'))
-        writeNPY(rawWaveformsPeakChan, fullfile(spikeFile.folder, 'templates.jf_rawWaveformPeakChannels.npy'))
+      writeNPY(rawWaveformsFull, fullfile(spikeFile.folder, 'templates._jf_rawWaveforms.npy'))
+        writeNPY(rawWaveformsPeakChan, fullfile(spikeFile.folder, 'templates._jf_rawWaveformPeakChannels.npy'))
     end
 end
 end
