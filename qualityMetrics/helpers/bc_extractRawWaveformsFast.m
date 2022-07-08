@@ -240,7 +240,7 @@ else
             % Find 'peak' (which is the first max deflection from 0,
             % because there can be undershoot which is larger but this is
             % not the true max channel!
-            slopeidx = find(abs(spkMapMean_sm)>nanmean(spkMapMean_sm(1:10))+nanstd(spkMapMean_sm),1,'first')
+            slopeidx = find(abs(spkMapMean_sm)>nanmean(spkMapMean_sm(1:10))+nanstd(spkMapMean_sm),1,'first');
             slopesign = sign(spkMapMean_sm(slopeidx));
 %             [~, rawWaveformsPeakChan(iCluster,:)] = max(max(abs(squeeze(rawWaveformsFull(iCluster,:,:))), [], 2), [], 1);%QQ buggy sometimes % 
 

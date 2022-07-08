@@ -26,6 +26,7 @@ if exist(ephysap_tmp)
     param.tmpFolder = [ephysap_tmp, '/..'];
 end
 param.nRawSpikesToExtract = 100; 
+param.saveMultipleRaw = 1; % If you wish to save the nRawSpikesToExtract as well
 param.minAmplitude = 20; 
 % recording parametrs
 param.ephys_sample_rate = 30000;

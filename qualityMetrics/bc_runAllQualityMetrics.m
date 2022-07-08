@@ -103,7 +103,7 @@ maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 qMetric.maxChannels = maxChannels;
 
 verbose = 1; % update user on progress
-reextract = 0; %Re extract raw waveforms
+reextract = 1; %Re extract raw waveforms
 % QQ extract raw waveforms based on 'good' timechunks defined later ? 
 
 [rawWaveformsFull, rawWaveformsPeakChan] = bc_extractRawWaveformsFast(param, ...
