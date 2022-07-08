@@ -1,4 +1,3 @@
-
 function [rawWaveformsFull, rawWaveformsPeakChan, spikeMap] = bc_extractRawWaveformsFast(param, spikeTimes_samples, spikeTemplates, reExtract, verbose)
 % JF, Get raw waveforms for all templates
 % ------
@@ -54,7 +53,8 @@ elseif sum(rawFolder(end-2:end) == '/..') == 3
     [rawFolder, filename] = fileparts(rawFolder(1:end-3));
 end
 
-rawWaveformFolder = dir(fullfile(rawFolder, 'templates.jf_rawWaveforms.npy'));
+
+rawWaveformFolder = dir(fullfile(spikeFile.folder, 'templates._jf_rawWaveforms.npy'));
 
 fname = spikeFile.name;
 dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
@@ -75,8 +75,8 @@ d = dir(fullfile(tmpFolder, fname));
 
 if ~isempty(rawWaveformFolder) && reExtract == 0
 
-    rawWaveformsFull = readNPY(fullfile(rawFolder, 'templates.jf_rawWaveforms.npy'));
-    rawWaveformsPeakChan = readNPY(fullfile(rawFolder, 'templates.jf_rawWaveformPeakChannels.npy'));
+    rawWaveformsFull = readNPY(fullfile(rawFolder, 'templates._jf_rawWaveforms.npy'));
+    rawWaveformsPeakChan = readNPY(fullfile(rawFolder, 'templates._jf_rawWaveformPeakChannels.npy'));
     if param.saveMultipleRaw
         spikeMap = readNPY(fullfile(rawFolder, 'templates.jf_Multi_rawWaveforms.npy'));
     end
@@ -274,14 +274,14 @@ else
 
         %     end
 
-        rawWaveformFolder = dir(fullfile(rawFolder,'templates.jf_rawWaveforms.npy'));
+        rawWaveformFolder = dir(fullfile(rawFolder,'templates._jf_rawWaveforms.npy'));
         if isempty(rawWaveformFolder) || reExtract
             %save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
-            writeNPY(rawWaveformsFull, fullfile(rawFolder, 'templates.jf_rawWaveforms.npy'))
-            writeNPY(rawWaveformsPeakChan, fullfile(rawFolder, 'templates.jf_rawWaveformPeakChannels.npy'))
+            writeNPY(rawWaveformsFull, fullfile(rawFolder, 'templates._jf_rawWaveforms.npy'))
+            writeNPY(rawWaveformsPeakChan, fullfile(rawFolder, 'templates._jf_rawWaveformPeakChannels.npy'))
 
             if param.saveMultipleRaw
-                writeNPY(spikeMap, fullfile(rawFolder, 'templates.jf_Multi_rawWaveforms.npy'))
+                writeNPY(spikeMap, fullfile(rawFolder, 'templates._jf_Multi_rawWaveforms.npy'))
             end
         end
     end
