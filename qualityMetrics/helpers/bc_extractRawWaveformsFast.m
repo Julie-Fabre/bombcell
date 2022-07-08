@@ -1,11 +1,14 @@
 
-function rawWaveforms = bc_extractRawWaveformsFast(param, spikeTimes_samples, spikeTemplates, reExtract, verbose)
+function [rawWaveformsFull, rawWaveformsPeakChan, spikeMap] = bc_extractRawWaveformsFast(param, spikeTimes_samples, spikeTemplates, reExtract, verbose)
 % JF, Get raw waveforms for all templates
 % ------
 % Inputs
 % ------
+% param with:
+% rawFolder
 % nChannels: number of recorded channels (including sync), (eg 385)
 % nSpikesToExtract: number of spikes to extract per template
+%
 % spikeTimes_samples: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
 % spikeTemplates: nSpikes × 1 uint32 vector giving the identity of each
 %   spike's matched template
@@ -51,7 +54,7 @@ elseif sum(rawFolder(end-2:end) == '/..') == 3
     [rawFolder, filename] = fileparts(rawFolder(1:end-3));
 end
 
-rawWaveformFolder = dir(fullfile(rawFolder, 'rawWaveforms.mat'));
+rawWaveformFolder = dir(fullfile(rawFolder, 'templates.jf_rawWaveforms.npy'));
 
 fname = spikeFile.name;
 dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
@@ -71,7 +74,12 @@ d = dir(fullfile(tmpFolder, fname));
 
 
 if ~isempty(rawWaveformFolder) && reExtract == 0
-    load(fullfile(rawFolder, 'rawWaveforms.mat'));
+
+    rawWaveformsFull = readNPY(fullfile(rawFolder, 'templates.jf_rawWaveforms.npy'));
+    rawWaveformsPeakChan = readNPY(fullfile(rawFolder, 'templates.jf_rawWaveformPeakChannels.npy'));
+    if param.saveMultipleRaw
+        spikeMap = readNPY(fullfile(rawFolder, 'templates.jf_Multi_rawWaveforms.npy'));
+    end
 else
 
     %% Intitialize
@@ -135,7 +143,7 @@ else
                     datapath = strrep(fullfile(spikeFile.folder,fname),'\','/'),start_time=batchidx{bid}(1),end_time=endidx); %0-indexed!!
                 tmpdata=uint16(tmpdata);
 
-                    % Loop over clusters and spikes and put them in the
+                % Loop over clusters and spikes and put them in the
                 % correct position in the matrix
 
                 for spkid = 1:length(spkidx)
@@ -161,7 +169,9 @@ else
             end
         end
     else
+       
         fid = fopen(fullfile(spikeFile.folder, fname), 'r');
+    
         for iCluster = 1:nClust
             spikeIndicestmp = unique(spikeIndices(:,iCluster)); %  Get rid of duplicate spikes
             for iSpike = 1:length(spikeIndicestmp)
@@ -185,49 +195,94 @@ else
                 %title(['Unit ID: ', num2str(i)]);
                 %colorbar;
             end
+           
+            %         [~, maxChannels] = max(max(abs(templateWaveforms), [], 2), [], 3);
+            %         close all;
+            %
+            %                 clf;
+            %                 for iSpike = 1:10
+            %                     plot(spikeMap(rawWaveforms(iCluster).peakChan, :, iSpike));
+            %                     hold on;
+            %                 end
+            %                 figure()
+            %                 clf;
+            %                 plot(rawWaveforms(iCluster).spkMapMean(rawWaveforms(iCluster).peakChan, :));
+            %                 hold on;
+            %
+            %
+            %                 figure()
+            %                 clf;
+            %                 plot(squeeze(templateWaveforms(uniqueTemplates(iCluster),:,maxChannels(uniqueTemplates(iCluster)))));
+            %                 hold on;
+            %                 plot(squeeze(templateWaveforms(uniqueTemplates(iCluster),:,goodChannels(rawWaveforms(iCluster).peakChan))));
+
         end
         fclose(fid);
 
+        % Individual spikes are noisy; already gaussian smooth on this -
+        % otherwise we're going to end up with max. noise averages
+        % level across time
+        spikeMap = smoothdata(spikeMap,3,'gaussian',5);
+        % Subtract first 10 samples to level spikes
+        spikeMap = permute(spikeMap,[1,2,4,3]);
+        spikeMap = permute(spikeMap - mean(spikeMap(:,:,:,1:10),4),[1,2,4,3]);
+        % Smooth across channels
+        spikeMap = smoothdata(spikeMap,2,'gaussian',5);
+
+
+        % Now average across 100 spikes
+        rawWaveformsFull = nanmean(spikeMap, 4);
+
+        for iCluster = 1:nClust
+            %                spkMapMean_sm = smoothdata(squeeze(rawWaveformsFull(iCluster, :,:)), 1, 'gaussian', 5);
+            % Find direction of spike 
+            spkMapMean_sm = nanmean(squeeze(rawWaveformsFull(iCluster,:,:)),1);
+            % Find 'peak' (which is the first max deflection from 0,
+            % because there can be undershoot which is larger but this is
+            % not the true max channel!
+            slopeidx = find(abs(spkMapMean_sm)>nanmean(spkMapMean_sm(1:10))+nanstd(spkMapMean_sm),1,'first')
+            slopesign = sign(spkMapMean_sm(slopeidx));
+%             [~, rawWaveformsPeakChan(iCluster,:)] = max(max(abs(squeeze(rawWaveformsFull(iCluster,:,:))), [], 2), [], 1);%QQ buggy sometimes % 
+
+            [~, rawWaveformsPeakChan(iCluster,:)] = max(max(squeeze(rawWaveformsFull(iCluster,:,:)).*slopesign, [], 2), [], 1);%QQ buggy sometimes % 
+        end
+
+
+     
+
+        %         [~, maxChannels] = max(max(abs(templateWaveforms), [], 2), [], 3);
+        %         close all;
+        %
+        %                 clf;
+        %                 for iSpike = 1:10
+        %                     plot(spikeMap(rawWaveforms(iCluster).peakChan, :, iSpike));
+        %                     hold on;
+        %                 end
+        %                 figure()
+        %                 clf;
+        %                 plot(rawWaveforms(iCluster).spkMapMean(rawWaveforms(iCluster).peakChan, :));
+        %                 hold on;
+        %
+        %
+        %                 figure()
+        %                 clf;
+        %                 plot(squeeze(templateWaveforms(uniqueTemplates(iCluster),:,maxChannels(uniqueTemplates(iCluster)))));
+        %                 hold on;
+        %                 plot(squeeze(templateWaveforms(uniqueTemplates(iCluster),:,goodChannels(rawWaveforms(iCluster).peakChan))));
+
+
+
+        %     end
+
+        rawWaveformFolder = dir(fullfile(rawFolder,'templates.jf_rawWaveforms.npy'));
+        if isempty(rawWaveformFolder) || reExtract
+            %save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
+            writeNPY(rawWaveformsFull, fullfile(rawFolder, 'templates.jf_rawWaveforms.npy'))
+            writeNPY(rawWaveformsPeakChan, fullfile(rawFolder, 'templates.jf_rawWaveformPeakChannels.npy'))
+
+            if param.saveMultipleRaw
+                writeNPY(spikeMap, fullfile(rawFolder, 'templates.jf_Multi_rawWaveforms.npy'))
+            end
+        end
     end
-    spikeMapMean = nanmean(spikeMap, 4);
-    spikeMap = permute(spikeMap,[1,2,4,3]);
-    spikeMap = permute(spikeMap - mean(spikeMap(:,:,:,1:10),4),[1,2,4,3]);
-    spikeMapMean=spikeMapMean - mean(spikeMapMean(:, :, 1:10), 3);
-    for iCluster = 1:nClust
-        rawWaveforms(iCluster).spkMap = squeeze(spikeMap(iCluster,:,:,:));
-        rawWaveforms(iCluster).spkMapMean = squeeze(spikeMapMean(iCluster,:,:));
-        spkMapMean_sm = smoothdata(rawWaveforms(iCluster).spkMapMean, 2, 'gaussian', 5); %Switched the dimension here. I guess you want the waveform to be smooth??
-
-        [~, rawWaveforms(iCluster).peakChan] = max(max(abs(spkMapMean_sm), [], 2), [], 1);%QQ buggy sometimes
-    end
-
-    %         [~, maxChannels] = max(max(abs(templateWaveforms), [], 2), [], 3);
-    %         close all;
-    %
-    %                 clf;
-    %                 for iSpike = 1:10
-    %                     plot(spikeMap(rawWaveforms(iCluster).peakChan, :, iSpike));
-    %                     hold on;
-    %                 end
-    %                 figure()
-    %                 clf;
-    %                 plot(rawWaveforms(iCluster).spkMapMean(rawWaveforms(iCluster).peakChan, :));
-    %                 hold on;
-    %
-    %
-    %                 figure()
-    %                 clf;
-    %                 plot(squeeze(templateWaveforms(uniqueTemplates(iCluster),:,maxChannels(uniqueTemplates(iCluster)))));
-    %                 hold on;
-    %                 plot(squeeze(templateWaveforms(uniqueTemplates(iCluster),:,goodChannels(rawWaveforms(iCluster).peakChan))));
-
-
-  
-    %     end
-
-    rawWaveformFolder = dir(fullfile(rawFolder, 'rawWaveforms.mat'));
-    if isempty(rawWaveformFolder) || reExtract
-        save(fullfile(rawFolder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
-    end
-end
 end
