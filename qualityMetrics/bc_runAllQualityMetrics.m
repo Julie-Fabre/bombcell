@@ -1,6 +1,5 @@
-
 function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath)
+    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, goodChannels, savePath)
 % JF
 % ------
 % Inputs
@@ -38,7 +37,6 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples
 %   lratioMin: minimum l-ratio to classify unit as single-unit
 %   ssMin: silhouette score to classify unit as single-unit
 %   computeTimeChunks
-%   rawWaveformMaxDef: how to define max channel in raw waveforms. 
 %
 % spikeTimes_samples: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
 %
@@ -103,12 +101,13 @@ qMetric = struct;
 maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 qMetric.maxChannels = maxChannels;
 
-verbose = 1; % update user on progress
-reextract = 1; %Re extract raw waveforms
+verbose = 1;
 % QQ extract raw waveforms based on 'good' timechunks defined later ? 
 
-[rawWaveformsFull, rawWaveformsPeakChan] = bc_extractRawWaveformsFast(param, ...
-    spikeTimes_samples, spikeTemplates,reextract , verbose); % takes ~10' for an average dataset
+[rawWaveformsFull, rawWaveformsPeakChan]= bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
+    spikeTimes_samples, spikeTemplates, 1 , verbose); 
+
+% takes ~10' for an average dataset
 % previous, slower method: 
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
 %     spikeTimes, spikeTemplates, usedChannels, verbose);
