@@ -24,7 +24,7 @@ qMetricSummary.waveformDuration = qMetric.waveformDuration';
 qMetricSummary.spatialDecaySlope = qMetric.spatialDecaySlope';
 qMetricSummary.waveformBaseline = qMetric.waveformBaseline';
 
-parquetwrite([yourQMetricFile.folder filesep 'templates._jf_qMetrics.parquet'],qMetricSummary)
+parquetwrite([yourQMetricFile.folder filesep 'templates._jf_qMetrics.pqt'],qMetricSummary)
 
-%parquetread([yourQMetricFile.folder filesep 'templates._jf_qMetrics.parquet'])
+%parquetread([yourQMetricFile.folder filesep 'templates._jf_qMetrics.pqt'])
 
