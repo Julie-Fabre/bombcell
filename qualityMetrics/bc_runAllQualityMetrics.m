@@ -38,6 +38,7 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples
 %   lratioMin: minimum l-ratio to classify unit as single-unit
 %   ssMin: silhouette score to classify unit as single-unit
 %   computeTimeChunks
+%   rawWaveformMaxDef: how to define max channel in raw waveforms. 
 %
 % spikeTimes_samples: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
 %
