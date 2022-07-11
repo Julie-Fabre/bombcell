@@ -1,5 +1,6 @@
 function dataOut = bc_extractCbinData(fileName, sStartEnd, chIdx, doParfor, saveFileFolder)
-% based on Micheal Krumn's function 
+% from Micheal Krumin
+%
 % requires the zmat package:
 % https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat
 % https://github.com/fangq/zmat/releases/tag/v0.9.8
@@ -30,34 +31,31 @@ if nargin < 2
     d = dir(fileName);
     sStartEnd = [cbinMeta.chunk_bounds(1), cbinMeta.chunk_bounds(end)];
 end
+if chIdx(end) >  cbinMeta.n_channels
+    warning(sprintf('max channel index invalid, changing from %s to %s',num2str(chIdx(end)), num2str(cbinMeta.chunk_bounds(1))))
+    startEnd(1) = cbinMeta.chunk_bounds(1);
+end
 if nargin < 3
-    chIdx = 1:385;
+    chIdx = 1:cbinMeta.n_channels;
 end
 if nargin < 4
     doParfor = false;
 end
 if sStartEnd(1) < cbinMeta.chunk_bounds(1) 
-    warning(sprintf('samples to read outside of file range, changing start sample from %s to %s'),sStartEnd(1), cbinMeta.chunk_bounds(1))
+    warning(sprintf('samples to read outside of file range, changing start sample from %s to %s',num2str(sStartEnd(1)), num2str(cbinMeta.chunk_bounds(1))))
     startEnd(1) = cbinMeta.chunk_bounds(1);
 end
 
 if sStartEnd(1) < cbinMeta.chunk_bounds(1) 
-    warning('samples to read outside of file range, changing')
-    startEnd(1) = cbinMeta.chunk_bounds(1);
+   warning(sprintf('samples to read outside of file range, changing end sample from %s to %s',num2str(sStartEnd(2)), num2str(cbinMeta.chunk_bounds(end))))
+   startEnd(2) = cbinMeta.chunk_bounds(end);
 end
 
 sampleStart = sStartEnd(1);
 sampleEnd = sStartEnd(2);
 
 
-% build zmat info struct
-zmatInfo = struct;
-zmatInfo.type = cbinMeta.dtype;
-tmp = cast(1, cbinMeta.dtype);
-zmatInfo.byte = whos('tmp').bytes; % figuring out bytesPerSample programmatically
-zmatInfo.method = cbinMeta.algorithm;
-zmatInfo.status = 1;
-zmatInfo.level = cbinMeta.comp_level;
+
 
 % figuring out which chunks to read
 
@@ -129,5 +127,5 @@ else
 end
 dataOut = cell2mat(data);
 if ~isemtpy(saveFileFolder)
-    writeNPY(dataOut,fullfile(saveFileFolder, 'channels._jf_rawData.npy'))
+    writeNPY(dataOut',fullfile(saveFileFolder, 'channels._jf_rawData.npy'))
 end

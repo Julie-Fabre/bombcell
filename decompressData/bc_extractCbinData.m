@@ -31,8 +31,12 @@ if nargin < 2
     d = dir(fileName);
     sStartEnd = [cbinMeta.chunk_bounds(1), cbinMeta.chunk_bounds(end)];
 end
+if chIdx(end) >  cbinMeta.n_channels
+    warning(sprintf('max channel index invalid, changing from %s to %s',num2str(chIdx(end)), num2str(cbinMeta.n_channels)))
+    startEnd(1) = cbinMeta.chunk_bounds(1);
+end
 if nargin < 3
-    chIdx = 1:385;
+    chIdx = 1:cbinMeta.n_channels;
 end
 if nargin < 4
     doParfor = false;
@@ -51,14 +55,7 @@ sampleStart = sStartEnd(1);
 sampleEnd = sStartEnd(2);
 
 
-% build zmat info struct
-zmatInfo = struct;
-zmatInfo.type = cbinMeta.dtype;
-tmp = cast(1, cbinMeta.dtype);
-zmatInfo.byte = whos('tmp').bytes; % figuring out bytesPerSample programmatically
-zmatInfo.method = cbinMeta.algorithm;
-zmatInfo.status = 1;
-zmatInfo.level = cbinMeta.comp_level;
+
 
 % figuring out which chunks to read
 
