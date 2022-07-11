@@ -60,12 +60,17 @@ fname = spikeFile.name;
 dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
 
 if any(strfind(fname,'cbin'))
-    disp('This is compressed data. Use Python integration... If you don''t have that option please uncompress data first')
-    UsePython = 1; %Choose if you want to compress or usepython integration
-    % Read original bytes
-    meta = ReadMeta2(spikeFile.folder);
-    n_samples = round(str2num(meta.fileSizeBytes)/dataTypeNBytes/nChannels);
-    SR = meta.imSampRate;
+    [~, matlabDate] = version; % check MATLAB version supports decompressing this way 
+    if datetime(matlabDate) >= datetime(2022,1,1)
+        disp('Raw data is in compressed format, decompressing via python... If you don''t have that option please uncompress data first')
+        UsePython = 1; %Choose if you want to compress or usepython integration
+        % Read original bytes
+        meta = ReadMeta2(spikeFile.folder);
+        n_samples = round(str2num(meta.fileSizeBytes)/dataTypeNBytes/nChannels);
+        SR = meta.imSampRate;
+    else
+        error('Raw data is in compressed format, to decompress via python you need at least MATLAB 2022a. Either download a more recent version of MATLAB or uncompress data yourself')
+    end
 else
     UsePython = 0;
 end
