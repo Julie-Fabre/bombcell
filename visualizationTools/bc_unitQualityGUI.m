@@ -12,6 +12,9 @@
 
 function unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, param, probeLocation, unitType, plotRaw)
 
+if isempty(memMapData)
+    display('Extracting data on the fly using python. You need Matlab version 2022a or higher, and have it pointed to the correct (Anaconda) environment')
+end
 %% set up dynamic figure
 unitQualityGuiHandle = figure('color', 'w');
 set(unitQualityGuiHandle, 'KeyPressFcn', @KeyPressCb);
