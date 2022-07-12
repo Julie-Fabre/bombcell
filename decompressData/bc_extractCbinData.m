@@ -1,4 +1,4 @@
-function dataOut = bc_extractCbinData(fileName, sStartEnd, chIdx, doParfor, saveFileFolder)
+function dataOut = bc_extractCbinData(fileName, sStartEnd, chIdx, doParfor, saveFileFolder, saveAsMtx)
 % from Micheal Krumin
 %
 % requires the zmat package:
@@ -84,7 +84,7 @@ chunkSizeBytes = cbinMeta.chunk_offsets([1:nChunks] + iChunkStart) - cbinMeta.ch
 offset = cbinMeta.chunk_offsets([1:nChunks] + iChunkStart - 1);
 
 if doParfor
-    tic
+    %tic
     parfor iChunk = 1:nChunks
         %     chunkInd = iChunk + iChunkStart - 1;
         % size of expected decompressed data for that chunk
@@ -103,7 +103,7 @@ if doParfor
         %     data(startIdx(iChunk):endIdx(iChunk), :) = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
         data{iChunk} = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
     end
-    toc
+    %toc
 else
     
     for iChunk = 1:nChunks
@@ -127,5 +127,11 @@ else
 end
 dataOut = cell2mat(data);
 if ~isemtpy(saveFileFolder)
-    writeNPY(dataOut',fullfile(saveFileFolder, 'channels._jf_rawData.npy'))
+    if saveAsMtx
+        writeNPY(dataOut',fullfile(saveFileFolder, 'channels._jf_rawData.npy'))
+    else
+        fN = dir(fileName);
+        dataOut2 = reshape(dataOut', [size(dataOut,1)*size(dataOut,2),1]);
+        writeNPY(dataOut2,[saveFileFolder, filesep, fN.name(1:end-4) '.bin'])
+    end
 end
