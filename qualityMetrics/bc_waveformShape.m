@@ -67,7 +67,7 @@ if numel(troughLoc) > 1
     troughLoc = troughLoc(1);
 end
 
-if peakLoc > troughLoc
+if peakLoc > troughLoc && max(TRS) > max(PKS)
     somatic = 1;
 else
     somatic = 0;

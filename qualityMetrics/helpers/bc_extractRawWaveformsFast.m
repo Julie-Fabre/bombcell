@@ -1,4 +1,5 @@
-function [rawWaveformsFull, rawWaveformsPeakChan, spikeMap] = bc_extractRawWaveformsFast(param, spikeTimes_samples, spikeTemplates, reExtract, verbose)
+function [rawWaveformsFull, rawWaveformsPeakChan, spikeMap] = bc_extractRawWaveformsFast(param, spikeTimes_samples, spikeTemplates,...
+    reExtract, verbose)
 % JF, Get raw waveforms for all templates
 % ------
 % Inputs

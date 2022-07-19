@@ -104,7 +104,7 @@ qMetric.maxChannels = maxChannels;
 verbose = 1;
 % QQ extract raw waveforms based on 'good' timechunks defined later ? 
 
-[rawWaveformsFull, rawWaveformsPeakChan]= bc_extractRawWaveformsFast(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
+[rawWaveformsFull, rawWaveformsPeakChan]= bc_extractRawWaveformsFast(param, ...
     spikeTimes_samples, spikeTemplates, 1 , verbose); 
 
 % takes ~10' for an average dataset

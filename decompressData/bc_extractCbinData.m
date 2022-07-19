@@ -1,4 +1,4 @@
-function dataOut = bc_extractCbinData(fileName, sStartEnd, chIdx, doParfor, saveFileFolder, saveAsMtx)
+function [dataOut, decompDataFile] = bc_extractCbinData(fileName, sStartEnd, chIdx, doParfor, saveFileFolder, saveAsMtx)
 % from Micheal Krumin
 %
 % requires the zmat package:
@@ -27,7 +27,7 @@ data = fread(fid, 'uint8=>char');
 fclose(fid);
 cbinMeta = jsondecode(data');
 
-if nargin < 2
+if nargin < 2 || isempty(sStartEnd)
     d = dir(fileName);
     sStartEnd = [cbinMeta.chunk_bounds(1), cbinMeta.chunk_bounds(end)];
 end
@@ -128,10 +128,13 @@ end
 dataOut = cell2mat(data);
 if ~isemtpy(saveFileFolder)
     if saveAsMtx
-        writeNPY(dataOut',fullfile(saveFileFolder, 'channels._jf_rawData.npy'))
+        decompDataFile = fullfile(saveFileFolder, 'channels._jf_rawData.npy');
+        writeNPY(dataOut',decompDataFile)
+        
     else
         fN = dir(fileName);
         dataOut2 = reshape(dataOut', [size(dataOut,1)*size(dataOut,2),1]);
-        writeNPY(dataOut2,[saveFileFolder, filesep, fN.name(1:end-4) '.bin'])
+        decompDataFile = [saveFileFolder, filesep, fN.name(1:end-4) '.bin'];
+        writeNPY(dataOut2,decompDataFile)
     end
 end
