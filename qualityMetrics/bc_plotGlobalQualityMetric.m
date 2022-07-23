@@ -137,26 +137,34 @@ if param.plotGlobal
     subplot(234)
     set(gca, 'XColor', 'w', 'YColor', 'w')
     singleUidx = find(unitType == 1); hold on;
-    rawSingleUnitLines = arrayfun(@(x) plot(squeeze(qMetric.rawWaveforms(singleUidx(x)).spkMapMean(qMetric.rawWaveforms(singleUidx(x)).peakChan,:)), 'linewidth', 1, 'Color', 'k'), ...
+     rawSingleUnitLines = arrayfun(@(x) plot(squeeze(rawWaveformsFull(singleUidx(x),rawWaveformsPeakChan(singleUidx(x)),:)), 'linewidth', 1, 'Color', 'k'), ...
          1:size(singleUidx,1));
-    
+%     rawSingleUnitLines = arrayfun(@(x) plot(squeeze(qMetric.rawWaveforms(singleUidx(x)).spkMapMean(qMetric.rawWaveforms(singleUidx(x)).peakChan,:)), 'linewidth', 1, 'Color', 'k'), ...
+%          1:size(singleUidx,1));
+%     
     subplot(235)
     set(gca, 'XColor', 'w', 'YColor', 'w')
     multiUidx = find(unitType == 2); hold on;
-    rawMultiUnitLines = arrayfun(@(x) plot(squeeze(qMetric.rawWaveforms(multiUidx(x)).spkMapMean(qMetric.rawWaveforms(multiUidx(x)).peakChan,:)), 'linewidth', 1, 'Color', 'k'), ...
+    rawMultiUnitLines = arrayfun(@(x) plot(squeeze(rawWaveformsFull(multiUidx(x),rawWaveformsPeakChan(multiUidx(x)),:)), 'linewidth', 1, 'Color', 'k'), ...
          1:size(multiUidx,1));
+% 
+%     rawMultiUnitLines = arrayfun(@(x) plot(squeeze(qMetric.rawWaveforms(multiUidx(x)).spkMapMean(qMetric.rawWaveforms(multiUidx(x)).peakChan,:)), 'linewidth', 1, 'Color', 'k'), ...
+%          1:size(multiUidx,1));
     
     subplot(236)
     set(gca, 'XColor', 'w', 'YColor', 'w')
     noiseUidx = find(unitType == 0); hold on;
-    rawNoiseUnitLines = arrayfun(@(x) plot(squeeze(qMetric.rawWaveforms(noiseUidx(x)).spkMapMean(qMetric.maxChannels(noiseUidx(x)),:)), 'linewidth', 1, 'Color', 'k'), ...
+     rawNoiseUnitLines = arrayfun(@(x) plot(squeeze(rawWaveformsFull(noiseUidx(x),rawWaveformsPeakChan(noiseUidx(x)),:)), 'linewidth', 1, 'Color', 'k'), ...
          1:size(noiseUidx,1));
-    
+
+%     rawNoiseUnitLines = arrayfun(@(x) plot(squeeze(qMetric.rawWaveforms(noiseUidx(x)).spkMapMean(qMetric.maxChannels(noiseUidx(x)),:)), 'linewidth', 1, 'Color', 'k'), ...
+%          1:size(noiseUidx,1));
+%     
 
     % 2. histogram for each quality metric, red line indicates
     % classification threshold
     figure();
-    suptitle([num2str(sum(unitType==1)) ' single units, ', num2str(sum(unitType==2)), ' multi-units, ', num2str(sum(unitType==0)), ' noise units'])
+    title([num2str(sum(unitType==1)) ' single units, ', num2str(sum(unitType==2)), ' multi-units, ', num2str(sum(unitType==0)), ' noise units'])
     set(gcf, 'color', 'w')
 
     subplot(3, 5,  1)
@@ -192,7 +200,7 @@ if param.plotGlobal
     subplot(3, 5,  4)
     
     hold on;
-    histogram(qMetric.Fp, 'FaceColor', colorMtx(4, 1:3), 'FaceAlpha', colorMtx(4, 4), 'BinEdges', [0:5:max(qMetric.Fp)]);
+    histogram(qMetric.Fp, 'FaceColor', colorMtx(4, 1:3), 'FaceAlpha', colorMtx(4, 4), 'BinEdges', [0:5:max(qMetric.Fp(:))]);
     set(gca, 'yscale', 'log')
     yLim = ylim;
     line([param.maxRPVviolations + 0.5, param.maxRPVviolations + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)

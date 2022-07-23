@@ -22,7 +22,11 @@ param.minSpatialDecaySlope = -20;
 param.maxWvBaselineFraction = 0.3;
 % amplitude parameters
 param.rawFolder = [ephysap_path, '/..'];
+if exist('ephysap_tmp', 'var')
+    param.tmpFolder = [ephysap_tmp, '/..'];
+end
 param.nRawSpikesToExtract = 100; 
+param.saveMultipleRaw = 1; % If you wish to save the nRawSpikesToExtract as well
 param.minAmplitude = 20; 
 % recording parametrs
 param.ephys_sample_rate = 30000;

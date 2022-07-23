@@ -44,6 +44,7 @@ for iTimeChunk = 1:length(timeChunk) - 1
         end
     end
     if plotThis
+ 
         subplot(2, length(timeChunk) - 1, iTimeChunk)
         scatter(spikeTrain(spikeTrain >= timeChunk(iTimeChunk) & spikeTrain < timeChunk(iTimeChunk+1)), ...
             theseAmplis(spikeTrain >= timeChunk(iTimeChunk) & spikeTrain < timeChunk(iTimeChunk+1)), 4, 'filled')
@@ -51,7 +52,7 @@ for iTimeChunk = 1:length(timeChunk) - 1
         xlabel('Time (s)')
         ylabel(['Template scaling' newline 'factor amplitude'])
         title(['time chunk ' num2str(iTimeChunk)])
-        subplot(2, length(timeChunk) - 1, iTimeChunk + 2)
+        subplot(2, length(timeChunk) - 1, (length(timeChunk) - 1)+iTimeChunk)
         theseISI = diff(spikeTrain(spikeTrain >= timeChunk(iTimeChunk) & spikeTrain < timeChunk(iTimeChunk+1)));
         theseisiclean = theseISI(theseISI >= tauC); % removed duplicate spikes
         [isiProba, edgesISI] = histcounts(theseisiclean*1000, [0:0.5:50]);

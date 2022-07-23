@@ -17,7 +17,7 @@ if iscell(rawFolder)
 elseif sum(rawFolder(end-2:end) == '/..')==3
     rawFolder = fileparts(rawFolder(1:end-3));
 end
-spikeFile = dir(fullfile(rawFolder, '*.ap.bin'));
+spikeFile = dir(fullfile(rawFolder, '*.ap.*bin'));
 if size(spikeFile,1) > 1
    spikeFile = dir(fullfile(rawFolder, '*tcat*.ap.bin'));
 end
