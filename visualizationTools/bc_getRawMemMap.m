@@ -21,7 +21,9 @@ elseif sum(param.rawFolder(end-2:end) == '/..') == 3
     [param.rawFolder, filename] = fileparts(param.rawFolder(1:end-3));
 end
 
-
+if ~isfield(param,'tmpFolder') || isempty(param.tmpFolder)
+    param.tmpFolder = param.rawFolder;
+end
 spikeFile = dir(fullfile(param.tmpFolder, '*.ap.bin'));
 if isempty(spikeFile)
     spikeFile = dir(fullfile(param.tmpFolder, '/*.dat')); %openEphys format

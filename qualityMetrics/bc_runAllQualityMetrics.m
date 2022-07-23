@@ -101,11 +101,13 @@ qMetric = struct;
 maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 qMetric.maxChannels = maxChannels;
 
-verbose = 1;
+
+verbose = 1; % update user on progress
+reextract = 0; %Re extract raw waveforms
 % QQ extract raw waveforms based on 'good' timechunks defined later ? 
 
 [rawWaveformsFull, rawWaveformsPeakChan]= bc_extractRawWaveformsFast(param, ...
-    spikeTimes_samples, spikeTemplates, 1 , verbose); 
+    spikeTimes_samples, spikeTemplates, reextract , verbose); 
 
 % takes ~10' for an average dataset
 % previous, slower method: 
@@ -169,6 +171,9 @@ for iUnit = 1:length(uniqueTemplates)
             qMetric.d2_mahal{iUnit}, qMetric.Xplot{iUnit}, qMetric.Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
     end
+
+    %% Save some raw waveforms for the GUI
+    qMetric.rawWaveforms(iUnit).spkMapMean = squeeze(rawWaveformsFull(iUnit,:,:));
 end
 
 bc_getQualityUnitType;

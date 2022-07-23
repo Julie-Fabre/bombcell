@@ -24,7 +24,7 @@ function [rawWaveformsFull, rawWaveformsPeakChan, spikeMap] = bc_extractRawWavef
 %   amplitude
 
 rawFolder = param.rawFolder;
-if isfield(param,'tmpFolder')
+if isfield(param,'tmpFolder') && ~isempty(param.tmpFolder) && ~strcmp(param.tmpFolder,'/..')
     tmpFolder = param.tmpFolder;
 else
     tmpFolder = rawFolder;
@@ -84,7 +84,8 @@ if ~isempty(rawWaveformFolder) && reExtract == 0
     rawWaveformsFull = readNPY(fullfile(rawFolder, 'templates._jf_rawWaveforms.npy'));
     rawWaveformsPeakChan = readNPY(fullfile(rawFolder, 'templates._jf_rawWaveformPeakChannels.npy'));
     if param.saveMultipleRaw
-        spikeMap = readNPY(fullfile(rawFolder, 'templates.jf_Multi_rawWaveforms.npy'));
+        spikeMap = readNPY(fullfile(rawFolder, 'templates._jf_Multi_rawWaveforms.npy'));
+
     end
 else
 
