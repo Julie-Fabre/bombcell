@@ -66,7 +66,7 @@ if any(strfind(fname,'cbin'))
         disp('Raw data is in compressed format, decompressing via python... If you don''t have that option please uncompress data first')
         UsePython = 1; %Choose if you want to compress or usepython integration
         % Read original bytes
-        meta = ReadMeta2(spikeFile.folder);
+        meta = bc_readMetaForCBins(spikeFile.folder);
         n_samples = round(str2num(meta.fileSizeBytes)/dataTypeNBytes/nChannels);
         SR = meta.imSampRate;
     else
