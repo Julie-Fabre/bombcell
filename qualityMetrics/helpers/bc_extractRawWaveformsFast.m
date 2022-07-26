@@ -36,7 +36,7 @@ nSpikesToExtract =  param.nRawSpikesToExtract;
 %% check if waveforms already extracted
 % Get binary file name
 if iscell(tmpFolder)
-    tmpFolder = fileparts(tmpFolder{1});
+    [tmpFolder, filename] = fileparts(tmpFolder{1});
 elseif sum(tmpFolder(end-2:end) == '/..') == 3
     [tmpFolder, filename] = fileparts(tmpFolder(1:end-3));
 end
