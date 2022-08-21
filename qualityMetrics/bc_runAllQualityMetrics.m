@@ -178,5 +178,5 @@ if exist('savePath', 'var') %save qualityMetrics
 end
 disp([newline, 'finished extracting quality metrics'])
 
-bc_plotGlobalQualityMetric;
+%bc_plotGlobalQualityMetric;
 end
