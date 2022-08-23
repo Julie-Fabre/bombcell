@@ -32,10 +32,10 @@ allenAtlas10um = readNPY([allenAtlasPath 'allenCCF' filesep 'template_volume_10u
 allenAtlas10um = flipud(rot90(permute(allenAtlas10um, [3,2,1])));
 
 %% crop template to fit image to register 
-StackSlider2(greenChannel,allenAtlas10um,2);
+bc_StackSlider2(greenChannel,allenAtlas10um,2);
 
-cropAllenLimits = [203, 1317]; 
-cropImgLimits = [1, 465]; 
+cropAllenLimits = [str2num(StartT),str2num(StopT)]; 
+cropImgLimits = [str2num(StartD),str2num(StopD)]; 
 allenAtlas10um = allenAtlas10um(:,:,cropAllenLimits(1):cropAllenLimits(2));
 greenChannel = greenChannel(:,:,cropImgLimits(1):cropImgLimits(2));
 redChannel = redChannel(:,:,cropImgLimits(1):cropImgLimits(2));
@@ -68,11 +68,25 @@ mkdir([extraHDPath filesep animal '/slices'])
 save([extraHDPath filesep animal '/slices/histology_ccf.mat'], 'histology_ccf','-v7.3')
 save([extraHDPath filesep animal '/slices/atlas2histology_tform.mat'], 'atlas2histology_tform')
 
-%% draw probes 
-regRed = loadtiff([extraHDPath filesep animal '/regRedChan.tiff']);
-AP_get_probe_histologyJF(tv, av, st, slice_path,'rocksaw',regRed); % shift+1 = 11, alt+1 = 21, ctrl+1=31, .. 
-set(gcf, 'Color', 'black')
+%% QQ check alignement : overlay template. manually adjust if necessary
 im_path = [extraHDPath filesep animal];
+tv_crop = flipud(rot90(permute(tv(size(tv,1) -cropAllenLimits(2):size(tv,1) -cropAllenLimits(1),:,:), [2, 3, 1]),2));
+tv_crop = tv_crop(1:2:end, 1:2:end, 1:2:end);
+av_crop = flipud(rot90(permute(av(size(av,1) -cropAllenLimits(2):size(av,1) -cropAllenLimits(1),:,:), [2, 3, 1]),2));
+av_crop = av_crop(1:2:end, 1:2:end, 1:2:end);
+%av_crop = permute(av(cropAllenLimits(1):cropAllenLimits(2),:,:), [2, 3, 1]);
+bc_manual_align_histology_ccf(tv_crop,av_crop,st,reg)
+
+bc_StackSlideOverlay(greenChannel,tv_crop,2);
+
+bc_display_histology_ccf(tv_crop, av_crop, st, im_path);
+bc_grab_histology_ccf(tv, av, st, im_path);
+
+%% draw probes QQ: add reset button per probe 
+regRed = loadtiff([extraHDPath filesep animal '/regRedChan.tiff']);
+bc_get_probe_histology(tv, av, st, slice_path,'rocksaw',regRed); % shift+1 = 11, alt+1 = 21, ctrl+1=31, .. 
+set(gcf, 'Color', 'black')
+
 
 %% align ephys depth
 %% BLUE, ORANGE, YELLOW, PURPLE, GREEN , LIGHT BLUE, RED correspondance (manual):

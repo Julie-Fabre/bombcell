@@ -11,9 +11,11 @@ function [dataOut, decompDataFile] = bc_extractCbinData(fileName, sStartEnd, chI
 % doParfor - a flag whether to use a parfor or a for loop inside the function
 %           depends on specific usage scenario. In same cases it is better
 %           to use parfor inside, sometimes outside of the function.
-
+% saveFileFolder - where to save your data 
+% saveAsMtx - if true, save .npy matrix. if false, save in binary format
 % dataOut - nSamples x nChannels array of decompressed data
-
+% example usgae:
+% bc_extractCbinData('/home/netshare/zinu/XG006/2022-06-30/ephys/site1/2022-06_30_xg006_g0_t0.imec0.ap.cbin', [], [], [], 'home/ExtraHD/', 0)
 if nargin < 1
     %     for testing
     fileName = '/home/netshare/zinu/JF070/2022-06-18/ephys/site1_shank0/2022-06_18_JF070_shank1-1_g0_t0.imec0.ap.cbin';
