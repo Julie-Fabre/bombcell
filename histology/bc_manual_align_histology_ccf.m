@@ -1,4 +1,4 @@
-function bc_manual_align_histology_ccf(tv,av,st,slice_im_path)
+function bc_manual_align_histology_ccf(tv,av,st,im_info,typeIm, typeReg)
 % AP_manual_align_histology_ccf(tv,av,st,slice_im_path)
 %
 % Align histology slices and matched CCF slices
@@ -11,29 +11,30 @@ gui_data.av = av;
 gui_data.st = st;
 
 % Load in slice images
-gui_data.slice_im_path = slice_im_path;
-if ischar(slice_im_path) % old way 
-    slice_im_dir = dir([slice_im_path filesep '*.tif']);
+gui_data.slice_im_path = im_info;
+switch typeIm  % old way 
+    case 'path'
+    slice_im_dir = dir([im_info filesep '*.tif']);
     slice_im_fn = natsortfiles(cellfun(@(path,fn) [path filesep fn], ...
         {slice_im_dir.folder},{slice_im_dir.name},'uni',false));
     gui_data.slice_im = cell(length(slice_im_fn),1);
     for curr_slice = 1:length(slice_im_fn)
         gui_data.slice_im{curr_slice} = imread(slice_im_fn{curr_slice});
     end
-else
-    gui_data.slice_im = cell(size(slice_im_path,3),1);
-    for curr_slice = 1:length(slice_im_fn)
-        gui_data.slice_im{curr_slice} = imread(slice_im_fn{curr_slice});
+    case 'mtx'
+    gui_data.slice_im = cell(size(im_info,3),1);
+    for curr_slice = 1:size(im_info,3)
+        gui_data.slice_im{curr_slice} = im_info(:,:,curr_slice);
     end
 end
 
 % Load corresponding CCF slices
-ccf_slice_fn = [slice_im_path filesep 'histology_ccf.mat'];
+ccf_slice_fn = [im_info filesep 'histology_ccf.mat'];
 load(ccf_slice_fn);
 gui_data.histology_ccf = histology_ccf;
 
 % Load automated alignment
-auto_ccf_alignment_fn = [slice_im_path filesep 'atlas2histology_tform.mat'];
+auto_ccf_alignment_fn = [im_info filesep 'atlas2histology_tform.mat'];
 if exist(auto_ccf_alignment_fn,'file')
     load(auto_ccf_alignment_fn);
     gui_data.histology_ccf_auto_alignment = atlas2histology_tform;
