@@ -11,6 +11,7 @@ Used in [Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020
 4. [Ephys properties guide](#Ephys-properties-guide)
 5. [Recommended pre-processing](#Recommended-pre-processing)
 6. [Dependancies](#Dependancies)
+7. [Other ephys utilities](#Other-ephys-utilities)
 
 ### Getting started 
 
@@ -179,3 +180,12 @@ To maximize your number of single good units, we recommend looking at your raw d
 
 - https://github.com/kwikteam/npy-matlab (to load data in)
 
+### Other ephys utilities:
+
+See bombcell/recordingUtilities 
+
+- generate IMRO files 
+
+- generate channel maps 
+
+- manual curation guide 
