@@ -31,7 +31,7 @@ bc_getRawMemMap;
 
 % put ephys data into structure 
 ephysData = struct;
-ephysData.spike_times = spikeTimes;
+ephysData.spike_times = spikeTimes_samples;
 ephysData.spike_times_timeline = spikeTimes ./ 30000;
 ephysData.spike_templates = spikeTemplates;
 ephysData.templates = templateWaveforms;
