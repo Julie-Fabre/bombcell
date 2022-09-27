@@ -1,0 +1,17 @@
+%% info
+% data
+ephysPath = '/home/netshare/zaru/JF082/2022-07-25/ephys/kilosort2/site1';%pathToFolderYourEphysDataIsIn; % eg /home/netshare/zinu/JF067/2022-02-17/ephys/kilosort2/site1, whre this path contains 
+
+%
+
+
+%% get memmap
+param.tmpFolder = ephysPath;
+param.nChannels = 385;
+bc_getRawMemMap;
+
+%% plot raw data
+figure(); 
+plot()
+
+

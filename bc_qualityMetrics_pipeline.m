@@ -31,13 +31,14 @@ bc_getRawMemMap;
 
 % put ephys data into structure 
 ephysData = struct;
-ephysData.spike_times = spikeTimes_samples;
-ephysData.spike_times_timeline = spikeTimes ./ 30000;
+ephysData.spike_times_samples = spikeTimes_samples;
+ephysData.ephys_sample_rate = 30000;
+ephysData.spike_times_timeline = spikeTimes ./ ephysData.ephys_sample_rate;
 ephysData.spike_templates = spikeTemplates;
 ephysData.templates = templateWaveforms;
 ephysData.template_amplitudes = templateAmplitudes;
 ephysData.channel_positions = channelPositions;
-ephysData.ephys_sample_rate = 30000;
+
 ephysData.waveform_t = 1e3*((0:size(templateWaveforms, 2) - 1) / 30000);
 ephysParams = struct;
 plotRaw = 1;
