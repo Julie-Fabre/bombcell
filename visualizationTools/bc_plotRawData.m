@@ -25,4 +25,5 @@ param.nChannels = 385;
 bc_getRawMemMap;
 
 %% plot raw data
-bc_rawDataGUI(memMapData, ephysData)
+plotColor='k';
+bc_rawDataGUI(memMapData, ephysData,plotColor)

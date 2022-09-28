@@ -1,14 +1,14 @@
 
 %% raw data GUI
 
-function rawDataGuiHandle = bc_rawDataGUI(memMapData, ephysData)
+function rawDataGuiHandle = bc_rawDataGUI(memMapData, ephysData, plotColor)
 
 % if isempty(memMapData)
 %     display('Extract data on the fly using python. You need Matlab version 2022a or higher, and have it pointed to the correct (Anaconda) environment')
 % end
 
 %% set up dynamic figure
-rawDataGuiHandle = figure('color', 'k');
+rawDataGuiHandle = figure('color', plotColor);
 set(rawDataGuiHandle, 'KeyPressFcn', @KeyPressCb);
 
 %% initial conditions
@@ -19,8 +19,8 @@ uniqueTemps = unique(ephysData.spike_templates);
 %% plot initial conditions
 iChunk = 1;
 iChannelChunk = 1;
-initializePlot(rawDataGuiHandle)
-updateRawSnippet(rawDataGuiHandle, memMapData, ephysData, iCluster, ...
+initializePlot(rawDataGuiHandle, plotColor)
+updateRawSnippet(rawDataGuiHandle, memMapData, ephysData, ...
     uniqueTemps, maxSite, iChunk, iChannelChunk)
 %% change on keypress
     function KeyPressCb(~, evnt)
@@ -30,48 +30,54 @@ updateRawSnippet(rawDataGuiHandle, memMapData, ephysData, iCluster, ...
             if iChunk > length(ephysData.spike_times_timeline(ephysData.spike_templates == iCluster))
                 iChunk = 1;
             end
-            updateRawSnippet(rawDataGuiHandle, memMapData, ephysData, iCluster, ...
-                uniqueTemps, iChunk, iChannelChunk);
+            updateRawSnippet(rawDataGuiHandle, memMapData, ephysData, ...
+                uniqueTemps, maxSite, iChunk, iChannelChunk);
         elseif strcmpi(evnt.Key, 'rightarrow')
             iChunk = iChunk - 1;
             if iChunk == 0
                 iChunk = length(ephysData.spike_times_timeline(ephysData.spike_templates == iCluster));
             end
-            updateRawSnippet(rawDataGuiHandle, memMapData, ephysData, iCluster, ...
-                uniqueTemps, iChunk, iChannelChunk);
+            updateRawSnippet(rawDataGuiHandle, memMapData, ephysData, ...
+                uniqueTemps, maxSite, iChunk, iChannelChunk);
         elseif strcmpi(evnt.Key, 'uparrow')
             iChannelChunk = iChannelChunk + 1;
             if iChannelChunk > floor(384/20)
                 iChannelChunk = iChannelChunk - 1;
             end
-            updateRawSnippet(rawDataGuiHandle, memMapData, ephysData, iCluster, ...
-                uniqueTemps, iChunk, iChannelChunk);
+            updateRawSnippet(rawDataGuiHandle, memMapData, ephysData, ...
+                uniqueTemps, maxSite, iChunk, iChannelChunk);
 
         elseif strcmpi(evnt.Key, 'downarrow')
             iChannelChunk = iChannelChunk - 1;
             if iChannelChunk < 1
                 iChannelChunk = iChannelChunk + 1;
             end
-            updateRawSnippet(rawDataGuiHandle, memMapData, ephysData, iCluster, ...
-                uniqueTemps, iChunk, iChannelChunk);
+           updateRawSnippet(rawDataGuiHandle, memMapData, ephysData, ...
+                uniqueTemps, maxSite, iChunk, iChannelChunk);
         end
     end
 end
 
-function initializePlot(rawDataGuiHandle)
+function initializePlot(rawDataGuiHandle, plotColor)
 
 %% main title
 
 mainTitle = sgtitle('');
 
 %% initialize raw data
+if plotColor == 'k'
+    lineColor = 'w';
+else
+    lineColor = 'k';
+end
 max_n_channels_plot = 20;
 rawPlotH = subplot(1, 1, 1);
+set(gca,'color',[0 0 0])
 hold on;
 title('Raw unwhitened data')
-set(rawPlotH, 'XColor', 'w', 'YColor', 'w')
-rawPlotLines = arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', 'k'), 1:max_n_channels_plot);
-allUnitColors = distinguishable_colors(100, 'k');
+set(rawPlotH, 'XColor', plotColor, 'YColor', plotColor)
+rawPlotLines = arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', lineColor), 1:max_n_channels_plot);
+allUnitColors = distinguishable_colors(100, plotColor);
 for iUnit = 1:100 %max 30 units in 20 channels?
     if exist("rawSpikeLines", 'var')
         rawSpikeLines = [rawSpikeLines, arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', allUnitColors(iUnit,:)), 1:max_n_channels_plot)];
@@ -94,8 +100,9 @@ guiData.rawSpikeLines = rawSpikeLines;
 guidata(rawDataGuiHandle, guiData);
 end
 
-function updateRawSnippet(rawDataGuiHandle, memMapData, ephysData, iCluster, ...
+function updateRawSnippet(rawDataGuiHandle, memMapData, ephysData, ...
     uniqueTemps, maxSite, iChunk, iChannelChunk)
+
 
 guiData = guidata(rawDataGuiHandle);
 
@@ -128,9 +135,9 @@ for iCluster = 1:length(theseUnits)
         disp('Don''t do that')
         iChunk = 1;
     end
-    if length(theseTimesCenter) > 10 + iChunk
+    if length(theseTimesCenter) > 10 + iChunk && iCluster == 1
         firstSpike = theseTimesCenter(iChunk+10) - 0.05; %tenth spike occurance %
-    else
+    elseif iCluster == 1
         firstSpike = theseTimesCenter(iChunk) - 0.05; %first spike occurance
     end
     % Not sure why this was +10?
@@ -166,15 +173,20 @@ end
 for iChanToPlot = 1:length(chansToPlot)
     hp_memmap = highpass(thisMemMap(iChanToPlot, :), 200, 30000)+200*(iChanToPlot-1);
     set(rawPlotLines(iChanToPlot), 'XData', t, 'YData', hp_memmap);
+
+end
+for iChanToPlot = 1:length(chansToPlot)
+    hp_memmap = highpass(thisMemMap(iChanToPlot, :), 200, 30000)+200*(iChanToPlot-1);
+    set(rawPlotLines(iChanToPlot), 'XData', t, 'YData', hp_memmap);
     for iUnit = 1:length(theseUnits)
         if ~isempty(theseTimesFullCenter(thisUnitFull==iUnit))
             thisUnitTimes = theseTimesFullCenter(thisUnitFull==iUnit);
             thisUnitTimesFull = theseTimesFull(thisUnitFull==iUnit,:);
             for iTimes = 1:size(thisUnitTimes, 1)
-                if any(int32(thisUnitTimesFull(iTimes, :))-t(1) > 3001)
+                if any(int32(thisUnitTimesFull(iTimes, :))-t(1) > length(t))
                 else
                 if  max(abs(hp_memmap(:, ...
-                        int32(thisUnitTimesFull(iTimes, :))-t(1)))) - 200*(iChanToPlot-1) > 20
+                        int32(thisUnitTimesFull(iTimes, :))-t(1)))) - 200*(iChanToPlot-1) > 18
                     set(rawSpikeLines(iChanToPlot+(iUnit-1)*20), 'XData', thisUnitTimesFull(iTimes, :), 'YData', hp_memmap(:, ...
                         int32(thisUnitTimesFull(iTimes, :))-t(1)));
                 end

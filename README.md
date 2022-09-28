@@ -182,10 +182,11 @@ To maximize your number of single good units, we recommend looking at your raw d
 
 ### Other ephys utilities:
 
-See [recordingUtilities](https://github.com/Julie-Fabre/bombcell/blob/master/recordingUtilities/)
 
-- generate IMRO files 
+- generate IMRO files : see [recordingUtilities](https://github.com/Julie-Fabre/bombcell/blob/master/recordingUtilities/)
 
-- generate channel maps 
+- generate channel maps : see [recordingUtilities](https://github.com/Julie-Fabre/bombcell/blob/master/recordingUtilities/)
 
 - [manual curation guide](https://github.com/Julie-Fabre/bombcell/blob/master/recordingUtilities/manualCurationGuide/manualCurationGuide.md)
+
+- quality metric plugins for phy : see [phyPlugins](https://github.com/Julie-Fabre/bombcell/blob/master/phyPlugins/)
