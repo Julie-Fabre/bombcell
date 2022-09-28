@@ -128,9 +128,9 @@ for iCluster = 1:length(theseUnits)
         disp('Don''t do that')
         iChunk = 1;
     end
-    if length(theseTimesCenter) > 10 + iChunk && iCluster == 1
+    if length(theseTimesCenter) > 10 + iChunk
         firstSpike = theseTimesCenter(iChunk+10) - 0.05; %tenth spike occurance %
-    elseif iCluster == 1
+    else
         firstSpike = theseTimesCenter(iChunk) - 0.05; %first spike occurance
     end
     % Not sure why this was +10?
