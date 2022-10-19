@@ -8,6 +8,9 @@ Used in:
 
 - [Peters et al., Cell Reports, 2022](https://www.cell.com/cell-reports/fulltext/S2211-1247(22)01337-7) to to define real, well isolated pre-frontal cortex units.
 
+
+Table of contents: 
+
 1. [Getting started](#Getting-started)
 2. [Quality metrics guide ](#Quality-metrics-guide)
 3. [Quality metrics GUI guide ](#Quality-metrics-GUI-guide)
