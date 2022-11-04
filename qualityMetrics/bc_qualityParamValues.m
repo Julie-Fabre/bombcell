@@ -46,3 +46,5 @@ param.longISI = 2;
 param.propISI = 0.1;
 param.templateDuration = 400;
 param.pss = 40;
+% Rule to extract max chan
+param.rawWaveformMaxDef = 'firstSTD';

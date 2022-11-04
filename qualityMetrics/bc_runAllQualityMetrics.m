@@ -100,15 +100,16 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples
 qMetric = struct;
 maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 qMetric.maxChannels = maxChannels;
+uniqueTemplates = unique(spikeTemplates);
 
 
 verbose = 1; % update user on progress
-reextract = 0; %Re extract raw waveforms
+reextract = 1; %Re extract raw waveforms
 % QQ extract raw waveforms based on 'good' timechunks defined later ? 
 
 [rawWaveformsFull, rawWaveformsPeakChan]= bc_extractRawWaveformsFast(param, ...
     spikeTimes_samples, spikeTemplates, reextract , verbose); 
-
+% qMetric.maxChannels(uniqueTemplates) = rawWaveformsPeakChan;
 % takes ~10' for an average dataset
 % previous, slower method: 
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
@@ -116,7 +117,6 @@ reextract = 0; %Re extract raw waveforms
 
 %% loop through units and get quality metrics
 
-uniqueTemplates = unique(spikeTemplates);
 spikeTimes_seconds = spikeTimes_samples ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
 if param.computeTimeChunks
     timeChunks = [min(spikeTimes_seconds):param.deltaTimeChunk:max(spikeTimes_seconds), max(spikeTimes_seconds)];
@@ -180,6 +180,9 @@ bc_getQualityUnitType;
 
 if exist('savePath', 'var') %save qualityMetrics
     bc_saveQMetrics;
+else
+    disp('Warning, not saved!')
+    keyboard
 end
 disp([newline, 'finished extracting quality metrics'])
 

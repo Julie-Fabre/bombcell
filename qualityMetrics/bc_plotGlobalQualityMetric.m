@@ -200,7 +200,11 @@ if param.plotGlobal
     subplot(3, 5,  4)
     
     hold on;
+    try
     histogram(qMetric.Fp, 'FaceColor', colorMtx(4, 1:3), 'FaceAlpha', colorMtx(4, 4), 'BinEdges', [0:5:max(qMetric.Fp(:))]);
+    catch
+            histogram(qMetric.Fp, 'FaceColor', colorMtx(4, 1:3), 'FaceAlpha', colorMtx(4, 4), 'BinEdges', [0:5:10]);
+    end
     set(gca, 'yscale', 'log')
     yLim = ylim;
     line([param.maxRPVviolations + 0.5, param.maxRPVviolations + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)

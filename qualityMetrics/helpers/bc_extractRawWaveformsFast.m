@@ -14,6 +14,7 @@ function [rawWaveformsFull, rawWaveformsPeakChan, spikeMap] = bc_extractRawWavef
 %   spike's matched template
 % rawFolder: string containing the location of the raw .dat or .bin file
 % verbose: boolean, display progress bar or not
+% qMetric, has information on max channel
 % ------
 % Outputs
 % ------
@@ -31,6 +32,7 @@ else
 end
 nChannels = param.nChannels;
 nSpikesToExtract =  param.nRawSpikesToExtract;
+% uniqueTemplates = unique(spikeTemplates);
 
 
 %% check if waveforms already extracted
@@ -61,7 +63,7 @@ fname = spikeFile.name;
 dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
 
 if any(strfind(fname,'cbin'))
-    [~, matlabDate] = version; % check MATLAB version supports decompressing this way 
+    [~, matlabDate] = version; % check MATLAB version supports decompressing this way
     if datetime(matlabDate) >= datetime(2022,1,1)
         disp('Raw data is in compressed format, decompressing via python... If you don''t have that option please uncompress data first')
         UsePython = 1; %Choose if you want to compress or usepython integration
@@ -176,9 +178,9 @@ else
             end
         end
     else
-       
+
         fid = fopen(fullfile(spikeFile.folder, fname), 'r');
-    
+
         for iCluster = 1:nClust
             spikeIndicestmp = unique(spikeIndices(:,iCluster)); %  Get rid of duplicate spikes
             for iSpike = 1:length(spikeIndicestmp)
@@ -202,7 +204,7 @@ else
                 %title(['Unit ID: ', num2str(i)]);
                 %colorbar;
             end
-           
+
             %         [~, maxChannels] = max(max(abs(templateWaveforms), [], 2), [], 3);
             %         close all;
             %
@@ -242,25 +244,45 @@ else
 
         for iCluster = 1:nClust
             %                spkMapMean_sm = smoothdata(squeeze(rawWaveformsFull(iCluster, :,:)), 1, 'gaussian', 5);
-            % Find direction of spike 
-           
+            % Find direction of spike
+
             spkMapMean_sm = nanmean(squeeze(rawWaveformsFull(iCluster,:,:)),1);
             if isfield(param,'rawWaveformMaxDef') && strcmp (param.rawWaveformMaxDef, 'firstSTD' )
                 % Find 'peak' (which is the first max deflection from 0,
                 % because there can be undershoot which is larger but this is
                 % not the true max channel!
-                slopeidx = find(abs(spkMapMean_sm)>nanmean(spkMapMean_sm(1:10))+nanstd(spkMapMean_sm),1,'first');
-                slopesign = sign(spkMapMean_sm(slopeidx));
-                [~, rawWaveformsPeakChan(iCluster,:)] = max(max(squeeze(rawWaveformsFull(iCluster,:,:)).*slopesign, [], 2), [], 1);%QQ buggy sometimes % 
+                %Take std across channels to look for max deflection
+                %timepoint
+                [~,tpid] = max(nanstd(squeeze(rawWaveformsFull(iCluster,:,20:50)),[],1));
+                tpid = tpid+20;
+                % Now take that timepoint and look at the max channel
+                [~, rawWaveformsPeakChan(iCluster,:)] = max(abs(squeeze(rawWaveformsFull(iCluster,:,tpid))));
+                %                 slopeidx = find(abs(spkMapMean_sm)>nanmean(spkMapMean_sm(1:10))+1.5*nanstd(spkMapMean_sm),1,'first');
+                %                 slopesign = sign(spkMapMean_sm(slopeidx));
+                %                 [~, rawWaveformsPeakChan(iCluster,:)] = max(max(squeeze(rawWaveformsFull(iCluster,:,:)).*slopesign, [], 2), [], 1);%QQ buggy sometimes %
+                [~, rawWaveformsPeakChan2(iCluster,:)] = max(max(abs(squeeze(rawWaveformsFull(iCluster,:,20:50))), [], 2), [], 1);%QQ buggy sometimes %
+
+                if abs(rawWaveformsPeakChan2(iCluster,:)- rawWaveformsPeakChan(iCluster,:))>3
+                    tmpfig = figure('units','normalized','outerposition',[0 0 1 1]); plot(squeeze(rawWaveformsFull(iCluster,:,:))')
+                    hold on
+                    plot(squeeze(rawWaveformsFull(iCluster, rawWaveformsPeakChan(iCluster,:),:)),'b-','LineWidth',3);
+                                        plot(squeeze(rawWaveformsFull(iCluster,rawWaveformsPeakChan2(iCluster),:)),'k-','LineWidth',3);
+%                                         plot(squeeze(rawWaveformsFull(iCluster, qMetric.maxChannels(uniqueTemplates(iCluster)),:)),'r-','LineWidth',3);
+                    %
+                    %                     keyboard
+                    drawnow
+                    pause(1)
+                    close(tmpfig)
+                end
             else
 
-              [~, rawWaveformsPeakChan(iCluster,:)] = max(max(abs(squeeze(rawWaveformsFull(iCluster,:,:))), [], 2), [], 1);%QQ buggy sometimes % 
+                [~, rawWaveformsPeakChan2(iCluster,:)] = max(max(abs(squeeze(rawWaveformsFull(iCluster,:,:))), [], 2), [], 1);%QQ buggy sometimes %
             end
-            
+
         end
 
 
-     
+
 
         %         [~, maxChannels] = max(max(abs(templateWaveforms), [], 2), [], 3);
         %         close all;
