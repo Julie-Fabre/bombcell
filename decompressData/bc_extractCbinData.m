@@ -33,14 +33,15 @@ if nargin < 2 || isempty(sStartEnd)
     d = dir(fileName);
     sStartEnd = [cbinMeta.chunk_bounds(1), cbinMeta.chunk_bounds(end)];
 end
-if chIdx(end) >  cbinMeta.n_channels
+
+if nargin < 3 || isempty(chIdx)
+    chIdx = 1:cbinMeta.n_channels;
+elseif chIdx(end) >  cbinMeta.n_channels
     warning(sprintf('max channel index invalid, changing from %s to %s',num2str(chIdx(end)), num2str(cbinMeta.n_channels)))
     startEnd(1) = cbinMeta.chunk_bounds(1);
 end
-if nargin < 3
-    chIdx = 1:cbinMeta.n_channels;
-end
-if nargin < 4
+
+if nargin < 4 || isempty(doParfor)
     doParfor = false;
 end
 if sStartEnd(1) < cbinMeta.chunk_bounds(1) 
@@ -90,8 +91,8 @@ if doParfor
     parfor iChunk = 1:nChunks
         %     chunkInd = iChunk + iChunkStart - 1;
         % size of expected decompressed data for that chunk
-        zmatLocalInfo = zmatInfo;
-        zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
+       % zmatLocalInfo = zmatInfo;
+       % zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
 
         % read a chunk from the compressed data
         fid = fopen(fileName, 'r');
@@ -99,7 +100,7 @@ if doParfor
         compData = fread(fid, chunkSizeBytes(iChunk), '*uint8');
         fclose(fid);
 
-        decompData = zmat(compData, zmatLocalInfo);
+        decompData = zmat(compData, 0, 'zlib');
         decompData = reshape(decompData, nSamples(iChunk), nChannels);
         chunkData = cumsum(decompData(:, chIdx), 1);
         %     data(startIdx(iChunk):endIdx(iChunk), :) = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
@@ -111,8 +112,8 @@ else
     for iChunk = 1:nChunks
         %     chunkInd = iChunk + iChunkStart - 1;
         % size of expected decompressed data for that chunk
-        zmatLocalInfo = zmatInfo;
-        zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
+       % zmatLocalInfo = zmatInfo;
+       % zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
 
         % read a chunk from the compressed data
         fid = fopen(fileName, 'r');
@@ -120,7 +121,7 @@ else
         compData = fread(fid, chunkSizeBytes(iChunk), '*uint8');
         fclose(fid);
 
-        decompData = zmat(compData, zmatLocalInfo);
+        decompData = zmat(compData, 0, 'zlib');
         decompData = reshape(decompData, nSamples(iChunk), nChannels);
         chunkData = cumsum(decompData(:, chIdx), 1);
         %     data(startIdx(iChunk):endIdx(iChunk), :) = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
