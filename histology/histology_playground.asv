@@ -1,0 +1,25 @@
+allenCCF_path = fileparts(which('allenCCFbregma'));
+cmap_filename = [allenCCF_path filesep 'allen_ccf_colormap_2017.mat'];
+load(cmap_filename);
+
+I = reg(:,1:floor(size(reg,2)/2),50);
+mask = tv_crop(:,floor(size(tv_crop,2)/2):size(tv_crop,2),5450);
+figure();
+ax1 = axes;
+
+A = imagesc([1, floor(size(reg,2)/2)],[],I);
+hold on; 
+ax3 = axes;
+imagesc([1, floor(size(reg,2)/2)],[],av_crop(:,1:floor(size(reg,2)/2),50));
+
+ax2 = axes;
+B = imagesc([floor(size(reg,2)/2), floor(size(reg,2)/2)+size(mask,2)],[],mask); 
+linkaxes([ax1,ax3,ax2]);
+ax2.Visible = 'off';
+ax2.XTick = [];
+ax2.YTick = [];
+colormap(ax1,'gray');
+colormap(ax2,'hot');
+colormap(ax3,cmap);
+set(ax2,'color','none','visible','off');
+axis equal;

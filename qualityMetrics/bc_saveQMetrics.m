@@ -6,7 +6,7 @@ if ~exist(savePath,'dir')
 end
 disp([newline, 'saving quality metrics to ', savePath])
 save(fullfile(savePath, 'qMetric.mat'), 'qMetric', '-v7.3')
-parquetwrite([fullfile(savePath, '_jf_parameters._jf_qMetrics.parquet')], struct2table(param))
+
 
 qMetricSummary = table('Size',[length(qMetric.clusterID), 10],'VariableTypes',...
     {'double', 'double', 'double', 'double', 'double', 'double', 'double',...
