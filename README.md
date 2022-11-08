@@ -1,6 +1,7 @@
 # bombcell: evaluate unit quality and ephys properties
-
-<img style="float: left;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_logo_crop_small_flame.png" width=30% height=30%> Bombcell works with units recorded with Neuropixel probes (3A, 1.0 and 2.0, recorded with SpikeGLX or OpenEphys) and spike-sorted with kilosort. It classifies the unit into three categories: single units, multi-units and noise units, with an option to keep or remove non-somatic spikes. `param` is the structure that defines how to compute the quality metrics and which thresholds to use to classify units.
+<div style= "float:left;position: relative;">
+    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_logo_crop_small_flame.png" width=30% height=30%> Bombcell works with units recorded with Neuropixel probes (3A, 1.0 and 2.0, recorded with SpikeGLX or OpenEphys) and spike-sorted with kilosort. It classifies the unit into three categories: single units, multi-units and noise units, with an option to keep or remove non-somatic spikes. `param` is the structure that defines how to compute the quality metrics and which thresholds to use to classify units.
+</div>
 
 Used in:
 
