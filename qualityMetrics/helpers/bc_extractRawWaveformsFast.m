@@ -57,7 +57,7 @@ elseif sum(rawFolder(end-2:end) == '/..') == 3
 end
 
 
-rawWaveformFolder = dir(fullfile(spikeFile.folder, 'templates._jf_rawWaveforms.npy'));
+rawWaveformFolder = dir(fullfile(rawFolder, 'templates._jf_rawWaveforms.npy'));
 
 fname = spikeFile.name;
 dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
@@ -276,7 +276,7 @@ else
                 end
             else
 
-                [~, rawWaveformsPeakChan2(iCluster,:)] = max(max(abs(squeeze(rawWaveformsFull(iCluster,:,:))), [], 2), [], 1);%QQ buggy sometimes %
+                [~, rawWaveformsPeakChan(iCluster,:)] = max(max(abs(squeeze(rawWaveformsFull(iCluster,:,:))), [], 2), [], 1);%QQ buggy sometimes %
             end
 
         end
@@ -308,7 +308,6 @@ else
 
         %     end
 
-        rawWaveformFolder = dir(fullfile(rawFolder,'templates._jf_rawWaveforms.npy'));
         if isempty(rawWaveformFolder) || reExtract
             %save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
             writeNPY(rawWaveformsFull, fullfile(rawFolder, 'templates._jf_rawWaveforms.npy'))
