@@ -5,10 +5,6 @@ param.plotThis = 0;
 param.plotGlobal = 1;
 
 % amplitude parameters
-param.rawFolder = [ephysap_path, '/..'];
-if exist('ephysap_tmp', 'var')
-    param.tmpFolder = [ephysap_path, '/..'];
-end
 param.nRawSpikesToExtract = 100; 
 param.saveMultipleRaw = 1; % If you wish to save the nRawSpikesToExtract as well
 param.minAmplitude = 20; 

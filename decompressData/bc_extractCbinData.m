@@ -16,6 +16,13 @@ function [dataOut, decompDataFile] = bc_extractCbinData(fileName, sStartEnd, chI
 % dataOut - nSamples x nChannels array of decompressed data
 % example usgae:
 % bc_extractCbinData('/home/netshare/zinu/XG006/2022-06-30/ephys/site1/2022-06_30_xg006_g0_t0.imec0.ap.cbin', [], [], [], 'home/ExtraHD/', 0)
+
+% 12/07/2022 : JF: added sanity checks, more options including parform,
+% save output as matrix 
+% 29/22/2022 : JF: added size, byte, method info (zmat version used previously
+% that handled this no longer exists)
+
+
 if nargin < 1
     %     for testing
     fileName = '/home/netshare/zinu/JF070/2022-06-18/ephys/site1_shank0/2022-06_18_JF070_shank1-1_g0_t0.imec0.ap.cbin';
@@ -91,15 +98,17 @@ if doParfor
     parfor iChunk = 1:nChunks
         %     chunkInd = iChunk + iChunkStart - 1;
         % size of expected decompressed data for that chunk
-        zmatLocalInfo = zmatInfo;
-        zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
-​
+        zmatLocalInfo= struct;
+        zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 2];
+        zmatLocalInfo.byte = 2;
+        zmatLocalInfo.method = 'zlib';
+        
         % read a chunk from the compressed data
         fid = fopen(fileName, 'r');
         fseek(fid, offset(iChunk), 'bof');
         compData = fread(fid, chunkSizeBytes(iChunk), '*uint8');
         fclose(fid);
-​
+        
         decompData = zmat(compData, zmatLocalInfo);
         decompData = reshape(decompData, nSamples(iChunk), nChannels);
         chunkData = cumsum(decompData(:, chIdx), 1);
@@ -109,19 +118,20 @@ if doParfor
 else
     
     for iChunk = 1:nChunks
-               %     chunkInd = iChunk + iChunkStart - 1;
-        % size of expected decompressed data for that chunk
-        zmatLocalInfo = zmatInfo;
-        zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
-​
+
+        zmatLocalInfo= struct;
+        zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 2];
+        zmatLocalInfo.byte = 2;
+        zmatLocalInfo.method = 'zlib';
+
+        
         % read a chunk from the compressed data
         fid = fopen(fileName, 'r');
         fseek(fid, offset(iChunk), 'bof');
         compData = fread(fid, chunkSizeBytes(iChunk), '*uint8');
         fclose(fid);
-​
         decompData = zmat(compData, zmatLocalInfo);
-        decompData = reshape(decompData, nSamples(iChunk), nChannels);
+        decompData = reshape(decompData, nSamples(iChunk)*2, nChannels);
         chunkData = cumsum(decompData(:, chIdx), 1);
         %     data(startIdx(iChunk):endIdx(iChunk), :) = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
         data{iChunk} = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
