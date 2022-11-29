@@ -1,18 +1,27 @@
-%% load data 
-ephysPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/kilosort2/site1';%pathToFolderYourEphysDataIsIn; % eg /home/netshare/zinu/JF067/2022-02-17/ephys/kilosort2/site1, whre this path contains 
+%% set paths 
+ephysPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/kilosort2/site1';% eg /home/netshare/zinu/JF067/2022-02-17/ephys/kilosort2/site1, where this path contains 
                                            % kilosort output
+ephysDirPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/site1'; % where your 
+ephysap_path = dir('/home/netshare/zinu/JF078/2022-05-25/ephys/site1/2022_05_25-JF078-1_g0_t0.imec0.ap.*bin');
+decompressDataLocal = '/home/media/extraHD';
 
-% ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site);
+%% load data 
 [spikeTimes_samples, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysPath);
-ephysap_path = '/home/netshare/zinu/JF078/2022-05-25/ephys/site1/2022_05_25-JF078-1_g0_t0.imec0.ap.bin';%pathToEphysRawFile; %eg /home/netshare/zinu/JF067/2022-02-17/ephys/site1/2022_02_17-JF067_g0_t0.imec0.ap.bin 
-ephysDirPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/site1';%pathToEphysRawFileFolder ;% eg /home/netshare/zinu/JF067/2022-02-17/ephys/site1
-% ephysap_path = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_ap',site);
-% ephysDirPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_dir',site);
-savePath = fullfile(ephysDirPath, 'qMetrics'); 
 
-%% quality metric parameters and thresholds 
+%% which quality metric parameters to extract and thresholds 
 bc_qualityParamValues; 
+
+%% detect whether data is compressed, decompress locally if necessary
+if strcmp(ephysap_path.name(end-4:end), '.cbin')
+    compressed = true;
+    decompressDataLocalFolder = [decompressDataLocal, ephysap_path.name(1:end-5)];
+    disp('Decompressing ephys data locally...')
+    [~, decompDataFile] = bc_extractCbinData([ephysap_path.folder, filesep, ephysap_path.name],...
+        [], [], [], decompressDataLocalFolder , 0);
+    ephysap_path = decompDataFile;
+end
+savePath = fullfile(ephysDirPath, 'qMetrics'); 
 
 %% compute quality metrics 
 rerun = 0;

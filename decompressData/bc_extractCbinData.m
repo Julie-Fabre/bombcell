@@ -1,5 +1,5 @@
 function [dataOut, decompDataFile] = bc_extractCbinData(fileName, sStartEnd, chIdx, doParfor, saveFileFolder, saveAsMtx)
-% from Micheal Krumin
+% adapted from a script by Micheal Krumin
 %
 % requires the zmat package:
 % https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat
@@ -91,37 +91,36 @@ if doParfor
     parfor iChunk = 1:nChunks
         %     chunkInd = iChunk + iChunkStart - 1;
         % size of expected decompressed data for that chunk
-       % zmatLocalInfo = zmatInfo;
-       % zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
-
+        zmatLocalInfo = zmatInfo;
+        zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
+​
         % read a chunk from the compressed data
         fid = fopen(fileName, 'r');
         fseek(fid, offset(iChunk), 'bof');
         compData = fread(fid, chunkSizeBytes(iChunk), '*uint8');
         fclose(fid);
-
-        decompData = zmat(compData, 0, 'zlib');
+​
+        decompData = zmat(compData, zmatLocalInfo);
         decompData = reshape(decompData, nSamples(iChunk), nChannels);
         chunkData = cumsum(decompData(:, chIdx), 1);
         %     data(startIdx(iChunk):endIdx(iChunk), :) = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
         data{iChunk} = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
     end
-    %toc
 else
     
     for iChunk = 1:nChunks
-        %     chunkInd = iChunk + iChunkStart - 1;
+               %     chunkInd = iChunk + iChunkStart - 1;
         % size of expected decompressed data for that chunk
-       % zmatLocalInfo = zmatInfo;
-       % zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
-
+        zmatLocalInfo = zmatInfo;
+        zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
+​
         % read a chunk from the compressed data
         fid = fopen(fileName, 'r');
         fseek(fid, offset(iChunk), 'bof');
         compData = fread(fid, chunkSizeBytes(iChunk), '*uint8');
         fclose(fid);
-
-        decompData = zmat(compData, 0, 'zlib');
+​
+        decompData = zmat(compData, zmatLocalInfo);
         decompData = reshape(decompData, nSamples(iChunk), nChannels);
         chunkData = cumsum(decompData(:, chIdx), 1);
         %     data(startIdx(iChunk):endIdx(iChunk), :) = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);

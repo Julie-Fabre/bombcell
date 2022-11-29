@@ -1,19 +1,28 @@
+%% set paths 
+ephysPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/kilosort2/site1';% eg /home/netshare/zinu/JF067/2022-02-17/ephys/kilosort2/site1, where this path contains 
+                                           % kilosort output
+ephysDirPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/site1'; % where your 
+ephysap_path = dir('/home/netshare/zinu/JF078/2022-05-25/ephys/site1/2022_05_25-JF078-1_g0_t0.imec0.ap.*bin');
+decompressDataLocal = '/home/media/extraHD';
 
 %% load data 
-ephysPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/kilosort2/site1';%pathToFolderYourEphysDataIsIn; % eg /home/netshare/zinu/JF067/2022-02-17/ephys/kilosort2/site1, whre this path contains 
-                                           % kilosort output
-
-% ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site);
 [spikeTimes_samples, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysPath);
-ephysap_path = '/home/netshare/zinu/JF078/2022-05-25/ephys/site1/2022_05_25-JF078-1_g0_t0.imec0.ap.bin';%pathToEphysRawFile; %eg /home/netshare/zinu/JF067/2022-02-17/ephys/site1/2022_02_17-JF067_g0_t0.imec0.ap.bin 
-ephysDirPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/site1';%pathToEphysRawFileFolder ;% eg /home/netshare/zinu/JF067/2022-02-17/ephys/site1
-% ephysap_path = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_ap',site);
-% ephysDirPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_dir',site);
-savePath = fullfile(ephysDirPath, 'qMetrics'); 
 
-%% quality metric parameters and thresholds 
+%% which quality metric parameters to extract and thresholds 
 bc_qualityParamValues; 
+
+%% detect whether data is compressed, decompress locally if necessary
+if strcmp(ephysap_path.name(end-4:end), '.cbin')
+    compressed = true;
+    decompressDataLocalFolder = [decompressDataLocal, ephysap_path.name(1:end-5)];
+    disp('This is compressed data and we do not want to use Python integration... uncompress temporarily')
+    [~, decompDataFile] = bc_extractCbinData(fileName, sStartEnd, chIdx, doParfor, saveFileFolder, saveAsMtx)
+
+    
+else
+end
+savePath = fullfile(ephysDirPath, 'qMetrics'); 
 
 %% compute quality metrics 
 rerun = 0;
@@ -32,13 +41,14 @@ bc_getRawMemMap;
 
 % put ephys data into structure 
 ephysData = struct;
-ephysData.spike_times = spikeTimes;
-ephysData.spike_times_timeline = spikeTimes ./ 30000;
+ephysData.spike_times_samples = spikeTimes_samples;
+ephysData.ephys_sample_rate = 30000;
+ephysData.spike_times_timeline = spikeTimes ./ ephysData.ephys_sample_rate;
 ephysData.spike_templates = spikeTemplates;
 ephysData.templates = templateWaveforms;
 ephysData.template_amplitudes = templateAmplitudes;
 ephysData.channel_positions = channelPositions;
-ephysData.ephys_sample_rate = 30000;
+
 ephysData.waveform_t = 1e3*((0:size(templateWaveforms, 2) - 1) / 30000);
 ephysParams = struct;
 plotRaw = 1;
