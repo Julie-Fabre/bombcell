@@ -14,22 +14,28 @@ savePath = fullfile(ephysDirPath, 'qMetrics');
 bc_qualityParamValues; 
 
 %% detect whether data is compressed, decompress locally if necessary
-if strcmp(ephysap_path.name(end-4:end), '.cbin') && isempty(dir([decompressDataLocal, filesep, ephysap_path.name]))
-    decompressDataLocalFolder = [decompressDataLocal, filesep ephysap_path.name(1:end-5)];
-    fprintf('Decompressing ephys data file %s locally to %s...',ephysap_path.name, decompressDataLocal)
+if strcmp(ephysap_path.name(end-4:end), '.cbin') &&...
+        isempty(dir([decompressDataLocal, filesep, ephysap_path.name(1:end-5), '.bin']))
+    fprintf('Decompressing ephys data file %s locally to %s... \n', ephysap_path.name, decompressDataLocal)
+    
     decompDataFile = bc_extractCbinData([ephysap_path.folder, filesep, ephysap_path.name],...
         [], [], [], decompressDataLocal);
+    param.rawFile = decompDataFile;
+elseif strcmp(ephysap_path.name(end-4:end), '.cbin') &&...
+        ~isempty(dir([decompressDataLocal, filesep, ephysap_path.name(1:end-5), '.bin']))
+    fprintf('Using previously decompressed ephys data file in %s ... \n', decompressDataLocal)
+    
     param.rawFile = decompDataFile;
 else
     param.rawFile = [ephysap_path.folder, filesep, ephysap_path.name];
 end
 
 %% compute quality metrics 
-rerun = 0;
+rerun = 1;
 qMetricsExist = ~isempty(dir(fullfile(savePath, 'qMetric*.mat'))) || ~isempty(dir(fullfile(savePath, 'templates._jf_qMetrics.parquet')));
 
 if qMetricsExist == 0 || rerun
-    [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
+    qMetric = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
         templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
 else
     bc_loadSavedMetrics; 

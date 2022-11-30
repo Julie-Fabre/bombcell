@@ -1,5 +1,5 @@
-function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, goodChannels, savePath)
+function qMetric = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
+    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath)
 % JF
 % ------
 % Inputs
@@ -90,9 +90,7 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples
 %   silhouetteScore : another measure similar ti isolation distance and
 %       l-ratio. See Rousseeuw 1987 DOI: 10.1016/0377-0427(87)90125-7)
 %
-% unitType: nUnits x 1 vector indicating whether each unit met the
-%   threshold criterion to be classified as a single unit (1), noise
-%   (0) or multi-unit (2)
+
 
 %% if some manual curation already performed, remove bad units
 
@@ -102,10 +100,11 @@ maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 qMetric.maxChannels = maxChannels;
 
 verbose = 1;
+reExtractRawWaveforms = 0;
 % QQ extract raw waveforms based on 'good' timechunks defined later ? 
 
-[rawWaveformsFull, rawWaveformsPeakChan]= bc_extractRawWaveformsFast(param, ...
-    spikeTimes_samples, spikeTemplates, 1 , verbose); 
+[rawWaveformsFull, rawWaveformsPeakChan, ~] = bc_extractRawWaveformsFast(param, ...
+    spikeTimes_samples, spikeTemplates, reExtractRawWaveforms , savePath, verbose); 
 
 % takes ~10' for an average dataset
 % previous, slower method: 
