@@ -18,8 +18,11 @@ function decompDataFile = bc_extractCbinData(fileName, sStartEnd, chIdx, doParfo
 
 % 12/07/2022 : JF: added sanity checks, more options including parform,
 % save output as matrix 
-% 29/22/2022 : JF: added size, byte, method info (zmat version used previously
+% 29/11/2022 : JF: added size, byte, method info (zmat version used previously
 % that handled this no longer exists)
+% 30/11/2022 : save data chunk by chunk (otherwise matlab can crash if the
+% files are too big (> 70GB), default is non parfor because not compatible
+% with this 
 
 
 if nargin < 1
@@ -117,6 +120,9 @@ if doParfor
         %     data(startIdx(iChunk):endIdx(iChunk), :) = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
         data{iChunk} = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
     end
+    dataOut = cell2mat(data);
+    fwrite(fidOut, dataOut, 'int16');
+
 else
     
     for iChunk = 1:nChunks
