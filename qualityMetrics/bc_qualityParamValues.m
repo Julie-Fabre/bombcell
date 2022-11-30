@@ -5,6 +5,7 @@ param.plotThis = 0;
 param.plotGlobal = 1;
 
 % amplitude parameters
+param.ephysMetaFileDir = ephysMetaDir;
 param.nRawSpikesToExtract = 100; 
 param.saveMultipleRaw = 1; % If you wish to save the nRawSpikesToExtract as well
 param.minAmplitude = 20; 

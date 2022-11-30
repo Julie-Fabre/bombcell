@@ -65,7 +65,7 @@ if ~isempty(rawWaveformFolder) && reExtract == 0
     rawWaveformsFull = readNPY(fullfile(savePath, 'templates._jf_rawWaveforms.npy'));
     rawWaveformsPeakChan = readNPY(fullfile(savePath, 'templates._jf_rawWaveformPeakChannels.npy'));
     if param.saveMultipleRaw
-        spikeMap = readNPY(fullfile(savePath, 'templates.jf_Multi_rawWaveforms.npy'));
+        spikeMap = readNPY(fullfile(savePath, 'templates._jf_multi_rawWaveforms.npy'));
     end
 else
 

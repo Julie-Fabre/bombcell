@@ -121,7 +121,7 @@ else
     timeChunks = [min(spikeTimes_seconds), max(spikeTimes_seconds)];
 end
 
-disp([newline, 'extracting quality metrics ...'])
+fprintf('extracting quality metrics from %s ... \n', param.rawFile)
 
 for iUnit = 1:length(uniqueTemplates)
     
@@ -160,7 +160,7 @@ for iUnit = 1:length(uniqueTemplates)
 %         qMetric.rawWaveforms(iUnit).spkMapMean = permute(squeeze(qMetric.rawWaveforms(iUnit).spkMapMean), [2, 1]);
 %     end
     qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit,:),:), ...
-        param.rawFolder);
+        param.ephysMetaFileDir);
 
     %% distance metrics
     if param.computeDistanceMetrics
@@ -173,9 +173,12 @@ end
 bc_getQualityUnitType;
 
 if exist('savePath', 'var') %save qualityMetrics
+    fprintf('saving quality metrics from %s to %s \n', param.rawFile, savePath)
     bc_saveQMetrics;
+else
+    fprintf('finishing extracting quality metrics from %s \n', param.rawFile)
+    
 end
-disp([newline, 'finished extracting quality metrics'])
 
 %bc_plotGlobalQualityMetric;
 end
