@@ -1,4 +1,4 @@
-function rawAmplitude = bc_getRawAmplitude(rawWaveforms, metaFileDir)
+function rawAmplitude = bc_getRawAmplitude(rawWaveforms, metaFile)
 % JF, Get the amplitude of the mean raw waveform for a unit 
 % ------
 % Inputs
@@ -13,12 +13,12 @@ function rawAmplitude = bc_getRawAmplitude(rawWaveforms, metaFileDir)
 % this unit 
 % 
 
-if strcmp(metaFileDir.name, 'oebin')
+if strcmp(metaFile, 'oebin')
     % open ephys format
-   scalingFactor = bc_readOEMetaFile(metaFileDir);
+   scalingFactor = bc_readOEMetaFile(metaFile);
 else
     % spikeGLX format
-    scalingFactor = bc_readSpikeGLXMetaFile(metaFileDir);
+    scalingFactor = bc_readSpikeGLXMetaFile(metaFile);
 end
 
 rawWaveforms = rawWaveforms .* scalingFactor;

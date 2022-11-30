@@ -33,7 +33,7 @@ end
 
 %% compute quality metrics 
 rerun = 1;
-qMetricsExist = ~isempty(dir(fullfile(savePath, 'qMetric*.mat'))) || ~isempty(dir(fullfile(savePath, 'templates._jf_qMetrics.parquet')));
+qMetricsExist = ~isempty(dir(fullfile(savePath, 'qMetric*.mat'))) || ~isempty(dir(fullfile(savePath, 'templates._bc_qMetrics.parquet')));
 
 if qMetricsExist == 0 || rerun
     qMetric = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...

@@ -37,7 +37,7 @@ nSpikesToExtract =  param.nRawSpikesToExtract;
 % end
 spikeFile = dir(param.rawFile);
 
-rawWaveformFolder = dir(fullfile(savePath, 'templates._jf_rawWaveforms.npy'));
+rawWaveformFolder = dir(fullfile(savePath, 'templates._bc_rawWaveforms.npy'));
 
 dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
 
@@ -62,10 +62,10 @@ d = dir(param.rawFile);
 
 if ~isempty(rawWaveformFolder) && reExtract == 0
 
-    rawWaveformsFull = readNPY(fullfile(savePath, 'templates._jf_rawWaveforms.npy'));
-    rawWaveformsPeakChan = readNPY(fullfile(savePath, 'templates._jf_rawWaveformPeakChannels.npy'));
+    rawWaveformsFull = readNPY(fullfile(savePath, 'templates._bc_rawWaveforms.npy'));
+    rawWaveformsPeakChan = readNPY(fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy'));
     if param.saveMultipleRaw
-        spikeMap = readNPY(fullfile(savePath, 'templates._jf_multi_rawWaveforms.npy'));
+        spikeMap = readNPY(fullfile(savePath, 'templates._bc_multi_rawWaveforms.npy'));
     end
 else
 
@@ -266,14 +266,14 @@ else
 
         %     end
 
-        rawWaveformFolder = dir(fullfile(savePath,'templates._jf_rawWaveforms.npy'));
+        rawWaveformFolder = dir(fullfile(savePath,'templates._bc_rawWaveforms.npy'));
         if isempty(rawWaveformFolder) || reExtract
             %save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
-            writeNPY(rawWaveformsFull, fullfile(savePath, 'templates._jf_rawWaveforms.npy'))
-            writeNPY(rawWaveformsPeakChan, fullfile(savePath, 'templates._jf_rawWaveformPeakChannels.npy'))
+            writeNPY(rawWaveformsFull, fullfile(savePath, 'templates._bc_rawWaveforms.npy'))
+            writeNPY(rawWaveformsPeakChan, fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy'))
 
             if param.saveMultipleRaw
-                writeNPY(spikeMap, fullfile(savePath, 'templates._jf_multi_rawWaveforms.npy'))
+                writeNPY(spikeMap, fullfile(savePath, 'templates._bc_multi_rawWaveforms.npy'))
             end
         end
     end

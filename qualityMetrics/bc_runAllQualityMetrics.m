@@ -160,7 +160,7 @@ for iUnit = 1:length(uniqueTemplates)
 %         qMetric.rawWaveforms(iUnit).spkMapMean = permute(squeeze(qMetric.rawWaveforms(iUnit).spkMapMean), [2, 1]);
 %     end
     qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit,:),:), ...
-        param.ephysMetaFileDir);
+        param.ephysMetaFile);
 
     %% distance metrics
     if param.computeDistanceMetrics

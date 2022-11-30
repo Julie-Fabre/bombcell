@@ -1,11 +1,16 @@
 %bc_qualityParamValues
 param = struct;
 
+% plotting parameters 
 param.plotThis = 0;
 param.plotGlobal = 1;
 
+% saving parameters 
+param.saveAsParquet = 1; % save outputs at .parquet file 
+param.saveAsMat = 0; % save outputs at .mat file 
+
 % amplitude parameters
-param.ephysMetaFileDir = ephysMetaDir;
+param.ephysMetaFile = [ephysMetaDir.folder, filesep, ephysMetaDir.name];
 param.nRawSpikesToExtract = 100; 
 param.saveMultipleRaw = 1; % If you wish to save the nRawSpikesToExtract as well
 param.minAmplitude = 20; 
