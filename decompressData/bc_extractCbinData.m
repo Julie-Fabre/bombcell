@@ -1,9 +1,8 @@
-function [dataOut, decompDataFile] = bc_extractCbinData(fileName, sStartEnd, chIdx, doParfor, saveFileFolder, saveAsMtx)
+function decompDataFile = bc_extractCbinData(fileName, sStartEnd, chIdx, doParfor, saveFileFolder)
 % adapted from a script by Micheal Krumin
 %
 % requires the zmat package:
-% https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat
-% https://github.com/fangq/zmat/releases/tag/v0.9.8
+% https://github.com/fangq/zmat
 
 % fileName - full path to the .cbin filename you want to read from
 % sStartEnd - a 1x2 array of [sampleStart, sampleEnd] you want to read
@@ -93,8 +92,11 @@ nSamples = cbinMeta.chunk_bounds([1:nChunks] + iChunkStart) - cbinMeta.chunk_bou
 chunkSizeBytes = cbinMeta.chunk_offsets([1:nChunks] + iChunkStart) - cbinMeta.chunk_offsets([1:nChunks] + iChunkStart - 1);
 offset = cbinMeta.chunk_offsets([1:nChunks] + iChunkStart - 1);
 
+fN = dir(fileName);
+decompDataFile = [saveFileFolder, filesep, fN.name(1:end-5) '.bin'];
+fidOut = fopen(decompDataFile,'w');
+
 if doParfor
-    %tic
     parfor iChunk = 1:nChunks
         %     chunkInd = iChunk + iChunkStart - 1;
         % size of expected decompressed data for that chunk
@@ -119,10 +121,11 @@ else
     
     for iChunk = 1:nChunks
 
-        zmatLocalInfo= struct;
-        zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 2];
+        zmatLocalInfo = struct;
+        zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
         zmatLocalInfo.byte = 2;
         zmatLocalInfo.method = 'zlib';
+        zmatLocalInfo.type = 'int16';
 
         
         % read a chunk from the compressed data
@@ -131,22 +134,21 @@ else
         compData = fread(fid, chunkSizeBytes(iChunk), '*uint8');
         fclose(fid);
         decompData = zmat(compData, zmatLocalInfo);
-        decompData = reshape(decompData, nSamples(iChunk)*2, nChannels);
+        decompData = reshape(decompData, nSamples(iChunk), nChannels);
         chunkData = cumsum(decompData(:, chIdx), 1);
         %     data(startIdx(iChunk):endIdx(iChunk), :) = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
-        data{iChunk} = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
+        data = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
+        %         dataOut = reshape(data', [size(data,1)*size(data,2),1]);
+        fwrite(fidOut, data, 'int16');
+
     end
 end
-dataOut = cell2mat(data);
-if ~isemtpy(saveFileFolder)
-    if saveAsMtx
-        decompDataFile = fullfile(saveFileFolder, 'channels._jf_rawData.npy');
-        writeNPY(dataOut',decompDataFile)
-        
-    else
-        fN = dir(fileName);
-        dataOut2 = reshape(dataOut', [size(dataOut,1)*size(dataOut,2),1]);
-        decompDataFile = [saveFileFolder, filesep, fN.name(1:end-4) '.bin'];
-        writeNPY(dataOut2,decompDataFile)
-    end
-end
+fclose(fidOut);
+
+% dataOut = cell2mat(data);
+% if ~isemtpy(saveFileFolder)
+%     if saveAsMtx
+%         decompDataFile = fullfile(saveFileFolder, 'channels._jf_rawData.npy');
+%         writeNPY(dataOut',decompDataFile)
+%     end
+% end

@@ -3,7 +3,7 @@ ephysPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/kilosort2/site1';% eg /h
                                            % kilosort output
 ephysDirPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/site1'; % where your 
 ephysap_path = dir('/home/netshare/zinu/JF078/2022-05-25/ephys/site1/2022_05_25-JF078-1_g0_t0.imec0.ap.*bin');
-decompressDataLocal = '/home/media/extraHD';
+decompressDataLocal = '/media/julie/ExtraHD/decompressedData';
 
 %% load data 
 [spikeTimes_samples, spikeTemplates, ...
@@ -15,10 +15,10 @@ bc_qualityParamValues;
 %% detect whether data is compressed, decompress locally if necessary
 if strcmp(ephysap_path.name(end-4:end), '.cbin')
     compressed = true;
-    decompressDataLocalFolder = [decompressDataLocal, ephysap_path.name(1:end-5)];
+    decompressDataLocalFolder = [decompressDataLocal, filesep ephysap_path.name(1:end-5)];
     disp('Decompressing ephys data locally...')
-    [~, decompDataFile] = bc_extractCbinData([ephysap_path.folder, filesep, ephysap_path.name],...
-        [], [], [], decompressDataLocalFolder , 0);
+    decompDataFile = bc_extractCbinData([ephysap_path.folder, filesep, ephysap_path.name],...
+        [], [], [], decompressDataLocal);
     ephysap_path = decompDataFile;
 end
 savePath = fullfile(ephysDirPath, 'qMetrics'); 

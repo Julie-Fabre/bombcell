@@ -2,8 +2,7 @@ function [dataOut, decompDataFile] = bc_extractCbinData(fileName, sStartEnd, chI
 % adapted from a script by Micheal Krumin
 %
 % requires the zmat package:
-% https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat
-% https://github.com/fangq/zmat/releases/tag/v0.9.8
+% https://github.com/fangq/zmat
 
 % fileName - full path to the .cbin filename you want to read from
 % sStartEnd - a 1x2 array of [sampleStart, sampleEnd] you want to read
@@ -16,6 +15,13 @@ function [dataOut, decompDataFile] = bc_extractCbinData(fileName, sStartEnd, chI
 % dataOut - nSamples x nChannels array of decompressed data
 % example usgae:
 % bc_extractCbinData('/home/netshare/zinu/XG006/2022-06-30/ephys/site1/2022-06_30_xg006_g0_t0.imec0.ap.cbin', [], [], [], 'home/ExtraHD/', 0)
+
+% 12/07/2022 : JF: added sanity checks, more options including parform,
+% save output as matrix 
+% 29/22/2022 : JF: added size, byte, method info (zmat version used previously
+% that handled this no longer exists)
+
+
 if nargin < 1
     %     for testing
     fileName = '/home/netshare/zinu/JF070/2022-06-18/ephys/site1_shank0/2022-06_18_JF070_shank1-1_g0_t0.imec0.ap.cbin';
@@ -85,14 +91,16 @@ nChannels = cbinMeta.n_channels;
 nSamples = cbinMeta.chunk_bounds([1:nChunks] + iChunkStart) - cbinMeta.chunk_bounds([1:nChunks] + iChunkStart - 1);
 chunkSizeBytes = cbinMeta.chunk_offsets([1:nChunks] + iChunkStart) - cbinMeta.chunk_offsets([1:nChunks] + iChunkStart - 1);
 offset = cbinMeta.chunk_offsets([1:nChunks] + iChunkStart - 1);
-
+fN = dir(fileName);
 if doParfor
     %tic
     parfor iChunk = 1:nChunks
         %     chunkInd = iChunk + iChunkStart - 1;
         % size of expected decompressed data for that chunk
-        zmatLocalInfo = zmatInfo;
-        zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
+        zmatLocalInfo= struct;
+        zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 2];
+        zmatLocalInfo.byte = 2;
+        zmatLocalInfo.method = 'zlib';
         
         % read a chunk from the compressed data
         fid = fopen(fileName, 'r');
@@ -109,23 +117,12 @@ if doParfor
 else
     
     for iChunk = 1:nChunks
-               %     chunkInd = iChunk + iChunkStart - 1;
-        % size of expected decompressed data for that chunk
-        %      info: (optional) a struct storing additional info regarding the input data, may have
-%            'type': the class of the input array
-%            'size': the dimensions of the input array
-%            'byte': the number of bytes per element in the input array
-%            'method': a copy of the 3rd input indicating the encoding method
-%            'status': the zlib/lzma/lz4 compression/decompression function return value,
-%                    including potential error codes; see documentation of the respective
-%                    libraries for details
-%            'level': a copy of the iscompress flag; if non-zero, specifying compression
-%                    level, see above
 
-        %zmatLocalInfo.type = 
+        zmatLocalInfo = struct;
         zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
         zmatLocalInfo.byte = 2;
         zmatLocalInfo.method = 'zlib';
+        zmatLocalInfo.type = 'int16';
 
         
         % read a chunk from the compressed data
@@ -134,10 +131,24 @@ else
         compData = fread(fid, chunkSizeBytes(iChunk), '*uint8');
         fclose(fid);
         decompData = zmat(compData, zmatLocalInfo);
-        decompData = reshape(decompData, nSamples(iChunk)*2, nChannels);
+        decompData = reshape(decompData, nSamples(iChunk), nChannels);
         chunkData = cumsum(decompData(:, chIdx), 1);
         %     data(startIdx(iChunk):endIdx(iChunk), :) = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
-        data{iChunk} = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
+        data = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
+        
+%         dataOut = reshape(data', [size(data,1)*size(data,2),1]);
+%         decompDataFile = [saveFileFolder, filesep, fN.name(1:end-5) '.bin'];
+%         if ~isdir(saveFileFolder)
+%             mkdir(saveFileFolder)
+%         end
+%         fid = fopen(decompDataFile,'w');
+%         fprintf(fid,arrayfun(@(i) fprintf( '%i', dataOut(i)),1:size(dataOut,1)));
+%         fclose(fid);
+dataOut = data;
+ dataOut2 = reshape(dataOut', [size(dataOut,1)*size(dataOut,2),1]);
+        decompDataFile = [saveFileFolder, filesep, fN.name(1:end-5) '.bin'];
+        writeNPY(dataOut2,decompDataFile)
+
     end
 end
 dataOut = cell2mat(data);
@@ -147,7 +158,7 @@ if ~isemtpy(saveFileFolder)
         writeNPY(dataOut',decompDataFile)
         
     else
-        fN = dir(fileName);
+        
         dataOut2 = reshape(dataOut', [size(dataOut,1)*size(dataOut,2),1]);
         decompDataFile = [saveFileFolder, filesep, fN.name(1:end-4) '.bin'];
         writeNPY(dataOut2,decompDataFile)
