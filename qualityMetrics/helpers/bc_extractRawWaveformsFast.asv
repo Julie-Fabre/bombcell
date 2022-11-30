@@ -74,7 +74,7 @@ elseif ~isempty(old_rawWaveformFolder) && reExtract == 0
         try
             spikeMap = readNPY(fullfile(savePath, 'templates._jf_Multi_rawWaveforms.npy'));
         catch
-            fprintf('Could not load saved individual raw waveforms from %s, keeping only average raw waveforms \n', savePath)
+            fprintf('Could not load saved individual raw waveforms,')
         end
     end
 else

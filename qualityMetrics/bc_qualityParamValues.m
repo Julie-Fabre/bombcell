@@ -7,7 +7,7 @@ param.plotGlobal = 1;
 
 % saving parameters 
 param.saveAsParquet = 1; % save outputs at .parquet file 
-param.saveAsMat = 0; % save outputs at .mat file 
+param.saveAsMat = 1; % save outputs at .mat file - useful for GUI
 
 % amplitude parameters
 param.ephysMetaFile = [ephysMetaDir.folder, filesep, ephysMetaDir.name];
