@@ -5,7 +5,7 @@ function [rawWaveformsFull, rawWaveformsPeakChan, spikeMap] = bc_extractRawWavef
 % Inputs
 % ------
 % param with:
-% rawFolder
+% rawFile: raw .bin or .dat file location 
 % nChannels: number of recorded channels (including sync), (eg 385)
 % nSpikesToExtract: number of spikes to extract per template
 %
@@ -23,24 +23,20 @@ function [rawWaveformsFull, rawWaveformsPeakChan, spikeMap] = bc_extractRawWavef
 %   peakChan: nUnits x 1 vector of each unit's channel with the maximum
 %   amplitude
 
-rawFolder = param.rawFolder;
-if isfield(param,'tmpFolder')
-    tmpFolder = param.tmpFolder;
-else
-    tmpFolder = rawFolder;
-end
+rawFolder = param.rawFile;
+
 nChannels = param.nChannels;
 nSpikesToExtract =  param.nRawSpikesToExtract;
 
 
 %% check if waveforms already extracted
 % Get binary file name
-if iscell(tmpFolder)
-    [tmpFolder, filename] = fileparts(tmpFolder{1});
-elseif sum(tmpFolder(end-2:end) == '/..') == 3
-    [tmpFolder, filename] = fileparts(tmpFolder(1:end-3));
-end
-spikeFile = dir(fullfile(tmpFolder, [filename '.*bin']));
+% if iscell(tmpFolder)
+%     [tmpFolder, filename] = fileparts(tmpFolder{1});
+% elseif sum(tmpFolder(end-2:end) == '/..') == 3
+%     [tmpFolder, filename] = fileparts(tmpFolder(1:end-3));
+% end
+spikeFile = dir([tmpFolder, filesep, '.*bin']);
 if isempty(spikeFile)
     spikeFile = dir(fullfile(tmpFolder, '/*.dat')); %openEphys format
 end

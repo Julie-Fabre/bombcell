@@ -150,11 +150,3 @@ else
     end
 end
 fclose(fidOut);
-
-% dataOut = cell2mat(data);
-% if ~isemtpy(saveFileFolder)
-%     if saveAsMtx
-%         decompDataFile = fullfile(saveFileFolder, 'channels._jf_rawData.npy');
-%         writeNPY(dataOut',decompDataFile)
-%     end
-% end
