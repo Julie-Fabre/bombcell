@@ -104,9 +104,8 @@ verbose = 1;
 reExtractRawWaveforms = 0;
 % QQ extract raw waveforms based on 'good' timechunks defined later ? or
 % subselect again after - get average of waveforms only on those good timechunks 
-
-[rawWaveformsFull, rawWaveformsPeakChan, ~] = bc_extractRawWaveformsFast(param, ...
-    spikeTimes_samples, spikeTemplates, reExtractRawWaveforms , savePath, verbose); 
+[rawWaveformsFull, rawWaveformsPeakChan] = bc_extractRawWaveformsFast(param, spikeTimes_samples, ...
+    spikeTemplates, reExtractRawWaveforms, savePath, verbose);
 
 % takes ~10' for an average dataset
 % previous, slower method: 
@@ -116,6 +115,7 @@ reExtractRawWaveforms = 0;
 %% loop through units and get quality metrics
 
 uniqueTemplates = unique(spikeTemplates);
+
 spikeTimes_seconds = spikeTimes_samples ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
 if param.computeTimeChunks
     timeChunks = [min(spikeTimes_seconds):param.deltaTimeChunk:max(spikeTimes_seconds), max(spikeTimes_seconds)];
@@ -123,7 +123,7 @@ else
     timeChunks = [min(spikeTimes_seconds), max(spikeTimes_seconds)];
 end
 
-fprintf('extracting quality metrics from %s ... \n', param.rawFile)
+fprintf('Extracting quality metrics from %s ... \n', param.rawFile)
 
 for iUnit = 1:length(uniqueTemplates)
     
@@ -154,7 +154,7 @@ for iUnit = 1:length(uniqueTemplates)
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), ...
         qMetric.peakLocs{iUnit}, qMetric.troughLocs{iUnit}, qMetric.waveformDuration(iUnit), ...
         qMetric.spatialDecayPoints(iUnit,:), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), qMetric.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms, ...
-        thisUnit, maxChannels(thisUnit), ...
+        thisUnit, qMetric.maxChannels(thisUnit), ...
         param.ephys_sample_rate, channelPositions,  param.maxWvBaselineFraction, param.plotThis);
 
     %% amplitude
@@ -171,14 +171,14 @@ for iUnit = 1:length(uniqueTemplates)
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
     end
 end
-
+qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates);
 bc_getQualityUnitType;
 
 if exist('savePath', 'var') %save qualityMetrics
-    fprintf('saving quality metrics from %s to %s \n', param.rawFile, savePath)
+    fprintf('Saving quality metrics from %s to %s \n', param.rawFile, savePath)
     bc_saveQMetrics;
 else
-    fprintf('finishing extracting quality metrics from %s \n', param.rawFile)
+    fprintf('Finished extracting quality metrics from %s \n', param.rawFile)
     
 end
 

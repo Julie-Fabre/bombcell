@@ -105,7 +105,7 @@ reExtractRawWaveforms = 0;
 % QQ extract raw waveforms based on 'good' timechunks defined later ? or
 % subselect again after - get average of waveforms only on those good timechunks 
 
-[rawWaveformsFull, rawWaveformsPeakChan, ~] = bc_extractRawWaveformsFast(param, ...
+[rawWaveformsFull, rawWaveformsPeakChan] = bc_extractRawWaveformsFast_old(param, ...
     spikeTimes_samples, spikeTemplates, reExtractRawWaveforms , savePath, verbose); 
 
 % takes ~10' for an average dataset
@@ -123,7 +123,7 @@ else
     timeChunks = [min(spikeTimes_seconds), max(spikeTimes_seconds)];
 end
 
-fprintf('extracting quality metrics from %s ... \n', param.rawFile)
+fprintf('Extracting quality metrics from %s ... \n', param.rawFile)
 
 for iUnit = 1:length(uniqueTemplates)
     
@@ -138,13 +138,13 @@ for iUnit = 1:length(uniqueTemplates)
         bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotThis);
 
     %% fraction contamination (false positives)
-    [qMetric.fractionRefractoryPeriodViolations(iUnit,:), ~, ~] = bc_fractionRPviolations(numel(theseSpikeTimes), theseSpikeTimes, theseAmplis, param.tauR, param.tauC, ...
+    [qMetric.fractionRPVs(iUnit,:), ~, ~] = bc_fractionRPviolations(numel(theseSpikeTimes), theseSpikeTimes, theseAmplis, param.tauR, param.tauC, ...
         timeChunks, param.plotThis);
     
     %% define timechunks to keep: if param.computeTimeChunks, keep times with low percentage spikes missing and low fraction contam
     if param.computeTimeChunks
         [theseSpikeTimes, ~, ~, qMetric.useTheseTimes{iUnit}] = bc_defineTimechunksToKeep(qMetric.percentageSpikesMissing(iUnit,:), ...
-            qMetric.fractionRefractoryPeriodViolations(iUnit,:), param.maxPercSpikesMissing, param.maxRPVviolations, theseAmplis, theseSpikeTimes, timeChunks);
+            qMetric.fractionRPVs(iUnit,:), param.maxPercSpikesMissing, param.maxRPVviolations, theseAmplis, theseSpikeTimes, timeChunks);
     end
     
     %% number spikes
@@ -153,8 +153,8 @@ for iUnit = 1:length(uniqueTemplates)
     %% waveform: (1) number peaks/troughs, (2) is peak before trough (= axonal/dendritic), (3) is waveform duration cell-like, (4) spatial decay, (5) waveformShape
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), ...
         qMetric.peakLocs{iUnit}, qMetric.troughLocs{iUnit}, qMetric.waveformDuration(iUnit), ...
-        qMetric.spatialDecayPoints(iUnit,:), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaseline(iUnit), qMetric.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms, ...
-        thisUnit, maxChannels(thisUnit), ...
+        qMetric.spatialDecayPoints(iUnit,:), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), qMetric.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms, ...
+        thisUnit, qMetric.maxChannels(thisUnit), ...
         param.ephys_sample_rate, channelPositions,  param.maxWvBaselineFraction, param.plotThis);
 
     %% amplitude
@@ -171,14 +171,14 @@ for iUnit = 1:length(uniqueTemplates)
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
     end
 end
-
+qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates);
 bc_getQualityUnitType;
 
 if exist('savePath', 'var') %save qualityMetrics
-    fprintf('saving quality metrics from %s to %s \n', param.rawFile, savePath)
+    fprintf('Saving quality metrics from %s to %s \n', param.rawFile, savePath)
     bc_saveQMetrics;
 else
-    fprintf('finishing extracting quality metrics from %s \n', param.rawFile)
+    fprintf('Finished extracting quality metrics from %s \n', param.rawFile)
     
 end
 
