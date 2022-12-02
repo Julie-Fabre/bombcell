@@ -13,16 +13,17 @@ function decompDataFile = bc_extractCbinData(fileName, sStartEnd, chIdx, doParfo
 % saveFileFolder - where to save your data 
 % saveAsMtx - if true, save .npy matrix. if false, save in binary format
 % dataOut - nSamples x nChannels array of decompressed data
-% example usgae:
+% example usage:
 % bc_extractCbinData('/home/netshare/zinu/XG006/2022-06-30/ephys/site1/2022-06_30_xg006_g0_t0.imec0.ap.cbin', [], [], [], 'home/ExtraHD/', 0)
 
-% 12/07/2022 : JF: added sanity checks, more options including parform,
+% 12/07/2022 : JF: added sanity checks, more options including parfor,
 % save output as matrix 
 % 29/11/2022 : JF: added size, byte, method info (zmat version used previously
 % that handled this no longer exists)
-% 30/11/2022 : save data chunk by chunk (otherwise matlab can crash if the
+% 30/11/2022 : JF: save data chunk by chunk (otherwise matlab can crash if the
 % files are too big (> 70GB), default is non parfor because not compatible
 % with this 
+
 
 
 if nargin < 1
@@ -66,11 +67,25 @@ end
 sampleStart = sStartEnd(1);
 sampleEnd = sStartEnd(2);
 
+% Assuming the ch file has the same basename and is in the same folder as cbin
+chName = [fileName(1:end-4), 'ch'];
 
+% reading ch json
+fid = fopen(chName, 'r');
+data = fread(fid, 'uint8=>char');
+fclose(fid);
+cbinMeta = jsondecode(data');
 
+% build zmat info struct
+zmatInfo = struct;
+zmatInfo.type = cbinMeta.dtype;
+tmp = cast(1, cbinMeta.dtype);
+zmatInfo.byte = whos('tmp').bytes; % figuring out bytesPerSample programmatically
+zmatInfo.method = cbinMeta.algorithm;
+zmatInfo.status = 1;
+zmatInfo.level = cbinMeta.comp_level;
 
 % figuring out which chunks to read
-
 iChunkStart = find(sampleStart >= cbinMeta.chunk_bounds, 1, 'last');
 iChunkEnd = find(sampleEnd <= cbinMeta.chunk_bounds, 1, 'first') - 1;
 
@@ -103,10 +118,8 @@ if doParfor
     parfor iChunk = 1:nChunks
         %     chunkInd = iChunk + iChunkStart - 1;
         % size of expected decompressed data for that chunk
-        zmatLocalInfo= struct;
-        zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 2];
-        zmatLocalInfo.byte = 2;
-        zmatLocalInfo.method = 'zlib';
+        zmatLocalInfo = zmatInfo;
+        zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
         
         % read a chunk from the compressed data
         fid = fopen(fileName, 'r');
@@ -127,11 +140,13 @@ else
     
     for iChunk = 1:nChunks
 
-        zmatLocalInfo = struct;
+        zmatLocalInfo = zmatInfo;
         zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
-        zmatLocalInfo.byte = 2;
-        zmatLocalInfo.method = 'zlib';
-        zmatLocalInfo.type = 'int16';
+%                 zmatLocalInfo = struct;
+%         zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
+%         zmatLocalInfo.byte = 2;
+%         zmatLocalInfo.method = 'zlib';
+%         zmatLocalInfo.type = 'int16';
 
         
         % read a chunk from the compressed data

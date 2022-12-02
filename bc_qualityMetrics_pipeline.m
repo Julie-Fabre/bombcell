@@ -1,10 +1,10 @@
 %% set paths 
-ephysKilosortPath = '/home/netshare/zaru/JF088/2022-11-29/ephys/pykilosort/site1/output';% eg /home/netshare/zinu/JF067/2022-02-17/ephys/kilosort2/site1, where this path contains 
+ephysKilosortPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/kilosort2/site2';% eg /home/netshare/zinu/JF067/2022-02-17/ephys/kilosort2/site1, where this path contains 
                                            % kilosort output
-ephysDirPath = '/home/netshare/zaru/JF088/2022-11-29/ephys/site1'; % where your 
-ephysRawDir = dir('/home/netshare/zaru/JF088/2022-11-29/ephys/site1/*JF088*.ap.*bin');
-ephysMetaDir = dir('/home/netshare/zinu/JF078/2022-05-25/ephys/site1/*JF088*.ap.*meta');
-decompressDataLocal = '/media/julie/ExtraHD/decompressedData';
+ephysDirPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/site2'; % where your 
+ephysRawDir = dir('/home/netshare/zinu/JF078/2022-05-25/ephys/site2/2022_05_25-JF078-1_g0_t0.imec1.ap.*bin');
+ephysMetaDir = dir('/home/netshare/zinu/JF078/2022-05-25/ephys/site2/2022_05_25-JF078-1_g0_t0.imec1.ap.*meta');
+decompressDataLocal = '/media/julie/ExtraHD/decompressedData';%'/media/julie/Elements/JF078/2022-05-25/ephys';%/media/julie/ExtraHD/decompressedData';
 savePath = fullfile(ephysDirPath, 'qMetrics'); 
 
 %% load data 

@@ -68,6 +68,7 @@ else
     rawWaveformsPeakChan = nan(nClust, 1);
 
     for iCluster = 1:nClust
+        iCluster=iCluster+1
         rawWaveforms(iCluster).clInd = clustInds(iCluster);
         rawWaveforms(iCluster).spkInd = spikeTimes_samples(spikeTemplates == clustInds(iCluster));
         if numel(rawWaveforms(iCluster).spkInd) >= nSpikesToExtract
@@ -80,12 +81,11 @@ else
 
         rawWaveforms(iCluster).spkMap = nan(384, spikeWidth, nSpkLocal);
         for iSpike = 1:nSpkLocal
-            spki = rawWaveforms(iCluster).spkIndsub(iSpike);
+            thisSpikeIdx = rawWaveforms(iCluster).spkIndsub(iSpike);
                 
-            if thisSpikeIdx > halfWid && (thisSpikeIdx + halfWidth) * dataTypeNBytes < rawFileInfo.bytes % check that it's not out of bounds
+            if thisSpikeIdx > halfWid && (thisSpikeIdx + halfWid) * dataTypeNBytes < rawFileInfo.bytes % check that it's not out of bounds
 
-                thisSpike = rawWaveforms(iCluster).spkIndsub(iSpike);
-                bytei = ((spki - halfWid) * nChannels) * dataTypeNBytes;
+                bytei = ((thisSpikeIdx - halfWid) * nChannels) * dataTypeNBytes;
                 fseek(fid, bytei, 'bof');
                 data0 = fread(fid, nChannels*spikeWidth, 'int16=>int16'); % read individual waveform from binary file
                 frewind(fid);
@@ -110,14 +110,11 @@ else
         spkMapMean_sm = smoothdata(rawWaveforms(iCluster).spkMapMean, 1, 'gaussian', 5);
 
         [~, rawWaveformsPeakChan(iCluster)] = max(max(spkMapMean_sm, [], 2)-min(spkMapMean_sm, [], 2));
-        %      figure();
-        %     plot(spkMapMean_sm(rawWaveformsPeakChan(iCluster),:))
+             figure();
+            plot(spkMapMean_sm(rawWaveformsPeakChan(iCluster),:))
 
         if (mod(iCluster, 100) == 0 || iCluster == nClust) && verbose
             fprintf(['\n   Finished ', num2str(iCluster), ' of ', num2str(nClust), ' units.']);
-            figure; imagesc(spkMapMean_sm)
-            title(['Unit ID: ', num2str(iCluster)]);
-            colorbar;
         end
 
     end
@@ -126,7 +123,7 @@ else
 
 
     %save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
-    if ~isdir(savePath)
+    if ~isfolder(savePath)
         mkdir(savePath)
     end
     writeNPY(rawWaveformsFull, fullfile(savePath, 'templates._bc_rawWaveforms.npy'))

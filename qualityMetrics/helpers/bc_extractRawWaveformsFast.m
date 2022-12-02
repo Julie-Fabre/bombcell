@@ -68,6 +68,7 @@ else
     rawWaveformsPeakChan = nan(nClust, 1);
 
     for iCluster = 1:nClust
+        %iCluster=iCluster+1
         rawWaveforms(iCluster).clInd = clustInds(iCluster);
         rawWaveforms(iCluster).spkInd = spikeTimes_samples(spikeTemplates == clustInds(iCluster));
         if numel(rawWaveforms(iCluster).spkInd) >= nSpikesToExtract
@@ -109,8 +110,8 @@ else
         spkMapMean_sm = smoothdata(rawWaveforms(iCluster).spkMapMean, 1, 'gaussian', 5);
 
         [~, rawWaveformsPeakChan(iCluster)] = max(max(spkMapMean_sm, [], 2)-min(spkMapMean_sm, [], 2));
-        %      figure();
-        %     plot(spkMapMean_sm(rawWaveformsPeakChan(iCluster),:))
+             figure();
+            plot(spkMapMean_sm(rawWaveformsPeakChan(iCluster),:))
 
         if (mod(iCluster, 100) == 0 || iCluster == nClust) && verbose
             fprintf(['\n   Finished ', num2str(iCluster), ' of ', num2str(nClust), ' units.']);
