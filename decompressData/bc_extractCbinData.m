@@ -16,11 +16,11 @@ function decompDataFile = bc_extractCbinData(fileName, sStartEnd, chIdx, doParfo
 % example usage:
 % bc_extractCbinData('/home/netshare/zinu/XG006/2022-06-30/ephys/site1/2022-06_30_xg006_g0_t0.imec0.ap.cbin', [], [], [], 'home/ExtraHD/', 0)
 
-% 12/07/2022 : JF: added sanity checks, more options including parfor,
+% JF: added sanity checks, more options including parfor,
 % save output as matrix 
-% 29/11/2022 : JF: added size, byte, method info (zmat version used previously
+% added size, byte, method info (zmat version used previously
 % that handled this no longer exists)
-% 30/11/2022 : JF: save data chunk by chunk (otherwise matlab can crash if the
+% save data chunk by chunk (otherwise matlab can crash if the
 % files are too big (> 70GB), default is non parfor because not compatible
 % with this 
 
@@ -40,7 +40,6 @@ fclose(fid);
 cbinMeta = jsondecode(data');
 
 if nargin < 2 || isempty(sStartEnd)
-    d = dir(fileName);
     sStartEnd = [cbinMeta.chunk_bounds(1), cbinMeta.chunk_bounds(end)];
 end
 
@@ -52,8 +51,9 @@ elseif chIdx(end) >  cbinMeta.n_channels
 end
 
 if nargin < 4 || isempty(doParfor)
-    doParfor = false;
+    doParfor = true;
 end
+
 if sStartEnd(1) < cbinMeta.chunk_bounds(1) 
     warning(sprintf('samples to read outside of file range, changing start sample from %s to %s',num2str(sStartEnd(1)), num2str(cbinMeta.chunk_bounds(1))))
     startEnd(1) = cbinMeta.chunk_bounds(1);
@@ -67,14 +67,6 @@ end
 sampleStart = sStartEnd(1);
 sampleEnd = sStartEnd(2);
 
-% Assuming the ch file has the same basename and is in the same folder as cbin
-chName = [fileName(1:end-4), 'ch'];
-
-% reading ch json
-fid = fopen(chName, 'r');
-data = fread(fid, 'uint8=>char');
-fclose(fid);
-cbinMeta = jsondecode(data');
 
 % build zmat info struct
 zmatInfo = struct;
@@ -158,10 +150,16 @@ else
         decompData = reshape(decompData, nSamples(iChunk), nChannels);
         chunkData = cumsum(decompData(:, chIdx), 1);
         %     data(startIdx(iChunk):endIdx(iChunk), :) = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
-        data = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
-        %         dataOut = reshape(data', [size(data,1)*size(data,2),1]);
-        fwrite(fidOut, data, 'int16');
+        data{iChunk} = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
+        % dataOut = reshape(data', [size(data,1)*size(data,2),1]);
+        %figure();
+        %plot(data(:,385))
+        %fwrite(fidOut, data, 'int16');
 
     end
+    dataOut = cell2mat(data(1000:1005));
+    fwrite(fidOut, dataOut, 'int16');
 end
+
 fclose(fidOut);
+%fidOut_read = fopen(decompDataFile, 'r');
