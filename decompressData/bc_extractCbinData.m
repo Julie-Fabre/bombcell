@@ -51,7 +51,7 @@ elseif chIdx(end) >  cbinMeta.n_channels
 end
 
 if nargin < 4 || isempty(doParfor)
-    doParfor = true;
+    doParfor = false;
 end
 
 if sStartEnd(1) < cbinMeta.chunk_bounds(1) 
@@ -103,7 +103,7 @@ chunkSizeBytes = cbinMeta.chunk_offsets([1:nChunks] + iChunkStart) - cbinMeta.ch
 offset = cbinMeta.chunk_offsets([1:nChunks] + iChunkStart - 1);
 
 fN = dir(fileName);
-decompDataFile = [saveFileFolder, filesep, fN.name(1:end-5) '.bin'];
+decompDataFile = [saveFileFolder, filesep, fN.name(1:end-14), '_bc_decompressed', fN.name(end-13:end-8),'.ap.bin'];
 fidOut = fopen(decompDataFile,'w');
 
 if doParfor
@@ -134,11 +134,6 @@ else
 
         zmatLocalInfo = zmatInfo;
         zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
-%                 zmatLocalInfo = struct;
-%         zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
-%         zmatLocalInfo.byte = 2;
-%         zmatLocalInfo.method = 'zlib';
-%         zmatLocalInfo.type = 'int16';
 
         
         % read a chunk from the compressed data
@@ -149,16 +144,37 @@ else
         decompData = zmat(compData, zmatLocalInfo);
         decompData = reshape(decompData, nSamples(iChunk), nChannels);
         chunkData = cumsum(decompData(:, chIdx), 1);
-        %     data(startIdx(iChunk):endIdx(iChunk), :) = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
-        data{iChunk} = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
-        % dataOut = reshape(data', [size(data,1)*size(data,2),1]);
-        %figure();
-        %plot(data(:,385))
-        %fwrite(fidOut, data, 'int16');
+        data = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
+        reshaped_data = reshape(permute(data, [2,1]), [nSamples(iChunk)*nChannels, 1]);
+        %plot(reshaped_data(end-30000:end))
+        %plot(reshaped_data(385:385:end))
+        fwrite(fidOut, reshaped_data, 'int16');
+
 
     end
-    dataOut = cell2mat(data(1000:1005));
-    fwrite(fidOut, dataOut, 'int16');
+%     dataOut = cell2mat(data);
+%     fwrite(fidOut, dataOut, 'int16');
+    % save in particular locations. open file size 
+%     for iChannel = 1:nChannels % can't decompress channel-wise 
+%         
+%         zmatLocalInfo = zmatInfo;
+%         zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
+% 
+%         
+%         % read a chunk from the compressed data
+%         fid = fopen(fileName, 'r');
+%         fseek(fid, offset(iChunk), 'bof');
+%         compData = fread(fid, chunkSizeBytes(iChunk), '*uint8');
+%         fclose(fid);
+%         decompData = zmat(compData, zmatLocalInfo);
+%         decompData = reshape(decompData, nSamples(iChunk), nChannels);
+%         chunkData = cumsum(decompData(:, chIdx), 1);
+%         data{iChunk} = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
+%         fwrite(fidOut, dataOut, 'int16');
+% 
+% 
+%     end
+    
 end
 
 fclose(fidOut);
