@@ -1,10 +1,10 @@
 if ~isempty(dir(fullfile(savePath, 'qMetric*.mat')))
     load(fullfile(savePath, 'qMetric.mat'))
-    load(fullfile(savePath, 'param.mat'))
-else
+    if ~isempty(dir(fullfile(savePath, 'templates._bc_qMetrics.parquet')))
+        qMetric = parquetread(fullfile(savePath, 'templates._bc_qMetrics.parquet'));
+    end
+    
+        param = parquetread([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')]);
+    
     
 end
-T = struct2table(qMetric, 'AsArray', true);
-bc_writetable(T,'tabledata2.htsv','Delimiter','\t')
-readtable('tabledata2.htsv')
-%writeNPY(qMetric,'tabledata2.npy')

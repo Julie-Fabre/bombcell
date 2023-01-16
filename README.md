@@ -1,8 +1,9 @@
 # bombcell: evaluate unit quality and ephys properties
 
-<img align="left" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_logo_crop_small_flame.png" width=58% height=60%>
+<img align="left" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_logo_crop_small_flame.png" width=30% height=30%>
 
 Bombcell works with units recorded with Neuropixel probes (3A, 1.0 and 2.0, recorded with SpikeGLX or OpenEphys) and spike-sorted with kilosort. It classifies the unit into three categories: single units, multi-units and noise units, with an option to keep or remove non-somatic spikes. `param` is the structure that defines how to compute the quality metrics and which thresholds to use to classify units.
+
 
 Used in:
 
@@ -23,7 +24,11 @@ Table of contents:
 
 ### Getting started
 
-To install: in MATLAB, clone this repository and the [dependancies](#Dependancies), change your working directory to bombcell\ephysProperties\helpers in matlab and run `mex -O CCGHeart.c`.
+To install: in MATLAB, clone this repository and the [dependancies](#Dependancies).
+
+If you want to compute ephys properties, change your working directory to bombcell\ephysProperties\helpers in matlab and run `mex -O CCGHeart.c` to able to compute fast ACGs.
+
+If you have z-lib compressed ephys data, compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp) , you will additionally need the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat).
 
 To start out, we suggest you compute quality metrics with default `param` values (contained in `bc_qualityParamValues`), and then adjust the thresholds for your particular neuronal region and needs by looking at (1) individual units, in the interactive [GUI](#Quality-metrics-GUI-guide ) (2) distribution histograms of the units' quality metrics (see General plots), (3) numbers of units removed by each quality metric. It may also be useful to plot the quantity you which to measure as a function of each quality metric (see [Fig. 2 Harris et al., Nat. Neuro, 2016](https://www.nature.com/articles/nn.4365/figures/2)).
 
@@ -190,11 +195,10 @@ To maximize your number of single good units, we recommend looking at your raw d
 
 ### Other ephys utilities:
 
-
-- generate IMRO files : see [recordingUtilities](https://github.com/Julie-Fabre/bombcell/blob/master/recordingUtilities/)
-
-- generate channel maps : see [recordingUtilities](https://github.com/Julie-Fabre/bombcell/blob/master/recordingUtilities/)
+- generate IMRO files/channel maps : see [recordingUtilities](https://github.com/Julie-Fabre/bombcell/blob/master/recordingUtilities/)
 
 - [manual curation guide](https://github.com/Julie-Fabre/bombcell/blob/master/recordingUtilities/manualCurationGuide/manualCurationGuide.md)
 
 - quality metric plugins for phy : see [phyPlugins](https://github.com/Julie-Fabre/bombcell/blob/master/phyPlugins/)
+
+- decompress data z-lib compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp) : see [decompressData](https://github.com/Julie-Fabre/bombcell/blob/master/decompressData/). Requires the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat)

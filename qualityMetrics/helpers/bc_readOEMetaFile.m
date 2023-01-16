@@ -1,6 +1,6 @@
-function scalingFactor = bc_readOEMetaFile(metaFileDir)
+function scalingFactor = bc_readOEMetaFile(metaFile)
 
-filetext = fileread(fullfile(metaFileDir.folder, metaFileDir.name));
+filetext = fileread(metaFile);
 expr = '"bit_volts": '; % this is actually the scaling factor
 [~,endIndex] =  regexp(filetext,expr);
 

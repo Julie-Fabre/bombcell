@@ -104,8 +104,9 @@ verbose = 1;
 reExtractRawWaveforms = 0;
 % QQ extract raw waveforms based on 'good' timechunks defined later ? or
 % subselect again after - get average of waveforms only on those good timechunks 
-[rawWaveformsFull, rawWaveformsPeakChan] = bc_extractRawWaveformsFast(param, spikeTimes_samples, ...
-    spikeTemplates, reExtractRawWaveforms, savePath, verbose);
+
+[rawWaveformsFull, rawWaveformsPeakChan] = bc_extractRawWaveformsFast_old(param, ...
+    spikeTimes_samples, spikeTemplates, reExtractRawWaveforms , savePath, verbose); 
 
 % takes ~10' for an average dataset
 % previous, slower method: 
@@ -115,7 +116,6 @@ reExtractRawWaveforms = 0;
 %% loop through units and get quality metrics
 
 uniqueTemplates = unique(spikeTemplates);
-
 spikeTimes_seconds = spikeTimes_samples ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
 if param.computeTimeChunks
     timeChunks = [min(spikeTimes_seconds):param.deltaTimeChunk:max(spikeTimes_seconds), max(spikeTimes_seconds)];
