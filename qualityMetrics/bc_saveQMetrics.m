@@ -1,20 +1,15 @@
 
-mkdir(fullfile(savePath))
-
 if ~exist(savePath, 'dir')
     mkdir(fullfile(savePath))
 end
 if param.saveAsMat
     save(fullfile(savePath, 'qMetric.mat'), 'qMetric', '-v7.3')
     parquetwrite([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')], struct2table(param, 'AsArray', 1))
-
 end
 
 parquetwrite([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')], struct2table(param, 'AsArray', 1))
 
 if param.saveAsParquet
-
-    
     qMetricSummary = table('Size', [length(qMetric.clusterID), 12], 'VariableTypes', ...
         {'double', 'double', 'double', 'double', 'double', 'double', 'double', ...
         'double', 'double', 'double','double', 'double'}, 'VariableNames', ...

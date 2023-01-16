@@ -1,4 +1,4 @@
-function qMetric = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
+function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath)
 % JF
 % ------
@@ -66,9 +66,8 @@ function qMetric = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTempl
 %       percentage of spikes below the spike-sorting detection threshold - will
 %       slightly underestimate in the case of 'bursty' cells with burst
 %       adaptation (eg see Fig 5B of Harris/Buzsaki 2000 DOI: 10.1152/jn.2000.84.1.401) 
-%   fractionRefractoryPeriodViolations: percentage of false positives, 
-%       ie spikes within the refractory period
-%       defined by param.tauR of anotehr spike. This also excludes
+%   fractionRefractoryPeriodViolations: percentage of false positives, ie spikes within the refractory period
+%       defined by param.tauR of another spike. This also excludes
 %       duplicated spikes that occur within param.tauC of another spike. 
 %   useTheseTimes : param.computeTimeChunks, this defines the time chunks 
 %       (deivding the recording in time of chunks of param.deltaTimeChunk size)
@@ -77,7 +76,7 @@ function qMetric = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTempl
 %   nSpikes : number of spikes for each unit 
 %   nPeaks : number of detected peaks in each units template waveform
 %   nTroughs : number of detected troughs in each units template waveform
-%   somatic : a unit is defined as somatic of its trough precedes its main
+%   isSomatic : a unit is defined as Somatic of its trough precedes its main
 %       peak (see Deligkaris/Frey DOI: 10.3389/fnins.2016.00421)
 %   rawAmplitude : amplitude in uV of the units mean raw waveform at its peak
 %       channel. The peak channel is defined by the template waveform. 
@@ -91,7 +90,9 @@ function qMetric = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTempl
 %   silhouetteScore : another measure similar ti isolation distance and
 %       l-ratio. See Rousseeuw 1987 DOI: 10.1016/0377-0427(87)90125-7)
 %
-
+% unitType: nUnits x 1 vector indicating whether each unit met the
+%   threshold criterion to be classified as a single unit (1), noise
+%   (0) or multi-unit (2)
 
 %% if some manual curation already performed, remove bad units
 
@@ -99,22 +100,22 @@ function qMetric = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTempl
 qMetric = struct;
 maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 qMetric.maxChannels = maxChannels;
+uniqueTemplates = unique(spikeTemplates);
 
-verbose = 1;
-reExtractRawWaveforms = 0;
-% QQ extract raw waveforms based on 'good' timechunks defined later ? or
-% subselect again after - get average of waveforms only on those good timechunks 
-[rawWaveformsFull, rawWaveformsPeakChan] = bc_extractRawWaveformsFast(param, spikeTimes_samples, ...
-    spikeTemplates, reExtractRawWaveforms, savePath, verbose);
 
+verbose = param.verbose; % update user on progress
+reextract = param.reextractRaw; %Re extract raw waveforms
+% QQ extract raw waveforms based on 'good' timechunks defined later ? 
+
+[rawWaveformsFull, rawWaveformsPeakChan]= bc_extractRawWaveformsFast(param, ...
+    spikeTimes_samples, spikeTemplates, reextract , verbose); 
+% qMetric.maxChannels(uniqueTemplates) = rawWaveformsPeakChan;
 % takes ~10' for an average dataset
 % previous, slower method: 
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
 %     spikeTimes, spikeTemplates, usedChannels, verbose);
 
 %% loop through units and get quality metrics
-
-uniqueTemplates = unique(spikeTemplates);
 
 spikeTimes_seconds = spikeTimes_samples ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
 if param.computeTimeChunks
@@ -162,7 +163,7 @@ for iUnit = 1:length(uniqueTemplates)
 %         qMetric.rawWaveforms(iUnit).spkMapMean = permute(squeeze(qMetric.rawWaveforms(iUnit).spkMapMean), [2, 1]);
 %     end
     qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit,:),:), ...
-        param.ephysMetaFile);
+        param.ephysMetaFile); %Potentially param.rawFolder should be replaced by param.ephysMetaFile ?
 
     %% distance metrics
     if param.computeDistanceMetrics
@@ -170,17 +171,21 @@ for iUnit = 1:length(uniqueTemplates)
             qMetric.d2_mahal{iUnit}, qMetric.Xplot{iUnit}, qMetric.Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
     end
+
+    %% Save some raw waveforms for the GUI
+    qMetric.rawWaveforms(iUnit).spkMapMean = squeeze(rawWaveformsFull(iUnit,:,:));
 end
 qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates);
+
 bc_getQualityUnitType;
 
 if exist('savePath', 'var') %save qualityMetrics
     fprintf('Saving quality metrics from %s to %s \n', param.rawFile, savePath)
     bc_saveQMetrics;
 else
-    fprintf('Finished extracting quality metrics from %s \n', param.rawFile)
-    
+    disp('Warning, not saved!')
 end
+disp([newline, 'finished extracting quality metrics'])
 
 %bc_plotGlobalQualityMetric;
 end

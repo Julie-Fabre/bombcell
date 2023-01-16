@@ -1,5 +1,5 @@
-function [rawWaveformsFull, rawWaveformsPeakChan] = bc_extractRawWaveformsFast(param, spikeTimes_samples, ...
-    spikeTemplates, reExtract, savePath, verbose)
+function [rawWaveformsFull, rawWaveformsPeakChan] = bc_extractRawWaveformsFast(param, spikeTimes_samples, spikeTemplates,...
+    reExtract, savePath, verbose)
 % JF, Get raw waveforms for all templates
 % ------
 % Inputs
@@ -8,18 +8,17 @@ function [rawWaveformsFull, rawWaveformsPeakChan] = bc_extractRawWaveformsFast(p
 % rawFile: raw .bin or .dat file location
 % nChannels: number of recorded channels (including sync), (eg 385)
 % nSpikesToExtract: number of spikes to extract per template
-% rawFile: string containing the location of the raw .dat or .bin file
 %
 % spikeTimes_samples: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
 % spikeTemplates: nSpikes × 1 uint32 vector giving the identity of each
 %   spike's matched template
 % verbose: boolean, display progress bar or not
-% savePath: where to save output data
+% savePath, where to save output data
 % ------
 % Outputs
 % ------
-% rawWaveformsFull: nUnits × nTimePoints × nChannels single matrix of
-%   mean raw waveforms for each unit and channel
+% rawWavefromsFull: nUnits x nTimePoints x nChannels single matrix of 
+%  mean raw waveforms for each unit and channel
 % rawWaveformsPeakChan: nUnits x 1 vector of each unit's channel with the maximum
 %   amplitude
 
@@ -46,17 +45,21 @@ elseif ~isempty(old_rawWaveformFolder) && reExtract == 0
         end
     end
 else
-
     %% Initialize stuff
     % Get spike times and indices
     nChannels = param.nChannels; % (385)
     nSpikesToExtract = param.nRawSpikesToExtract;
-    spikeWidth = 82;
-    halfWid = spikeWidth / 2;
+    spikeWidth = param.SpikeWidth;
+    halfWid = floor(spikeWidth / 2);
     dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
     clustInds = unique(spikeTemplates);
     nClust = numel(clustInds);
     rawFileInfo = dir(param.rawFile);
+
+    %save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
+    if ~isfolder(savePath)
+        mkdir(savePath)
+    end
 
     fprintf('Extracting raw waveforms from %s ... \n', param.rawFile)
     % Get binary file name
@@ -64,7 +67,7 @@ else
 
     %% Interate over spike clusters and find all the data associated with them
     rawWaveforms = struct;
-    rawWaveformsFull = nan(nClust, 384, 82);
+    rawWaveformsFull = nan(nClust, nChannels, spikeWidth);
     rawWaveformsPeakChan = nan(nClust, 1);
 
     for iCluster = 1:nClust
@@ -102,8 +105,11 @@ else
                     rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels, :, :);
                 end
             end
-
         end
+        if param.saveMultipleRaw
+            writeNPY(spikeMap, fullfile(savePath, 'templates._bc_multi_rawWaveforms.npy'))
+        end
+
         rawWaveforms(iCluster).spkMapMean = nanmean(rawWaveforms(iCluster).spkMap, 3);
         rawWaveformsFull(iCluster, :, :) = rawWaveforms(iCluster).spkMapMean - mean(rawWaveforms(iCluster).spkMapMean(:, 1:10), 2);
 
@@ -120,17 +126,7 @@ else
     end
 
     fclose(fid);
-
-
-    %save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
-    if ~isfolder(savePath)
-        mkdir(savePath)
-    end
+ 
     writeNPY(rawWaveformsFull, fullfile(savePath, 'templates._bc_rawWaveforms.npy'))
     writeNPY(rawWaveformsPeakChan, fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy'))
-
-    %     if param.saveMultipleRaw
-    %         writeNPY(spikeMap, fullfile(savePath, 'templates._bc_multi_rawWaveforms.npy'))
-    %     end
-end
 end
