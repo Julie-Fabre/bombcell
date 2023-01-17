@@ -1,5 +1,7 @@
 function scalingFactor = bc_readSpikeGLXMetaFile(metaFileDir)
-
+if ~isstruct(metaFileDir)
+    metaFileDir = dir(metaFileDir);
+end
 filetext = fileread(fullfile(metaFileDir.folder, metaFileDir.name));
 expr = 'imDatPrb_type=*';
 [~,endIndex] =  regexp(filetext,expr);

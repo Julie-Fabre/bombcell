@@ -30,20 +30,20 @@ if ~isempty(rawWaveformFolder) && reExtract == 0
 
     rawWaveformsFull = readNPY(fullfile(savePath, 'templates._bc_rawWaveforms.npy'));
     rawWaveformsPeakChan = readNPY(fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy'));
-    if param.saveMultipleRaw
-        spikeMap = readNPY(fullfile(savePath, 'templates._bc_multi_rawWaveforms.npy'));
-    end
+%     if param.saveMultipleRaw
+%         spikeMap = readNPY(fullfile(savePath, 'templates._bc_multi_rawWaveforms.npy'));
+%     end
 
 elseif ~isempty(old_rawWaveformFolder) && reExtract == 0
     rawWaveformsFull = readNPY(fullfile(savePath, 'templates._jf_rawWaveforms.npy'));
     rawWaveformsPeakChan = readNPY(fullfile(savePath, 'templates._jf_rawWaveformPeakChannels.npy'));
-    if param.saveMultipleRaw
-        try
-            spikeMap = readNPY(fullfile(savePath, 'templates._jf_Multi_rawWaveforms.npy'));
-        catch
-            fprintf('Could not load saved individual raw waveforms from %s, keeping only average raw waveforms \n', savePath)
-        end
-    end
+%     if param.saveMultipleRaw
+%         try
+%             spikeMap = readNPY(fullfile(savePath, 'templates._jf_Multi_rawWaveforms.npy'));
+%         catch
+%             fprintf('Could not load saved individual raw waveforms from %s, keeping only average raw waveforms \n', savePath)
+%         end
+%     end
 else
     %% Initialize stuff
     % Get spike times and indices
@@ -57,8 +57,11 @@ else
     rawFileInfo = dir(param.rawFile);
 
     %save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
-    if ~isfolder(savePath)
+    if ~isfolder(fullfile(savePath))
         mkdir(savePath)
+    end
+    if param.saveMultipleRaw && ~isfolder(fullfile(rawFileInfo.folder,['RawWaveforms_' rawFileInfo.name]))
+        mkdir(fullfile(rawFileInfo.folder,['RawWaveforms_' rawFileInfo.name]))
     end
 
     fprintf('Extracting raw waveforms from %s ... \n', param.rawFile)
@@ -67,7 +70,11 @@ else
 
     %% Interate over spike clusters and find all the data associated with them
     rawWaveforms = struct;
-    rawWaveformsFull = nan(nClust, nChannels, spikeWidth);
+    if nChannels == 385
+        rawWaveformsFull = nan(nClust, nChannels-1, spikeWidth);% Remove sync
+    else
+        rawWaveformsFull = nan(nClust, nChannels, spikeWidth); 
+    end
     rawWaveformsPeakChan = nan(nClust, 1);
 
     for iCluster = 1:nClust
@@ -100,6 +107,7 @@ else
                 %             rawWaveforms(iCluster).spkMap(:, :, iSpike) = data;
                 %         end
                 if size(data, 2) == spikeWidth && nChannels == 385
+                    realnChannels = 384;
                     rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels-1, :, :); %remove sync channel
                 elseif size(data, 2) == spikeWidth
                     rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels, :, :);
@@ -107,11 +115,12 @@ else
             end
         end
         if param.saveMultipleRaw
-            writeNPY(spikeMap, fullfile(savePath, 'templates._bc_multi_rawWaveforms.npy'))
+            tmpspkmap = permute(rawWaveforms(iCluster).spkMap,[2,1,3]); % Compatible with UnitMatch
+            writeNPY(tmpspkmap, fullfile(rawFileInfo.folder,['RawWaveforms_' rawFileInfo.name],['Unit' num2str(iCluster) '_RawSpikes.npy']))
         end
 
         rawWaveforms(iCluster).spkMapMean = nanmean(rawWaveforms(iCluster).spkMap, 3);
-        rawWaveformsFull(iCluster, :, :) = rawWaveforms(iCluster).spkMapMean - mean(rawWaveforms(iCluster).spkMapMean(:, 1:10), 2);
+        rawWaveformsFull(iCluster,:, :) = rawWaveforms(iCluster).spkMapMean - mean(rawWaveforms(iCluster).spkMapMean(:, 1:10), 2);
 
         spkMapMean_sm = smoothdata(rawWaveforms(iCluster).spkMapMean, 1, 'gaussian', 5);
 
