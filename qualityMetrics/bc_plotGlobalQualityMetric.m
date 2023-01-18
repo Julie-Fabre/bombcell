@@ -2,9 +2,10 @@
 if param.plotGlobal
     figure();
     if param.computeDistanceMetrics && ~isnan(param.isoDmin)
-        colorMtx = [rgb('Maroon'); rgb('Chocolate'); rgb('Orange'); rgb('OrangeRed'); ...
-            rgb('DarkKhaki'); rgb('Green'); rgb('Teal'); rgb('RoyalBlue'); rgb('Indigo'); rgb('FireBrick'); rgb('HotPink')];
-        colorMtx = [colorMtx, repmat(0.6, 11, 1)];
+        colorMtx = bc_colors(12); % get 12 colorbling-friendly colors 
+        colorMtx = [colorMtx(1:12,:,:), repmat(0.7, 12, 1)]; % make 70% transparent
+        colorMtx = colorMtx([1:2:end, 2:2:end],:); % shuffle colors to get more distinct pairs 
+
 
         setsw = {find(qMetric.nPeaks > param.maxNPeaks), find(qMetric.nTroughs > param.maxNTroughs), ...
             find(qMetric.waveformBaseline >= param.maxWvBaselineFraction), ...
@@ -13,7 +14,7 @@ if param.plotGlobal
             find(qMetric.somatic == 0), find(qMetric.Fp > param.maxRPVviolations), ...
             find(qMetric.percSpikesMissing > param.maxPercSpikesMissing), ...
             find(qMetric.nSpikes <= param.minNumSpikes), find(qMetric.rawAmplitude <= param.minAmplitude),...
-            find(qMetric.isoD <= param.isoDmin)};
+            find(qMetric.isoD <= param.isoDmin), find(qMetric.Lratio >= param.lratioMax)};
         emptyCell = find(cellfun(@isempty,setsw));
         if ~isempty(emptyCell)
             for iEC = 1:length(emptyCell)
@@ -38,9 +39,10 @@ if param.plotGlobal
         set(gcf, 'color', 'w')
         
         subplot(1,10, 7:10)
-         vennEulerDiagram(setsw(7:11), {'refractory period violations', ...
-            'undetected spikes', '# spikes', 'waveform amplitude', 'isolation distance'}, ...
-            'ColorOrder', colorMtx(7:11, 1:3), ...
+         vennEulerDiagram(setsw(7:12), {'refractory period violations', ...
+            'undetected spikes', '# spikes', 'waveform amplitude', ...
+            'isolation distance', 'l-ratio'}, ...
+            'ColorOrder', colorMtx(7:12, 1:3), ...
             'ShowIntersectionCounts', 1);
         
         subplot(1, 10, 6) % hacky way to get a legend + title
@@ -48,17 +50,19 @@ if param.plotGlobal
        
         set(gca, 'XColor', 'w', 'YColor', 'w')
         hold on;
-        arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', colorMtx(x, :)), 7:11);
+        arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', colorMtx(x, :)), 7:12);
         legend({'refractory period violations', ...
-            'undetected spikes', '# spikes', 'waveform amplitude', 'isolation distance'})
+            'undetected spikes', '# spikes', 'waveform amplitude',...
+            'isolation distance', 'l-ratio'})
         set(gcf, 'color', 'w')
         
         
 
     else
-        colorMtx = [rgb('Maroon'); rgb('Chocolate'); rgb('Orange'); rgb('OrangeRed'); ...
-            rgb('DarkKhaki'); rgb('Green'); rgb('Teal'); rgb('RoyalBlue'); rgb('Indigo'); rgb('DarkRed')];
-        colorMtx = [colorMtx, repmat(0.6, 10, 1)];
+         colorMtx = bc_colors(10); % get 12 colorbling-friendly colors 
+        colorMtx = [colorMtx(1:10,:,:), repmat(0.7, 10, 1)]; % make 70% transparent
+        colorMtx = colorMtx([1:2:end, 2:2:end],:); % shuffle colors to get more distinct pairs 
+
 
         setsw = {find(qMetric.nPeaks > param.maxNPeaks), find(qMetric.nTroughs > param.maxNTroughs), ...
             find(qMetric.waveformBaseline >= param.maxWvBaselineFraction), ...
