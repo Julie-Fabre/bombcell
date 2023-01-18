@@ -25,8 +25,8 @@ function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_pe
 %   and y coordinates of that channel, only needed if plotThis is set to true
 % baselineThresh: 1 x 1 double vector, minimum baseline value over which
 %   units are classified as noise, only needed if plotThis is set to true
-% waveformBaselineWindow
-% minThreshDetectPeaksTroughs
+% waveformBaselineWindow: QQ describe
+% minThreshDetectPeaksTroughs:  QQ describe
 % plotThis: boolean, whether to plot waveform and detected peaks or not 
 % ------
 % Outputs
@@ -35,14 +35,14 @@ function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_pe
 % nTroughs: number of detected troughs
 % isSomatic: boolean, is largest detected peak after the largest detected
 %   trough (indicative of a somatic spike).)
-% peakLocs
-% troughLocs
-% waveformDuration_minMax: in us
-% waveformDuration_peakTrough: in us 
-% spatialDecayPoints
-% spatialDecaySlope
-% waveformBaseline
-% thisWaveform
+% peakLocs QQ describe
+% troughLocs QQ describe
+% waveformDuration_minMax: in us QQ describe
+% waveformDuration_peakTrough: in us  QQ describe
+% spatialDecayPoints QQ describe
+% spatialDecaySlope QQ describe
+% waveformBaseline QQ describe
+% thisWaveform QQ describe
 
 thisWaveform = templateWaveforms(thisUnit, :, maxChannel);
 minProminence = minThreshDetectPeaksTroughs * max(abs(squeeze(thisWaveform))); % minimum threshold to detcet peaks/troughs

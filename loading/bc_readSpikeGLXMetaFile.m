@@ -1,17 +1,35 @@
-function scalingFactor = bc_readSpikeGLXMetaFile(metaFileDir)
-if ~isstruct(metaFileDir)
-    metaFileDir = dir(metaFileDir);
-end
-filetext = fileread(fullfile(metaFileDir.folder, metaFileDir.name));
-expr = 'imDatPrb_type=*';
-[~,endIndex] =  regexp(filetext,expr);
-if isempty(endIndex)
-    expr = 'imProbeOpt=*';
-    [~,endIndex] =  regexp(filetext,expr);
-end
-probeType = filetext(endIndex+1);
+function scalingFactor = bc_readSpikeGLXMetaFile(metaFile)
+% JF
+% read spikeGLX meta file and calculate scaling factor value to convert raw data to
+% microvolts
+% ------
+% Inputs
+% ------
+% metaFile: string, full path to meta file (should be a structure.oebin file)
+% ------
+% Outputs
+% ------
+% scaling factor: double, scaling factor value to convert raw data to
+% microvolts
+%
 
-if strcmp(probeType ,'1') || strcmp(probeType ,'3') || strcmp(probeType ,'0') %1.0, 3B,
+filetext = fileread(metaFile);
+
+expr_scaling = 'imDatPrb_type=*';
+[~,startIndex] =  regexp(filetext,expr_scaling);
+if isempty(startIndex)
+    expr_scaling = 'imProbeOpt=*';
+    [~,startIndex] =  regexp(filetext,expr_scaling);
+end
+probeType = filetext(startIndex+1);
+
+expr_chanMap = 'imRoFile=';
+[~,startIndexChanMap] =  regexp(filetext,expr_chanMap);
+expr_afterChanMap = 'imSampRate';
+[~,endIndexChanMap] =  regexp(filetext,expr_afterChanMap);
+channelMapImro = filetext(startIndexChanMap+1:endIndexChanMap-2-length(expr_afterChanMap));
+
+if strcmp(probeType ,'1') || strcmp(probeType ,'3') || strcmp(probeType ,'0') %1.0, 3B
     Vrange = 1.2e6; % from -0.6 to 0.6
     bits_encoding = 10; % 10-bit analog to digital 
     gain = 500; % fixed gain

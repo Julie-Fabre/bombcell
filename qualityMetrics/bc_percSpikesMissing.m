@@ -14,7 +14,9 @@ function [percent_missing, bin_centers, num, n_fit_cut]  = bc_percSpikesMissing(
 % ------
 % Outputs
 % ------
-% percent_missing: estimated percent spike missing for each time chunk.
+% percent_missing: estimated percent spike missing for each time chunk
+% bin_centers
+% n_fit_cut
 % 
 % Note that this will underestimate the amount of spikes missing in the
 % case or bursty cells, where there spike amplitude is decreased during the
@@ -77,7 +79,7 @@ for iTimeChunk = 1:numel(timeChunks)-1
     else
         percent_missing(iTimeChunk) = 100;
     end
-        
+        roundedP = num2str(round(percent_missing(iTimeChunk),1));
     if plotThis
         subplot(2,numel(timeChunks)-1, numel(timeChunks)-1+iTimeChunk)
         if sum(num) > 0 

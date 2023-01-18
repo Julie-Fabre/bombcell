@@ -22,6 +22,9 @@ function [isoD, Lratio, silhouetteScore, d2_mahal, Xplot, Yplot] = bc_getDistanc
 % isoD: isolation distance 
 % Lratio: l-ratio
 % silhouetteScore: silhouette score 
+% d2_mahal QQ describe
+% Xplot QQ describe
+% Yplot QQ describe
 %
 % based on functions in https://github.com/cortex-lab/sortingQuality
 
@@ -140,13 +143,22 @@ d2_mahal = mahal(Yplot, Xplot);
     
 if plotThis
     
-    figure();
-    scatter(Xplot(:, 1), Xplot(:, 2), 10, '.k') % Scatter plot with points of size 10
+    figure(); %QQ make better plot: more dims, different one for l ratio, colors
+    scatter(Xplot(:, 1), Xplot(:, 2), 10, [0.7, 0.7, 0.7],'x') % Scatter plot with points of size 10
     hold on
     scatter(Yplot(:, 1), Yplot(:, 2), 10, d2_mahal, 'o', 'filled')
     hb = colorbar;
+    hb.Color =  [0.7, 0.7, 0.7];
     ylabel(hb, 'Mahalanobis Distance')
-    legend('this cluster', 'other clusters', 'Location', 'best');
+    line(nan, nan, 'Linestyle', 'none', 'Marker', 'none', 'Color', 'none');
+    line(nan, nan, 'Linestyle', 'none', 'Marker', 'none', 'Color', 'none');
+    line(nan, nan, 'Linestyle', 'none', 'Marker', 'none', 'Color', 'none');
+
+    legend({'this cluster''s spikes', 'nearby clusters'' spikes', ['isolation distance = ', num2str(isoD)],...
+        ['silhouette score = ', num2str(silhouetteScore)],['l-ratio = ', num2str(Lratio)]}, 'Location', 'best','TextColor', [0.7, 0.7, 0.7],'Color', 'none');
+    xlabel('PC1')
+    ylabel('PC2')
+    makepretty('none')
 end
 else
     d2_mahal = NaN;

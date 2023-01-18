@@ -13,7 +13,7 @@ function rawAmplitude = bc_getRawAmplitude(rawWaveforms, metaFile)
 % this unit 
 % 
 
-if strcmp(metaFile, 'oebin')
+if contains(metaFile, 'oebin')
     % open ephys format
    scalingFactor = bc_readOEMetaFile(metaFile);
 else
