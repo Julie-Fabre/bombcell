@@ -42,6 +42,7 @@ param.maxWvDuration = 800; %ms
 param.minSpatialDecaySlope = -0.001;
 param.maxWvBaselineFraction = 0.3;
 param.waveformBaselineWindow = [20, 30]; % in samples 
+param.minThreshDetectPeaksTroughs = 0.2;
 
 % recording parametrs
 param.ephys_sample_rate = 30000; % samples per second

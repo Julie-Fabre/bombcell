@@ -2,7 +2,7 @@ function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_pe
     waveformDuration_minMax, spatialDecayPoints, spatialDecaySlope, ...
     waveformBaseline, thisWaveform] = bc_waveformShape(templateWaveforms, ...
     thisUnit, maxChannel, ephys_sample_rate, channelPositions, baselineThresh, ...
-    waveformBaselineWindow, plotThis)
+    waveformBaselineWindow, minThreshDetectPeaksTroughs, plotThis)
 % JF
 % Get the number of troughs and peaks for each waveform,
 % determine whether waveform is likely axonal/dendritic (biggest peak before 
@@ -26,6 +26,7 @@ function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_pe
 % baselineThresh: 1 x 1 double vector, minimum baseline value over which
 %   units are classified as noise, only needed if plotThis is set to true
 % waveformBaselineWindow
+% minThreshDetectPeaksTroughs
 % plotThis: boolean, whether to plot waveform and detected peaks or not 
 % ------
 % Outputs
@@ -44,7 +45,7 @@ function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_pe
 % thisWaveform
 
 thisWaveform = templateWaveforms(thisUnit, :, maxChannel);
-minProminence = 0.2 * max(abs(squeeze(thisWaveform))); % minimum threshold to detcet peaks/troughs
+minProminence = minThreshDetectPeaksTroughs * max(abs(squeeze(thisWaveform))); % minimum threshold to detcet peaks/troughs
 
 [PKS, peakLocs, ~] = findpeaks(squeeze(thisWaveform), 'MinPeakProminence', minProminence); % get peaks
 
