@@ -4,6 +4,7 @@ param = struct;
 % plotting parameters 
 param.plotThis = 0;
 param.plotGlobal = 1;
+BCparam.verbose=1; % update user on progress
 
 % saving parameters 
 param.saveAsParquet = 1; % save outputs at .parquet file 

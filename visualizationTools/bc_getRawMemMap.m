@@ -1,5 +1,8 @@
+if exist('BCparam','var')
+    param=BCparam;
+end
 
-spikeFile = dir(param.rawFile);
+spikeFile=dir(param.rawFile);
 
 fname = spikeFile.name;
 
