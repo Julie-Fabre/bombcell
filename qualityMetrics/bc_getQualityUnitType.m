@@ -1,5 +1,5 @@
 %bc_getQualityUnitType
-if ~exist('param')
+if exist('param')
     param = BCparam; % in case you use unitmatch
 end
 if param.computeDistanceMetrics && ~isnan(param.isoDmin)
