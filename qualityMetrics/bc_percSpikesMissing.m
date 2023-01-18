@@ -22,12 +22,21 @@ function [percent_missing, bin_centers, num, n_fit_cut]  = bc_percSpikesMissing(
 
 warning off;
 percent_missing = nan(numel(timeChunks)-1,1);
+ylims = [0,0]; % initialize varibale for plotting 
 if plotThis 
-    figure();
+    figure('Color','none');
     subplot(2,numel(timeChunks)-1, [1:numel(timeChunks)-1])
-    scatter(theseSpikeTimes, theseAmplitudes, 4,'filled')
+    scatter(theseSpikeTimes, theseAmplitudes, 4,[0, 0.35, 0.71],'filled'); hold on;
+    % chunk lines 
+    ylims = ylim;
+    for iTimeChunk = 1:length(timeChunks)
+        line([timeChunks(iTimeChunk),timeChunks(iTimeChunk)],...
+            [ylims(1),ylims(2)], 'Color', [0.7, 0.7, 0.7])
+    end
     xlabel('time (s)')
-    ylabel('amplitude')
+    ylabel(['amplitude scaling' newline 'factor'])
+    makepretty('none');
+    
 end
 for iTimeChunk = 1:numel(timeChunks)-1
     % amplitude histogram
@@ -63,8 +72,6 @@ for iTimeChunk = 1:numel(timeChunks)-1
     
     n_fit_cut = JF_gaussian_cut(bin_centers, fitOutput(1), fitOutput(2), fitOutput(3), fitOutput(4));
 %    n_fit_no_cut = JF_gaussian_cut(bin_centers, fitOutput(1), fitOutput(2), fitOutput(3), 0);
-    %Int1 = cumtrapz(bin_centers,n_fit_no_cut);
-    %Int2 = 
     norm_area_ndtr = normcdf((fitOutput(2) - fitOutput(4))/fitOutput(3)); %ndtr((popt[1] - min_amplitude) /popt[2])
     percent_missing(iTimeChunk) = 100 * (1 - norm_area_ndtr);
     else
@@ -73,18 +80,23 @@ for iTimeChunk = 1:numel(timeChunks)-1
         
     if plotThis
         subplot(2,numel(timeChunks)-1, numel(timeChunks)-1+iTimeChunk)
-        barh(bin_centers, num);
+        if sum(num) > 0 
         hold on;
         plot(n_fit_cut, bin_centers, 'r');
+        barh(bin_centers, num, 'FaceColor',[0, 0.35, 0.71], 'EdgeColor',[0, 0.35, 0.71]);
+        
         if iTimeChunk == 1
-        xlabel('count')
-        ylabel('amplitude')
+            xlabel('count')
+            ylabel('amplitude')
         end
-        TextLocation([num2str(percent_missing(iTimeChunk)), '% missing spikes'], 'Location', 'South');
         if iTimeChunk == numel(timeChunks)-1
-        legend({'amplitude histogram', 'gaussian fit'})
+            legend({['gaussian fit:' roundedP, '% missing spikes'], 'amplitude histogram'},'TextColor', [0.7, 0.7, 0.7], 'Color', 'none')
+        else
+            legend([roundedP, '% missing spikes'], 'Location', 'NorthEast','TextColor', [0.7, 0.7, 0.7], 'Color', 'none');
         end
-        makepretty;
+
+        end
+        makepretty('none');
     end
 
     
