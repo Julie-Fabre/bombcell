@@ -1,23 +1,15 @@
-function [theseSpikeTimes, useThisTimeStart, useThisTimeStop] = bc_defineTimechunksToKeep(percSpikesMissing, ...
+function [theseSpikeTimes, theseAmplis, useThisTimeStart, useThisTimeStop] = bc_defineTimechunksToKeep(percSpikesMissing, ...
     fractionRPVs, maxPercSpikesMissing, maxfractionRPVs, theseAmplis, theseSpikeTimes, timeChunks)
 % JF
-% read open ephys meta file and extract scaling factor (bit_volts) value
+% define time chunks where unit has low refractory period violations and
+% estimated percent spikes missing 
 % ------
 % Inputs
 % ------
-% percSpikesMissing QQ fill out inputs outputs 
-% fractionRPVs
-% maxPercSpikesMissing
-% maxfractionRPVs
-% theseAmplis
-% theseSpikeTimes
-% timeChunks
+% 
 % ------
 % Outputs
 % ------
-% theseSpikesTimes
-% useThisTimeStart (0 if keeping all) 
-% useThisTimeStop (Inf if keeping all)
 %
 
 
