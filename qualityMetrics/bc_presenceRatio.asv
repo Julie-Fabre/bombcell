@@ -24,7 +24,7 @@ function presenceRatio = bc_presenceRatio(theseSpikeTimes, presenceRatioBinSize,
 presenceRatio_bins = startTime:presenceRatioBinSize:stopTime;
 % count number of spikes in each chunk 
 spikesPerBin = arrayfun(@(x) sum(theseSpikeTimes>=presenceRatio_bins(x) & theseSpikeTimes<presenceRatio_bins(x+1)),1:length(presenceRatio_bins)-1);
-presenceRatio = sum(spikesPerBin>0)/length(spikesPerBin);
+presenceRatio = sum(sp)
 
 
 

@@ -36,6 +36,9 @@ BCparam.maxPercSpikesMissing = 20;
 BCparam.computeTimeChunks = 1;
 BCparam.deltaTimeChunk = 1200; %time in seconds 
 
+% presence ratio
+param.presenceRatioBinSize = 60; % in seconds
+
 % minimum number of spikes for a unit to be 'good'
 BCparam.minNumSpikes = 300;
 

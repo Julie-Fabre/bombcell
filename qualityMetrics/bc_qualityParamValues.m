@@ -29,6 +29,9 @@ param.computeTimeChunks = 1; % compute fraction refractory period violations
 % and percent sp[ikes missing for different time chunks 
 param.deltaTimeChunk = 360; %time in seconds 
 
+% presence ratio 
+param.presenceRatioBinSize = 60; % in seconds 
+
 % waveform parameters
 param.waveformBaselineWindow = [20, 30]; % in samples 
 param.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value 

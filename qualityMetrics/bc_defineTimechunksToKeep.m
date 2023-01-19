@@ -1,4 +1,4 @@
-function [theseSpikeTimes, theseAmplis, useThisTimeStart, useThisTimeStop] = bc_defineTimechunksToKeep(percSpikesMissing, ...
+function [theseSpikeTimes, useThisTimeStart, useThisTimeStop] = bc_defineTimechunksToKeep(percSpikesMissing, ...
     fractionRPVs, maxPercSpikesMissing, maxfractionRPVs, theseAmplis, theseSpikeTimes, timeChunks)
 % JF
 % read open ephys meta file and extract scaling factor (bit_volts) value
@@ -16,7 +16,6 @@ function [theseSpikeTimes, theseAmplis, useThisTimeStart, useThisTimeStop] = bc_
 % Outputs
 % ------
 % theseSpikesTimes
-% theseAmplis
 % useThisTimeStart (0 if keeping all) 
 % useThisTimeStop (Inf if keeping all)
 %
@@ -48,7 +47,7 @@ if any(percSpikesMissing < maxPercSpikesMissing) && any(fractionRPVs < maxfracti
     useThisTimeStop = useTheseTimes(end);
 else %otherwise, keep all chunks to compute quality metrics on, uni will defined as below percSpikesMissing and Fp criteria thresholds later
     useThisTimeStart = 0;
-    useThisTimeStop = Inf;
+    useThisTimeStop = timeChunks(end);
 end
 
 end

@@ -98,7 +98,10 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples
 
 %% prepare for quality metrics computations: get waveform max_channel and raw waveforms
 qMetric = struct;
+forGUI = struct;
+
 maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
+
 qMetric.maxChannels = maxChannels;
 uniqueTemplates = unique(spikeTemplates);
 
@@ -135,45 +138,54 @@ for iUnit = 1:length(uniqueTemplates)
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
 
     %% percentage spikes missing (false negatives)
-    [qMetric.percentageSpikesMissing(iUnit,:), qMetric.ampliBinCenters{iUnit}, qMetric.ampliBinCounts{iUnit}, qMetric.ampliFit{iUnit}] = ...
-        bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotThis);
+    [qMetric.percentageSpikesMissing_gaussian(iUnit,:), qMetric.percentageSpikesMissing_symmetric(iUnit,:), qMetric.ksTest_pValue(iUnit,:), ...
+        forGUI.ampliBinCenters(iUnit,:), forGUI.ampliBinCounts(iUnit,:), forGUI.ampliGaussianFit(iUnit,:)] = ...
+        bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails);
 
     %% fraction contamination (false positives)
-    [qMetric.fractionRPVs(iUnit,:), ~, ~] = bc_fractionRPviolations(numel(theseSpikeTimes), theseSpikeTimes, theseAmplis, param.tauR, param.tauC, ...
-        timeChunks, param.plotThis);
+    [qMetric.fractionRPVs(iUnit,:), ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, param.tauR, param.tauC, ...
+        timeChunks, param.plotDetails);
     
     %% define timechunks to keep: if param.computeTimeChunks, keep times with low percentage spikes missing and low fraction contam
     if param.computeTimeChunks
-        [theseSpikeTimes, ~, ~, qMetric.useTheseTimes{iUnit}] = bc_defineTimechunksToKeep(qMetric.percentageSpikesMissing(iUnit,:), ...
-            qMetric.fractionRPVs(iUnit,:), param.maxPercSpikesMissing, param.maxRPVviolations, theseAmplis, theseSpikeTimes, timeChunks);
+        [theseSpikeTimes, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)] = bc_defineTimechunksToKeep(...
+            qMetric.percentageSpikesMissing(iUnit,:), qMetric.fractionRPVs(iUnit,:), param.maxPercSpikesMissing, ...
+            param.maxRPVviolations, theseAmplis, theseSpikeTimes, timeChunks);
     end
+
+    %% presence ratio (potential false negatives)
+    [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, param.presenceRatioBinSize, ...
+        timeChunks, param.plotDetails);
+
+    %% drift estimate 
+
     
     %% number spikes
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
 
-    %% waveform: (1) number peaks/troughs, (2) is peak before trough (= axonal/dendritic), (3) is waveform duration cell-like, (4) spatial decay, (5) waveformShape
+    %% waveform
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), ...
         qMetric.peakLocs{iUnit}, qMetric.troughLocs{iUnit}, qMetric.waveformDuration(iUnit), ...
-        qMetric.spatialDecayPoints(iUnit,:), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), qMetric.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms, ...
-        thisUnit, qMetric.maxChannels(thisUnit), ...
-        param.ephys_sample_rate, channelPositions,  param.maxWvBaselineFraction, param.plotThis);
+        qMetric.waveformDuration(iUnit), forGUI.spatialDecayPoints(iUnit,:), ....
+        qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), ....
+        forGUI.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms,thisUnit, ...
+        qMetric.maxChannels(thisUnit), param.ephys_sample_rate, channelPositions, ...
+        param.maxWvBaselineFraction, param.waveformBaselineWindow, param.minThreshDetectPeaksTroughs, param.plotDetails); %do we need tempWv ? 
 
     %% amplitude
-%     if size(rawWaveformsPeakChan(iUnit,:), 1) == 1
-%         qMetric.rawWaveforms(iUnit).spkMapMean = permute(squeeze(qMetric.rawWaveforms(iUnit).spkMapMean), [2, 1]);
-%     end
     qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit,:),:), ...
-        param.ephysMetaFile); %Potentially param.rawFolder should be replaced by param.ephysMetaFile ?
+        param.ephysMetaFile);
 
     %% distance metrics
     if param.computeDistanceMetrics
         [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit), ...
-            qMetric.d2_mahal{iUnit}, qMetric.Xplot{iUnit}, qMetric.Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
-            pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, spikeTemplates, param.nChannelsIsoDist, param.plotThis);
+            forGUI.d2_mahal{iUnit}, forGUI.Xplot{iUnit}, forGUI.Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
+            pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, spikeTemplates, ...
+            param.nChannelsIsoDist, param.plotDetails); %QQ
     end
 
     %% Save some raw waveforms for the GUI
-    qMetric.rawWaveforms(iUnit).spkMapMean = squeeze(rawWaveformsFull(iUnit,:,:));
+    qMetric.rawWaveforms(iUnit).spkMapMean = squeeze(rawWaveformsFull(iUnit,:,:)); %QQ
 end
 qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates);
 
