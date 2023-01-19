@@ -1,30 +1,54 @@
-function [theseSpikeTimes, theseAmplis, timeChunksKeep, useTheseTimes ] = bc_defineTimechunksToKeep(percSpikesMissing, ...
-    Fp, maxPercSpikesMissing, maxFp, theseAmplis, theseSpikeTimes, timeChunks)
-    if any(percSpikesMissing < maxPercSpikesMissing) && any(Fp < maxFp)  % if there are some good time chunks, keep those
-        
-        useTheseTimes_temp = find(percSpikesMissing < maxPercSpikesMissing & Fp < maxFp);
-        if numel(useTheseTimes_temp) > 0 
-            continousTimes = diff(useTheseTimes_temp);
-             if any(continousTimes == 1)
-                f = find(diff([false,continousTimes==1,false])~=0);
-                [continousTimesUseLength,ix] = max(f(2:2:end)-f(1:2:end-1));
-                continousTimesUseStart = useTheseTimes_temp(continousTimes(f(2*ix-1)));
-                useTheseTimes  = timeChunks(continousTimesUseStart:continousTimesUseStart + (continousTimesUseLength));
-            else
-                useTheseTimes = timeChunks(useTheseTimes_temp(1):useTheseTimes_temp(1)+1);
-            end
+function [theseSpikeTimes, theseAmplis, useThisTimeStart, useThisTimeStop] = bc_defineTimechunksToKeep(percSpikesMissing, ...
+    fractionRPVs, maxPercSpikesMissing, maxfractionRPVs, theseAmplis, theseSpikeTimes, timeChunks)
+% JF
+% read open ephys meta file and extract scaling factor (bit_volts) value
+% ------
+% Inputs
+% ------
+% percSpikesMissing QQ fill out inputs outputs 
+% fractionRPVs
+% maxPercSpikesMissing
+% maxfractionRPVs
+% theseAmplis
+% theseSpikeTimes
+% timeChunks
+% ------
+% Outputs
+% ------
+% theseSpikesTimes
+% theseAmplis
+% useThisTimeStart (0 if keeping all) 
+% useThisTimeStop (Inf if keeping all)
+%
+
+
+if any(percSpikesMissing < maxPercSpikesMissing) && any(fractionRPVs < maxfractionRPVs) % if there are some good time chunks, keep those
+
+    useTheseTimes_temp = find(percSpikesMissing < maxPercSpikesMissing & fractionRPVs < maxfractionRPVs);
+    if numel(useTheseTimes_temp) > 0
+        continousTimes = diff(useTheseTimes_temp);
+        if any(continousTimes == 1)
+            f = find(diff([false, continousTimes == 1, false]) ~= 0);
+            [continousTimesUseLength, ix] = max(f(2:2:end)-f(1:2:end-1));
+            continousTimesUseStart = useTheseTimes_temp(continousTimes(f(2*ix-1)));
+            useTheseTimes = timeChunks(continousTimesUseStart:continousTimesUseStart+(continousTimesUseLength));
         else
-            useTheseTimes = timeChunks;
+            useTheseTimes = timeChunks(useTheseTimes_temp(1):useTheseTimes_temp(1)+1);
         end
-        theseAmplis = theseAmplis(theseSpikeTimes < useTheseTimes(end) & ...
-            theseSpikeTimes > useTheseTimes(1));
-        theseSpikeTimes = theseSpikeTimes(theseSpikeTimes < useTheseTimes(end) & ...
-            theseSpikeTimes > useTheseTimes(1));
-        %QQ change non continous
-        timeChunksKeep = useTheseTimes(1):useTheseTimes(end);
-    else %otherwise, keep all chunks to compute quality metrics on, uni will defined as below percSpikesMissing and Fp criteria thresholds later 
-        useTheseTimes = ones(numel(percSpikesMissing), 1);
-        timeChunksKeep = NaN;
+    else
+        useTheseTimes = timeChunks;
     end
-%dbcont;
+    theseAmplis = theseAmplis(theseSpikeTimes < useTheseTimes(end) & ...
+        theseSpikeTimes > useTheseTimes(1));
+    theseSpikeTimes = theseSpikeTimes(theseSpikeTimes < useTheseTimes(end) & ...
+        theseSpikeTimes > useTheseTimes(1));
+    %QQ change non continous
+
+    useThisTimeStart = useTheseTimes(1);
+    useThisTimeStop = useTheseTimes(end);
+else %otherwise, keep all chunks to compute quality metrics on, uni will defined as below percSpikesMissing and Fp criteria thresholds later
+    useThisTimeStart = 0;
+    useThisTimeStop = Inf;
+end
+
 end

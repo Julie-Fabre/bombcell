@@ -15,12 +15,11 @@ function [percentMissing_gaussian, percentMissing_symmetric, ksTest_pValue, ampl
 % Outputs
 % ------
 % percentMissing_gaussian: estimated percent spike missing for each time
-%   chunk, assuming the data is normally distributed
-% percentMissing_symmetric: estimated percent spike missing for each time
-%   chunk, assuming the data is normally distributed
-% ksTest_pValue: Kolmogorov-Smirnov test p value for each time chunk 
-% spikeCountsPerAmpliBin_gaussian
-% gaussianFit_cutoff: gaussian fit curve 
+% chunk, assuming the data is
+% percentMissing_symmetric:
+% ksTest_pValue: 
+% bin_centers
+% n_fit_cut
 %
 % Note that this will underestimate the amount of spikes missing in the
 % case or bursty cells, where there spike amplitude is decreased during the
@@ -28,8 +27,6 @@ function [percentMissing_gaussian, percentMissing_symmetric, ksTest_pValue, ampl
 
 warning off;
 percentMissing_gaussian = nan(numel(timeChunks)-1, 1);
-percentMissing_symmetric = nan(numel(timeChunks)-1, 1);
-ksTest_pValue = nan(numel(timeChunks)-1, 1);
 ylims = [0, 0]; % initialize varibale for plotting
 if plotThis
     figure('Color', 'none');
