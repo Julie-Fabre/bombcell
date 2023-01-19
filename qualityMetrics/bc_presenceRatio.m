@@ -21,5 +21,8 @@ function presenceRatio = bc_presenceRatio(theseSpikeTimes, presenceRatioBin, plo
 % visual system reveals functional hierarchy. Nature 592, 86–92 (2021). https://doi.org/10.1038/s41586-020-03171-x
 bins 
 arrayfun
+% divide recordings times in chunks
+% count number of spikes in each chunk 
+
 
 

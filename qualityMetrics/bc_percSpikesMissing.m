@@ -27,10 +27,11 @@ function [percentMissing_gaussian, percentMissing_symmetric, ksTest_pValue, ampl
 % burst.
 
 warning off;
+% initialize variables 
 percentMissing_gaussian = nan(numel(timeChunks)-1, 1);
 percentMissing_symmetric = nan(numel(timeChunks)-1, 1);
 ksTest_pValue = nan(numel(timeChunks)-1, 1);
-ylims = [0, 0]; % initialize varibale for plotting
+
 if plotThis
     figure('Color', 'none');
     subplot(2, numel(timeChunks)-1, [1:numel(timeChunks) - 1])
@@ -50,9 +51,10 @@ end
 for iTimeChunk = 1:numel(timeChunks) - 1
     % amplitude histogram
     nBins = 50;
+    % get amplitude histogram 
     [spikeCountsPerAmpliBin, bins] = histcounts(theseAmplitudes(theseSpikeTimes >= timeChunks(iTimeChunk) & ...
         theseSpikeTimes < timeChunks(iTimeChunk+1)), nBins);
-    if sum(spikeCountsPerAmpliBin) > 0
+    if sum(spikeCountsPerAmpliBin) > 0 % if there is at least one spike in this time bin 
         
         maxAmpli_val = find(spikeCountsPerAmpliBin == max(spikeCountsPerAmpliBin));
         mode_seed = bins(maxAmpli_val); %guess mode - this is only accurate if mode is present in histogram
@@ -62,15 +64,17 @@ for iTimeChunk = 1:numel(timeChunks) - 1
         bin_steps = diff(bins(1:2)); %size of a bin
 
         %% symmetric 
+        % mirror the unit's amplitudes 
         surrogate_amplitudes = [spikeCountsPerAmpliBin(end:-1:maxAmpli_val), fliplr(spikeCountsPerAmpliBin(end:-1:maxAmpli_val+1))];
         surrogate_bins = [fliplr(bins(maxAmpli_val)-bin_steps:-bin_steps:bins(maxAmpli_val) - bin_steps*floor(size(surrogate_amplitudes,2)/2)),...
             bins(maxAmpli_val:end)];
         
-        % remove < 0, that doesn't make any sense 
+        % remove any bins where the amplitudes would be < 0, that doesn't make any sense 
         surrogate_amplitudes(surrogate_bins<0) = [];
         surrogate_bins(surrogate_bins<0) = [];
         surrogate_area = sum(surrogate_amplitudes)*bin_steps;
-
+        
+        % estimate the percentage of missing spikes 
         percentMissing_symmetric(iTimeChunk) = (surrogate_area - sum(spikeCountsPerAmpliBin)*bin_steps)/surrogate_area; 
 
         %% evaluate gaussian distribution from symmetric 'surrogate' data 
@@ -79,7 +83,7 @@ for iTimeChunk = 1:numel(timeChunks) - 1
         %% gaussian
         ampliBin_gaussian = bins(1:end-1) + bin_steps / 2;
         next_low_bin = ampliBin_gaussian(1) - bin_steps;
-        add_points = 0:bin_steps:next_low_bin; %add points so amplitude values starts at 0
+        add_points = 0:bin_steps:next_low_bin; % add points so amplitude values starts at 0
         ampliBin_gaussian = [add_points, ampliBin_gaussian];
         spikeCountsPerAmpliBin_gaussian = [zeros(size(add_points, 2), 1)', spikeCountsPerAmpliBin];
 
