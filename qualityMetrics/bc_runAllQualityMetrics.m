@@ -148,9 +148,9 @@ for iUnit = 1:length(uniqueTemplates)
     
     %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
     if param.computeTimeChunks
-        [theseSpikeTimes, theseAmplis, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)] = bc_defineTimechunksToKeep(...
-            qMetric.percentageSpikesMissing(iUnit,:), qMetric.fractionRPVs(iUnit,:), param.maxPercSpikesMissing, ...
-            param.maxRPVviolations, theseAmplis, theseSpikeTimes, timeChunks);
+        [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)] = bc_defineTimechunksToKeep(...
+            qMetric.percentageSpikesMissing_gaussian(iUnit,:), qMetric.fractionRPVs(iUnit,:), param.maxPercSpikesMissing, ...
+            param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect 
     end
 
     %% presence ratio (potential false negatives)
@@ -158,7 +158,8 @@ for iUnit = 1:length(uniqueTemplates)
         qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param.plotDetails);
 
     %% maximum cumulative drift estimate 
-    qMetric.maxDriftEstimate(iUnit) = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, thisUnit, param.plotDetails);
+    qMetric.maxDriftEstimate(iUnit) = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...
+        theseSpikeTimes, channelPositions(:,2), thisUnit, param.driftBinSize, param.plotDetails);
     
     %% number spikes
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
@@ -180,7 +181,7 @@ for iUnit = 1:length(uniqueTemplates)
     if param.computeDistanceMetrics
         [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit), ...
             forGUI.d2_mahal{iUnit}, forGUI.Xplot{iUnit}, forGUI.Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
-            pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, spikeTemplates, ...
+            pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
             param.nChannelsIsoDist, param.plotDetails); %QQ
     end
 

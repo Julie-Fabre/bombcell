@@ -1,4 +1,5 @@
-function [maxDrift_estimate , cumulativeDrift_estimate] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, spikeTemplates, spikeTimes, thisUnit,driftBinSize,  plotThis)
+function [maxDrift_estimate , cumulativeDrift_estimate] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, spikeTemplates,...
+    spikeTimes, channelPositions_z, thisUnit, driftBinSize, plotThis)
 % JF, Estimate the maximum drift for a particular unit 
 % ------
 % Inputs
@@ -28,9 +29,8 @@ pcFeatures_PC1 = squeeze(pcFeatures(spikeTemplates==thisUnit,1,:)); % take the f
 pcFeatures_PC1(pcFeatures_PC1<0) = 0; % remove negative entries - we don't want to push the center of mass away from there.
 
 spikePC_feature = double(pcFeatureIdx(spikeTemplates,:)); % get channels for each spike
-spikeDepths_inChannels = sum(spikePC_feature(spikeTemplates==thisUnit,:).*pcFeatures_PC1.^2,2)./sum(pcFeatures_PC1.^2,2);% center of mass: sum(coords.*features)/sum(features)
+spikeDepths_inChannels = sum(channelPositions_z(spikePC_feature(spikeTemplates==thisUnit,:)).*pcFeatures_PC1.^2,2)./sum(pcFeatures_PC1.^2,2);% center of mass: sum(coords.*features)/sum(features)
 
-%% save center of mass estimate 
 
 %% estimate cumulative drift 
 timeBins = min(spikeTimes):driftBinSize:max(spikeTimes);
