@@ -1,5 +1,5 @@
-function [theseSpikeTimes, theseAmplis, useThisTimeStart, useThisTimeStop] = bc_defineTimechunksToKeep(percSpikesMissing, ...
-    fractionRPVs, maxPercSpikesMissing, maxfractionRPVs, theseAmplis, theseSpikeTimes, timeChunks)
+function [theseSpikeTimes, theseAmplis, theseSpikeTemplates, useThisTimeStart, useThisTimeStop] = bc_defineTimechunksToKeep(percSpikesMissing, ...
+    fractionRPVs, maxPercSpikesMissing, maxfractionRPVs, theseAmplis, theseSpikeTimes, theseSpikeTemplates,timeChunks)
 % JF
 % define time chunks where unit has low refractory period violations and
 % estimated percent spikes missing 
@@ -29,10 +29,13 @@ if any(percSpikesMissing < maxPercSpikesMissing) && any(fractionRPVs < maxfracti
     else
         useTheseTimes = timeChunks;
     end
-    theseAmplis = theseAmplis(theseSpikeTimes < useTheseTimes(end) & ...
-        theseSpikeTimes > useTheseTimes(1));
-    theseSpikeTimes = theseSpikeTimes(theseSpikeTimes < useTheseTimes(end) & ...
-        theseSpikeTimes > useTheseTimes(1));
+    theseSpikeTemplates(theseSpikeTimes > useTheseTimes(end) | ...
+        theseSpikeTimes < useTheseTimes(1)) = 0;
+    theseAmplis = theseAmplis(theseSpikeTimes <= useTheseTimes(end) & ...
+        theseSpikeTimes >= useTheseTimes(1));
+    theseSpikeTimes = theseSpikeTimes(theseSpikeTimes <= useTheseTimes(end) & ...
+        theseSpikeTimes >= useTheseTimes(1));
+    
     %QQ change non continous
 
     useThisTimeStart = useTheseTimes(1);

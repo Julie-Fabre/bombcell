@@ -1,6 +1,7 @@
 function [rawWaveformsFull, rawWaveformsPeakChan] = bc_extractRawWaveformsFast(param, spikeTimes_samples, spikeTemplates,...
     reExtract, savePath, verbose)
-% JF, Get raw waveforms for all templates
+% JF, Get raw waveforms for all templates and estimate maximum drift for
+% each unit 
 % ------
 % Inputs
 % ------
@@ -21,6 +22,22 @@ function [rawWaveformsFull, rawWaveformsPeakChan] = bc_extractRawWaveformsFast(p
 %  mean raw waveforms for each unit and channel
 % rawWaveformsPeakChan: nUnits x 1 vector of each unit's channel with the maximum
 %   amplitude
+% maximumDriftEstimate
+% ------
+% Reference
+% ------
+% for drift estimate: Siegle, J.H., Jia, X., Durand, S. et al. Survey of spiking in the mouse 
+% visual system reveals functional hierarchy. Nature 592, 86–92 (2021). https://doi.org/10.1038/s41586-020-03171-x
+% from the paper: To compute the maximum drift for one unit, 
+% the peak channel was calculated from the top principal 
+% components of every spike. Next, the peak channel values are 
+% binned in 51-s intervals, and the median value is calculated 
+% across all spikes in each bin (assuming at least 10 spikes 
+% per bin). The maximum drift is defined as the difference 
+% between the maximum peak channel and the minimum peak channel
+% across all bins. The average maximum drift across all units
+% is used to identify sessions with a high amount of probe 
+% motion relative to the brain.
 
 %% Check if data already extracted
 rawWaveformFolder = dir(fullfile(savePath, 'templates._bc_rawWaveforms.npy'));
@@ -30,20 +47,11 @@ if ~isempty(rawWaveformFolder) && reExtract == 0
 
     rawWaveformsFull = readNPY(fullfile(savePath, 'templates._bc_rawWaveforms.npy'));
     rawWaveformsPeakChan = readNPY(fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy'));
-%     if param.saveMultipleRaw
-%         spikeMap = readNPY(fullfile(savePath, 'templates._bc_multi_rawWaveforms.npy'));
-%     end
 
 elseif ~isempty(old_rawWaveformFolder) && reExtract == 0
     rawWaveformsFull = readNPY(fullfile(savePath, 'templates._jf_rawWaveforms.npy'));
     rawWaveformsPeakChan = readNPY(fullfile(savePath, 'templates._jf_rawWaveformPeakChannels.npy'));
-%     if param.saveMultipleRaw
-%         try
-%             spikeMap = readNPY(fullfile(savePath, 'templates._jf_Multi_rawWaveforms.npy'));
-%         catch
-%             fprintf('Could not load saved individual raw waveforms from %s, keeping only average raw waveforms \n', savePath)
-%         end
-%     end
+
 else
     %% Initialize stuff
     % Get spike times and indices
@@ -56,7 +64,6 @@ else
     nClust = numel(clustInds);
     rawFileInfo = dir(param.rawFile);
 
-    %save(fullfile(spikeFile.folder, 'rawWaveforms.mat'), 'rawWaveforms', '-v7.3');
     if ~isfolder(fullfile(savePath))
         mkdir(savePath)
     end
@@ -78,7 +85,6 @@ else
     rawWaveformsPeakChan = nan(nClust, 1);
 
     for iCluster = 1:nClust
-        %iCluster=iCluster+1
         rawWaveforms(iCluster).clInd = clustInds(iCluster);
         rawWaveforms(iCluster).spkInd = spikeTimes_samples(spikeTemplates == clustInds(iCluster));
         if numel(rawWaveforms(iCluster).spkInd) >= nSpikesToExtract
@@ -107,7 +113,6 @@ else
                 %             rawWaveforms(iCluster).spkMap(:, :, iSpike) = data;
                 %         end
                 if size(data, 2) == spikeWidth && nChannels == 385
-                    realnChannels = 384;
                     rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels-1, :, :); %remove sync channel
                 elseif size(data, 2) == spikeWidth
                     rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels, :, :);
@@ -115,7 +120,7 @@ else
             end
         end
         if param.saveMultipleRaw
-            tmpspkmap = permute(rawWaveforms(iCluster).spkMap,[2,1,3]); % Compatible with UnitMatch
+            tmpspkmap = permute(rawWaveforms(iCluster).spkMap,[2,1,3]); % Compatible with UnitMatch QQ
             writeNPY(tmpspkmap, fullfile(rawFileInfo.folder,['RawWaveforms_' rawFileInfo.name],['Unit' num2str(iCluster) '_RawSpikes.npy']))
         end
 
@@ -138,4 +143,7 @@ else
  
     writeNPY(rawWaveformsFull, fullfile(savePath, 'templates._bc_rawWaveforms.npy'))
     writeNPY(rawWaveformsPeakChan, fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy'))
+end
+
+
 end

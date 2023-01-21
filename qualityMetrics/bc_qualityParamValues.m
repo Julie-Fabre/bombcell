@@ -32,6 +32,9 @@ param.deltaTimeChunk = 360; %time in seconds
 % presence ratio 
 param.presenceRatioBinSize = 60; % in seconds 
 
+% drift estimate
+param.driftBinSize = 60; % in seconds
+
 % waveform parameters
 param.waveformBaselineWindow = [20, 30]; % in samples 
 param.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value 

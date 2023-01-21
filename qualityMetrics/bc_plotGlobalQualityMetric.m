@@ -1,3 +1,13 @@
+function bc_plotGlobalQualityMetric(param, qMetric, unitType)
+% JF,
+% ------
+% Inputs
+% ------
+% 
+% ------
+% Outputs
+% ------
+
 % 1. multi-venn diagram of units classified as noise/mua by each quality metric
 if param.plotGlobal
     figure();

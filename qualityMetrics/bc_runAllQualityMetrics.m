@@ -107,13 +107,10 @@ uniqueTemplates = unique(spikeTemplates);
 
 
 verbose = param.verbose; % update user on progress
-reextract = param.reextractRaw; %Re extract raw waveforms
-% QQ extract raw waveforms based on 'good' timechunks defined later ? 
+reextract = param.reextractRaw; %Re extract raw waveforms - QQ extract raw waveforms based on 'good' timechunks defined later ? 
 
 [rawWaveformsFull, rawWaveformsPeakChan]= bc_extractRawWaveformsFast(param, ...
-    spikeTimes_samples, spikeTemplates, reextract, savePath, verbose); 
-% qMetric.maxChannels(uniqueTemplates) = rawWaveformsPeakChan;
-% takes ~10' for an average dataset
+    spikeTimes_samples, spikeTemplates, reextract, savePath, verbose); % takes ~10' for an average dataset
 % previous, slower method: 
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
 %     spikeTimes, spikeTemplates, usedChannels, verbose);
@@ -137,6 +134,9 @@ for iUnit = 1:length(uniqueTemplates)
     theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
 
+    %% remove duplicate spikes 
+
+
     %% percentage spikes missing (false negatives)
     [qMetric.percentageSpikesMissing_gaussian(iUnit,:), qMetric.percentageSpikesMissing_symmetric(iUnit,:), qMetric.ksTest_pValue(iUnit,:), ...
         forGUI.ampliBinCenters(iUnit,:), forGUI.ampliBinCounts(iUnit,:), forGUI.ampliGaussianFit(iUnit,:)] = ...
@@ -146,19 +146,19 @@ for iUnit = 1:length(uniqueTemplates)
     [qMetric.fractionRPVs(iUnit,:), ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, param.tauR, param.tauC, ...
         timeChunks, param.plotDetails);
     
-    %% define timechunks to keep: if param.computeTimeChunks, keep times with low percentage spikes missing and low fraction contam
+    %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
     if param.computeTimeChunks
-        [theseSpikeTimes, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)] = bc_defineTimechunksToKeep(...
+        [theseSpikeTimes, theseAmplis, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)] = bc_defineTimechunksToKeep(...
             qMetric.percentageSpikesMissing(iUnit,:), qMetric.fractionRPVs(iUnit,:), param.maxPercSpikesMissing, ...
             param.maxRPVviolations, theseAmplis, theseSpikeTimes, timeChunks);
     end
 
     %% presence ratio (potential false negatives)
-    [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, param.presenceRatioBinSize, ...
-        timeChunks, param.plotDetails);
+    [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
+        qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param.plotDetails);
 
-    %% drift estimate 
-
+    %% maximum cumulative drift estimate 
+    qMetric.maxDriftEstimate(iUnit) = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, thisUnit, param.plotDetails);
     
     %% number spikes
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
@@ -189,15 +189,16 @@ for iUnit = 1:length(uniqueTemplates)
 end
 qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates);
 
-bc_getQualityUnitType;
+unitType = bc_getQualityUnitType(param, qMetric);
 
+fprintf('Finished extracting quality metrics from %s \n', param.rawFile)
 if exist('savePath', 'var') %save qualityMetrics
-    fprintf('Saving quality metrics from %s to %s \n', param.rawFile, savePath)
-    bc_saveQMetrics;
+    bc_saveQMetrics(param, qMetric, savePath);
+    fprintf('Saved quality metrics from %s to %s \n', param.rawFile, savePath)
 else
-    disp('Warning, not saved!')
+    fprintf('Warning, quality metrics from %s not saved! \n', param.rawFile)
 end
-disp([newline, 'finished extracting quality metrics'])
 
-%bc_plotGlobalQualityMetric;
+
+bc_plotGlobalQualityMetric(param, qMetric);
 end

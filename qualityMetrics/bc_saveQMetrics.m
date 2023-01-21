@@ -1,4 +1,12 @@
-
+function bc_saveQMetrics(param, qMetric, savePath)
+% JF,Save quality metrics
+% ------
+% Inputs
+% ------
+% 
+% ------
+% Outputs
+% ------
 if ~exist(savePath, 'dir')
     mkdir(fullfile(savePath))
 end
@@ -37,4 +45,5 @@ if param.saveAsParquet
     qMetricSummary.maxChannels = qMetric.maxChannels;
 
     parquetwrite([savePath, filesep, 'templates._bc_qMetrics.parquet'], qMetricSummary)
+end
 end

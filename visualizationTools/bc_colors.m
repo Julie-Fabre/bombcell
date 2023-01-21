@@ -1,6 +1,13 @@
 function colorMtx =  bc_colors(nColors, backgroundCol)
-%get distinguishable color-blind friendly colors 
+% JF, get distinguishable color-blind friendly colors 
 % max 15 colors.
+% ------
+% Inputs
+% ------
+% 
+% ------
+% Outputs
+% ------
 
 allColors =[255,255,255;...%1 white
             0,0,0;...%2 black

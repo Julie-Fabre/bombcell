@@ -1,7 +1,12 @@
-%bc_getQualityUnitType
-if exist('param')
-    param = BCparam; % in case you use unitmatch
-end
+function unitType = bc_getQualityUnitType(param, qMetric)
+% JF, Classify units into good/mua/noise/non-somatic 
+% ------
+% Inputs
+% ------
+% 
+% ------
+% Outputs
+% ------
 if param.computeDistanceMetrics && ~isnan(param.isoDmin)
     unitType = nan(length(qMetric.percentageSpikesMissing), 1);
     
