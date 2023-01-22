@@ -96,27 +96,27 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples
 
 %% if some manual curation already performed, remove bad units
 
-%% prepare for quality metrics computations: get waveform max_channel and raw waveforms
+%% prepare for quality metrics computations
+% initialize structures 
 qMetric = struct;
 forGUI = struct;
 
+% get unit max channels
 maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
-
 qMetric.maxChannels = maxChannels;
+
+% get unique templates 
 uniqueTemplates = unique(spikeTemplates);
 
-
-verbose = param.verbose; % update user on progress
-reextract = param.reextractRaw; %Re extract raw waveforms - QQ extract raw waveforms based on 'good' timechunks defined later ? 
-
-[rawWaveformsFull, rawWaveformsPeakChan]= bc_extractRawWaveformsFast(param, ...
-    spikeTimes_samples, spikeTemplates, reextract, savePath, verbose); % takes ~10' for an average dataset
+% extract and save or load in raw waveforms 
+[rawWaveformsFull, rawWaveformsPeakChan] = bc_extractRawWaveformsFast(param, ...
+    spikeTimes_samples, spikeTemplates, param.reextractRaw, savePath, param.verbose); % takes ~10' for an average dataset
 % previous, slower method: 
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
 %     spikeTimes, spikeTemplates, usedChannels, verbose);
 
-%% loop through units and get quality metrics
 
+% divide recording into time chunks 
 spikeTimes_seconds = spikeTimes_samples ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
 if param.computeTimeChunks
     timeChunks = [min(spikeTimes_seconds):param.deltaTimeChunk:max(spikeTimes_seconds), max(spikeTimes_seconds)];
@@ -124,11 +124,14 @@ else
     timeChunks = [min(spikeTimes_seconds), max(spikeTimes_seconds)];
 end
 
+%% loop through units and get quality metrics
 fprintf('Extracting quality metrics from %s ... \n', param.rawFile)
 
 for iUnit = 1:length(uniqueTemplates)
     
     clearvars thisUnit theseSpikeTimes theseAmplis
+
+    % get this unit's attributes 
     thisUnit = uniqueTemplates(iUnit);
     qMetric.clusterID(iUnit) = thisUnit;
     theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
@@ -188,7 +191,8 @@ for iUnit = 1:length(uniqueTemplates)
     %% Save some raw waveforms for the GUI
     qMetric.rawWaveforms(iUnit).spkMapMean = squeeze(rawWaveformsFull(iUnit,:,:)); %QQ
 end
-qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates);
+
+qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates); %only keep max channels that corre
 
 unitType = bc_getQualityUnitType(param, qMetric);
 

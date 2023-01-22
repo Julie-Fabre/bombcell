@@ -22,22 +22,8 @@ function [rawWaveformsFull, rawWaveformsPeakChan] = bc_extractRawWaveformsFast(p
 %  mean raw waveforms for each unit and channel
 % rawWaveformsPeakChan: nUnits x 1 vector of each unit's channel with the maximum
 %   amplitude
-% maximumDriftEstimate
-% ------
-% Reference
-% ------
-% for drift estimate: Siegle, J.H., Jia, X., Durand, S. et al. Survey of spiking in the mouse 
-% visual system reveals functional hierarchy. Nature 592, 86–92 (2021). https://doi.org/10.1038/s41586-020-03171-x
-% from the paper: To compute the maximum drift for one unit, 
-% the peak channel was calculated from the top principal 
-% components of every spike. Next, the peak channel values are 
-% binned in 51-s intervals, and the median value is calculated 
-% across all spikes in each bin (assuming at least 10 spikes 
-% per bin). The maximum drift is defined as the difference 
-% between the maximum peak channel and the minimum peak channel
-% across all bins. The average maximum drift across all units
-% is used to identify sessions with a high amount of probe 
-% motion relative to the brain.
+% snrEstimate 
+
 
 %% Check if data already extracted
 rawWaveformFolder = dir(fullfile(savePath, 'templates._bc_rawWaveforms.npy'));
@@ -144,6 +130,10 @@ else
     writeNPY(rawWaveformsFull, fullfile(savePath, 'templates._bc_rawWaveforms.npy'))
     writeNPY(rawWaveformsPeakChan, fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy'))
 end
-
+%% estimate signal-to-noise ratio 
+if isfolder(fullfile(rawFileInfo.folder,['RawWaveforms_' rawFileInfo.name]))
+        mkdir(fullfile(rawFileInfo.folder,['RawWaveforms_' rawFileInfo.name]))
+end
+%% 
 
 end
