@@ -134,7 +134,10 @@ else
     writeNPY(average_baseline_idx_cat, fullfile(savePath, 'templates._bc_baselineNoiseAmplitudeIndex.npy'))
 end
 %% estimate signal-to-noise ratio 
+clustInds = unique(spikeTemplates);
+    nClust = numel(clustInds);
 if ~isempty(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'))
+    
     average_baseline_cat = readNPY(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'));
     average_baseline_idx_cat = readNPY(fullfile(savePath, 'templates._bc_baselineNoiseAmplitudeIndex.npy'));
     baseline_mad = arrayfun(@(x) median(average_baseline_cat(average_baseline_idx_cat==x) - ...
