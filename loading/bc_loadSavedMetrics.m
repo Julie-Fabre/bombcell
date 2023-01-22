@@ -1,3 +1,5 @@
+function [param, qMetric] = bc_loadSavedMetrics(savePath)
+
 if ~isempty(dir(fullfile(savePath, 'qMetric*.mat')))
     load(fullfile(savePath, 'qMetric.mat'))
 elseif ~isempty(dir(fullfile(savePath, 'templates._bc_qMetrics.parquet')))

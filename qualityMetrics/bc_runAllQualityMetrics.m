@@ -110,11 +110,12 @@ uniqueTemplates = unique(spikeTemplates);
 
 % extract and save or load in raw waveforms 
 [rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extractRawWaveformsFast(param, ...
-    spikeTimes_samples, spikeTemplates, param.reextractRaw, savePath, param.verbose); % takes ~10' for an average dataset
+    spikeTimes_samples, spikeTemplates, param.reextractRaw, savePath, param.verbose); % takes ~10' for 
+% an average dataset, the first time it is run, <1min after that
+
 % previous, slower method: 
 % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
 %     spikeTimes, spikeTemplates, usedChannels, verbose);
-
 
 % divide recording into time chunks 
 spikeTimes_seconds = spikeTimes_samples ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
@@ -142,7 +143,7 @@ for iUnit = 1:length(uniqueTemplates)
 
     %% percentage spikes missing (false negatives)
     [qMetric.percentageSpikesMissing_gaussian(iUnit,:), qMetric.percentageSpikesMissing_symmetric(iUnit,:), qMetric.ksTest_pValue(iUnit,:), ...
-        forGUI.ampliBinCenters(iUnit,:), forGUI.ampliBinCounts(iUnit,:), forGUI.ampliGaussianFit(iUnit,:)] = ...
+        forGUI.ampliBinCenters{iUnit}, forGUI.ampliBinCounts{iUnit}, forGUI.ampliGaussianFit{iUnit}] = ...
         bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails);
 
     %% fraction contamination (false positives)
@@ -183,13 +184,11 @@ for iUnit = 1:length(uniqueTemplates)
     %% distance metrics
     if param.computeDistanceMetrics
         [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit), ...
-            forGUI.d2_mahal{iUnit}, forGUI.Xplot{iUnit}, forGUI.Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
+            forGUI.d2_mahal{iUnit}, forGUI.mahalobnis_Xplot{iUnit}, forGUI.mahalobnis_Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
             param.nChannelsIsoDist, param.plotDetails); %QQ
     end
 
-    %% Save some raw waveforms for the GUI
-    qMetric.rawWaveforms(iUnit).spkMapMean = squeeze(rawWaveformsFull(iUnit,:,:)); %QQ
 end
 
 %% get unit types and save data
@@ -206,5 +205,5 @@ else
 end
 
 %% get some summary plots
-bc_plotGlobalQualityMetric(param, qMetric);
+%bc_plotGlobalQualityMetric(param, qMetric);
 end

@@ -28,8 +28,8 @@ param.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times
 % waveform starts 
 
 % refractory period parameters
-param.tauR = 0.0020; % refractory period time (s)
-param.tauC = 0.0001; % censored period time (s)
+param.tauR_values = [0.5:0.5:10]./1000; % refractory period time (s), usually 0.0020
+param.tauC = 0.1/1000; % censored period time (s)
 
 % percentage spikes missing parameters 
 param.computeTimeChunks = 1; % compute fraction refractory period violations 

@@ -77,11 +77,10 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
             fractionRPVs(iTimeChunk,iTauR_value) = 1;
         end
     end
-    end
     
     
     if plotThis
-        
+        if tau
         subplot(2, length(timeChunks) - 1, (length(timeChunks) - 1)+iTimeChunk)
         theseISI = diff(theseSpikeTimes(theseSpikeTimes >= timeChunks(iTimeChunk) & theseSpikeTimes < timeChunks(iTimeChunk+1)));
         theseisiclean = theseISI(theseISI >= tauC); % removed duplicate spikes
@@ -93,21 +92,16 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
         ylabel('# of spikes')
         end
         ylims = ylim;
+        line([2, 2], [ylims(1), ylims(2)], 'Color', [0.86, 0.2, 0.13]);
         [fr, ~] = histcounts(theseisiclean*1000, [0:0.5:1000]);
         line([0, 10], [nanmean(fr(800:1000)), nanmean(fr(800:1000))], 'Color',[0.86, 0.2, 0.13], 'LineStyle', '--');
         dummyh = line(nan, nan, 'Linestyle', 'none', 'Marker', 'none', 'Color', 'none');
-        
-        for iTauR_value = [1,max(tauR)]
-            line([tauR(iTauR_value)*1000*1000, tauR(iTauR_value)*1000*1000], [ylims(1), ylims(2)], 'Color', [0.86, 0.2, 0.13]);
-            
-        end
-        legend([dummyh, dummyh], {[num2str(round(fractionRPVs(iTimeChunk,1)*100,1)), '% rpv'],...
-            [num2str(round(fractionRPVs(iTimeChunk,max(tauR))*100,1)), '% rpv']},'Location', 'NorthEast','TextColor', [0.7, 0.7, 0.7], 'Color', 'none');
+        legend(dummyh, [num2str(round(fractionRPVs(iTimeChunk)*100,1)), '% rpv'], 'Location', 'NorthEast','TextColor', [0.7, 0.7, 0.7], 'Color', 'none');
        
 
         makepretty('none')
     end
-    
+    end
 end
 
 end

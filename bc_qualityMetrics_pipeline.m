@@ -38,13 +38,13 @@ if qMetricsExist == 0 || rerun
     qMetric = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
         templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
 else
-    bc_loadSavedMetrics; 
-    bc_getQualityUnitType;
+    [param, qMetric] = bc_loadSavedMetrics(savePath); 
+    unitType = bc_getQualityUnitType(param, qMetric);
 end
 
 %% view units + quality metrics in GUI 
 % load data for GUI
-bc_loadMetricsForGUI;
+%bc_loadMetricsForGUI;
 
 % GUI guide: 
 % left/right arrow: toggle between units 
@@ -54,7 +54,7 @@ bc_loadMetricsForGUI;
 % up/down arrow: toggle between time chunks in the raw data
 % u: brings up a input dialog to enter the unit you want to go to 
  
-bc_unitQualityGUI(memMapData, ephysData, qMetric, rawWaveforms, param,...
-    probeLocation, unitType, plotRaw);
+%bc_unitQualityGUI(memMapData, ephysData, qMetric, rawWaveforms, param,...
+%    probeLocation, unitType, plotRaw);
 
 
