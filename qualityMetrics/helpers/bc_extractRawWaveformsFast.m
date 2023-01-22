@@ -26,16 +26,11 @@ function [rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extra
 
 %% Check if data already extracted
 rawWaveformFolder = dir(fullfile(savePath, 'templates._bc_rawWaveforms.npy'));
-old_rawWaveformFolder = dir(fullfile(savePath, 'templates._jf_rawWaveforms.npy'));
 
 if ~isempty(rawWaveformFolder) && reExtract == 0
 
     rawWaveformsFull = readNPY(fullfile(savePath, 'templates._bc_rawWaveforms.npy'));
     rawWaveformsPeakChan = readNPY(fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy'));
-
-elseif ~isempty(old_rawWaveformFolder) && reExtract == 0
-    rawWaveformsFull = readNPY(fullfile(savePath, 'templates._jf_rawWaveforms.npy'));
-    rawWaveformsPeakChan = readNPY(fullfile(savePath, 'templates._jf_rawWaveformPeakChannels.npy'));
 
 else
 
@@ -112,7 +107,7 @@ else
 %          plot(spkMapMean_sm(rawWaveformsPeakChan(iCluster),:))
 
         if (mod(iCluster, 100) == 0 || iCluster == nClust) && verbose
-            fprintf(['\n   Finished ', num2str(iCluster), ' of ', num2str(nClust), ' units.']);
+            fprintf(['\n   Finished ', num2str(iCluster), ' / ', num2str(nClust), ' units.']);
         end
 
     end
@@ -129,7 +124,7 @@ else
 
       % save average 
     average_baseline = arrayfun(@(x) squeeze(nanmean(rawWaveforms(x).spkMap(rawWaveformsPeakChan(x),...
-        1:param.waveformBaselineWindow(2),:),2)), 1:nClust, 'UniformOutput',false);
+        1:param.waveformBaselineNoiseWindow,:),2)), 1:nClust, 'UniformOutput',false);
     average_baseline_cat = cat(1, average_baseline{:});
     average_baseline_spikeCount = arrayfun(@(x) size(rawWaveforms(x).spkMap,3), 1:nClust);
     average_baseline_idx = arrayfun(@(x) ones(average_baseline_spikeCount(x),1)*x, 1:nClust, 'UniformOutput',false);
@@ -140,10 +135,12 @@ else
 end
 %% estimate signal-to-noise ratio 
 if ~isempty(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'))
-    readNPY(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'))
-    readNPY(fullfile(savePath, 'templates._bc_baselineNoiseAmplitudeIndex.npy'))
+    average_baseline_cat = readNPY(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'));
+    average_baseline_idx_cat = readNPY(fullfile(savePath, 'templates._bc_baselineNoiseAmplitudeIndex.npy'));
     baseline_mad = arrayfun(@(x) median(average_baseline_cat(average_baseline_idx_cat==x) - ...
-         nanmean(average_baseline_cat(average_baseline_idx_cat==x))), 1:nClust);
+         nanmean(average_baseline_cat(average_baseline_idx_cat==x))), 1:nClust); % median absolute deviation of
+    % time just before waveform. we use this as a proxy to evaluate the
+    % overall amount of noise for each unit's channel 
     signalToNoiseRatio = max(max(rawWaveformsFull(:,rawWaveformsPeakChan,:))) ./ baseline_mad;
 else
     fprintf('No saved waveform baseline file found, skipping signal to noise calculation')

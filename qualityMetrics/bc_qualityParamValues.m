@@ -22,6 +22,10 @@ param.saveMultipleRaw = 0; % If you wish to save the nRawSpikesToExtract as well
 param.decompressData = 1; % whether to decompress .cbin ephys data 
 param.spikeWidth = 82; % width in samples 
 
+% signal to noise ratio
+param.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times
+% extracted to computer the mean raw waveform - this needs to be before the
+% waveform starts 
 
 % refractory period parameters
 param.tauR = 0.0020; % refractory period time (s)
