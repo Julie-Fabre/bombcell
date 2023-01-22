@@ -31,7 +31,7 @@ end
 param = bc_qualityParamValues(ephysMetaDir, rawFile); 
 
 %% compute quality metrics 
-rerun = 1;
+rerun = 0;
 qMetricsExist = ~isempty(dir(fullfile(savePath, 'qMetric*.mat'))) || ~isempty(dir(fullfile(savePath, 'templates._bc_qMetrics.parquet')));
 
 if qMetricsExist == 0 || rerun

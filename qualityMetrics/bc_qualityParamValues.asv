@@ -22,7 +22,7 @@ param.saveMultipleRaw = 0; % If you wish to save the nRawSpikesToExtract as well
 param.decompressData = 1; % whether to decompress .cbin ephys data 
 param.spikeWidth = 82; % width in samples 
 
-
+% signal to n
 % refractory period parameters
 param.tauR = 0.0020; % refractory period time (s)
 param.tauC = 0.0001; % censored period time (s)

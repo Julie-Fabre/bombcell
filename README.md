@@ -4,8 +4,9 @@
 
 Bombcell works with units recorded with Neuropixel probes (3A, 1.0 and 2.0, recorded with SpikeGLX or OpenEphys) and spike-sorted with kilosort. It classifies the unit into three categories: single units, multi-units and noise units, with an option to keep or remove non-somatic spikes. `param` is the structure that defines how to compute the quality metrics and which thresholds to use to classify units.
 
+Not yet published. Please add xxx.
 
-Used in:
+Preliminary versions of bombcell were used in:
 
 - [Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020-03166-8) to define real, well isolated striatal units and classify them into MSNs, FSIs and TANs. See the script `bc_selectAndClassifyStriatum`(work in progress) to classify striatal cells in the same way.
 

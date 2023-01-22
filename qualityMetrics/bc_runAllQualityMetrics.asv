@@ -138,7 +138,7 @@ for iUnit = 1:length(uniqueTemplates)
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
 
     %% remove duplicate spikes 
-    % save as spikeTimes_noDuplicates (NaN out the dupes)?
+
 
     %% percentage spikes missing (false negatives)
     [qMetric.percentageSpikesMissing_gaussian(iUnit,:), qMetric.percentageSpikesMissing_symmetric(iUnit,:), qMetric.ksTest_pValue(iUnit,:), ...
