@@ -1,18 +1,14 @@
 %% set paths 
-ephysKilosortPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/kilosort2/site2';% eg /home/netshare/zinu/JF067/2022-02-17/ephys/kilosort2/site1, where this path contains 
-                                           % kilosort output
-ephysDirPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/site2'; % where your 
-ephysRawDir = dir('/home/netshare/zinu/JF078/2022-05-25/ephys/site2/2022_05_25-JF078-1_g0_t0.imec1.ap.*bin');
-ephysMetaDir = dir('/home/netshare/zinu/JF078/2022-05-25/ephys/site2/2022_05_25-JF078-1_g0_t0.imec1.ap.*meta');
-decompressDataLocal = '/media/julie/ExtraHD/decompressedData';%'/media/julie/Elements/JF078/2022-05-25/ephys';%/media/julie/ExtraHD/decompressedData';
-savePath = fullfile(ephysDirPath, 'qMetrics'); 
+ephysKilosortPath = '/home/netshare/zinu/JF078/2022-05-25/ephys/kilosort2/site2';% path to your kilosort output files 
+ephysRawDir = dir('/home/netshare/zinu/JF078/2022-05-25/ephys/site2/2022_05_25-JF078-1_g0_t0.imec1.ap.*bin'); % path to yourraw .bin or .dat data
+ephysMetaDir = dir('/home/netshare/zinu/JF078/2022-05-25/ephys/site2/2022_05_25-JF078-1_g0_t0.imec1.ap.*meta'); % path to your meta file
+saveLocation = '/home/netshare/zinu/JF078/2022-05-25/ephys/site2'; % where you want to save the quality metrics 
+savePath = fullfile(saveLocation, 'qMetrics'); 
+decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
 
 %% load data 
 [spikeTimes_samples, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysKilosortPath);
-
-%% which quality metric parameters to extract and thresholds 
-bc_qualityParamValues; 
 
 %% detect whether data is compressed, decompress locally if necessary
 if strcmp(ephysRawDir.name(end-4:end), '.cbin') &&...
@@ -21,15 +17,18 @@ if strcmp(ephysRawDir.name(end-4:end), '.cbin') &&...
     
     decompDataFile = bc_extractCbinData([ephysRawDir.folder, filesep, ephysRawDir.name],...
         [], [], [], decompressDataLocal);
-    param.rawFile = decompDataFile;
+    rawFile = decompDataFile;
 elseif strcmp(ephysRawDir.name(end-4:end), '.cbin') &&...
         ~isempty(dir([decompressDataLocal, filesep, ephysRawDir.name(1:end-5), '.bin']))
     fprintf('Using previously decompressed ephys data file in %s ... \n', decompressDataLocal)
     
-    param.rawFile = [decompressDataLocal, filesep, ephysRawDir.name(1:end-5), '.bin'];
+    rawFile = [decompressDataLocal, filesep, ephysRawDir.name(1:end-5), '.bin'];
 else
-    param.rawFile = [ephysRawDir.folder, filesep, ephysRawDir.name];
+    rawFile = [ephysRawDir.folder, filesep, ephysRawDir.name];
 end
+
+%% which quality metric parameters to extract and thresholds 
+param = bc_qualityParamValues(ephysMetaDir, rawFile); 
 
 %% compute quality metrics 
 rerun = 1;
@@ -42,6 +41,7 @@ else
     bc_loadSavedMetrics; 
     bc_getQualityUnitType;
 end
+
 %% view units + quality metrics in GUI 
 % load data for GUI
 bc_loadMetricsForGUI;

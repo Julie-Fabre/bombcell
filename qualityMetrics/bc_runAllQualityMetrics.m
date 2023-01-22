@@ -129,7 +129,7 @@ fprintf('Extracting quality metrics from %s ... \n', param.rawFile)
 
 for iUnit = 1:length(uniqueTemplates)
     
-    clearvars thisUnit theseSpikeTimes theseAmplis
+    clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
 
     % get this unit's attributes 
     thisUnit = uniqueTemplates(iUnit);

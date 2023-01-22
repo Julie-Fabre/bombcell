@@ -63,8 +63,11 @@ else
 
     %% Interate over spike clusters and find all the data associated with them
     rawWaveforms = struct;
-    rawWaveformsFull = nan(nClust, nChannels-param.nSyncChannels, spikeWidth);% Remove sync
-  
+    if nChannels == 385
+        rawWaveformsFull = nan(nClust, nChannels-1, spikeWidth);% Remove sync
+    else
+        rawWaveformsFull = nan(nClust, nChannels, spikeWidth); 
+    end
     rawWaveformsPeakChan = nan(nClust, 1);
 
     for iCluster = 1:nClust
@@ -78,7 +81,7 @@ else
         end
         nSpkLocal = numel(rawWaveforms(iCluster).spkIndsub);
 
-        rawWaveforms(iCluster).spkMap = nan(nChannels-param.nSyncChannels, spikeWidth, nSpkLocal);
+        rawWaveforms(iCluster).spkMap = nan(384, spikeWidth, nSpkLocal);
         for iSpike = 1:nSpkLocal
             thisSpikeIdx = rawWaveforms(iCluster).spkIndsub(iSpike);
                 
@@ -95,8 +98,11 @@ else
                 %         if size(data, 2) == spikeWidth
                 %             rawWaveforms(iCluster).spkMap(:, :, iSpike) = data;
                 %         end
-               rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels-param.nSyncChannels, :, :); %remove sync channel
-                
+                if size(data, 2) == spikeWidth && nChannels == 385
+                    rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels-1, :, :); %remove sync channel
+                elseif size(data, 2) == spikeWidth
+                    rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels, :, :);
+                end
             end
         end
         if param.saveMultipleRaw
@@ -124,7 +130,7 @@ else
     writeNPY(rawWaveformsFull, fullfile(savePath, 'templates._bc_rawWaveforms.npy'))
     writeNPY(rawWaveformsPeakChan, fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy'))
     % save average 
-    average_baseline = arrayfun(@(x) nanmean(rawWaveforms(x).spkMap())
+    average_baseline = nanmean()
 end
 %% estimate signal-to-noise ratio 
 %A / sdt noise     {\displaystyle \operatorname {MAD} =\operatorname {median} (|X_{i}-{\tilde {X}}|)}

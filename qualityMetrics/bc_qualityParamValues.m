@@ -1,4 +1,4 @@
-%bc_qualityParamValues
+function param = bc_qualityParamValues(ephysMetaDir, rawFile)
 param = struct;
 
 %% calculating quality metrics parameters 
@@ -15,10 +15,10 @@ param.saveAsParquet = 1; % save outputs at .parquet file
 param.saveAsMat = 1; % save outputs at .mat file - useful for GUI
 
 % amplitude parameters
-param.ephysMetaFile = [ephysMetaDir.folder, filesep, ephysMetaDir.name];
 param.nRawSpikesToExtract = 100; % how many raw spikes to extract for each unit 
-param.saveMultipleRaw = 1; % If you wish to save the nRawSpikesToExtract as well
+param.saveMultipleRaw = 0; % If you wish to save the nRawSpikesToExtract as well
 param.decompressData = 1; % whether to decompress .cbin ephys data 
+param.spikeWidth = 82; % width in samples 
 
 % refractory period parameters
 param.tauR = 0.0020; % refractory period time (s)
@@ -46,6 +46,9 @@ param.ephys_sample_rate = 30000; % samples per second
 param.nChannels = 385; %number of recorded channels (including any sync channels)
 % recorded in the raw data. This is usually 384 or 385 for neuropixels
 % recordings
+param.nSyncChannels = 1;
+param.ephysMetaFile = [ephysMetaDir.folder, filesep, ephysMetaDir.name];
+param.rawFile = rawFile;
 
 % distance metric parameters
 param.computeDistanceMetrics = 0; % whether to compute distance metrics - this can be time consuming 
@@ -71,3 +74,4 @@ param.maxWvBaselineFraction = 0.3;
 param.isoDmin = 20; 
 param.lratioMax = 0.1;
 param.ssMin = NaN; 
+end

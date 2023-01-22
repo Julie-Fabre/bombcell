@@ -129,7 +129,7 @@ fprintf('Extracting quality metrics from %s ... \n', param.rawFile)
 
 for iUnit = 1:length(uniqueTemplates)
     
-    clearvars thisUnit theseSpikeTimes theseAmplis
+    clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
 
     % get this unit's attributes 
     thisUnit = uniqueTemplates(iUnit);
@@ -138,7 +138,7 @@ for iUnit = 1:length(uniqueTemplates)
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
 
     %% remove duplicate spikes 
-
+    % save as spikeTimes_noDuplicates (NaN out the dupes)?
 
     %% percentage spikes missing (false negatives)
     [qMetric.percentageSpikesMissing_gaussian(iUnit,:), qMetric.percentageSpikesMissing_symmetric(iUnit,:), qMetric.ksTest_pValue(iUnit,:), ...
@@ -192,7 +192,8 @@ for iUnit = 1:length(uniqueTemplates)
     qMetric.rawWaveforms(iUnit).spkMapMean = squeeze(rawWaveformsFull(iUnit,:,:)); %QQ
 end
 
-qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates); %only keep max channels that corre
+%% get unit types and save data
+qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates); 
 
 unitType = bc_getQualityUnitType(param, qMetric);
 
@@ -204,6 +205,6 @@ else
     fprintf('Warning, quality metrics from %s not saved! \n', param.rawFile)
 end
 
-
+%% get some summary plots
 bc_plotGlobalQualityMetric(param, qMetric);
 end
