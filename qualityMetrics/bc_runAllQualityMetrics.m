@@ -177,7 +177,7 @@ for iUnit = 1:length(uniqueTemplates)
         param.maxWvBaselineFraction, param.waveformBaselineWindow, param.minThreshDetectPeaksTroughs, param.plotDetails); %do we need tempWv ? 
 
     %% amplitude
-    qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit,:),:), ...
+    qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit),:), ...
         param.ephysMetaFile);
 
     %% distance metrics
