@@ -26,7 +26,7 @@ if param.saveAsParquet
 
     % save the rest of quality metrics and fraction refractory period
     % violations for each unit's estimated tauR
-    parquetwrite([fullfile(savePath, 'templates._bc_qMetrics.parquet')], struct2table(param, 'AsArray', 1))
+    parquetwrite([fullfile(savePath, 'templates._bc_qMetrics.parquet')], struct2table(qMetric, 'AsArray', 1))
 
 end
 end
