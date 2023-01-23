@@ -28,7 +28,9 @@ param.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times
 % waveform starts 
 
 % refractory period parameters
-param.tauR_values = [0.5:0.5:10]./1000; % refractory period time (s), usually 0.0020
+param.tauR_valuesMin = 0.5/1000; % refractory period time (s), usually 0.0020
+param.tauR_valuesStep = 0.5./1000; % refractory period time (s), usually 0.0020
+param.tauR_valuesMax = 10./1000; % refractory period time (s), usually 0.0020
 param.tauC = 0.1/1000; % censored period time (s)
 
 % percentage spikes missing parameters 
@@ -43,7 +45,8 @@ param.presenceRatioBinSize = 60; % in seconds
 param.driftBinSize = 60; % in seconds
 
 % waveform parameters
-param.waveformBaselineWindow = [20, 30]; % in samples 
+param.waveformBaselineWindowStart = 20;
+param.waveformBaselineWindowStop = 30; % in samples 
 param.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value 
 % in a units waveform to give the minimum prominence to detect peaks using
 % matlab's findpeaks function.

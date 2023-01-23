@@ -1,4 +1,4 @@
-function [theseSpikeTimes, theseAmplis, theseSpikeTemplates, useThisTimeStart, useThisTimeStop] = bc_defineTimechunksToKeep(percSpikesMissing, ...
+function [theseSpikeTimes, theseAmplis, theseSpikeTemplates, useThisTimeStart, useThisTimeStop, useTauR] = bc_defineTimechunksToKeep(percSpikesMissing, ...
     fractionRPVs, maxPercSpikesMissing, maxfractionRPVs, theseAmplis, theseSpikeTimes, theseSpikeTemplates,timeChunks)
 % JF
 % define time chunks where unit has low refractory period violations and
@@ -12,10 +12,13 @@ function [theseSpikeTimes, theseAmplis, theseSpikeTemplates, useThisTimeStart, u
 % ------
 %
 
+% use biggest tauR value that gives smallest contamination 
+sumRPV = sum(fractionRPVs,2);
+useTauR = find(sumRPV == min(sumRPV),1, 'last');
 
-if any(percSpikesMissing < maxPercSpikesMissing) && any(fractionRPVs < maxfractionRPVs) % if there are some good time chunks, keep those
+if any(percSpikesMissing < maxPercSpikesMissing) && any(fractionRPVs(:,:,useTauR) < maxfractionRPVs) % if there are some good time chunks, keep those
 
-    useTheseTimes_temp = find(percSpikesMissing < maxPercSpikesMissing & fractionRPVs < maxfractionRPVs);
+    useTheseTimes_temp = find(percSpikesMissing < maxPercSpikesMissing & fractionRPVs(:,:,useTauR) < maxfractionRPVs);
     if numel(useTheseTimes_temp) > 0
         continousTimes = diff(useTheseTimes_temp);
         if any(continousTimes == 1)

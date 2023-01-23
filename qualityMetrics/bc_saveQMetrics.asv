@@ -14,12 +14,10 @@ end
 % save parameters
 parquetwrite([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')], struct2table(param, 'AsArray', 1))
 
-
+% save quality metrics 
 if param.saveAsMat
     save(fullfile(savePath, 'qMetric.mat'), 'qMetric', '-v7.3')
 end
-
-parquetwrite([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')], struct2table(param, 'AsArray', 1))
 
 if param.saveAsParquet
     qMetricSummary = table('Size', [length(qMetric.clusterID), 12], 'VariableTypes', ...
@@ -49,5 +47,7 @@ if param.saveAsParquet
     qMetricSummary.maxChannels = qMetric.maxChannels;
 
     parquetwrite([savePath, filesep, 'templates._bc_qMetrics.parquet'], qMetricSummary)
+    % rpvs
+    % use times ? 
 end
 end

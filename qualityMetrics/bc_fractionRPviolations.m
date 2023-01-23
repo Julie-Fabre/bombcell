@@ -31,8 +31,10 @@ function [fractionRPVs, nRPVs, overestimateBool] = bc_fractionRPviolations(these
 % refractory period violatons. 2 factor because rogue spikes can occur before or
 % after true spike
 
-
-fractionRPVs = nan(length(timeChunks)-1, 1); % initialize variable 
+% initialize variables
+fractionRPVs = nan(length(timeChunks)-1, length(tauR)); 
+overestimateBool = nan(length(timeChunks)-1, length(tauR)); 
+nRPVs  = nan(length(timeChunks)-1, length(tauR));
 
 if plotThis
     figure('Color','none');
@@ -56,17 +58,18 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
     for iTauR_value = 1:length(tauR)
     a = 2 * (tauR(iTauR_value) - tauC) * N_chunk^2 / abs(diff(timeChunks(iTimeChunk:iTimeChunk+1)));
     % observed number of refractory period violations
-    nRPVs = sum(diff(theseSpikeTimes(theseSpikeTimes >= timeChunks(iTimeChunk) & theseSpikeTimes < timeChunks(iTimeChunk+1))) <= tauR);
+    nRPVs = sum(diff(theseSpikeTimes(theseSpikeTimes >= timeChunks(iTimeChunk) & theseSpikeTimes < timeChunks(iTimeChunk+1))) <= tauR(iTauR_value));
 
-    if nRPVs == 0 % if no observed refractory period violations 
-        fractionRPVs(iTimeChunk) = 0;
-        overestimateBool = 0;
+    if nRPVs == 0 % no observed refractory period violations - this can 
+        % also be because there are no spikes in this interval - use presence ratio to weed this out
+        fractionRPVs(iTimeChunk,iTauR_value) = 0;
+        overestimateBool(iTimeChunk,iTauR_value) = 0;
     else % otherwise solve the equation above 
         rts = roots([-1, 1, -nRPVs / a]);
         fractionRPVs(iTimeChunk,iTauR_value) = min(rts);
-        overestimateBool = 0;
+        overestimateBool(iTimeChunk,iTauR_value) = 0;
         if ~isreal(fractionRPVs(iTimeChunk,iTauR_value)) % function returns imaginary number if r is too high: overestimate number.
-            overestimateBool = 1;
+            overestimateBool(iTimeChunk,iTauR_value) = 1;
             if nRPVs < N_chunk %to not get a negative wierd number or a 0 denominator
                 fractionRPVs(iTimeChunk,iTauR_value) = nRPVs / (2 * (tauR(iTauR_value) - tauC) * (N_chunk - nRPVs));
             else
@@ -85,25 +88,28 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
         subplot(2, length(timeChunks) - 1, (length(timeChunks) - 1)+iTimeChunk)
         theseISI = diff(theseSpikeTimes(theseSpikeTimes >= timeChunks(iTimeChunk) & theseSpikeTimes < timeChunks(iTimeChunk+1)));
         theseisiclean = theseISI(theseISI >= tauC); % removed duplicate spikes
-        [isiProba, edgesISI] = histcounts(theseisiclean*1000, [0:0.5:10]);
+        [isiProba, edgesISI] = histcounts(theseisiclean*1000, [0:0.5:50]);
         bar(edgesISI(1:end-1)+mean(diff(edgesISI)), isiProba, 'FaceColor', [0, 0.35, 0.71], ...
              'EdgeColor', [0, 0.35, 0.71]); %Check FR
         if iTimeChunk ==1
-        xlabel('Interspike interval (ms)')
-        ylabel('# of spikes')
+            xlabel('Interspike interval (ms)')
+            ylabel('# of spikes')
+        else
+            xticks([])
+            yticks([])
         end
         ylims = ylim;
-        [fr, ~] = histcounts(theseisiclean*1000, [0:0.5:1000]);
+        [fr, ~] = histcounts(theseisiclean*1000, [0:0.5:5000]);
         line([0, 10], [nanmean(fr(800:1000)), nanmean(fr(800:1000))], 'Color',[0.86, 0.2, 0.13], 'LineStyle', '--');
         dummyh = line(nan, nan, 'Linestyle', 'none', 'Marker', 'none', 'Color', 'none');
         
-        for iTauR_value = [1,max(tauR)]
-            line([tauR(iTauR_value)*1000*1000, tauR(iTauR_value)*1000*1000], [ylims(1), ylims(2)], 'Color', [0.86, 0.2, 0.13]);
+        for iTauR_value = [1,length(tauR)]
+            line([tauR(iTauR_value)*1000, tauR(iTauR_value)*1000], [ylims(1), ylims(2)], 'Color', [0.86, 0.2, 0.13]);
             
         end
         legend([dummyh, dummyh], {[num2str(round(fractionRPVs(iTimeChunk,1)*100,1)), '% rpv'],...
-            [num2str(round(fractionRPVs(iTimeChunk,max(tauR))*100,1)), '% rpv']},'Location', 'NorthEast','TextColor', [0.7, 0.7, 0.7], 'Color', 'none');
-       
+            [num2str(round(fractionRPVs(iTimeChunk,length(tauR))*100,1)), '% rpv']},'Location', 'NorthEast','TextColor', [0.7, 0.7, 0.7], 'Color', 'none');
+       %axis square;
 
         makepretty('none')
     end
