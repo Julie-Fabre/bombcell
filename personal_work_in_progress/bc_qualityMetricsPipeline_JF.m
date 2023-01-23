@@ -32,11 +32,14 @@ if isempty(qMetricsExist) || rerun
     [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
         templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
 else
-    % load, classify 
+    [param, qMetric, fractionRPVs_allTauR] = bc_loadSavedMetrics(savePath); 
+    unitType = bc_getQualityUnitType(param, qMetric);
 end
 
-%% unit quality GUI 
-
+%% view units + quality metrics in GUI 
+% load data for GUI
+%bc_loadMetricsForGUI;
 % load gui stuffs 
 
-unitQualityGUI(ap_data.data.data,ephysData,qMetric, param, probeLocation, unitType, plotRaw);
+%bc_unitQualityGUI(memMapData, ephysData, qMetric, rawWaveforms, param,...
+%    probeLocation, unitType, plotRaw);

@@ -13,16 +13,16 @@ function [theseSpikeTimes, theseAmplis, theseSpikeTemplates, useThisTimeStart, u
 %
 
 % use biggest tauR value that gives smallest contamination 
-sumRPV = sum(fractionRPVs,2);
+sumRPV = sum(fractionRPVs,1);
 useTauR = find(sumRPV == min(sumRPV),1, 'last');
 
-if any(percSpikesMissing < maxPercSpikesMissing) && any(fractionRPVs(:,:,useTauR) < maxfractionRPVs) % if there are some good time chunks, keep those
+if any(percSpikesMissing < maxPercSpikesMissing) && any(fractionRPVs(:,useTauR) < maxfractionRPVs) % if there are some good time chunks, keep those
 
-    useTheseTimes_temp = find(percSpikesMissing < maxPercSpikesMissing & fractionRPVs(:,:,useTauR) < maxfractionRPVs);
+    useTheseTimes_temp = find(percSpikesMissing < maxPercSpikesMissing & fractionRPVs(:,useTauR) < maxfractionRPVs);
     if numel(useTheseTimes_temp) > 0
         continousTimes = diff(useTheseTimes_temp);
         if any(continousTimes == 1)
-            f = find(diff([false, continousTimes == 1, false]) ~= 0);
+            f = find(diff([false; continousTimes == 1; false]) ~= 0);
             [continousTimesUseLength, ix] = max(f(2:2:end)-f(1:2:end-1));
             continousTimesUseStart = useTheseTimes_temp(continousTimes(f(2*ix-1)));
             useTheseTimes = timeChunks(continousTimesUseStart:continousTimesUseStart+(continousTimesUseLength));

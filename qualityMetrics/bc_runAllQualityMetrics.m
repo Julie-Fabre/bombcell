@@ -182,8 +182,8 @@ for iUnit = 1:length(uniqueTemplates)
 
     %% waveform
     waveformBaselineWindow = [param.waveformBaselineWindowStart, param.waveformBaselineWindowStop];
-    [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), qMetric.peakLocs{iUnit},...
-        qMetric.troughLocs{iUnit}, qMetric.waveformDuration(iUnit), qMetric.waveformDuration(iUnit), ...
+    [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), forGUI.peakLocs{iUnit},...
+        forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), qMetric.waveformDuration_minMax(iUnit), ...
         forGUI.spatialDecayPoints(iUnit,:), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), ....
         forGUI.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms,thisUnit, qMetric.maxChannels(thisUnit),...
         param.ephys_sample_rate, channelPositions, param.maxWvBaselineFraction, waveformBaselineWindow,...
@@ -204,16 +204,16 @@ for iUnit = 1:length(uniqueTemplates)
 end
 
 %% get unit types and save data
-qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates); 
-qMetric.signalToNoiseRatio = signalToNoiseRatio(uniqueTemplates); 
+qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates)'; 
+qMetric.signalToNoiseRatio = signalToNoiseRatio(uniqueTemplates)'; 
 
 unitType = bc_getQualityUnitType(param, qMetric);
 
 fprintf('Finished extracting quality metrics from %s \n', param.rawFile)
-if exist('savePath', 'var') %save qualityMetrics
-    bc_saveQMetrics(param, qMetric, savePath);
+try
+    bc_saveQMetrics(param, qMetric, forGUI, savePath);
     fprintf('Saved quality metrics from %s to %s \n', param.rawFile, savePath)
-else
+catch
     fprintf('Warning, quality metrics from %s not saved! \n', param.rawFile)
 end
 

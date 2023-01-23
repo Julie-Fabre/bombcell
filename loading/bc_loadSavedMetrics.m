@@ -1,9 +1,13 @@
-function [param, qMetric] = bc_loadSavedMetrics(savePath)
-
-if ~isempty(dir(fullfile(savePath, 'qMetric*.mat')))
-    load(fullfile(savePath, 'qMetric.mat'))
-elseif ~isempty(dir(fullfile(savePath, 'templates._bc_qMetrics.parquet')))
-    qMetric = parquetread(fullfile(savePath, 'templates._bc_qMetrics.parquet'));
-end
-
+function [param, qMetric, fractionRPVs_allTauR] = bc_loadSavedMetrics(savePath)
+% JF, Load saved quality metrics
+% ------
+% Inputs
+% ------
+% 
+% ------
+% Outputs
+% ------
+qMetric = parquetread(fullfile(savePath, 'templates._bc_qMetrics.parquet'));
+fractionRPVs_allTauR = readNPY(fullfile(savePath, 'templates._bc_fractionRefractoryPeriodViolationsPerTauR.npy'));
 param = parquetread([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')]);
+end
