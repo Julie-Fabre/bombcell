@@ -10,22 +10,16 @@ function bc_plotGlobalQualityMetric(param, qMetric, unitType)
 
 % 1. multi-venn diagram of units classified as noise/mua by each quality metric
 if param.plotGlobal
-
-%     % euler diagram - previous method, now replaced by upset plot below
-%     figHandle = 1;
-%     figure(1);
-%     
-%     qMetricNames{1} = {'# peaks', '#troughs', 'waveform baseline', 'spatial decay slope', 'waveform duration', 'non-somatic'};
-%     if param.computeDistanceMetrics && ~isnan(param.isoDmin)
-%         qMetricNames{2} = {'refractory period violations', 'undetected spikes', '# spikes', 'waveform amplitude',...
-%              'presence ratio', 'max drift', 'isolation distance', 'l-ratio'};
-%     else
-%         qMetricNames{2} = {'refractory period violations', 'undetected spikes', '# spikes', 'waveform amplitude',...
-%              'presence ratio', 'max drift'};
-%     end
-%     bc_plotEulerDiagram(qMetric, param, qMetricNames, figHandle)
-
-    % upSet plot 
+    figure();
+    
+    qMetricNames{1} = {'# peaks', '#troughs', 'waveform baseline', 'spatial decay slope', 'waveform duration', 'non-somatic'};
+    if param.computeDistanceMetrics && ~isnan(param.isoDmin)
+        qMetricNames{2} = {'refractory period violations', 'undetected spikes', '# spikes', 'waveform amplitude', 'isolation distance', ...
+            'l-ratio'};
+    else
+        qMetricNames{2} = {'refractory period violations', 'undetected spikes', '# spikes', 'waveform amplitude'};
+    end
+    bc_plotEulerDiagram(qMetric, param, qMetricNames)
 
         
  

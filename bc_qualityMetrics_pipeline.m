@@ -35,7 +35,7 @@ rerun = 0;
 qMetricsExist = ~isempty(dir(fullfile(savePath, 'qMetric*.mat'))) || ~isempty(dir(fullfile(savePath, 'templates._bc_qMetrics.parquet')));
 
 if qMetricsExist == 0 || rerun
-    qMetric = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
+    [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
         templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
 else
     [param, qMetric] = bc_loadSavedMetrics(savePath); 
