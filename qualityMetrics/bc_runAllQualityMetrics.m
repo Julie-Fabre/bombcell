@@ -218,5 +218,5 @@ catch
 end
 
 %% get some summary plots
-%bc_plotGlobalQualityMetric(param, qMetric);
+bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates,rawWaveformsFull);
 end

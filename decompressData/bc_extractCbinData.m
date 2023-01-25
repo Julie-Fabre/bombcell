@@ -33,12 +33,13 @@ end
 % Assuming the ch file has the same basename and is in the same folder as cbin
 chName = [fileName(1:end-4), 'ch'];
 
-% reading ch json
+% reading .ch json file - contains info about compression
 fid = fopen(chName, 'r');
 data = fread(fid, 'uint8=>char');
 fclose(fid);
 cbinMeta = jsondecode(data');
 
+% sanitize/check inputs 
 if nargin < 2 || isempty(sStartEnd)
     sStartEnd = [cbinMeta.chunk_bounds(1), cbinMeta.chunk_bounds(end)];
 end
