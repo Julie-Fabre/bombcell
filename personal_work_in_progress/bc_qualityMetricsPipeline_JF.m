@@ -21,7 +21,7 @@ savePath = fullfile(ephysDirPath, 'qMetrics');
 
 %% run qmetrics 
 param = bc_qualityParamValues(ephysMetaDir, ephysap_path); 
-
+param.computeDistanceMetrics = 1;
 
 %% compute quality metrics 
 ephysDirPath = AP_cortexlab_filenameJF(animal, day, experiment, 'ephys_dir',site);

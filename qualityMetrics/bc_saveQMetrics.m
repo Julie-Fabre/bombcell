@@ -1,4 +1,4 @@
-function bc_saveQMetrics(param, qMetric, forGUI, savePath)
+function qMetric = bc_saveQMetrics(param, qMetric, forGUI, savePath)
 % JF, Save quality metrics
 % ------
 % Inputs

@@ -174,7 +174,7 @@ for iUnit = 1:length(uniqueTemplates)
         qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param.plotDetails);
 
     %% maximum cumulative drift estimate 
-    qMetric.maxDriftEstimate(iUnit) = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...
+    [qMetric.maxDriftEstimate(iUnit),qMetric.cumDriftEstimate(iUnit)] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...
         theseSpikeTimes, channelPositions(:,2), thisUnit, param.driftBinSize, param.plotDetails);
     
     %% number spikes
@@ -183,7 +183,7 @@ for iUnit = 1:length(uniqueTemplates)
     %% waveform
     waveformBaselineWindow = [param.waveformBaselineWindowStart, param.waveformBaselineWindowStop];
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), forGUI.peakLocs{iUnit},...
-        forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), qMetric.waveformDuration_minMax(iUnit), ...
+        forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), ...
         forGUI.spatialDecayPoints(iUnit,:), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), ....
         forGUI.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms,thisUnit, qMetric.maxChannels(thisUnit),...
         param.ephys_sample_rate, channelPositions, param.maxWvBaselineFraction, waveformBaselineWindow,...
@@ -211,12 +211,13 @@ unitType = bc_getQualityUnitType(param, qMetric);
 
 fprintf('Finished extracting quality metrics from %s \n', param.rawFile)
 try
-    bc_saveQMetrics(param, qMetric, forGUI, savePath);
+    qMetric = bc_saveQMetrics(param, qMetric, forGUI, savePath);
     fprintf('Saved quality metrics from %s to %s \n', param.rawFile, savePath)
+    %% get some summary plots
+    bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
 catch
     warning('Warning, quality metrics from %s not saved! \n', param.rawFile)
 end
 
-%% get some summary plots
-bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates,rawWaveformsFull);
+
 end

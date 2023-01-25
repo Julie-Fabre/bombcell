@@ -75,7 +75,7 @@ for iTimeChunk = 1:numel(timeChunks) - 1
         surrogate_area = sum(surrogate_amplitudes)*bin_steps;
         
         % estimate the percentage of missing spikes 
-        percentMissing_symmetric(iTimeChunk) = (surrogate_area - sum(spikeCountsPerAmpliBin)*bin_steps)/surrogate_area; 
+        percentMissing_symmetric(iTimeChunk) = (surrogate_area - sum(spikeCountsPerAmpliBin)*bin_steps)/surrogate_area * 100; 
 
         %% evaluate gaussian distribution from symmetric 'surrogate' data 
         [~,ksTest_pValue(iTimeChunk)] = kstest(surrogate_amplitudes);
