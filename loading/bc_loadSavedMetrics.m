@@ -8,6 +8,6 @@ function [param, qMetric, fractionRPVs_allTauR] = bc_loadSavedMetrics(savePath)
 % Outputs
 % ------
 qMetric = parquetread(fullfile(savePath, 'templates._bc_qMetrics.parquet'));
-fractionRPVs_allTauR = readNPY(fullfile(savePath, 'templates._bc_fractionRefractoryPeriodViolationsPerTauR.npy'));
+fractionRPVs_allTauR = parquetread([fullfile(savePath, 'templates._bc_fractionRefractoryPeriodViolationsPerTauR.parquet')]);
 param = parquetread([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')]);
 end
