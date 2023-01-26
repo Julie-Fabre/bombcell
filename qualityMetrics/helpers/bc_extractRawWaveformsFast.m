@@ -73,7 +73,8 @@ else
         for iSpike = 1:nSpkLocal
             thisSpikeIdx = rawWaveforms(iCluster).spkIndsub(iSpike);
                 
-            if thisSpikeIdx > halfWidth && (thisSpikeIdx + halfWidth) * dataTypeNBytes < rawFileInfo.bytes % check that it's not out of bounds
+            if ((thisSpikeIdx - halfWidth) * nChannels) * dataTypeNBytes > halfWidth &&...
+                    (thisSpikeIdx + halfWidth) * nChannels * dataTypeNBytes < rawFileInfo.bytes % check that it's not out of bounds
 
                 bytei = ((thisSpikeIdx - halfWidth) * nChannels) * dataTypeNBytes;
                 fseek(fid, bytei, 'bof');
@@ -86,7 +87,7 @@ else
                 %         if size(data, 2) == spikeWidth
                 %             rawWaveforms(iCluster).spkMap(:, :, iSpike) = data;
                 %         end
-                rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels-param.nSyncChannels, :, :); %remove sync channel
+                rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels-param.nSyncChannels, :); %remove sync channel
                 
             end
 
