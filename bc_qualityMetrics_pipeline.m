@@ -44,7 +44,7 @@ end
 
 %% view units + quality metrics in GUI 
 % load data for GUI
-%bc_loadMetricsForGUI;
+bc_loadMetricsForGUI;
 
 % GUI guide: 
 % left/right arrow: toggle between units 

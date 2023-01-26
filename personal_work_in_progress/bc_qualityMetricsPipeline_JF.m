@@ -56,8 +56,8 @@ end
 
 %% view units + quality metrics in GUI 
 % load data for GUI
-%bc_loadMetricsForGUI;
-% load gui stuffs 
+bc_loadMetricsForGUI;
 
-%bc_unitQualityGUI(memMapData, ephysData, qMetric, rawWaveforms, param,...
+
+%bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, param,...
 %    probeLocation, unitType, plotRaw);
