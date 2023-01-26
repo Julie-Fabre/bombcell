@@ -108,7 +108,7 @@ end
 channels_withSameX = find(channelPositions(:,1) <= channelPositions(maxChannel,1) + 16 &...
     channelPositions(:,1) >= channelPositions(maxChannel,1) - 16);
 
-if maxChannel > 10
+if maxChannel > 50
     channels_forSpatialDecayFit = channels_withSameX(...
         find(channels_withSameX==maxChannel):-1:find(channels_withSameX==maxChannel)-5);
 else
