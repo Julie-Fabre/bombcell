@@ -105,8 +105,8 @@ end
     %waveformDuration_minMax = 1e6 * abs(min(thisWaveform) - max(thisWaveform))/ephys_sample_rate; %in us
     %waveformDuration_minMax = waveformDuration_minMax(1); % in case there are two min or max values 
 
-channels_withSameX = find(channelPositions(:,1) <= channelPositions(maxChannel,1) + 16 &...
-    channelPositions(:,1) >= channelPositions(maxChannel,1) - 16);
+channels_withSameX = find(channelPositions(:,1) <= channelPositions(maxChannel,1) + 33 &...
+    channelPositions(:,1) >= channelPositions(maxChannel,1) - 33);
 
 if maxChannel > 50
     channels_forSpatialDecayFit = channels_withSameX(...

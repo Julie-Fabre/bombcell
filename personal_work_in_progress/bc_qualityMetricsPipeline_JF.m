@@ -1,5 +1,5 @@
 %% load data 
-animals = {'JF072'};
+animals = {'JF062'};
 bhvProtocol = '';
 
 animal = animals{1};
