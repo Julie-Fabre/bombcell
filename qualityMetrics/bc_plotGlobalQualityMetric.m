@@ -87,7 +87,7 @@ if param.plotGlobal
 
     hold on;
 
-    histogram(qMetric.fractionRPVs_estimatedTauR*100, 'FaceColor', colorMtx(4, 1:3), 'FaceAlpha', colorMtx(4, 4), 'BinEdges', [0:5:100]);
+    histogram(qMetric.fractionRPVs_estimatedTauR, 'FaceColor', colorMtx(4, 1:3), 'FaceAlpha', colorMtx(4, 4), 'BinEdges', [0:5:100]);
     
     set(gca, 'yscale', 'log')
     yLim = ylim;

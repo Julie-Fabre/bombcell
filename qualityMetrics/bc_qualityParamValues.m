@@ -67,7 +67,7 @@ param.nChannelsIsoDist = 4; % number of nearby channels to use in distance metri
 
 %% classifying units into good/mua/noise parameters 
 param.minAmplitude = 20; 
-param.maxRPVviolations = 10;
+param.maxRPVviolations = 0.1; % fraction
 param.maxPercSpikesMissing = 20;
 param.minNumSpikes = 300;
 
