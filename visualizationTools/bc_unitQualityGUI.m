@@ -37,24 +37,24 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, 
         %fprintf('key pressed: %s\n', evnt.Key);
         if strcmpi(evnt.Key, 'rightarrow')
             iCluster = iCluster + 1;
-            updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster,forGUI, qMetric, param, ...
-                probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
+            updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
+    probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'g') %toggle to next single-unit 
             iCluster = goodUnit_idx(find(goodUnit_idx>iCluster,1,'first'));
-            updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms,iCluster, qMetric, forGUI, param, ...
-                probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
+            updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
+    probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'm') %toggle to next multi-unit 
             iCluster = multiUnit_idx(find(multiUnit_idx>iCluster,1,'first'));
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
-                probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
+    probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'n') %toggle to next  noise/non-somatic unit
             iCluster = noiseUnit_idx(find(noiseUnit_idx>iCluster,1,'first'));
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
-                probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
+    probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'leftarrow')
             iCluster = iCluster - 1;
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
-                probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
+    probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'uparrow')
             iChunk = iChunk + 1;
             if iChunk> length(ephysData.spike_times_timeline(ephysData.spike_templates == iCluster))
@@ -71,8 +71,8 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, 
     probeLocation, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'u') %select particular unit 
             iCluster = str2num(cell2mat(inputdlg('Go to unit:')));
-            updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
-                probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
+           updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
+    probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         end
     end
 end
@@ -292,7 +292,7 @@ elseif unitType(iCluster) == 2
 end
 
 %% plot 1: update curr unit location
-set(guiData.currUnitDots, 'XData', guiData.norm_spike_n(thisUnit), 'YData', ephysData.channel_positions(qMetric.maxChannels(thisUnit), 2), 'CData', guiData.unitCmap(iCluster, :))
+set(guiData.currUnitDots, 'XData', guiData.norm_spike_n(thisUnit), 'YData', ephysData.channel_positions(qMetric.maxChannels(iCluster), 2), 'CData', guiData.unitCmap(iCluster, :))
 
 for iCh = 1:20
     set(guiData.templateWaveformLines(iCh), 'XData', nan(82, 1), 'YData', nan(82, 1))
@@ -387,7 +387,7 @@ set(guiData.acgRefLine, 'XData', [2, 2], 'YData', [0, max(ccg(:, 1, 1))])
 asymptoteLine = nanmean(ccg2(end-100:end));
 set(guiData.acgAsyLine, 'XData', [0, 250], 'YData', [asymptoteLine, asymptoteLine])
 
-if qMetric.fractionRPVs(iCluster) > param.maxRPVviolations
+if qMetric.fractionRPVs_estimatedTauR(iCluster) > param.maxRPVviolations
     set(guiData.acgTitle, 'String', '\color[rgb]{1 0 1}ACG');
 else
     set(guiData.acgTitle, 'String', '\color[rgb]{0 .5 0}ACG');
@@ -405,12 +405,12 @@ theseOffendingSpikes = find(theseISIclean < (2/1000));
 set(guiData.isiBar, 'XData', edgesISI(1:end-1)+mean(diff(edgesISI)), 'YData', isiProba); %Check FR
 set(guiData.isiRefLine, 'XData', [2, 2], 'YData', [0, max(isiProba)])
 
-if qMetric.fractionRPVs(iCluster) > param.maxRPVviolations
+if qMetric.fractionRPVs_estimatedTauR(iCluster) > param.maxRPVviolations
     set(guiData.isiTitle, 'String', '\color[rgb]{1 0 1}ISI');
 else
     set(guiData.isiTitle, 'String', '\color[rgb]{0 .5 0}ISI');
 end
-set(guiData.isiLegend, 'String', [num2str(qMetric.fractionRPVs(iCluster)), ' % r.p.v.'])
+set(guiData.isiLegend, 'String', [num2str(qMetric.fractionRPVs_estimatedTauR(iCluster)), ' % r.p.v.'])
 
 %% 6. plot isolation distance
 if param.computeDistanceMetrics
