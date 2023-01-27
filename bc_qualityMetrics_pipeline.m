@@ -11,21 +11,7 @@ decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save r
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysKilosortPath);
 
 %% detect whether data is compressed, decompress locally if necessary
-if strcmp(ephysRawDir.name(end-4:end), '.cbin') &&...
-        isempty(dir([decompressDataLocal, filesep, ephysRawDir.name(1:end-5), '.bin']))
-    fprintf('Decompressing ephys data file %s locally to %s... \n', ephysRawDir.name, decompressDataLocal)
-    
-    decompDataFile = bc_extractCbinData([ephysRawDir.folder, filesep, ephysRawDir.name],...
-        [], [], [], decompressDataLocal);
-    rawFile = decompDataFile;
-elseif strcmp(ephysRawDir.name(end-4:end), '.cbin') &&...
-        ~isempty(dir([decompressDataLocal, filesep, ephysRawDir.name(1:end-5), '.bin']))
-    fprintf('Using previously decompressed ephys data file in %s ... \n', decompressDataLocal)
-    
-    rawFile = [decompressDataLocal, filesep, ephysRawDir.name(1:end-5), '.bin'];
-else
-    rawFile = [ephysRawDir.folder, filesep, ephysRawDir.name];
-end
+rawFile = bc_manageDataCompression(ephysRawDir, decompressDataLocal);
 
 %% which quality metric parameters to extract and thresholds 
 param = bc_qualityParamValues(ephysMetaDir, rawFile); 

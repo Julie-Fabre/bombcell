@@ -18,25 +18,11 @@ ephysap_path = dir(AP_cortexlab_filenameJF(animal,day,experiment,'ephys_includin
 ephysMetaDir = dir([ephysap_path, '/../*ap.meta']);
 ephysDirPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_dir',site);
 savePath = fullfile(ephysDirPath, 'qMetrics'); 
-
-%% decompress data 
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
 
-if strcmp(ephysap_path.name(end-4:end), '.cbin') &&...
-        isempty(dir([decompressDataLocal, filesep, ephysap_path.name(1:end-5), '.bin']))
-    fprintf('Decompressing ephys data file %s locally to %s... \n', ephysap_path.name, decompressDataLocal)
-    
-    decompDataFile = bc_extractCbinData([ephysap_path.folder, filesep, ephysap_path.name],...
-        [], [], [], decompressDataLocal);
+%% decompress data 
+rawFile = bc_manageDataCompression(ephysRawDir, decompressDataLocal);
 
-elseif strcmp(ephysap_path.name(end-4:end), '.cbin') &&...
-        ~isempty(dir([decompressDataLocal, filesep, ephysap_path.name(1:end-5), '.bin']))
-    fprintf('Using previously decompressed ephys data file in %s ... \n', decompressDataLocal)
-    
-    rawFile = [decompressDataLocal, filesep, ephysap_path.name(1:end-5), '.bin'];
-else
-    rawFile = [ephysap_path.folder, filesep, ephysap_path.name];
-end
 %% run qmetrics 
 param = bc_qualityParamValues(ephysMetaDir, rawFile); 
 %param.computeDistanceMetrics = 1;
@@ -59,5 +45,5 @@ end
 bc_loadMetricsForGUI;
 
 
-%bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, param,...
-%    probeLocation, unitType, plotRaw);
+bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, param,...
+   probeLocation, unitType, plotRaw);
