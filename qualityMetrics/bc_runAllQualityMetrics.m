@@ -209,7 +209,6 @@ end
 qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates)'; 
 qMetric.signalToNoiseRatio = signalToNoiseRatio(uniqueTemplates)'; 
 
-unitType = bc_getQualityUnitType(param, qMetric);
 
 fprintf('Finished extracting quality metrics from %s \n', param.rawFile)
 try
@@ -221,5 +220,6 @@ catch
     warning('Warning, quality metrics from %s not saved! \n', param.rawFile)
 end
 
+unitType = bc_getQualityUnitType(param, qMetric);
 
 end
