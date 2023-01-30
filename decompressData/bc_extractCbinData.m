@@ -104,7 +104,11 @@ chunkSizeBytes = cbinMeta.chunk_offsets([1:nChunks] + iChunkStart) - cbinMeta.ch
 offset = cbinMeta.chunk_offsets([1:nChunks] + iChunkStart - 1);
 
 fN = dir(fileName);
-decompDataFile = [saveFileFolder, filesep, fN.name(1:end-14), '_bc_decompressed', fN.name(end-13:end-8),'.ap.bin'];
+if isdir(saveFileFolder)
+    decompDataFile = [saveFileFolder, filesep, fN.name(1:end-14), '_bc_decompressed', fN.name(end-13:end-8),'.ap.bin'];
+else
+    decompDataFile = saveFileFolder;
+end
 fidOut = fopen(decompDataFile,'w');
 
 if doParfor

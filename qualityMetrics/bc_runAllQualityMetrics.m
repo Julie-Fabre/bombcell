@@ -209,17 +209,19 @@ end
 qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates)'; 
 qMetric.signalToNoiseRatio = signalToNoiseRatio(uniqueTemplates)'; 
 
-unitType = bc_getQualityUnitType(param, qMetric);
 
 fprintf('Finished extracting quality metrics from %s \n', param.rawFile)
 try
     qMetric = bc_saveQMetrics(param, qMetric, forGUI, savePath);
     fprintf('Saved quality metrics from %s to %s \n', param.rawFile, savePath)
-    %% get some summary plots
-    bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
-catch
+   catch
     warning('Warning, quality metrics from %s not saved! \n', param.rawFile)
 end
+
+%% get some summary plots
+unitType = bc_getQualityUnitType(param, qMetric); % Moved here because some params are changed name in saveQMetrics
+
+bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
 
 
 end
