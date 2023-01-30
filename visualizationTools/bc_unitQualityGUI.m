@@ -285,7 +285,7 @@ colorsGdBad = [1, 0, 0; 0, 0.5, 0];
 %% main title
 if unitType(iCluster) == 1
     set(guiData.mainTitle, 'String', ['Unit ', num2str(iCluster), ', single unit'], 'Color', [0, .5, 0]);
-elseif unitType(iCluster) == 0 || unitType(iCluster) == 3
+elseif unitType(iCluster) == 0 | unitType(iCluster) == 3
     set(guiData.mainTitle, 'String', ['Unit ', num2str(iCluster), ', noise/non-somatic'], 'Color', [1, 0, 0]);
 elseif unitType(iCluster) == 2
     set(guiData.mainTitle, 'String', ['Unit ', num2str(iCluster), ', multi-unit'], 'Color', [0.29, 0, 0.51]);
