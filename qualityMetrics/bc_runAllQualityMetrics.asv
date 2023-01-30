@@ -138,47 +138,47 @@ for iUnit = 1:length(uniqueTemplates)
     theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
 
-    %% remove duplicate spikes 
-
-
-    %% percentage spikes missing (false negatives)
-    [percentageSpikesMissing_gaussian, percentageSpikesMissing_symmetric, ksTest_pValue, ~, ~, ~] = ...
-        bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails);
-
-    %% fraction contamination (false positives)
-    tauR_window = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
-    [fractionRPVs, ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
-        tauR_window, param.tauC, ...
-        timeChunks, param.plotDetails);
-    
-    %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
-    if param.computeTimeChunks
-        [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit),...
-            qMetric.RPV_tauR_estimate(iUnit)] = bc_defineTimechunksToKeep(...
-            percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
-            param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect 
-    end
-
-    %% re-compute percentage spikes missing and fraction contamination on timechunks
-    thisUnits_timesToUse = [qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)];
-    [qMetric.percentageSpikesMissing_gaussian(iUnit), qMetric.percentageSpikesMissing_symmetric(iUnit), ...
-        qMetric.ksTest_pValue(iUnit), forGUI.ampliBinCenters{iUnit}, forGUI.ampliBinCounts{iUnit}, ...
-        forGUI.ampliGaussianFit{iUnit}] = bc_percSpikesMissing(theseAmplis, theseSpikeTimes, ...
-        thisUnits_timesToUse, param.plotDetails);
-
-    [qMetric.fractionRPVs(iUnit,:), ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
-        tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails);
-
-    %% presence ratio (potential false negatives)
-    [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
-        qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param.plotDetails);
-
-    %% maximum cumulative drift estimate 
-    [qMetric.maxDriftEstimate(iUnit),qMetric.cumDriftEstimate(iUnit)] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...
-        theseSpikeTimes, channelPositions(:,2), thisUnit, param.driftBinSize, param.plotDetails);
-    
-    %% number spikes
-    qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
+%     %% remove duplicate spikes 
+% 
+% 
+%     %% percentage spikes missing (false negatives)
+%     [percentageSpikesMissing_gaussian, percentageSpikesMissing_symmetric, ksTest_pValue, ~, ~, ~] = ...
+%         bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails);
+% 
+%     %% fraction contamination (false positives)
+%     tauR_window = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
+%     [fractionRPVs, ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
+%         tauR_window, param.tauC, ...
+%         timeChunks, param.plotDetails);
+%     
+%     %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
+%     if param.computeTimeChunks
+%         [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit),...
+%             qMetric.RPV_tauR_estimate(iUnit)] = bc_defineTimechunksToKeep(...
+%             percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
+%             param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect 
+%     end
+% 
+%     %% re-compute percentage spikes missing and fraction contamination on timechunks
+%     thisUnits_timesToUse = [qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)];
+%     [qMetric.percentageSpikesMissing_gaussian(iUnit), qMetric.percentageSpikesMissing_symmetric(iUnit), ...
+%         qMetric.ksTest_pValue(iUnit), forGUI.ampliBinCenters{iUnit}, forGUI.ampliBinCounts{iUnit}, ...
+%         forGUI.ampliGaussianFit{iUnit}] = bc_percSpikesMissing(theseAmplis, theseSpikeTimes, ...
+%         thisUnits_timesToUse, param.plotDetails);
+% 
+%     [qMetric.fractionRPVs(iUnit,:), ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
+%         tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails);
+% 
+%     %% presence ratio (potential false negatives)
+%     [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
+%         qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param.plotDetails);
+% 
+%     %% maximum cumulative drift estimate 
+%     [qMetric.maxDriftEstimate(iUnit),qMetric.cumDriftEstimate(iUnit)] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...
+%         theseSpikeTimes, channelPositions(:,2), thisUnit, param.driftBinSize, param.plotDetails);
+%     
+%     %% number spikes
+%     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
 
     %% waveform
 
@@ -191,17 +191,17 @@ for iUnit = 1:length(uniqueTemplates)
         param.minThreshDetectPeaksTroughs, param.plotDetails); %do we need tempWv ? 
 
 
-    %% amplitude
-    qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit),:), ...
-        param.ephysMetaFile);
-
-    %% distance metrics
-    if param.computeDistanceMetrics
-        [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit), ...
-            forGUI.d2_mahal{iUnit}, forGUI.mahalobnis_Xplot{iUnit}, forGUI.mahalobnis_Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
-            pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
-            param.nChannelsIsoDist, param.plotDetails); %QQ
-    end
+%     %% amplitude
+%     qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit),:), ...
+%         param.ephysMetaFile);
+% 
+%     %% distance metrics
+%     if param.computeDistanceMetrics
+%         [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit), ...
+%             forGUI.d2_mahal{iUnit}, forGUI.mahalobnis_Xplot{iUnit}, forGUI.mahalobnis_Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
+%             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
+%             param.nChannelsIsoDist, param.plotDetails); %QQ
+%     end
 
 end
 
