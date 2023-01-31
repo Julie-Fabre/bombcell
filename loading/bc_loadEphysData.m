@@ -1,9 +1,10 @@
 function [spikeTimes_samples, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, channelMap] = bc_loadEphysData(ephys_path,datasetidx)
+    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, channelMap] = bc_loadEphysData(ephys_path, datasetidx)
 
 if nargin<2
     datasetidx=1;
 end
+
 spike_templates_0idx = readNPY([ephys_path filesep 'spike_templates.npy']);
 spikeTemplates = spike_templates_0idx + 1;
 if exist(fullfile(ephys_path,'spike_times_corrected.npy')) % When running pyKS stitched you need the 'aligned / corrected' spike times

@@ -1,27 +1,27 @@
 %% load data 
-animals = {'JF062'};
+animals = {'JF070'};
 bhvProtocol = '';
 
 animal = animals{1};
 experiments = AP_find_experimentsJF(animal, bhvProtocol, true);
 experiments = experiments([experiments.ephys]);
 
-day = experiments(2).day;
+day = experiments(end).day;
 experiment = experiments(1).experiment;
-site = 2;
+site = 1;
 
 ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site);
 [spikeTimes_samples, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysPath);
 ephysap_path = dir(AP_cortexlab_filenameJF(animal,day,experiment,'ephys_includingCompressed',site));
 %ephysMetaDir = dir([ephysap_path, '/../../../structure.oebin']);
-ephysMetaDir = dir([ephysap_path, '/../*ap.meta']);
+ephysMetaDir = dir([ephysap_path.folder, '/../*ap.meta']);
 ephysDirPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_dir',site);
 savePath = fullfile(ephysDirPath, 'qMetrics'); 
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
 
 %% decompress data 
-rawFile = bc_manageDataCompression(ephysRawDir, decompressDataLocal);
+rawFile = bc_manageDataCompression(ephysap_path, decompressDataLocal);
 
 %% run qmetrics 
 param = bc_qualityParamValues(ephysMetaDir, rawFile); 
