@@ -12,8 +12,9 @@ if ~exist(savePath, 'dir')
 end
 
 % save parameters
+if ~istable(param)
 parquetwrite([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')], struct2table(param))
-
+end
 % save quality metrics 
 if param.saveMatFileForGUI
     save(fullfile(savePath, 'templates.qualityMetricDetailsforGUI.mat'), 'forGUI', '-v7.3')
