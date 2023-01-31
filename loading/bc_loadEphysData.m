@@ -15,6 +15,6 @@ catch
     pcFeatures = NaN;
     pcFeatureIdx = NaN;
 end 
-channelPositions = readNPY([ephys_path filesep  'channel_positions.npy']) + 1;
+channelPositions = readNPY([ephys_path filesep  'channel_positions.npy']) ; 
 channelMap = readNPY([ephys_path filesep  'channel_map.npy']) + 1;
 end

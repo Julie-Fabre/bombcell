@@ -108,10 +108,9 @@ end
 channels_withSameX = find(channelPositions(:,1) <= channelPositions(maxChannel,1) + 33 &...
     channelPositions(:,1) >= channelPositions(maxChannel,1) - 33);
 
-if maxChannel > 50 % Not sure if this is correct.. anyhow
-   tmpidx = find(channels_withSameX==maxChannel):-1:find(channels_withSameX==maxChannel)-5;
-   tmpidx(find(tmpidx<=0)) =  find(tmpidx<=0); 
-    channels_forSpatialDecayFit = channels_withSameX(sort(tmpidx));
+if find(channels_withSameX==maxChannel) > 5
+    channels_forSpatialDecayFit = channels_withSameX(...
+        find(channels_withSameX==maxChannel):-1:find(channels_withSameX==maxChannel)-5);
 else
     channels_forSpatialDecayFit = channels_withSameX(...
         find(channels_withSameX==maxChannel):1:find(channels_withSameX==maxChannel)+5); 
