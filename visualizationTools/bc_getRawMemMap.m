@@ -1,5 +1,5 @@
-if exist('BCparam','var')
-    param=BCparam;
+if exist('paramBC','var')
+    param=paramBC;
 end
 
 spikeFile=dir(param.rawFile);

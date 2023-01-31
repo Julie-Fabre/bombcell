@@ -37,10 +37,12 @@ bc_loadMetricsForGUI;
 % left/right arrow: toggle between units 
 % g : go to next good unit 
 % m : go to next multi-unit 
-% n : go to next noise unit 
+% n : go to next noise unit
 % up/down arrow: toggle between time chunks in the raw data
-% u: brings up a input dialog to enter the unit you want to go to 
- 
+% u: brings up a input dialog to enter the unit you want to go to
+unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, ...
+    param, probeLocation, unitType, plotRaw)
+%
 %bc_unitQualityGUI(memMapData, ephysData, qMetric, rawWaveforms, param,...
 %    probeLocation, unitType, plotRaw);
 
