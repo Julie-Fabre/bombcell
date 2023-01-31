@@ -10,8 +10,9 @@ if strcmp(ephysRawDir.name(end-4:end), '.cbin') &&...
 elseif strcmp(ephysRawDir.name(end-4:end), '.cbin') &&...
         ~isempty(dir([decompressDataLocal, filesep, ephysRawDir.name(1:end-14), '_bc_decompressed*.bin']))
     fprintf('Using previously decompressed ephys data file in %s ... \n', decompressDataLocal)
+    decompressDataLocalFile = dir([decompressDataLocal, filesep, ephysRawDir.name(1:end-14), '_bc_decompressed*.bin']);
     
-    rawFile = [decompressDataLocal, filesep, ephysRawDir.name(1:end-5), '.bin'];
+    rawFile = [decompressDataLocalFile.folder, filesep, decompressDataLocalFile.name];
 else
     rawFile = [ephysRawDir.folder, filesep, ephysRawDir.name];
 end
