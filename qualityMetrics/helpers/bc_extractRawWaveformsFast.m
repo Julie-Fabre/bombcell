@@ -23,6 +23,8 @@ function [rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extra
 %   mean raw waveforms for each unit and channel
 % rawWaveformsPeakChan: nUnits x 1 vector of each unit's channel with the maximum
 %   amplitude
+% 
+% SNR implementation - Enny van Beest 
 
 %% Check if data already extracted
 rawWaveformFolder = dir(fullfile(savePath, 'templates._bc_rawWaveforms.npy'));
@@ -88,9 +90,6 @@ else
                 %             rawWaveforms(iCluster).spkMap(:, :, iSpike) = data;
                 %         end
                 rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels-param.nSyncChannels, :); %remove sync channel
-                
-            else
-                keyboard
             end
 
         end
@@ -143,22 +142,22 @@ else
 end
 %% estimate signal-to-noise ratio 
 clustInds = unique(spikeTemplates);
-    nClust = numel(clustInds);
+nClust = numel(clustInds);
+
 if ~isempty(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'))
     
     average_baseline_cat = readNPY(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'));
     average_baseline_idx_cat = readNPY(fullfile(savePath, 'templates._bc_baselineNoiseAmplitudeIndex.npy'));
+
+% previous SNR calculation: 
 %     baseline_mad = abs(arrayfun(@(x) nanmedian(average_baseline_cat(average_baseline_idx_cat==x) - ...
 %          nanmean(average_baseline_cat(average_baseline_idx_cat==x))), 1:nClust)); % median absolute deviation of
-%     % time just before waveform. we use this as a proxy to evaluate the
-    % overall amount of noise for each unit's channel 
+%     % time just before waveform. we use this as a proxy to evaluate the overall amount of noise for each unit's channel 
 %     signalToNoiseRatio = cell2mat(arrayfun(@(X) abs(squeeze(nanmax(nanmax(rawWaveformsFull(X,rawWaveformsPeakChan(X),:),3))) ./ baseline_mad(X)),1:nClust,'Uni',0))';
 
-    % I'd do it like this:
-    signalToNoiseRatio = cell2mat(arrayfun(@(X) abs(nanmax(squeeze(rawWaveformsFull(X,rawWaveformsPeakChan(X),:)))) ./nanvar(average_baseline_cat(average_baseline_idx_cat==X)),1:nClust,'Uni',0))';
+    signalToNoiseRatio = cell2mat(arrayfun(@(X) abs(nanmax(squeeze(rawWaveformsFull(X,rawWaveformsPeakChan(X),:)))) ./...
+        nanvar(average_baseline_cat(average_baseline_idx_cat==X)),1:nClust,'Uni',0))';
 
-%     baseline_mad = abs(arrayfun(@(x) nanmedian(average_baseline_cat(average_baseline_idx_cat==x) - ...
-%         nanmean(average_baseline_cat(average_baseline_idx_cat==x))), 1:nClust)); % median absolute deviation of
 
 else
     fprintf('No saved waveform baseline file found, skipping signal to noise calculation')
