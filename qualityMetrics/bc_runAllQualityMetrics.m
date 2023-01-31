@@ -207,7 +207,7 @@ end
 
 %% get unit types and save data
 qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates)'; 
-qMetric.signalToNoiseRatio = signalToNoiseRatio(uniqueTemplates)'; 
+qMetric.signalToNoiseRatio = signalToNoiseRatio'; % Is already only uniqueTemplates
 
 
 fprintf('Finished extracting quality metrics from %s \n', param.rawFile)

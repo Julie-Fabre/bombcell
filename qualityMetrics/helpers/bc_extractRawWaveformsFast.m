@@ -69,7 +69,7 @@ else
         end
         nSpkLocal = numel(rawWaveforms(iCluster).spkIndsub);
 
-        rawWaveforms(iCluster).spkMap = nan(384, spikeWidth, nSpkLocal);
+        rawWaveforms(iCluster).spkMap = nan(nChannels-param.nSyncChannels, spikeWidth, nSpikesToExtract);
         for iSpike = 1:nSpkLocal
             thisSpikeIdx = rawWaveforms(iCluster).spkIndsub(iSpike);
                 
@@ -89,6 +89,8 @@ else
                 %         end
                 rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels-param.nSyncChannels, :); %remove sync channel
                 
+            else
+                keyboard
             end
 
         end
@@ -129,11 +131,11 @@ else
 
       % save average 
     average_baseline = arrayfun(@(x) squeeze(nanmean(rawWaveforms(x).spkMap(rawWaveformsPeakChan(x),...
-        1:param.waveformBaselineNoiseWindow,:),2)), 1:nClust, 'UniformOutput',false);
-    average_baseline_cat = cat(1, average_baseline{:});
+        1:param.waveformBaselineNoiseWindow,:),3)), 1:nClust, 'UniformOutput',false);
+    average_baseline_cat = cat(2, average_baseline{:})';
     %cumSpikeCount = [1, cumsum(arrayfun(@(x) size(rawWaveforms(x).spkMap,3), 1:nClust))];
     %average_baseline_spikeCount = arrayfun(@(x) nanmean(average_baseline_cat(cumSpikeCount(x:x+1))), 1:nClust);
-    average_baseline_idx = arrayfun(@(x) ones(size(rawWaveforms(x).spkMap,3),1)*x, 1:nClust, 'UniformOutput',false);
+    average_baseline_idx = arrayfun(@(x) ones(param.waveformBaselineNoiseWindow,1)*x, 1:nClust, 'UniformOutput',false);
     average_baseline_idx_cat = cat(1, average_baseline_idx{:});
     
     writeNPY(average_baseline_cat, fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'))
@@ -146,11 +148,18 @@ if ~isempty(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'))
     
     average_baseline_cat = readNPY(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'));
     average_baseline_idx_cat = readNPY(fullfile(savePath, 'templates._bc_baselineNoiseAmplitudeIndex.npy'));
-    baseline_mad = abs(arrayfun(@(x) nanmedian(average_baseline_cat(average_baseline_idx_cat==x) - ...
-         nanmean(average_baseline_cat(average_baseline_idx_cat==x))), 1:nClust)); % median absolute deviation of
-    % time just before waveform. we use this as a proxy to evaluate the
+%     baseline_mad = abs(arrayfun(@(x) nanmedian(average_baseline_cat(average_baseline_idx_cat==x) - ...
+%          nanmean(average_baseline_cat(average_baseline_idx_cat==x))), 1:nClust)); % median absolute deviation of
+%     % time just before waveform. we use this as a proxy to evaluate the
     % overall amount of noise for each unit's channel 
-    signalToNoiseRatio = cell2mat(arrayfun(@(X) abs(squeeze(nanmax(nanmax(rawWaveformsFull(X,rawWaveformsPeakChan(X),:),3))) ./ baseline_mad(X)),1:nClust,'Uni',0))';
+%     signalToNoiseRatio = cell2mat(arrayfun(@(X) abs(squeeze(nanmax(nanmax(rawWaveformsFull(X,rawWaveformsPeakChan(X),:),3))) ./ baseline_mad(X)),1:nClust,'Uni',0))';
+
+    % I'd do it like this:
+    signalToNoiseRatio = cell2mat(arrayfun(@(X) abs(nanmax(squeeze(rawWaveformsFull(X,rawWaveformsPeakChan(X),:)))) ./nanvar(average_baseline_cat(average_baseline_idx_cat==X)),1:nClust,'Uni',0))';
+
+%     baseline_mad = abs(arrayfun(@(x) nanmedian(average_baseline_cat(average_baseline_idx_cat==x) - ...
+%         nanmean(average_baseline_cat(average_baseline_idx_cat==x))), 1:nClust)); % median absolute deviation of
+
 else
     fprintf('No saved waveform baseline file found, skipping signal to noise calculation')
     signalToNoiseRatio = nan(nClust,1);
