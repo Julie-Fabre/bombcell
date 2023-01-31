@@ -8,15 +8,15 @@ paramBC.plotDetails = 0; % generates a lot of plots,
 % to debug, or to get nice plots for a presentation
 paramBC.plotGlobal = 1; % plot summary of quality metrics 
 paramBC.verbose = 1; % update user on progress
-paramBC.reextractRaw = 0; % re extract raw waveforms or not 
+paramBC.reextractRaw = 1; % re extract raw waveforms or not 
 
 % saving parameters 
 paramBC.saveAsParquet = 1; % save outputs at .parquet file 
-paramBC.saveMatFileForGUI = 0; % save certain outputs at .mat file - useful for GUI
+paramBC.saveMatFileForGUI = 1; % save certain outputs at .mat file - useful for GUI
 
 % amplitude parameters
-paramBC.nRawSpikesToExtract = 100; % how many raw spikes to extract for each unit 
-paramBC.saveMultipleRaw = 0; % If you wish to save the nRawSpikesToExtract as well, 
+paramBC.nRawSpikesToExtract = 200; % how many raw spikes to extract for each unit 
+paramBC.saveMultipleRaw = 1; % If you wish to save the nRawSpikesToExtract as well, 
 % currently needed if you want to run unit match https://github.com/EnnyvanBeest/UnitMatch
 % to track chronic cells over days after this
 paramBC.decompressData = 1; % whether to decompress .cbin ephys data 

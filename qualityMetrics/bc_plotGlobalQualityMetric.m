@@ -200,8 +200,8 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
 
     subplot(4, 5, 14) % signal to noise ratio 
     hold on;
-    histogram(qMetric.signalToNoiseRatio, 'FaceColor', colorMtx(14, 1:3), 'FaceAlpha', colorMtx(14, 4), 'BinEdges', ...
-        [0:20:max(qMetric.signalToNoiseRatio)]);
+    histogram(qMetric.signalToNoiseRatio, 'FaceColor', colorMtx(14, 1:3), 'FaceAlpha', colorMtx(14, 4));%, 'BinEdges')%, ...
+%         [0:20:max(qMetric.signalToNoiseRatio(~isinf(qMetric.signalToNoiseRatio)))]);
     yLim = ylim;
     %line([param.plotDetails, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')

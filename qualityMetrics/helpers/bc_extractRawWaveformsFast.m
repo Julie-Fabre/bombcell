@@ -45,8 +45,8 @@ else
     nClust = numel(clustInds);
     rawFileInfo = dir(param.rawFile);
 
-    if param.saveMultipleRaw && ~isfolder(fullfile(rawFileInfo.folder,['RawWaveforms_' rawFileInfo.name]))
-        mkdir(fullfile(rawFileInfo.folder,['RawWaveforms_' rawFileInfo.name]))
+    if param.saveMultipleRaw && ~isfolder(fullfile(savePath,['RawWaveforms_' rawFileInfo.name]))
+        mkdir(fullfile(savePath,['RawWaveforms_' rawFileInfo.name]))
     end
 
     fprintf('Extracting raw waveforms from %s ... \n', param.rawFile)
@@ -69,7 +69,7 @@ else
         end
         nSpkLocal = numel(rawWaveforms(iCluster).spkIndsub);
 
-        rawWaveforms(iCluster).spkMap = nan(384, spikeWidth, nSpkLocal);
+        rawWaveforms(iCluster).spkMap = nan(nChannels-param.nSyncChannels, spikeWidth, nSpikesToExtract);
         for iSpike = 1:nSpkLocal
             thisSpikeIdx = rawWaveforms(iCluster).spkIndsub(iSpike);
                 
@@ -89,17 +89,23 @@ else
                 %         end
                 rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels-param.nSyncChannels, :); %remove sync channel
                 
+            else
+                keyboard
             end
 
         end
 
         if param.saveMultipleRaw
             tmpspkmap = permute(rawWaveforms(iCluster).spkMap,[2,1,3]); % Compatible with UnitMatch QQ
-            writeNPY(tmpspkmap, fullfile(rawFileInfo.folder,['RawWaveforms_' rawFileInfo.name],['Unit' num2str(iCluster) '_RawSpikes.npy']))
+            tmpspkmap = smoothdata(tmpspkmap - mean(tmpspkmap(1:param.waveformBaselineNoiseWindow,:,:),1),1,'gaussian',5); % Subtract baseline
+            % Save two averages for UnitMatch
+            tmpspkmap = arrayfun(@(X) nanmean(tmpspkmap(:,:,(X-1)*floor(size(tmpspkmap,3)/2)+1:X*floor(size(tmpspkmap,3)/2)),3),1:2,'Uni',0);
+            tmpspkmap = cat(3,tmpspkmap{:});
+            writeNPY(tmpspkmap, fullfile(savePath,['RawWaveforms_' rawFileInfo.name],['Unit' num2str(iCluster) '_RawSpikes.npy']))
         end
 
         rawWaveforms(iCluster).spkMapMean = nanmean(rawWaveforms(iCluster).spkMap, 3);
-        rawWaveformsFull(iCluster, :, :) = rawWaveforms(iCluster).spkMapMean - mean(rawWaveforms(iCluster).spkMapMean(:, 1:10), 2);
+        rawWaveformsFull(iCluster, :, :) = rawWaveforms(iCluster).spkMapMean - mean(rawWaveforms(iCluster).spkMapMean(:, 1:param.waveformBaselineNoiseWindow), 2);
 
         spkMapMean_sm = smoothdata(rawWaveforms(iCluster).spkMapMean, 1, 'gaussian', 5);
 
@@ -125,11 +131,11 @@ else
 
       % save average 
     average_baseline = arrayfun(@(x) squeeze(nanmean(rawWaveforms(x).spkMap(rawWaveformsPeakChan(x),...
-        1:param.waveformBaselineNoiseWindow,:),2)), 1:nClust, 'UniformOutput',false);
-    average_baseline_cat = cat(1, average_baseline{:});
+        1:param.waveformBaselineNoiseWindow,:),3)), 1:nClust, 'UniformOutput',false);
+    average_baseline_cat = cat(2, average_baseline{:})';
     %cumSpikeCount = [1, cumsum(arrayfun(@(x) size(rawWaveforms(x).spkMap,3), 1:nClust))];
     %average_baseline_spikeCount = arrayfun(@(x) nanmean(average_baseline_cat(cumSpikeCount(x:x+1))), 1:nClust);
-    average_baseline_idx = arrayfun(@(x) ones(size(rawWaveforms(x).spkMap,3),1)*x, 1:nClust, 'UniformOutput',false);
+    average_baseline_idx = arrayfun(@(x) ones(param.waveformBaselineNoiseWindow,1)*x, 1:nClust, 'UniformOutput',false);
     average_baseline_idx_cat = cat(1, average_baseline_idx{:});
     
     writeNPY(average_baseline_cat, fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'))
@@ -142,11 +148,18 @@ if ~isempty(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'))
     
     average_baseline_cat = readNPY(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'));
     average_baseline_idx_cat = readNPY(fullfile(savePath, 'templates._bc_baselineNoiseAmplitudeIndex.npy'));
-    baseline_mad = abs(arrayfun(@(x) median(average_baseline_cat(average_baseline_idx_cat==x) - ...
-         nanmean(average_baseline_cat(average_baseline_idx_cat==x))), 1:nClust)); % median absolute deviation of
-    % time just before waveform. we use this as a proxy to evaluate the
+%     baseline_mad = abs(arrayfun(@(x) nanmedian(average_baseline_cat(average_baseline_idx_cat==x) - ...
+%          nanmean(average_baseline_cat(average_baseline_idx_cat==x))), 1:nClust)); % median absolute deviation of
+%     % time just before waveform. we use this as a proxy to evaluate the
     % overall amount of noise for each unit's channel 
-    signalToNoiseRatio = abs(max(max(rawWaveformsFull(:,rawWaveformsPeakChan,:))) ./ baseline_mad);
+%     signalToNoiseRatio = cell2mat(arrayfun(@(X) abs(squeeze(nanmax(nanmax(rawWaveformsFull(X,rawWaveformsPeakChan(X),:),3))) ./ baseline_mad(X)),1:nClust,'Uni',0))';
+
+    % I'd do it like this:
+    signalToNoiseRatio = cell2mat(arrayfun(@(X) abs(nanmax(squeeze(rawWaveformsFull(X,rawWaveformsPeakChan(X),:)))) ./nanvar(average_baseline_cat(average_baseline_idx_cat==X)),1:nClust,'Uni',0))';
+
+%     baseline_mad = abs(arrayfun(@(x) nanmedian(average_baseline_cat(average_baseline_idx_cat==x) - ...
+%         nanmean(average_baseline_cat(average_baseline_idx_cat==x))), 1:nClust)); % median absolute deviation of
+
 else
     fprintf('No saved waveform baseline file found, skipping signal to noise calculation')
     signalToNoiseRatio = nan(nClust,1);
