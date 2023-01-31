@@ -43,8 +43,6 @@ function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_pe
 % spatialDecaySlope QQ describe
 % waveformBaseline QQ describe
 % thisWaveform QQ describe
-%
-% Centroid-based 'real' unit location calculation: Enny van Beest
 
 thisWaveform = templateWaveforms(thisUnit, :, maxChannel);
 minProminence = minThreshDetectPeaksTroughs * max(abs(squeeze(thisWaveform))); % minimum threshold to detcet peaks/troughs
@@ -109,30 +107,30 @@ end
 
 channels_withSameX = find(channelPositions(:,1) <= channelPositions(maxChannel,1) + 33 &...
     channelPositions(:,1) >= channelPositions(maxChannel,1) - 33); % for 4 shank probes 
-% 
+
 % channels_withSameX_old = find(channelPositions(:,1) <= channelPositions(maxChannel,1) + 25 &...
 %     channelPositions(:,1) >= channelPositions(maxChannel,1) - 25);
-if find(channels_withSameX_old==maxChannel) > 5
+if find(channels_withSameX==maxChannel) > 5
     channels_forSpatialDecayFit = channels_withSameX(...
         find(channels_withSameX==maxChannel):-1:find(channels_withSameX==maxChannel)-5);
-%      channels_forSpatialDecayFit_old = channels_withSameX_old(...
+%      channels_forSpatialDecayFit_old = channels_withSameX(...
 %         find(channels_withSameX_old==maxChannel):-1:find(channels_withSameX_old==maxChannel)-5);
 else
     channels_forSpatialDecayFit = channels_withSameX(...
         find(channels_withSameX==maxChannel):1:find(channels_withSameX==maxChannel)+5); 
-%     channels_forSpatialDecayFit_old = channels_withSameX_old(...
+%     channels_forSpatialDecayFit_old = channels_withSameX(...
 %         find(channels_withSameX_old==maxChannel):1:find(channels_withSameX_old==maxChannel)+5);
 end
 % % get channel positions relative to peak channel
-% spatialDecayPoints_old = max(abs(squeeze(templateWaveforms(thisUnit, :, channels_forSpatialDecayFit_old))));
-% estimatedUnit_x = channelPositions(maxChannel,1);
-% estimatedUnit_y = channelPositions(maxChannel,2);
-% channelPositions_relative_old = abs(estimatedUnit_x - channelPositions(channels_forSpatialDecayFit_old,1)) +...
-%     abs(estimatedUnit_y - channelPositions(channels_forSpatialDecayFit_old,2));
-% [~, sortexChanPosIdx_old] = sort(channelPositions_relative_old);
-% spatialDecayPoints_norm_old = spatialDecayPoints_old(sortexChanPosIdx_old);
-% spatialDecayFit_old = polyfit(channelPositions_relative_old(sortexChanPosIdx_old), spatialDecayPoints_norm_old,1); % fit first order polynomial to data. first output is slope of polynomial, second is a constant
-% spatialDecaySlope_old = spatialDecayFit_old(1);
+spatialDecayPoints_old = max(abs(squeeze(templateWaveforms(thisUnit, :, channels_forSpatialDecayFit_old))));
+estimatedUnit_x = channelPositions(maxChannel,1);
+estimatedUnit_y = channelPositions(maxChannel,2);
+channelPositions_relative_old = abs(estimatedUnit_x - channelPositions(channels_forSpatialDecayFit_old,1)) +...
+    abs(estimatedUnit_y - channelPositions(channels_forSpatialDecayFit_old,2));
+[~, sortexChanPosIdx_old] = sort(channelPositions_relative_old);
+spatialDecayPoints_norm_old = spatialDecayPoints_old(sortexChanPosIdx_old);
+spatialDecayFit_old = polyfit(channelPositions_relative_old(sortexChanPosIdx_old), spatialDecayPoints_norm_old,1); % fit first order polynomial to data. first output is slope of polynomial, second is a constant
+spatialDecaySlope_old = spatialDecayFit_old(1);
 
 % get maximum value %QQ could we do value at detected trough is peak
 % waveform? 
@@ -166,27 +164,19 @@ if plotThis
 %     legend({'trough size', 'est.cell location'},'TextColor', [0.7, 0.7, 0.7],'Color', 'none')
 %     makepretty('none')
 
-    subplot(4,2,[7:8])
-    pt1 = scatter(channelPositions_relative(sortexChanPosIdx) ,spatialDecayPoints_norm,[],colorMtx(1,:,:), 'filled'); hold on;
+    subplot(4,2,7:8)
+    scatter(channelPositions_relative(sortexChanPosIdx) ,spatialDecayPoints_norm,[],colorMtx(1,:,:), 'filled'); hold on;
     lf = plot(channelPositions_relative(sortexChanPosIdx) ,channelPositions_relative(sortexChanPosIdx)*spatialDecayFit(1) + spatialDecayFit(2),'-', 'Color', colorMtx(2,:,:));
 
+    scatter(channelPositions_relative_old(sortexChanPosIdx_old) ,spatialDecayPoints_norm_old,[],colorMtx(3,:,:), 'filled'); hold on;
+    lf = plot(channelPositions_relative_old(sortexChanPosIdx_old) ,channelPositions_relative_old(sortexChanPosIdx_old)*spatialDecayFit_old(1) + spatialDecayFit_old(2),'-', 'Color', colorMtx(4,:,:));
+    
     ylabel('trough size (a.u.)')
     xlabel('distance from peak channel (um)')
     legend(lf, {['linear fit, slope = ', num2str(spatialDecaySlope)]},'TextColor', [0.7, 0.7, 0.7],'Color', 'none')
     makepretty('none')
 
-
-%     subplot(4,2,8)
-% 
-%     pt2 = scatter(channelPositions_relative_old(sortexChanPosIdx_old) ,spatialDecayPoints_norm_old,[],colorMtx(3,:,:), 'filled'); hold on;
-%     lf2 = plot(channelPositions_relative_old(sortexChanPosIdx_old) ,channelPositions_relative_old(sortexChanPosIdx_old)*spatialDecayFit_old(1) + spatialDecayFit_old(2),'-', 'Color', colorMtx(4,:,:));
-%     
-%     ylabel('trough size (a.u.)')
-%     xlabel('distance from peak channel (um)')
-%     legend([ pt2, lf2], { '''same x'' points', ['''same x'' fit, slope = ', num2str(spatialDecaySlope_old)]},'TextColor', [0.7, 0.7, 0.7],'Color', 'none')
-%     makepretty('none')
-    
-    subplot(4,2,1:6)
+        subplot(4,2,1:6)
     set(gca, 'YDir', 'reverse');
     hold on;
     set(gca, 'XColor', 'w', 'YColor', 'w')

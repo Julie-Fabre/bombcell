@@ -80,7 +80,7 @@ paramBC.maxNTroughs = 1;
 paramBC.somatic = 1; 
 paramBC.minWvDuration = 100; % in us
 paramBC.maxWvDuration = 800; % in us
-paramBC.minSpatialDecaySlope = -0.001;
+paramBC.minSpatialDecaySlope = -0.003;
 paramBC.maxWvBaselineFraction = 0.3;
 
 %distance metrics
