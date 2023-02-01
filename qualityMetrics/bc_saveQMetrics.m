@@ -39,5 +39,8 @@ qMetricTable.Properties.VariableNames =  fieldnames(qMetric);
 
 parquetwrite([fullfile(savePath, 'templates._bc_qMetrics.parquet')], qMetricTable)
 
+% overwrite qMetric with the table, to be consistent with it for next steps
+% of the pipeline
+qMetric = qMetricTable;
 
 end
