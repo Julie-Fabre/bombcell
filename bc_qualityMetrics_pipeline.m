@@ -1,12 +1,13 @@
 %% set paths 
-ephysKilosortPath = '/home/julie/Downloads/AL032/';% path to your kilosort output files 
-ephysRawDir = dir('/home/netshare/znas/AL032/2019-11-21/ephys_K1/*.*bin'); % path to yourraw .bin or .dat data
-ephysMetaDir = dir('/home/netshare/znas/AL032/2019-11-21/ephys_K1/*.*meta'); % path to your meta file
-saveLocation = '/media/julie/ExtraHD/AL032/2019-11-21/'; % where you want to save the quality metrics 
+ephysKilosortPath = '/home/netshare/zinu/CB016/2021-09-28/ephys/CB016_2021-09-28_NatImages_g1/CB016_2021-09-28_NatImages_g1/PyKS/output/';% path to your kilosort output files 
+ephysRawDir = dir('/home/netshare/zinu/CB016/2021-09-28/ephys/CB016_2021-09-28_NatImages_g1/CB016_2021-09-28_NatImages_g1/*.*bin'); % path to yourraw .bin or .dat data
+ephysMetaDir = dir('/home/netshare/zinu/CB016/2021-09-28/ephys/CB016_2021-09-28_NatImages_g1/CB016_2021-09-28_NatImages_g1/*.*meta'); % path to your meta file
+saveLocation = '/media/julie/ExtraHD/CB016'; % where you want to save the quality metrics 
 savePath = fullfile(saveLocation, 'qMetrics'); 
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
 
 %% load data 
+tic
 [spikeTimes_samples, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysKilosortPath);
 
@@ -28,6 +29,7 @@ else
     [param, qMetric] = bc_loadSavedMetrics(savePath); 
     unitType = bc_getQualityUnitType(param, qMetric);
 end
+toc
 
 %% view units + quality metrics in GUI 
 % load data for GUI
@@ -41,7 +43,7 @@ bc_loadMetricsForGUI;
 % up/down arrow: toggle between time chunks in the raw data
 % u: brings up a input dialog to enter the unit you want to go to
 unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, ...
-    param, probeLocation, unitType, plotRaw)
+    param, probeLocation, unitType, plotRaw);
 %
 %bc_unitQualityGUI(memMapData, ephysData, qMetric, rawWaveforms, param,...
 %    probeLocation, unitType, plotRaw);
