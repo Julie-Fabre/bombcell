@@ -213,7 +213,8 @@ try
     qMetric = bc_saveQMetrics(param, qMetric, forGUI, savePath);
     fprintf('Saved quality metrics from %s to %s \n', param.rawFile, savePath)
 catch
-    fprintf('Warning, quality metrics from %s not saved \n', param.rawFile)
+    warning on
+    warning('Warning, quality metrics from %s not saved \n', param.rawFile)
 end
 
 %% get some summary plots
