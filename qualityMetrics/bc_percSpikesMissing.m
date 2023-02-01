@@ -138,5 +138,5 @@ end
         F = x(1) * exp(-(bin_centers - x(2)).^2/(2 * x(3).^2));
         F(bin_centers < x(4)) = 0;
     end
-
+warning on;
 end

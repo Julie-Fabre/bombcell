@@ -27,7 +27,7 @@ qMetric = rmfield(qMetric, 'fractionRPVs');
 
 % save the rest of quality metrics and fraction refractory period
 % violations for each unit's estimated tauR
-% make sure everything is double first
+% make sure everything is a double first
 FNames = fieldnames(qMetric);
 for fid = 1:length(FNames)
     eval(['qMetric.' FNames{fid} '=double(qMetric.' FNames{fid} ');'])
