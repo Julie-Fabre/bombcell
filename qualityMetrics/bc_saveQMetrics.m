@@ -12,9 +12,10 @@ if ~exist(savePath, 'dir')
 end
 
 % save parameters
-parquetwrite([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')], struct2table(param))
-
-% save quality metrics 
+if ~istable(param)
+    parquetwrite([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')], struct2table(param))
+end
+% save quality metrics
 if param.saveMatFileForGUI
     save(fullfile(savePath, 'templates.qualityMetricDetailsforGUI.mat'), 'forGUI', '-v7.3')
 end
@@ -26,12 +27,20 @@ qMetric = rmfield(qMetric, 'fractionRPVs');
 
 % save the rest of quality metrics and fraction refractory period
 % violations for each unit's estimated tauR
-qMetricArray = squeeze(reshape(table2array(struct2table(qMetric, 'AsArray', true)), size(qMetric.maxChannels,2),...
-    length(fieldnames(qMetric))));
+% make sure everything is double first
+FNames = fieldnames(qMetric);
+for fid = 1:length(FNames)
+    eval(['qMetric.' FNames{fid} '=double(qMetric.' FNames{fid} ');'])
+end
+qMetricArray = double(squeeze(reshape(table2array(struct2table(qMetric, 'AsArray', true)), size(qMetric.maxChannels,2),...
+    length(fieldnames(qMetric)))));
 qMetricTable = array2table(qMetricArray);
 qMetricTable.Properties.VariableNames =  fieldnames(qMetric);
 
 parquetwrite([fullfile(savePath, 'templates._bc_qMetrics.parquet')], qMetricTable)
 
+% overwrite qMetric with the table, to be consistent with it for next steps
+% of the pipeline
+qMetric = qMetricTable;
 
 end

@@ -57,7 +57,7 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, 
     probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'uparrow')
             iChunk = iChunk + 1;
-            if iChunk> length(ephysData.spike_times_timeline(ephysData.spike_templates == iCluster))
+            if iChunk> length(ephysData.spike_times(ephysData.spike_templates == iCluster))
                 iChunk=1;
             end
             updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, qMetric, param, ...
@@ -65,7 +65,7 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, 
         elseif strcmpi(evnt.Key, 'downarrow')
             iChunk = iChunk - 1;
             if iChunk==0
-                iChunk = length(ephysData.spike_times_timeline(ephysData.spike_templates == iCluster));
+                iChunk = length(ephysData.spike_times(ephysData.spike_templates == iCluster));
             end
             updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, qMetric, param, ...
     probeLocation, uniqueTemps, iChunk, plotRaw);
@@ -88,9 +88,9 @@ mainTitle = sgtitle('');
 subplot(6, 13, [1, 14, 27, 40, 53, 66], 'YDir', 'reverse');
 hold on;
 unitCmap = zeros(length(unitType), 3);
-unitCmap(unitType == 1, :, :) = repmat([0, 0.5, 0], length(find(unitType == 1)), 1);
-unitCmap(unitType == 0, :, :) = repmat([1, 0, 0], length(find(unitType == 0)), 1);
-unitCmap(unitType == 2, :, :) = repmat([0.29, 0, 0.51], length(find(unitType == 2)), 1);
+unitCmap(unitType == 1, :) = repmat([0, 0.5, 0], length(find(unitType == 1)), 1);
+unitCmap(unitType == 0, :) = repmat([1, 0, 0], length(find(unitType == 0)), 1);
+unitCmap(unitType == 2, :) = repmat([0.29, 0, 0.51], length(find(unitType == 2)), 1);
 norm_spike_n = mat2gray(log10(accumarray(ephysData.spike_templates, 1)+1));
 unitDots = scatter(norm_spike_n(uniqueTemps), ephysData.channel_positions(qMetric.maxChannels, 2), 5, unitCmap, ...
     'filled', 'ButtonDownFcn', @unit_click);
@@ -491,8 +491,8 @@ if plotRaw % Get guidata
     %     guiData.spikeFR = spikeFR;
     %     guiData.ampliTitle = ampliTitle;
     %     guiData.ampliLegend = ampliLegend;
-    theseSpikeTimes = ephysData.spike_times_timeline(ephysData.spike_templates == thisUnit);
-    ephysData.recordingDuration = (max(ephysData.spike_times_timeline) - min(ephysData.spike_times_timeline));
+    theseSpikeTimes = ephysData.spike_times(ephysData.spike_templates == thisUnit);
+    ephysData.recordingDuration = (max(ephysData.spike_times) - min(ephysData.spike_times));
     theseAmplis = ephysData.template_amplitudes(ephysData.spike_templates == thisUnit);
     set(guiData.tempAmpli, 'XData', theseSpikeTimes, 'YData', theseAmplis)
     currTimes = theseSpikeTimes(theseSpikeTimes >= theseSpikeTimes(iChunk)-0.1 & theseSpikeTimes <= theseSpikeTimes(iChunk)+0.1);
@@ -501,7 +501,7 @@ if plotRaw % Get guidata
     set(guiData.ampliAx.YAxis(1), 'Limits', [0, round(max(theseAmplis))])
 
     binSize = 20;
-    timeBins = 0:binSize:ceil(ephysData.spike_times(end)/ephysData.ephys_sample_rate);
+    timeBins = 0:binSize:ceil(ephysData.spike_times_samples(end)/ephysData.ephys_sample_rate);
     [n, x] = hist(theseSpikeTimes, timeBins);
     n = n ./ binSize;
 
