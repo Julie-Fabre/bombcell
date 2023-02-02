@@ -8,7 +8,7 @@ paramBC.plotDetails = 0; % generates a lot of plots,
 % to debug, or to get nice plots for a presentation
 paramBC.plotGlobal = 1; % plot summary of quality metrics 
 paramBC.verbose = 1; % update user on progress
-paramBC.reextractRaw = 1; % re extract raw waveforms or not 
+paramBC.reextractRaw = 0; % re extract raw waveforms or not 
 
 % saving parameters 
 paramBC.saveAsParquet = 1; % save outputs at .parquet file 
