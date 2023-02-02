@@ -5,6 +5,9 @@ else
     memMapData =[];
 end
 
+if ~exist('param','var')
+    param = paramBC;
+end
 % put ephys data into structure
 ephysData = struct;
 ephysData.spike_times_samples = spikeTimes_samples;

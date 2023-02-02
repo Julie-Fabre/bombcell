@@ -72,7 +72,7 @@ paramBC.maxPercSpikesMissing = 20;
 paramBC.minNumSpikes = 300;
 
 paramBC.minSignalToNoiseRatio = 0.9;
-paramBC.maxDrift = 10;
+paramBC.maxDrift = 100;
 paramBC.minPresenceRatio = 0.7;
 paramBC.minSNR = 0.1;
 
