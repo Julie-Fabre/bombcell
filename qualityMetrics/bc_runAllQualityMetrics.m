@@ -130,10 +130,12 @@ for iUnit = 1:length(uniqueTemplates)
 
 
     %% percentage spikes missing (false negatives)
+    tic
     [percentageSpikesMissing_gaussian, ~, ~, ~, ~, ~] = ...
         bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails); %QQ use percentageSpikesMissing_symmetric if bad ks_test value 
-
+    
     %% fraction contamination (false positives)
+    
     tauR_window = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
     [fractionRPVs, ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
         tauR_window, param.tauC, timeChunks, param.plotDetails);
@@ -155,19 +157,23 @@ for iUnit = 1:length(uniqueTemplates)
 
     [qMetric.fractionRPVs(iUnit,:), ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
         tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails);
-
+    toc
     %% presence ratio (potential false negatives)
+    tic
     [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
         qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param.plotDetails);
+    toc
 
     %% maximum cumulative drift estimate 
+    tic
     [qMetric.maxDriftEstimate(iUnit),qMetric.cumDriftEstimate(iUnit)] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...
         theseSpikeTimes, goodChannels(:,2), thisUnit, param.driftBinSize, param.plotDetails);
-    
+    toc
     %% number spikes
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
 
     %% waveform
+    tic
     waveformBaselineWindow = [param.waveformBaselineWindowStart, param.waveformBaselineWindowStop];
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), forGUI.peakLocs{iUnit},...
         forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), ...
@@ -175,11 +181,12 @@ for iUnit = 1:length(uniqueTemplates)
         forGUI.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms,thisUnit, qMetric.maxChannels(thisUnit),...
         param.ephys_sample_rate, goodChannels, param.maxWvBaselineFraction, waveformBaselineWindow,...
         param.minThreshDetectPeaksTroughs, param.plotDetails); %QQ do we need tempWv ? 
-
+toc
     %% amplitude
+    tic
     qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit),:), ...
         param.ephysMetaFile);
-
+toc
     %% distance metrics
     if param.computeDistanceMetrics
         [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit), ...
