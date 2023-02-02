@@ -23,9 +23,9 @@ function [rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extra
 %   mean raw waveforms for each unit and channel
 % rawWaveformsPeakChan: nUnits x 1 vector of each unit's channel with the maximum
 %   amplitude
-% signalToNoiseRatio: nUnits x 1 vector of each unit's raw waveform
-%   signal-noice-ratio on the peak channel 
-% SNR implementation - Enny van Beest 
+% signalToNoiseRatio: nUnits x 1 vector defining the absolute maximum
+%       value of the mean raw waveform for that value divided by the variance
+%       of the data before detected waveforms. implementation : Enny van Beest 
 
 %% Check if data already extracted
 rawWaveformFolder = dir(fullfile(savePath, 'templates._bc_rawWaveforms.npy'));

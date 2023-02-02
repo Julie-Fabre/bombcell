@@ -5,14 +5,20 @@ function presenceRatio = bc_presenceRatio(theseSpikeTimes, theseAmplis, presence
 % ------
 % theseSpikeTimes: nSpikesforThisUnit × 1 double vector of time in seconds
 %   of each of the unit's spikes.
-% startTime
-% stopTime
-% presenceRatioBin: 
+% startTime : defining time chunk start value (dividing the recording in time of chunks of param.deltaTimeChunk size)
+%       where the percentage of spike missing and percentage of false positives
+%       is below param.maxPercSpikesMissing and param.maxRPVviolations
+% stopTime: defining time chunk stop value (dividing the recording in time of chunks of param.deltaTimeChunk size)
+%       where the percentage of spike missing and percentage of false positives
+%       is below param.maxPercSpikesMissing and param.maxRPVviolations
+% presenceRatioBin: size of time bins in which to calculate the presence
+%   ratio
 % plotThis: boolean, whether to plot amplitude distribution and fit or not
 % ------
 % Outputs
 % ------
-% presenceRatio
+% presenceRatio : fraction of bins (of bin size presenceRatioBinSize) that
+%   contain at least one spike 
 %
 % Note that cells can have low scores in this metric if they have selective
 %   firing patterns. 

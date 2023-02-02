@@ -20,8 +20,8 @@ savePath = fullfile(saveLocation, 'qMetrics');
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
 
 %% load data 
-[spikeTimes_samples, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysKilosortPath);
+[spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitudes, pcFeatures, ...
+    pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysKilosortPath);
 
 %% detect whether data is compressed, decompress locally if necessary
 rawFile = bc_manageDataCompression(ephysRawDir, decompressDataLocal);
@@ -30,6 +30,7 @@ rawFile = bc_manageDataCompression(ephysRawDir, decompressDataLocal);
 param = bc_qualityParamValues(ephysMetaDir, rawFile); 
 % param = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile) % Run
 % this if you want to use UnitMatch after
+
 %% compute quality metrics 
 rerun = 0;
 qMetricsExist = ~isempty(dir(fullfile(savePath, 'qMetric*.mat'))) || ~isempty(dir(fullfile(savePath, 'templates._bc_qMetrics.parquet')));
@@ -46,7 +47,6 @@ end
 % load data for GUI
 loadRawTraces = 0;
 bc_loadMetricsForGUI;
-
 
 % GUI guide: 
 % left/right arrow: toggle between units 

@@ -12,7 +12,8 @@ function param = bc_qualityParamValues(ephysMetaDir, rawFile)
 % Outputs
 % ------
 % param: matlab structure defining extraction and
-% classification parameters
+% classification parameters (see bc_qualityParamValues for required fields
+% and suggested starting values)
 % 
 
 param = struct; %initialize structure 

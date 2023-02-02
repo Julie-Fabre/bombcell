@@ -9,8 +9,8 @@ function rawAmplitude = bc_getRawAmplitude(rawWaveforms, metaFile)
 % ------
 % Outputs
 % ------
-% rawAmplitude: raw amplitude in microVolts of the mean raw wwaveform for
-% this unit 
+% rawAmplitude: raw amplitude in microVolts of the mean raw waveform for
+%   this unit 
 % 
 
 if contains(metaFile, 'oebin')

@@ -35,14 +35,17 @@ function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_pe
 % nTroughs: number of detected troughs
 % isSomatic: boolean, is largest detected peak after the largest detected
 %   trough (indicative of a somatic spike).)
-% peakLocs QQ describe
-% troughLocs QQ describe
-% waveformDuration_minMax: in us QQ describe
-% waveformDuration_peakTrough: in us  QQ describe
+% peakLocs: location of detected peaks, used in the GUI
+% troughLocs: location of detected troughs, used in the GUI
+% waveformDuration_minMax: estimated waveform duration, from detected peak 
+%   to trough, in us
+% waveformDuration_peakTrough: estimated waveform duration, from detected peak 
+%   to trough, in us
 % spatialDecayPoints QQ describe
 % spatialDecaySlope QQ describe
-% waveformBaseline QQ describe
-% thisWaveform QQ describe
+% waveformBaselineFlatness 
+% thisWaveform: this unit's template waveforms at and around the peak
+%   channel, used in the GUI
 %
 % Centroid-based 'real' unit location calculation: Enny van Beest
 

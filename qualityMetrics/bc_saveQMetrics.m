@@ -1,12 +1,23 @@
 function qMetric = bc_saveQMetrics(param, qMetric, forGUI, savePath)
-% JF, Save quality metrics
+% JF, Reformat and save quality metrics
 % ------
 % Inputs
 % ------
-% 
+% param: matlab structure defining extraction and classification parameters 
+%   (see bc_qualityParamValues for required fields
+%   and suggested starting values)
+% qMetric: matlab structure computed in the main loop of
+%   bc_runAllQualityMetrics, each field is a nUnits x 1 vector containing 
+%   the quality metric value for that unit 
+% forGUI: matlab structure computed in the main loop of bc_runAllQualityMetrics,
+%   for use in bc_unitQualityGUI
+% savePath: character array defining the path where you want to save your
+%   quality metrics and parameters 
 % ------
 % Outputs
 % ------
+% qMetric: reformated qMetric structure into a table array
+
 if ~exist(savePath, 'dir')
     mkdir(fullfile(savePath))
 end
@@ -20,8 +31,8 @@ if param.saveMatFileForGUI
     save(fullfile(savePath, 'templates.qualityMetricDetailsforGUI.mat'), 'forGUI', '-v7.3')
 end
 
-% save fraction refractory period violations for all different tauR times 
-parquetwrite([fullfile(savePath, 'templates._bc_fractionRefractoryPeriodViolationsPerTauR.parquet')],array2table(qMetric.fractionRPVs))
+% save fraction refractory period violations for all different tauR times
+parquetwrite([fullfile(savePath, 'templates._bc_fractionRefractoryPeriodViolationsPerTauR.parquet')], array2table(qMetric.fractionRPVs))
 qMetric.fractionRPVs_estimatedTauR = qMetric.fractionRPVs(qMetric.RPV_tauR_estimate);
 qMetric = rmfield(qMetric, 'fractionRPVs');
 
@@ -30,12 +41,12 @@ qMetric = rmfield(qMetric, 'fractionRPVs');
 % make sure everything is a double first
 FNames = fieldnames(qMetric);
 for fid = 1:length(FNames)
-    eval(['qMetric.' FNames{fid} '=double(qMetric.' FNames{fid} ');'])
+    eval(['qMetric.', FNames{fid}, '=double(qMetric.', FNames{fid}, ');'])
 end
-qMetricArray = double(squeeze(reshape(table2array(struct2table(qMetric, 'AsArray', true)), size(qMetric.maxChannels,2),...
+qMetricArray = double(squeeze(reshape(table2array(struct2table(qMetric, 'AsArray', true)), size(qMetric.maxChannels, 2), ...
     length(fieldnames(qMetric)))));
 qMetricTable = array2table(qMetricArray);
-qMetricTable.Properties.VariableNames =  fieldnames(qMetric);
+qMetricTable.Properties.VariableNames = fieldnames(qMetric);
 
 parquetwrite([fullfile(savePath, 'templates._bc_qMetrics.parquet')], qMetricTable)
 

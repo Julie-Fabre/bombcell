@@ -1,4 +1,4 @@
-function [maxDrift_estimate , cumulativeDrift_estimate] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, spikeTemplates,...
+function [maxDrift_estimate, cumulativeDrift_estimate] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, spikeTemplates,...
     spikeTimes, channelPositions_z, thisUnit, driftBinSize, plotThis)
 % JF, Estimate the maximum drift for a particular unit 
 % ------
@@ -8,13 +8,18 @@ function [maxDrift_estimate , cumulativeDrift_estimate] = bc_maxDriftEstimate(pc
 %   matrix giving the PC values for each spike. 
 % pc_feature_ind: nTemplates × nPCFeatures uint32  matrix specifying which 
 %   channels contribute to each entry in dim 3 of the pc_features matrix
-% spike_templates: nSpikes x 
+% spike_templates: nSpikes × 1 uint32 vector giving the identity of each
+%   spike's matched template
 % thisUnit: unit number 
-% plotThis
+% plotThis: boolean, whether to plot results (not implemented yet for this
+%   function)
 % ------
 % Outputs
 % ------
-% maxDriftEstimate 
+% maxDriftEstimate: maximum absolute difference between peak channels, in
+%   um
+% cumulativeDrift_estimate: cummulative absolute difference between peak channels, in
+%   um
 %
 % ------
 % References
