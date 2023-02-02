@@ -1,5 +1,5 @@
-if exist('paramBC','var')
-    param=paramBC;
+if exist('paramBC','var') %for unit match 
+    param = paramBC;
 end
 
 spikeFile=dir(param.rawFile);

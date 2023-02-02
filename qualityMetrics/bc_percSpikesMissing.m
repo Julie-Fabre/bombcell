@@ -19,8 +19,9 @@ function [percentMissing_gaussian, percentMissing_symmetric, ksTest_pValue, ampl
 % percentMissing_symmetric: estimated percent spike missing for each time
 %   chunk, assuming the data is normally distributed
 % ksTest_pValue: Kolmogorov-Smirnov test p value for each time chunk 
-% spikeCountsPerAmpliBin_gaussian
-% gaussianFit_cutoff: gaussian fit curve 
+% spikeCountsPerAmpliBin_gaussian: spike counts per amplitude bin, for GUI
+%   plotting
+% gaussianFit_cutoff: gaussian fit curve, for GUI plotting
 %
 % Note that this will underestimate the amount of spikes missing in the
 % case or bursty cells, where there spike amplitude is decreased during the

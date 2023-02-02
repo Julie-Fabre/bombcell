@@ -73,6 +73,8 @@ paramBC.minNumSpikes = 300;
 
 paramBC.minSignalToNoiseRatio = 0.9;
 paramBC.maxDrift = 10;
+paramBC.minPresenceRatio = 0.7;
+paramBC.minSNR = 2;
 
 %waveform 
 paramBC.maxNPeaks = 2;

@@ -1,5 +1,5 @@
 function nSpikes = bc_numberSpikes(theseSpikeTimes)
-% JF, Get the max channel for all templates (channel with largest amplitude)
+% JF, Count the number of spikes for the current unit
 % ------
 % Inputs
 % ------

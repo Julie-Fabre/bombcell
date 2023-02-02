@@ -1,5 +1,17 @@
 function [rawFile] = bc_manageDataCompression(ephysRawDir, decompressDataLocal)
-
+% JF, Decompress raw ephys data if it is in .cbin format
+% ------
+% Inputs
+% ------
+% ephysRawDir: dir() structure of the path to your raw .bin, .cbin or .dat file 
+% decompressDataLocal: character array defining the path where decompressed
+%   data will be saved 
+% ------
+% Outputs
+% ------
+% rawFile: character array defining the path where your uncompressed raw
+%   ephys data is
+% 
 if strcmp(ephysRawDir.name(end-4:end), '.cbin') &&...
         isempty(dir([decompressDataLocal, filesep, ephysRawDir.name(1:end-14), '_bc_decompressed*.bin']))
     fprintf('Decompressing ephys data file %s locally to %s... \n', ephysRawDir.name, decompressDataLocal)

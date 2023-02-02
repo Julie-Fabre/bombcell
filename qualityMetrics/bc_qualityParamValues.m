@@ -1,5 +1,21 @@
 function param = bc_qualityParamValues(ephysMetaDir, rawFile)
-param = struct;
+% JF, Load a parameter structure defining extraction and
+% classification parameters
+% ------
+% Inputs
+% ------
+% ephysMetaDir: dir() structure of the path to your .meta or .oebin meta
+%   file
+% rawFile: character array defining the path where your uncompressed raw
+%   ephys data is
+% ------
+% Outputs
+% ------
+% param: matlab structure defining extraction and
+% classification parameters
+% 
+
+param = struct; %initialize structure 
 
 %% calculating quality metrics parameters 
 % plotting parameters 
@@ -73,6 +89,8 @@ param.minNumSpikes = 300;
 
 param.minSignalToNoiseRatio = 0.9;
 param.maxDrift = 10;
+param.minPresenceRatio = 0.7;
+param.minSNR = 2;
 
 %waveform 
 param.maxNPeaks = 2;
