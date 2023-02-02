@@ -44,7 +44,7 @@ end
 
 %% view units + quality metrics in GUI 
 % load data for GUI
-loadRawTraces = 1;
+loadRawTraces = 0;
 bc_loadMetricsForGUI;
 
 

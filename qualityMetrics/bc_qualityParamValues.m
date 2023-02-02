@@ -28,7 +28,7 @@ param.reextractRaw = 0; % re extract raw waveforms or not
 
 % saving parameters 
 param.saveAsParquet = 1; % save outputs at .parquet file 
-param.saveMatFileForGUI = 0; % save certain outputs at .mat file - useful for GUI
+param.saveMatFileForGUI = 1; % save certain outputs at .mat file - useful for GUI
 
 % amplitude parameters
 param.nRawSpikesToExtract = 100; % how many raw spikes to extract for each unit 
