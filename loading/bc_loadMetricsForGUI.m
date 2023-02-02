@@ -1,4 +1,5 @@
 %get memmap
+
 if exist('loadRawTraces', 'var') 
     if loadRawTraces 
         bc_getRawMemMap;
@@ -6,9 +7,13 @@ if exist('loadRawTraces', 'var')
         memMapData =[];
     end
 else
+    loadRawTraces=0;
     memMapData =[];
 end
 
+if ~exist('param','var')
+    param = paramBC;
+end
 % put ephys data into structure
 ephysData = struct;
 ephysData.spike_times_samples = spikeTimes_samples;
