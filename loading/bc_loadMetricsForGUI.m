@@ -7,6 +7,7 @@ if exist('loadRawTraces', 'var')
         memMapData =[];
     end
 else
+    loadRawTraces=0;
     memMapData =[];
 end
 
