@@ -60,8 +60,6 @@ param.presenceRatioBinSize = 60; % in seconds
 
 % drift estimate
 param.driftBinSize = 60; % in seconds
-param.computeDrift = 0; % whether to compute each units drift. this is a 
-% critically slow step that takes around 2seconds per unit 
 
 % waveform parameters
 param.waveformBaselineWindowStart = 20;

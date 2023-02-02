@@ -208,6 +208,7 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
     xlabel(['signal-to-noise' newline 'ratio'])
     makepretty;
 
+    if param.computeDrift
     subplot(4, 5, 15) % max drift estimate 
     hold on;
     histogram(qMetric.maxDriftEstimate, 'FaceColor', colorMtx(15, 1:3), 'FaceAlpha', colorMtx(15, 4), 'BinEdges', ...
@@ -227,7 +228,7 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
     ylabel('unit count')
     xlabel('cum drift estimate')
     makepretty;
-
+    end
 
    
 
