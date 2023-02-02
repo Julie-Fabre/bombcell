@@ -91,7 +91,7 @@ param.minNumSpikes = 300;
 param.minSignalToNoiseRatio = 0.9;
 param.maxDrift = 10;
 param.minPresenceRatio = 0.7;
-param.minSNR = 2;
+param.minSNR = 0.1;
 
 %waveform 
 param.maxNPeaks = 2;
