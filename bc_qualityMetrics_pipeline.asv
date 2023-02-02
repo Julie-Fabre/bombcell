@@ -2,13 +2,7 @@
 % Adjust the paths in the 'set paths' section and the parameters in bc_qualityParamValues
 % This pipeline will (1) load your ephys data, (2) decompress your raw data if it
 % is in .cbin format (3) run bombcell on your data and save the output and
-% finally (4) bring up summary plots and a GUI to flip through classifyed
-% cells.
-% The first time, this pipeline will be significantly slower (10-20' more)
-% than after because it extracts raw waveforms. Subsequent times these
-% pre-extracted waveforms are simply loaded in.
-% We recomment running this pipeline on a few datasets and deciding on
-% quality metric thresholds depending on the histogram and GUI. 
+% finally (4) bring up summary plots and a GUI to flip through classif
 
 
 %% set paths 
@@ -20,6 +14,7 @@ savePath = fullfile(saveLocation, 'qMetrics');
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
 
 %% load data 
+tic
 [spikeTimes_samples, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysKilosortPath);
 
@@ -41,12 +36,11 @@ else
     [param, qMetric] = bc_loadSavedMetrics(savePath); 
     unitType = bc_getQualityUnitType(param, qMetric);
 end
+toc
 
 %% view units + quality metrics in GUI 
 % load data for GUI
-loadRawTraces = 1;
 bc_loadMetricsForGUI;
-
 
 % GUI guide: 
 % left/right arrow: toggle between units 
@@ -56,6 +50,9 @@ bc_loadMetricsForGUI;
 % up/down arrow: toggle between time chunks in the raw data
 % u: brings up a input dialog to enter the unit you want to go to
 unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, ...
-    param, probeLocation, unitType, loadRawTraces);
+    param, probeLocation, unitType, plotRaw);
+%
+%bc_unitQualityGUI(memMapData, ephysData, qMetric, rawWaveforms, param,...
+%    probeLocation, unitType, plotRaw);
 
 

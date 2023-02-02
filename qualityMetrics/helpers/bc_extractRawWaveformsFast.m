@@ -23,7 +23,8 @@ function [rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extra
 %   mean raw waveforms for each unit and channel
 % rawWaveformsPeakChan: nUnits x 1 vector of each unit's channel with the maximum
 %   amplitude
-% 
+% signalToNoiseRatio: nUnits x 1 vector of each unit's raw waveform
+%   signal-noice-ratio on the peak channel 
 % SNR implementation - Enny van Beest 
 
 %% Check if data already extracted

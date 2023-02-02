@@ -1,5 +1,9 @@
 %get memmap
-bc_getRawMemMap;
+if loadRawTraces 
+    bc_getRawMemMap;
+else
+    memMapData =[];
+end
 
 % put ephys data into structure
 ephysData = struct;

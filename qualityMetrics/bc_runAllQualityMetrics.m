@@ -1,63 +1,28 @@
 function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath)
-% JF
+    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, goodChannels, savePath)
+% JF, extract and save quality metrics for each unit 
 % ------
 % Inputs
 % ------
-% param: parameter structure with fields:
-%   tauR = 0.0010; %refractory period time (s)
-%   tauC = 0.0002; %censored period time (s)
-%   maxPercSpikesMissing: maximum percent (eg 30) of estimated spikes below detection
-%       threshold to define timechunks in the recording on which to compute
-%       quality metrics for each unit.
-%   minNumSpikes: minimum number of spikes (eg 300) for unit to classify it as good
-%   maxNtroughsPeaks: maximum number of troughs and peaks (eg 3) to classify unit
-%       waveform as good
-%   isSomatic: boolean, whether to keep only somatic spikes
-%   maxRPVviolations: maximum estimated % (eg 20) of refractory period violations to classify unit as good
-%   minAmplitude: minimum amplitude of raw waveform in microVolts to
-%       classify unit as good
-%   plotThis: boolean, whether to plot figures for each metric and unit - !
-%       this will create * a lot * of plots if run on all units - use just
-%       for debugging a particular issue / creating plots for one single
-%       unit
-%   rawFolder: string containing the location of the raw .dat or .bin file
-%   deltaTimeChunk: size of time chunks to cut the recording in, in seconds
-%       (eg 600 for 10 min time chunks or duration of recording if you don't
-%       want time chunks)
-%   ephys_sample_rate: recording sample rate (eg 30000)
-%   nChannels: number of recorded channels, including any sync channels (eg
-%       385)
-%   nRawSpikesToExtract: number of spikes to extract from the raw data for
-%       each waveform (eg 100)
-%   nChannelsIsoDist: number of channels on which to compute the distance
-%       metrics (eg 4)
-%   computeDistanceMetrics: boolean, whether to compute distance metrics or not
-%   isoDmin: minimum isolation distance to classify unit as single-unit
-%   lratioMin: minimum l-ratio to classify unit as single-unit
-%   ssMin: silhouette score to classify unit as single-unit
-%   computeTimeChunks
-%
+% param: parameter structure (see bc_qualityParamValues for required fields
 % spikeTimes_samples: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
-%
 % spikeTemplates: nSpikes × 1 uint32 vector giving the identity of each
 %   spike's matched template
-%
 % templateWaveforms: nTemplates × nTimePoints × nChannels single matrix of
 %   template waveforms for each template and channel
-%
 % templateAmplitudes: nSpikes × 1 double vector of the amplitude scaling factor
 %   that was applied to the template when extracting that spike
-%
 % pcFeatures: nSpikes × nFeaturesPerChannel × nPCFeatures  single
 %   matrix giving the PC values for each spike
-%
 % pcFeatureIdx: nTemplates × nPCFeatures uint32  matrix specifying which
 %   channels contribute to each entry in dim 3 of the pc_features matrix
-%
-% channelPositions
-% goodChannels 
-%------
+% channelPositions: nChannels x 2 double matrix, each row gives the x and y 
+%   coordinates of each channel
+% goodChannels: nChannels x 1 uint32 vector defining the channels used by
+%   kilosort (some are dropped during the spike sorting process)
+% savePath: character array defining the path where bombcell output files
+%   will be saved 
+% ------
 % Outputs
 % ------
 % qMetric: structure with fields:
@@ -92,7 +57,7 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples
 %
 % unitType: nUnits x 1 vector indicating whether each unit met the
 %   threshold criterion to be classified as a single unit (1), noise
-%   (0) or multi-unit (2)
+%   (0), multi-unit (2) or non-somatic (3)
 
 %% if some manual curation already performed, remove bad units
 
@@ -175,7 +140,7 @@ for iUnit = 1:length(uniqueTemplates)
 
     %% maximum cumulative drift estimate 
     [qMetric.maxDriftEstimate(iUnit),qMetric.cumDriftEstimate(iUnit)] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...
-        theseSpikeTimes, channelPositions(:,2), thisUnit, param.driftBinSize, param.plotDetails);
+        theseSpikeTimes, goodChannels(:,2), thisUnit, param.driftBinSize, param.plotDetails);
     
     %% number spikes
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
@@ -186,8 +151,8 @@ for iUnit = 1:length(uniqueTemplates)
         forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), ...
         forGUI.spatialDecayPoints(iUnit,:), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), ....
         forGUI.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms,thisUnit, qMetric.maxChannels(thisUnit),...
-        param.ephys_sample_rate, channelPositions, param.maxWvBaselineFraction, waveformBaselineWindow,...
-        param.minThreshDetectPeaksTroughs, param.plotDetails); %do we need tempWv ? 
+        param.ephys_sample_rate, goodChannels, param.maxWvBaselineFraction, waveformBaselineWindow,...
+        param.minThreshDetectPeaksTroughs, param.plotDetails); %QQ do we need tempWv ? 
 
     %% amplitude
     qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit),:), ...
@@ -198,14 +163,14 @@ for iUnit = 1:length(uniqueTemplates)
         [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit), ...
             forGUI.d2_mahal{iUnit}, forGUI.mahalobnis_Xplot{iUnit}, forGUI.mahalobnis_Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
-            param.nChannelsIsoDist, param.plotDetails); %QQ
+            param.nChannelsIsoDist, param.plotDetails); %QQ make faster 
     end
 
 end
 
 %% get unit types and save data
 qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates)'; 
-qMetric.signalToNoiseRatio = signalToNoiseRatio'; % Is already only uniqueTemplates
+qMetric.signalToNoiseRatio = signalToNoiseRatio'; 
 
 
 fprintf('Finished extracting quality metrics from %s \n', param.rawFile)
@@ -213,7 +178,7 @@ try
     qMetric = bc_saveQMetrics(param, qMetric, forGUI, savePath);
     fprintf('Saved quality metrics from %s to %s \n', param.rawFile, savePath)
 catch
-    warning on
+    warning on;
     warning('Warning, quality metrics from %s not saved \n', param.rawFile)
 end
 
