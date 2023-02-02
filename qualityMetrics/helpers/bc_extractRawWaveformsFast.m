@@ -96,7 +96,7 @@ else
 
         if param.saveMultipleRaw
             tmpspkmap = permute(rawWaveforms(iCluster).spkMap,[2,1,3]); % Compatible with UnitMatch QQ
-            tmpspkmap = smoothdata(tmpspkmap - mean(tmpspkmap(1:param.waveformBaselineNoiseWindow,:,:),1),1,'gaussian',5); % Subtract baseline
+            tmpspkmap = smoothdata(tmpspkmap - mean(tmpspkmap(1:param.waveformBaselineNoiseWindow,:,1:nSpkLocal),1),1,'gaussian',5); % Subtract baseline
             % Save two averages for UnitMatch
             tmpspkmap = arrayfun(@(X) nanmean(tmpspkmap(:,:,(X-1)*floor(size(tmpspkmap,3)/2)+1:X*floor(size(tmpspkmap,3)/2)),3),1:2,'Uni',0);
             tmpspkmap = cat(3,tmpspkmap{:});
