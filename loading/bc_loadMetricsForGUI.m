@@ -1,5 +1,5 @@
 %get memmap
-if loadRawTraces 
+if exist('loadRawTraces','var') && loadRawTraces 
     bc_getRawMemMap;
 else
     memMapData =[];
