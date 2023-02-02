@@ -34,7 +34,7 @@ spike_templates_0idx = readNPY([ephys_path filesep 'spike_templates.npy']);
 spikeTemplates = spike_templates_0idx + 1;
 if exist(fullfile(ephys_path,'spike_times_corrected.npy')) % When running pyKS stitched you need the 'aligned / corrected' spike times
     spikeTimes_samples = double(readNPY([ephys_path filesep  'spike_times_corrected.npy']));
-    spikeTimes_datasets = double(readNPY([ephys_path filesep  'spike_datasets.npy']))+1; %  which dataset? (zero-indexed so +1)
+    spikeTimes_datasets = double(readNPY([ephys_path filesep  'spike_datasets.npy'])) + 1; %  which dataset? (zero-indexed so +1)
 else
     spikeTimes_samples = double(readNPY([ephys_path filesep  'spike_times.npy']));
     spikeTimes_datasets = ones(size(spikeTimes_samples));

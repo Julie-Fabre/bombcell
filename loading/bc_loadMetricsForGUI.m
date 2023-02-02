@@ -25,7 +25,9 @@ rawWaveforms.average = readNPY([fullfile(savePath, 'templates._bc_rawWaveforms.n
 rawWaveforms.peakChan = readNPY([fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy')]);
 
 % load other gui stuffs 
-if ~exist('forGUI', 'var')
+if ~exist('forGUI', 'var') && ~isempty(dir([savePath, filesep, 'templates.qualityMetricDetailsforGUI.mat']))
+    load([savePath, filesep, 'templates.qualityMetricDetailsforGUI.mat'])
+else
     forGUI = struct;
      
     % get unique templates 

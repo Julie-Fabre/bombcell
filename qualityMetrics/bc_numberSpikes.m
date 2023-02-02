@@ -8,7 +8,7 @@ function nSpikes = bc_numberSpikes(theseSpikeTimes)
 % ------
 % Outputs
 % ------
-% nSpikes: number of spikes for that unit 
+% nSpikes: number of spikes for current unit
 % 
 nSpikes = numel(theseSpikeTimes); 
 

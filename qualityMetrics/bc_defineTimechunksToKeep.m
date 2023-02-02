@@ -1,16 +1,36 @@
 function [theseSpikeTimes, theseAmplis, theseSpikeTemplates, useThisTimeStart, useThisTimeStop, useTauR] = bc_defineTimechunksToKeep(percSpikesMissing, ...
-    fractionRPVs, maxPercSpikesMissing, maxfractionRPVs, theseAmplis, theseSpikeTimes, theseSpikeTemplates,timeChunks)
+    fractionRPVs, maxPercSpikesMissing, maxfractionRPVs, theseAmplis, theseSpikeTimes, theseSpikeTemplates, timeChunks)
 % JF
-% define time chunks where unit has low refractory period violations and
+% define time chunks where the current unit has low refractory period violations and
 % estimated percent spikes missing 
 % ------
 % Inputs
 % ------
-% 
+% percSpikesMissing: estimated percentage of spikes missing for the current
+%   unit, for each time chunk
+% fractionRPVs: estimated percentage of spikes missing for the current
+%   unit, for each time chunk
+% maxPercSpikesMissing
+% maxfractionRPVs
+% theseAmplis: current unit spike-to-template scaling factors 
+% theseSpikeTimes: current unit spike times 
+% theseSpikeTemplates:  nSpikes × 1 uint32 vector giving the identity of each
+%   spike's matched template
+% timeChunks: time chunkbins  of the recording in which the percSpikesMissing
+%   and fractionRPVs are computed 
 % ------
 % Outputs
 % ------
-%
+% theseSpikeTimes: current unit spike times in time bins where estimated 
+%   refractory period violations and estimated percent spikes missing are low
+% theseAmplis: current unit spike-to-template scaling factors in time bins where estimated 
+%   refractory period violations and estimated percent spikes missing are low
+% theseSpikeTemplates
+% useThisTimeStart: start bin value where current unit has low refractory period violations and
+%   estimated percent spikes missing 
+% useThisTimeStop: start bin value where current unit has low refractory period violations and
+%   estimated percent spikes missing 
+% useTauR: estimated refractory period for the current unit 
 
 % use biggest tauR value that gives smallest contamination 
 sumRPV = sum(fractionRPVs,1);

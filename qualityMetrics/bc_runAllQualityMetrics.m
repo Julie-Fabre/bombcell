@@ -4,7 +4,9 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples
 % ------
 % Inputs
 % ------
-% param: parameter structure (see bc_qualityParamValues for required fields
+% param: matlab structure defining extraction and classification parameters 
+%   (see bc_qualityParamValues for required fields
+%   and suggested starting values)
 % spikeTimes_samples: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
 % spikeTemplates: nSpikes × 1 uint32 vector giving the identity of each
 %   spike's matched template
@@ -25,41 +27,62 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples
 % ------
 % Outputs
 % ------
-% qMetric: structure with fields:
-%   percentageSpikesMissing : a gaussian is fit to the spike amplitudes with a
+% qMetric : table with fields:
+%   maxChannels : nUnits x 1 vector defining the channel where each template has
+%       the maximum absolute amplitude 
+%   signalToNoiseRatio: nUnits x 1 vector defining the absolute maximum
+%       value of the mean raw waveform for that value divided by the variance
+%       of the data before detected waveforms 
+%   useTheseTimesStart : nUnits x 1 vector defining time chunk start value
+%       (dividing the recording in time of chunks of param.deltaTimeChunk size)
+%       where the percentage of spike missing and percentage of false positives
+%       is below param.maxPercSpikesMissing and param.maxRPVviolations
+%   useTheseTimesStop : same as  useTheseTimesStart, for the time chunk stop
+%       value
+%   RPV_tauR_estimate : nUnits x 1 vector, estimated refractory period value for that unit 
+%   fractionRPVs : nUnits x nRefractoryPeriodValues vector defining the percentage 
+%       of false positives, ie spikes within the refractory period
+%       defined by param.tauR of another spike. This also excludes
+%       duplicated spikes that occur within param.tauC of another spike.
+%   percentageSpikesMissing_gaussian :  nUnits x 1 vector, a gaussian is fit to the spike amplitudes with a
 %       'cutoff' parameter below which there are no spikes to estimate the
 %       percentage of spikes below the spike-sorting detection threshold - will
 %       slightly underestimate in the case of 'bursty' cells with burst
 %       adaptation (eg see Fig 5B of Harris/Buzsaki 2000 DOI: 10.1152/jn.2000.84.1.401) 
-%   fractionRefractoryPeriodViolations: percentage of false positives, ie spikes within the refractory period
-%       defined by param.tauR of another spike. This also excludes
-%       duplicated spikes that occur within param.tauC of another spike. 
-%   useTheseTimes : param.computeTimeChunks, this defines the time chunks 
-%       (deivding the recording in time of chunks of param.deltaTimeChunk size)
-%       where the percentage of spike missing and percentage of false positives
-%       is below param.maxPercSpikesMissing and param.maxRPVviolations
-%   nSpikes : number of spikes for each unit 
-%   nPeaks : number of detected peaks in each units template waveform
-%   nTroughs : number of detected troughs in each units template waveform
-%   isSomatic : a unit is defined as Somatic of its trough precedes its main
+%   ksTest_pValue : nUnits x 1 vector, Kolmogorov-Smirnov test value for this units amplitudes
+%   percentageSpikesMissing_symmetric :  nUnits x 1 vector, estimated percentage of spikes
+%       missing , assuming the amplitude distrbituion is symmetric around its mode- will
+%       slightly underestimate in the case of 'bursty' cells with burst
+%       adaptation (eg see Fig 5B of Harris/Buzsaki 2000 DOI: 10.1152/jn.2000.84.1.401) 
+%   presenceRatio : fraction of bins (of bin size param.presenceRatioBinSize) that
+%       contain at least one spike 
+%   maxDriftEstimate: maximum absolute difference between peak channels, in
+%       um
+%   cumulativeDrift_estimate: cummulative absolute difference between peak channels, in
+%       um
+%   nSpikes : nUnits x 1 vector, number of spikes for each unit 
+%   nPeaks : nUnits x 1 vector, number of detected peaks in each units template waveform
+%   nTroughs : nUnits x 1 vector, number of detected troughs in each units template waveform
+%   isSomatic : nUnits x 1 vector, a unit is defined as somatic of its trough precedes its main
 %       peak (see Deligkaris/Frey DOI: 10.3389/fnins.2016.00421)
-%   rawAmplitude : amplitude in uV of the units mean raw waveform at its peak
-%       channel. The peak channel is defined by the template waveform. 
-%   spatialDecay : gets the minumum amplitude for each unit 5 channels from
+%   waveformDuration_peakTrough : waveform duration in microseconds  
+%   waveformBaselineFlatness 
+%   spatialDecay : nUnits x 1 vector, gets the minumum amplitude for each unit 5 channels from
 %       the peak channel and calculates the slope of this decrease in amplitude.
-%   isoD : isolation distance, a measure of how well a units spikes are seperate from
+%   rawAmplitude : nUnits x 1 vector, amplitude in uV of the units mean raw waveform at its peak
+%       channel. The peak channel is defined by the template waveform. 
+%   isoD : nUnits x 1 vector, isolation distance, a measure of how well a units spikes are seperate from
 %       other nearby units spikes
-%   Lratio : l-ratio, a similar measure to isolation distance. see
+%   Lratio : nUnits x 1 vector, l-ratio, a similar measure to isolation distance. see
 %       Schmitzer-Torbert/Redish 2005  DOI: 10.1016/j.neuroscience.2004.09.066 
 %       for a comparison of l-ratio/isolation distance
-%   silhouetteScore : another measure similar ti isolation distance and
+%   silhouetteScore : nUnits x 1 vector, another measure similar ti isolation distance and
 %       l-ratio. See Rousseeuw 1987 DOI: 10.1016/0377-0427(87)90125-7)
 %
-% unitType: nUnits x 1 vector indicating whether each unit met the
+% unitType : nUnits x 1 vector indicating whether each unit met the
 %   threshold criterion to be classified as a single unit (1), noise
 %   (0), multi-unit (2) or non-somatic (3)
 
-%% if some manual curation already performed, remove bad units
 
 %% prepare for quality metrics computations
 % initialize structures 
@@ -103,25 +126,24 @@ for iUnit = 1:length(uniqueTemplates)
     theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
 
-    %% remove duplicate spikes 
+    %QQ add option to remove duplicate spikes 
 
 
     %% percentage spikes missing (false negatives)
-    [percentageSpikesMissing_gaussian, percentageSpikesMissing_symmetric, ksTest_pValue, ~, ~, ~] = ...
-        bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails);
+    [percentageSpikesMissing_gaussian, ~, ~, ~, ~, ~] = ...
+        bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails); %QQ use percentageSpikesMissing_symmetric if bad ks_test value 
 
     %% fraction contamination (false positives)
     tauR_window = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
     [fractionRPVs, ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
-        tauR_window, param.tauC, ...
-        timeChunks, param.plotDetails);
+        tauR_window, param.tauC, timeChunks, param.plotDetails);
     
     %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
     if param.computeTimeChunks
         [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit),...
             qMetric.RPV_tauR_estimate(iUnit)] = bc_defineTimechunksToKeep(...
             percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
-            param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect 
+            param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ use percentageSpikesMissing_symmetric if bad ks_test value 
     end
 
     %% re-compute percentage spikes missing and fraction contamination on timechunks
