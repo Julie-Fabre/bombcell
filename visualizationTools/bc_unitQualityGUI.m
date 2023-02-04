@@ -443,6 +443,9 @@ theseAmplis = ephysData.template_amplitudes(ephysData.spike_templates == thisUni
 
 set(guiData.tempAmpli, 'XData', theseSpikeTimes, 'YData', theseAmplis)
 set(guiData.rpvAmpli, 'XData', theseSpikeTimes(theseOffendingSpikes), 'YData', theseAmplis(theseOffendingSpikes))
+if length(theseSpikeTimes) < iChunk
+    iChunk = 1;
+end
 currTimes = theseSpikeTimes(theseSpikeTimes >= theseSpikeTimes(iChunk)-0.1 & theseSpikeTimes <= theseSpikeTimes(iChunk)+0.1);
 currAmplis = theseAmplis(theseSpikeTimes >= theseSpikeTimes(iChunk)-0.1 & theseSpikeTimes <= theseSpikeTimes(iChunk)+0.1);
 set(guiData.currTempAmpli, 'XData', currTimes, 'YData', currAmplis);

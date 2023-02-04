@@ -1,4 +1,4 @@
-function scalingFactor = bc_readSpikeGLXMetaFile(metaFile)
+function [scalingFactor, channelMapImro] = bc_readSpikeGLXMetaFile(metaFile)
 % JF
 % read spikeGLX meta file and calculate scaling factor value to convert raw data to
 % microvolts
@@ -28,6 +28,12 @@ expr_chanMap = 'imRoFile=';
 expr_afterChanMap = 'imSampRate';
 [~,endIndexChanMap] =  regexp(filetext,expr_afterChanMap);
 channelMapImro = filetext(startIndexChanMap+1:endIndexChanMap-2-length(expr_afterChanMap));
+if isempty(channelMapImro) % default was used 
+    if strcmp(probeType ,'0')
+        channelMapImro = 'NPtype21_bank0_ref0';
+    end
+end
+
 
 if strcmp(probeType ,'1') || strcmp(probeType ,'3') || strcmp(probeType ,'0') %1.0, 3B
     Vrange = 1.2e6; % from -0.6 to 0.6
