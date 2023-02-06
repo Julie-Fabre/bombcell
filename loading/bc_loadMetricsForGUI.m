@@ -16,15 +16,25 @@ if ~exist('param','var')
 end
 % put ephys data into structure
 ephysData = struct;
-ephysData.spike_times_samples = spikeTimes_samples;
-ephysData.ephys_sample_rate = 30000;
-ephysData.spike_times = spikeTimes_samples ./ ephysData.ephys_sample_rate;
-ephysData.spike_templates = spikeTemplates;
-ephysData.templates = templateWaveforms;
-ephysData.template_amplitudes = templateAmplitudes;
-ephysData.channel_positions = channelPositions;
+if exist('spikeTimes_samples','var')
+    ephysData.spike_times_samples = spikeTimes_samples;
+    ephysData.ephys_sample_rate = 30000;
+    ephysData.spike_templates = spikeTemplates;
+    ephysData.templates = templateWaveforms;
+    ephysData.template_amplitudes = templateAmplitudes;
+    ephysData.channel_positions = channelPositions;
 
-ephysData.waveform_t = 1e3 * ((0:size(templateWaveforms, 2) - 1) / 30000);
+else
+    ephysData.spike_times_samples = sp{countid}.st(idx)*sp{countid}.sample_rate;
+    ephysData.ephys_sample_rate = sp{countid}.sample_rate;
+    ephysData.spike_templates = sp{countid}.spikeTemplates(idx)+1;
+    ephysData.templates = sp{countid}.temps;
+    ephysData.template_amplitudes = sp{countid}.tempScalingAmps(idx);
+    ephysData.channel_positions = channelpostmp;
+end
+ephysData.spike_times = ephysData.spike_times_samples ./ ephysData.ephys_sample_rate;
+
+ephysData.waveform_t = 1e3 * ((0:size(ephysData.templates, 2) - 1) / ephysData.ephys_sample_rate);
 ephysParams = struct;
 plotRaw = 1;
 probeLocation = [];
@@ -34,9 +44,10 @@ rawWaveforms.average = readNPY([fullfile(savePath, 'templates._bc_rawWaveforms.n
 rawWaveforms.peakChan = readNPY([fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy')]);
 
 % load other gui stuffs 
-if ~exist('forGUI', 'var') && ~isempty(dir([savePath, filesep, 'templates.qualityMetricDetailsforGUI.mat']))
+if ~exist('forGUI', 'var') || ~isempty(dir([savePath, filesep, 'templates.qualityMetricDetailsforGUI.mat']))
     load([savePath, filesep, 'templates.qualityMetricDetailsforGUI.mat'])
 else
+    keyboard
     forGUI = struct;
      
     % get unique templates 
