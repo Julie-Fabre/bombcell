@@ -207,7 +207,7 @@ end
 
 %% get unit types and save data
 qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates)'; 
-qMetric.signalToNoiseRatio = signalToNoiseRatio(uniqueTemplates)'; 
+qMetric.signalToNoiseRatio = signalToNoiseRatio'; 
 
 unitType = bc_getQualityUnitType(param, qMetric);
 
