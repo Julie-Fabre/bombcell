@@ -214,11 +214,11 @@ try
     qMetric = bc_saveQMetrics(param, qMetric, forGUI, savePath);
     fprintf('Saved quality metrics from %s to %s \n', param.rawFile, savePath)
     %% get some summary plots
-    bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
+    
 catch
     warning('Warning, quality metrics from %s not saved! \n', param.rawFile)
 end
 
 unitType = bc_getQualityUnitType(param, qMetric);
-
+bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
 end
