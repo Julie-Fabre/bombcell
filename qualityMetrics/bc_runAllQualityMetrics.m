@@ -149,7 +149,7 @@ for iUnit = 1:length(uniqueTemplates)
     tauR_window = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
     [fractionRPVs, ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
         tauR_window, param.tauC, ...
-        timeChunks, param.plotDetails);
+        timeChunks, param.plotDetails, NaN);
     
     %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
     if param.computeTimeChunks
@@ -167,7 +167,7 @@ for iUnit = 1:length(uniqueTemplates)
         thisUnits_timesToUse, param.plotDetails);
 
     [qMetric.fractionRPVs(iUnit,:), ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
-        tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails);
+        tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails, qMetric.RPV_tauR_estimate(iUnit));
 
     %% presence ratio (potential false negatives)
     [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
