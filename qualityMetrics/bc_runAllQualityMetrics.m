@@ -202,6 +202,9 @@ for iUnit = 1:length(uniqueTemplates)
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
             param.nChannelsIsoDist, param.plotDetails); %QQ
     end
+    if (mod(iUnit, 50) == 0) && param.verbose
+       fprintf(['\n   Finished ', num2str(iUnit), ' / ', num2str(length(uniqueTemplates)), ' units.']);
+    end
 
 end
 
