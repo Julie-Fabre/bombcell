@@ -69,13 +69,13 @@ paramBC.nChannelsIsoDist = 4; % number of nearby channels to use in distance met
 
 %% classifying units into good/mua/noise parameters 
 paramBC.minAmplitude = 20; 
-paramBC.maxRPVviolations = 0.1; % fraction
-paramBC.maxPercSpikesMissing = 20;
+paramBC.maxRPVviolations = 0.25; % fraction
+paramBC.maxPercSpikesMissing = 100; % Not sure what this does? Removes lots of units
 paramBC.minNumSpikes = 300;
 
-paramBC.minSignalToNoiseRatio = 0.9;
-paramBC.maxDrift = 100;
-paramBC.minPresenceRatio = 0.7;
+% paramBC.minSignalToNoiseRatio = 0.9;
+paramBC.maxDrift = 500;
+paramBC.minPresenceRatio = 0.2;
 paramBC.minSNR = 0.1;
 
 %waveform 
