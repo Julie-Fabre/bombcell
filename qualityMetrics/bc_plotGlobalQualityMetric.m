@@ -209,25 +209,25 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
     makepretty;
 
     if param.computeDrift
-    subplot(4, 5, 15) % max drift estimate 
-    hold on;
-    histogram(qMetric.maxDriftEstimate, 'FaceColor', colorMtx(15, 1:3), 'FaceAlpha', colorMtx(15, 4), 'BinEdges', ...
-        [0:5:max(qMetric.maxDriftEstimate)]);
-    yLim = ylim;
-    %line([param.plotDetails, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-    ylabel('unit count')
-    xlabel('max drift estimate')
-    makepretty;
-
-    subplot(4, 5, 16) % max drift estimate 
-    hold on;
-    histogram(qMetric.cumDriftEstimate, 'FaceColor', colorMtx(15, 1:3), 'FaceAlpha', colorMtx(15, 4), 'BinEdges', ...
-        [0:50:max(qMetric.cumDriftEstimate)]);
-    yLim = ylim;
-    %line([param.plotDetails, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-    ylabel('unit count')
-    xlabel('cum drift estimate')
-    makepretty;
+        subplot(4, 5, 15) % max drift estimate 
+        hold on;
+        histogram(qMetric.maxDriftEstimate, 'FaceColor', colorMtx(15, 1:3), 'FaceAlpha', colorMtx(15, 4), 'BinEdges', ...
+            [0:5:max(qMetric.maxDriftEstimate)]);
+        yLim = ylim;
+        %line([param.plotDetails, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+        ylabel('unit count')
+        xlabel('max drift estimate')
+        makepretty;
+    
+        subplot(4, 5, 16) % max drift estimate 
+        hold on;
+        histogram(qMetric.cumDriftEstimate, 'FaceColor', colorMtx(15, 1:3), 'FaceAlpha', colorMtx(15, 4), 'BinEdges', ...
+            [0:50:max(qMetric.cumDriftEstimate)]);
+        yLim = ylim;
+        %line([param.plotDetails, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+        ylabel('unit count')
+        xlabel('cum drift estimate')
+        makepretty;
     end
 
    

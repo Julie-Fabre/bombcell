@@ -1,4 +1,4 @@
-function bc_qualityMetricsPipeline_JF(animal, curr_day, site, experiment_num, protocol, rerun)
+function bc_qualityMetricsPipeline_JF(animal, day, site, experiment_num, protocol, rerun)
 
 %% load data 
 % animals = {'JF070'};
@@ -8,7 +8,7 @@ function bc_qualityMetricsPipeline_JF(animal, curr_day, site, experiment_num, pr
 experiments = AP_find_experimentsJF(animal, protocol, true);
 experiments = experiments([experiments.ephys]);
 
-day = experiments(curr_day).day;
+
 experiment = experiments(experiment_num).experiment;
 
 
@@ -48,5 +48,5 @@ bc_loadMetricsForGUI;
 
 
 bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, param,...
-   probeLocation, unitType, plotRaw);
+   probeLocation, unitType, 0);
 end

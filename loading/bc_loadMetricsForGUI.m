@@ -24,7 +24,7 @@ if exist('spikeTimes_samples','var')
     ephysData.template_amplitudes = templateAmplitudes;
     ephysData.channel_positions = channelPositions;
 
-else
+else % load in unit match data 
     ephysData.spike_times_samples = sp{countid}.st(idx)*sp{countid}.sample_rate;
     ephysData.ephys_sample_rate = sp{countid}.sample_rate;
     ephysData.spike_templates = sp{countid}.spikeTemplates(idx)+1;
@@ -47,7 +47,6 @@ rawWaveforms.peakChan = readNPY([fullfile(savePath, 'templates._bc_rawWaveformPe
 if ~exist('forGUI', 'var') || ~isempty(dir([savePath, filesep, 'templates.qualityMetricDetailsforGUI.mat']))
     load([savePath, filesep, 'templates.qualityMetricDetailsforGUI.mat'])
 else
-    keyboard
     forGUI = struct;
      
     % get unique templates 
