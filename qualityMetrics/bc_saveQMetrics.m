@@ -33,7 +33,7 @@ end
 
 % save fraction refractory period violations for all different tauR times
 parquetwrite([fullfile(savePath, 'templates._bc_fractionRefractoryPeriodViolationsPerTauR.parquet')], array2table(qMetric.fractionRPVs))
-qMetric.fractionRPVs_estimatedTauR = qMetric.fractionRPVs(qMetric.RPV_tauR_estimate);
+qMetric.fractionRPVs_estimatedTauR = arrayfun(@(x) qMetric.fractionRPVs(x, qMetric.RPV_tauR_estimate(x)), 1:size(qMetric.fractionRPVs,1));
 qMetric = rmfield(qMetric, 'fractionRPVs');
 
 % save the rest of quality metrics and fraction refractory period

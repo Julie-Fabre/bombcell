@@ -126,7 +126,7 @@ else
 end
 
 %% loop through units and get quality metrics
-fprintf('Extracting quality metrics from %s ... \n', param.rawFile)
+fprintf('\n Extracting quality metrics from %s ... ', param.rawFile)
 
 for iUnit = 1:length(uniqueTemplates)
     
@@ -149,7 +149,7 @@ for iUnit = 1:length(uniqueTemplates)
     tauR_window = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
     [fractionRPVs, ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
         tauR_window, param.tauC, ...
-        timeChunks, param.plotDetails);
+        timeChunks, param.plotDetails, NaN);
     
     %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
     if param.computeTimeChunks
@@ -167,7 +167,7 @@ for iUnit = 1:length(uniqueTemplates)
         thisUnits_timesToUse, param.plotDetails);
 
     [qMetric.fractionRPVs(iUnit,:), ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
-        tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails);
+        tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails, qMetric.RPV_tauR_estimate(iUnit));
 
     %% presence ratio (potential false negatives)
     [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
@@ -202,6 +202,9 @@ for iUnit = 1:length(uniqueTemplates)
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
             param.nChannelsIsoDist, param.plotDetails); %QQ
     end
+    if (mod(iUnit, 50) == 0) && param.verbose
+       fprintf(['\n   Finished ', num2str(iUnit), ' / ', num2str(length(uniqueTemplates)), ' units.']);
+    end
 
 end
 
@@ -209,17 +212,16 @@ end
 qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates)'; 
 qMetric.signalToNoiseRatio = signalToNoiseRatio'; 
 
-unitType = bc_getQualityUnitType(param, qMetric);
-
-fprintf('Finished extracting quality metrics from %s \n', param.rawFile)
+fprintf('\n Finished extracting quality metrics from %s', param.rawFile)
 try
     qMetric = bc_saveQMetrics(param, qMetric, forGUI, savePath);
-    fprintf('Saved quality metrics from %s to %s \n', param.rawFile, savePath)
+    fprintf('\n Saved quality metrics from %s to %s', param.rawFile, savePath)
     %% get some summary plots
-    bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
+    
 catch
-    warning('Warning, quality metrics from %s not saved! \n', param.rawFile)
+    warning('\n Warning, quality metrics from %s not saved!', param.rawFile)
 end
 
-
+unitType = bc_getQualityUnitType(param, qMetric);
+bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
 end
