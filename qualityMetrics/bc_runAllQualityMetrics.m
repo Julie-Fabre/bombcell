@@ -126,7 +126,7 @@ else
 end
 
 %% loop through units and get quality metrics
-fprintf('Extracting quality metrics from %s ... \n', param.rawFile)
+fprintf('\n Extracting quality metrics from %s ... ', param.rawFile)
 
 for iUnit = 1:length(uniqueTemplates)
     
@@ -212,14 +212,14 @@ end
 qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates)'; 
 qMetric.signalToNoiseRatio = signalToNoiseRatio'; 
 
-fprintf('Finished extracting quality metrics from %s \n', param.rawFile)
+fprintf('\n Finished extracting quality metrics from %s', param.rawFile)
 try
     qMetric = bc_saveQMetrics(param, qMetric, forGUI, savePath);
-    fprintf('Saved quality metrics from %s to %s \n', param.rawFile, savePath)
+    fprintf('\n Saved quality metrics from %s to %s', param.rawFile, savePath)
     %% get some summary plots
     
 catch
-    warning('Warning, quality metrics from %s not saved! \n', param.rawFile)
+    warning('\n Warning, quality metrics from %s not saved!', param.rawFile)
 end
 
 unitType = bc_getQualityUnitType(param, qMetric);
