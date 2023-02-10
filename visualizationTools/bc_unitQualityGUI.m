@@ -374,14 +374,15 @@ else
 end
 
 %% 4. plot unit ACG
-
+tauR_values = (param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax) .* 1000;
 theseSpikeTimes = ephysData.spike_times(ephysData.spike_templates == thisUnit);
 
 [ccg, ccg_t] = CCGBz([double(theseSpikeTimes); double(theseSpikeTimes)], [ones(size(theseSpikeTimes, 1), 1); ...
     ones(size(theseSpikeTimes, 1), 1) * 2], 'binSize', 0.001, 'duration', 0.5, 'norm', 'rate'); %function
 
 set(guiData.acgBar, 'XData', ccg_t(250:501)*1000, 'YData', squeeze(ccg(250:501, 1, 1)));
-set(guiData.acgRefLine, 'XData', [2, 2], 'YData', [0, max(ccg(:, 1, 1))])
+set(guiData.acgRefLine, 'XData', [tauR_values(qMetric.RPV_tauR_estimate(iCluster)),...
+    tauR_values(qMetric.RPV_tauR_estimate(iCluster))], 'YData', [0, max(ccg(:, 1, 1))])
 [ccg2, ~] = CCGBz([double(theseSpikeTimes); double(theseSpikeTimes)], [ones(size(theseSpikeTimes, 1), 1); ...
     ones(size(theseSpikeTimes, 1), 1) * 2], 'binSize', 0.1, 'duration', 10, 'norm', 'rate'); %function
 asymptoteLine = nanmean(ccg2(end-100:end));
@@ -403,14 +404,15 @@ theseOffendingSpikes = find(theseISIclean < (2/1000));
 [isiProba, edgesISI] = histcounts(theseISIclean*1000, [0:0.5:50]);
 
 set(guiData.isiBar, 'XData', edgesISI(1:end-1)+mean(diff(edgesISI)), 'YData', isiProba); %Check FR
-set(guiData.isiRefLine, 'XData', [2, 2], 'YData', [0, max(isiProba)])
+set(guiData.isiRefLine, 'XData', [tauR_values(qMetric.RPV_tauR_estimate(iCluster)),...
+    tauR_values(qMetric.RPV_tauR_estimate(iCluster))], 'YData', [0, max(isiProba)])
 
 if qMetric.fractionRPVs_estimatedTauR(iCluster) > param.maxRPVviolations
     set(guiData.isiTitle, 'String', '\color[rgb]{1 0 1}ISI');
 else
     set(guiData.isiTitle, 'String', '\color[rgb]{0 .5 0}ISI');
 end
-set(guiData.isiLegend, 'String', [num2str(qMetric.fractionRPVs_estimatedTauR(iCluster)), ' % r.p.v.'])
+set(guiData.isiLegend, 'String', [num2str(qMetric.fractionRPVs_estimatedTauR(iCluster)*100), ' % r.p.v.'])
 
 %% 6. plot isolation distance
 if param.computeDistanceMetrics

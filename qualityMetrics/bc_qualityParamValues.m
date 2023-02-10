@@ -46,8 +46,8 @@ param.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times
 
 % refractory period parameters
 param.tauR_valuesMin = 0.5/1000; % refractory period time (s), usually 0.0020
-param.tauR_valuesStep = 0.5./1000; % refractory period time (s), usually 0.0020
-param.tauR_valuesMax = 10./1000; % refractory period time (s), usually 0.0020
+param.tauR_valuesStep = 0.5/1000; % refractory period time (s), usually 0.0020
+param.tauR_valuesMax = 10/1000; % refractory period time (s), usually 0.0020
 param.tauC = 0.1/1000; % censored period time (s)
 
 % percentage spikes missing parameters 

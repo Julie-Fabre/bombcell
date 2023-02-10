@@ -87,11 +87,11 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
 
     hold on;
 
-    histogram(qMetric.fractionRPVs_estimatedTauR, 'FaceColor', colorMtx(4, 1:3), 'FaceAlpha', colorMtx(4, 4), 'BinEdges', [0:5:100]);
+    histogram(qMetric.fractionRPVs_estimatedTauR*100, 'FaceColor', colorMtx(4, 1:3), 'FaceAlpha', colorMtx(4, 4), 'BinEdges', [0:5:100]);
     
     set(gca, 'yscale', 'log')
     yLim = ylim;
-    line([param.maxRPVviolations , param.maxRPVviolations], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    line([param.maxRPVviolations *100, param.maxRPVviolations*100], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')
     xlabel(['refractory period', newline, 'violations (%)'])
     makepretty;
