@@ -27,6 +27,13 @@ expr_chanMap = 'imRoFile=';
 [~,startIndexChanMap] =  regexp(filetext,expr_chanMap);
 expr_afterChanMap = 'imSampRate';
 [~,endIndexChanMap] =  regexp(filetext,expr_afterChanMap);
+if isempty(startIndexChanMap) % new convention in new spike glx argh
+    expr_chanMap = 'imroFile=';
+    [~,startIndexChanMap] =  regexp(filetext,expr_chanMap);
+    expr_afterChanMap = 'nDataDirs';
+    [~,endIndexChanMap] =  regexp(filetext,expr_afterChanMap);
+end
+
 channelMapImro = filetext(startIndexChanMap+1:endIndexChanMap-2-length(expr_afterChanMap));
 if isempty(channelMapImro) % default was used 
     if strcmp(probeType ,'0')
