@@ -115,6 +115,7 @@ channels_withSameX = find(channelPositions(:,1) <= channelPositions(maxChannel,1
 % 
 % channels_withSameX_old = find(channelPositions(:,1) <= channelPositions(maxChannel,1) + 25 &...
 %     channelPositions(:,1) >= channelPositions(maxChannel,1) - 25);
+if numel(channels_withSameX) >= 5
 if find(channels_withSameX==maxChannel) > 5
     channels_forSpatialDecayFit = channels_withSameX(...
         find(channels_withSameX==maxChannel):-1:find(channels_withSameX==maxChannel)-5);
@@ -151,7 +152,13 @@ spatialDecayPoints_norm = spatialDecayPoints(sortexChanPosIdx);
 spatialDecayFit = polyfit(channelPositions_relative(sortexChanPosIdx), spatialDecayPoints_norm,1); % fit first order polynomial to data. first output is slope of polynomial, second is a constant
 spatialDecaySlope = spatialDecayFit(1);
 % r_squared = corrcoef(channelPositions_relative(sortexChanPosIdx),
-
+else
+    warning('No other good channels with same x location')
+    spatialDecayFit = NaN;
+    spatialDecaySlope = NaN;
+    spatialDecayPoints = nan(1,6);
+    
+end
 waveformBaseline = max(abs(thisWaveform(waveformBaselineWindow(1):...
     waveformBaselineWindow(2))))/max(abs(thisWaveform));
 

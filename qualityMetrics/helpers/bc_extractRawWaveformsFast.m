@@ -52,7 +52,7 @@ else
         mkdir(fullfile(savePath,'RawWaveforms'))
     end
 
-    fprintf('Extracting raw waveforms from %s ... \n', param.rawFile)
+    fprintf('\n Extracting raw waveforms from %s ...', param.rawFile)
     % Get binary file name
     fid = fopen(param.rawFile, 'r');
 
