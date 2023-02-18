@@ -109,6 +109,9 @@ for iTimeChunk = 1:numel(timeChunks) - 1
         percentMissing_gaussian(iTimeChunk) = NaN;
         percentMissing_symmetric(iTimeChunk) = NaN;
         ksTest_pValue(iTimeChunk) = NaN;
+        ampliBin_gaussian = NaN;
+        spikeCountsPerAmpliBin_gaussian = NaN;
+        gaussianFit_cutoff = NaN;
     end
 
     roundedP = num2str(round(percentMissing_gaussian(iTimeChunk), 1));
