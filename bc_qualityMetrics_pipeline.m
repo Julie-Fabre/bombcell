@@ -12,9 +12,9 @@
 
 
 %% set paths 
-ephysKilosortPath = '/home/netshare/zinu/CB016/2021-09-28/ephys/CB016_2021-09-28_NatImages_g1/CB016_2021-09-28_NatImages_g1/PyKS/output/';% path to your kilosort output files 
-ephysRawDir = dir('/home/netshare/zinu/CB016/2021-09-28/ephys/CB016_2021-09-28_NatImages_g1/CB016_2021-09-28_NatImages_g1/*.*bin'); % path to yourraw .bin or .dat data
-ephysMetaDir = dir('/home/netshare/zinu/CB016/2021-09-28/ephys/CB016_2021-09-28_NatImages_g1/CB016_2021-09-28_NatImages_g1/*.*meta'); % path to your meta file
+ephysKilosortPath = '/home/netshare/zinu/AV009/2022-04-28/ephys/AV009_2022-04-28_ActivePassive_g0/AV009_2022-04-28_ActivePassive_g0_imec0/pyKS/output/';% path to your kilosort output files 
+ephysRawDir = dir('/home/netshare/zinu/AV009/2022-04-28/ephys/AV009_2022-04-28_ActivePassive_g0/AV009_2022-04-28_ActivePassive_g0_imec0/*.*bin'); % path to yourraw .bin or .dat data
+ephysMetaDir = dir('/home/netshare/zinu/AV009/2022-04-28/ephys/AV009_2022-04-28_ActivePassive_g0/AV009_2022-04-28_ActivePassive_g0_imec0/*.*meta'); % path to your meta file
 saveLocation = '/media/julie/ExtraHD/CB016'; % where you want to save the quality metrics 
 savePath = fullfile(saveLocation, 'qMetrics'); 
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 

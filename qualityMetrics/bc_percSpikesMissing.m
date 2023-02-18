@@ -55,7 +55,7 @@ for iTimeChunk = 1:numel(timeChunks) - 1
     % get amplitude histogram 
     [spikeCountsPerAmpliBin, bins] = histcounts(theseAmplitudes(theseSpikeTimes >= timeChunks(iTimeChunk) & ...
         theseSpikeTimes < timeChunks(iTimeChunk+1)), nBins);
-    if sum(spikeCountsPerAmpliBin) > 0 % if there is at least one spike in this time bin 
+    if sum(spikeCountsPerAmpliBin) > 5 % if there is at least 5 spikes in this time bin 
         
         maxAmpli_val = find(spikeCountsPerAmpliBin == max(spikeCountsPerAmpliBin));
         mode_seed = bins(maxAmpli_val); %guess mode - this is only accurate if mode is present in histogram
