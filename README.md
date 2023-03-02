@@ -4,7 +4,7 @@
 
 Bombcell works with units recorded with Neuropixel probes (3A, 1.0 and 2.0, recorded with SpikeGLX or OpenEphys) and spike-sorted with kilosort. It classifies the unit into three categories: single units, multi-units and noise units, with an option to keep or remove non-somatic spikes. `param` is the structure that defines how to compute the quality metrics and which thresholds to use to classify units.
 
-Not yet published. Please cite [insert zenodo link?]. 
+Not yet published. Please cite xxx. 
 
 Preliminary versions of bombcell were used in:
 
@@ -25,11 +25,11 @@ Table of contents:
 
 ### Getting started
 
-To install: in MATLAB, clone this repository and the [dependancies](#Dependancies).
+To install: Clone the [bombcell_1.0_stable repository](https://github.com/Julie-Fabre/bombcell/bombcell_1.0_stable) and the [dependancies](#Dependancies).
 
 If you want to compute ephys properties, change your working directory to bombcell\ephysProperties\helpers in matlab and run `mex -O CCGHeart.c` to able to compute fast ACGs.
 
-If you have z-lib compressed ephys data, compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp) , you will additionally need the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat).
+If you have z-lib compressed ephys data, compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp), you will additionally need the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat).
 
 To start out, we suggest you compute quality metrics with default `param` values (contained in `bc_qualityParamValues`), and then adjust the thresholds for your particular neuronal region and needs by looking at (1) individual units, in the interactive [GUI](#Quality-metrics-GUI-guide ) (2) distribution histograms of the units' quality metrics (see General plots), (3) numbers of units removed by each quality metric. It may also be useful to plot the quantity you which to measure as a function of each quality metric (see [Fig. 2 Harris et al., Nat. Neuro, 2016](https://www.nature.com/articles/nn.4365/figures/2)).
 
