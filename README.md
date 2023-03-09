@@ -88,18 +88,18 @@ In addition, bombcells' GUI allows you to flip through cells and their quality m
 
 1. Load ephys data, eg:
 
-  `[spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitudes, pcFeatures,
-    pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysKilosortPath)`
+   `[spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitudes, pcFeatures,
+     pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysKilosortPath)`
 
 2. Run all quality metrics and clasify cells with the function `bc_runAllQualityMetrics`, eg:
 
     `[qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates,
-      templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath)`
+      templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath)`
 
 4. Look at global output plots and flip through cells with the GUI:
 
-  `unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms,
-    param, probeLocation, unitType, loadRawTraces)`
+    `unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms,
+      param, probeLocation, unitType, loadRawTraces)`
 
 5. Refine classification based on step 4: choose quality metric thresholds
 
@@ -107,14 +107,13 @@ In addition, bombcells' GUI allows you to flip through cells and their quality m
 ##### Running speed and bottlenecks
 
 Depending on your settings, bombcell takes between 2' and 35' for a typical 1 hour long neuropixels recording. The running time varies according to three main parameters:
-- if this is the first run. Subsequent runs take ~10-15' less.
-- compute drift
-- compute distance metrics
-
+- if this is the first run, raw waveforms are extracted from your raw .bin or .dat ephys file. These are then saved in two .npy files. Subsequent runs load in the already extracted waveforms and thus take ~10-15' less. Initial running time increases or decreases as the number of spikes extracted per unit, defined  by `param.nRawSpikesToExtract`, increases or decreases.
+- if `param.computeDrift` is true, drift is computed. This can add ~10' per run, and is disabled by default.
+- if `param.computeDistanceMetrics` is true, several distance metrics are computed. This can add ~10' per run. Distance metrics are susceptible to probe drift, and correlate well with a units raw waveform amplitude. As a result, we suggest using a units amplitude instead of distance metrics and this parameter is diabled by default.
 
 #### Detailed overview of the quality metrics
 
-##### Classifying noise/non-somatic units
+##### Quality metrics to classify noise/non-somatic units
 
 - Somatic waveforms are defined as waveforms where the largest trough precedes the largest peak (Deligkaris, Bullmann & Frey, 2016).
 - Noise units are classified as noise if any of the following are true
@@ -126,7 +125,7 @@ Depending on your settings, bombcell takes between 2' and 35' for a typical 1 ho
 <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=100% height=100%>
 
 
-##### Classifying multi-units
+##### Quality metrics to classify multi-units
 
 After classifying noise units, the remaining units are classifyed as good single units if the criteria below are met. They are classifying as multi-units otherwise.
 
