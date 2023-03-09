@@ -1,4 +1,4 @@
-function bc_qualityMetricsPipeline_JF(animal, day, site, experiment_num, protocol, rerun)
+function [unitType, qMetric] = bc_qualityMetricsPipeline_JF(animal, day, site, experiment_num, protocol, rerun, plotGUI, runQM)
 
 %% load data 
 % animals = {'JF070'};
@@ -32,21 +32,26 @@ param = bc_qualityParamValues(ephysMetaDir, rawFile);
 %% compute quality metrics 
 ephysDirPath = AP_cortexlab_filenameJF(animal, day, experiment, 'ephys_dir',site);
 savePath = fullfile(ephysDirPath, 'qMetrics');
-qMetricsExist = dir(fullfile(savePath, 'qMetric*.mat'));
+qMetricsExist = dir(fullfile(savePath, 'templates._bc_qMetrics.parquet'));
 
-if isempty(qMetricsExist) || rerun
+if (runQM && isempty(qMetricsExist)) || rerun
     [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
         templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
-else
+elseif ~isempty(qMetricsExist)
     [param, qMetric, fractionRPVs_allTauR] = bc_loadSavedMetrics(savePath); 
     unitType = bc_getQualityUnitType(param, qMetric);
+else
+    uniqueTemplates = unique(spikeTemplates);
+    unitType = nan(length(uniqueTemplates),1);
 end
 
 %% view units + quality metrics in GUI 
 % load data for GUI
+if plotGUI
 bc_loadMetricsForGUI;
 
 
 bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, param,...
    probeLocation, unitType, 0);
+end
 end

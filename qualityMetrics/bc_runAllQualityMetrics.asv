@@ -174,9 +174,9 @@ for iUnit = 1:length(uniqueTemplates)
     [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
         qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param.plotDetails);
 
-    %% maximum cumulative drift estimate 
+    %% maximum cumulative drift estimate
     [qMetric.maxDriftEstimate(iUnit),qMetric.cumDriftEstimate(iUnit)] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...
-        theseSpikeTimes, channelPositions(:,2), thisUnit, param.driftBinSize, param.plotDetails);
+        theseSpikeTimes, channelPositions(:,2), thisUnit, param.driftBinSize, param.computeDrift, param.plotDetails);
     
     %% number spikes
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
