@@ -8,7 +8,7 @@ paramBC.plotDetails = 0; % generates a lot of plots,
 % to debug, or to get nice plots for a presentation
 paramBC.plotGlobal = 1; % plot summary of quality metrics 
 paramBC.verbose = 1; % update user on progress
-paramBC.reextractRaw = 0; % re extract raw waveforms or not 
+paramBC.reextractRaw = 1; % re extract raw waveforms or not - safer this way..
 
 % saving parameters 
 paramBC.saveAsParquet = 1; % save outputs at .parquet file 
@@ -59,8 +59,10 @@ paramBC.nChannels = 385; %number of recorded channels (including any sync channe
 % recorded in the raw data. This is usually 384 or 385 for neuropixels
 % recordings
 paramBC.nSyncChannels = 1;
-paramBC.ephysMetaFile = [ephysMetaDir.folder, filesep, ephysMetaDir.name];
-paramBC.rawFile = rawFile;
+if nargin
+    paramBC.ephysMetaFile = [ephysMetaDir.folder, filesep, ephysMetaDir.name];
+    paramBC.rawFile = rawFile;
+end
 
 % distance metric parameters
 paramBC.computeDistanceMetrics = 0; % whether to compute distance metrics - this can be time consuming 
@@ -69,11 +71,11 @@ paramBC.nChannelsIsoDist = 4; % number of nearby channels to use in distance met
 
 %% classifying units into good/mua/noise parameters 
 paramBC.minAmplitude = 20; 
-paramBC.maxRPVviolations = 0.25; % fraction
-paramBC.maxPercSpikesMissing = 100; % Not sure what this does? Removes lots of units
+paramBC.maxRPVviolations = 0.1; % fraction
+paramBC.maxPercSpikesMissing = 20; % Percentage
 paramBC.minNumSpikes = 300;
 
-% paramBC.minSignalToNoiseRatio = 0.9;
+paramBC.minSignalToNoiseRatio = 0.9;
 paramBC.maxDrift = 500;
 paramBC.minPresenceRatio = 0.2;
 paramBC.minSNR = 0.1;
