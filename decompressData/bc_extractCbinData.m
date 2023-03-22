@@ -31,6 +31,8 @@ function decompDataFile = bc_extractCbinData(fileName, sStartEnd, allChannelIndi
 % save data chunk by chunk (otherwise matlab can crash if the
 % files are too big (> 70GB), default is non parfor because not compatible
 % with this 
+% 20230322 added option to only save sync channel (hardcoded as channel 385
+% for now) 
 
 
 
