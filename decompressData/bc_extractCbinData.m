@@ -1,20 +1,26 @@
-function decompDataFile = bc_extractCbinData(fileName, sStartEnd, chIdx, doParfor, saveFileFolder)
+function decompDataFile = bc_extractCbinData(fileName, sStartEnd, allChannelIndices, doParfor, saveFileFolder, onlySaveSyncChannel)
 % adapted from a script by Micheal Krumin
 %
 % requires the zmat package:
 % https://github.com/fangq/zmat
-
+% ------
+% Inputs
+% ------
 % fileName - full path to the .cbin filename you want to read from
 % sStartEnd - a 1x2 array of [sampleStart, sampleEnd] you want to read
-% chIdx - channel indices
+% allChannelIndices - all channel indices present in recoding. This should
+%   be a vector from 1 to the max number of channels (e.g. 1:385)
 % doParfor - a flag whether to use a parfor or a for loop inside the function
 %           depends on specific usage scenario. In same cases it is better
 %           to use parfor inside, sometimes outside of the function.
 % saveFileFolder - where to save your data 
-% saveAsMtx - if true, save .npy matrix. if false, save in binary format
-% dataOut - nSamples x nChannels array of decompressed data
-% example usage:
-% bc_extractCbinData('/home/netshare/zinu/XG006/2022-06-30/ephys/site1/2022-06_30_xg006_g0_t0.imec0.ap.cbin', [], [], [], 'home/ExtraHD/', 0)
+% onlySaveSyncChannels - if true, only save the sync channel
+% 
+% ------
+% Outputs
+% ------
+% decompDataFile - nSamples x nChannels array of decompressed data
+%
 
 % JF: added sanity checks, more options including parfor,
 % save output as matrix 
@@ -44,16 +50,21 @@ if nargin < 2 || isempty(sStartEnd)
     sStartEnd = [cbinMeta.chunk_bounds(1), cbinMeta.chunk_bounds(end)];
 end
 
-if nargin < 3 || isempty(chIdx)
-    chIdx = 1:cbinMeta.n_channels;
-elseif chIdx(end) >  cbinMeta.n_channels
-    warning(sprintf('max channel index invalid, changing from %s to %s',num2str(chIdx(end)), num2str(cbinMeta.n_channels)))
+if nargin < 3 || isempty(allChannelIndices)
+    allChannelIndices = 1:cbinMeta.n_channels;
+elseif allChannelIndices(end) >  cbinMeta.n_channels
+    warning(sprintf('max channel index invalid, changing from %s to %s',num2str(allChannelIndices(end)), num2str(cbinMeta.n_channels)))
     startEnd(1) = cbinMeta.chunk_bounds(1);
 end
 
 if nargin < 4 || isempty(doParfor)
     doParfor = false;
 end
+
+if nargin < 5 
+    onlySaveSyncChannel = false;
+end
+
 
 if sStartEnd(1) < cbinMeta.chunk_bounds(1) 
     warning(sprintf('samples to read outside of file range, changing start sample from %s to %s',num2str(sStartEnd(1)), num2str(cbinMeta.chunk_bounds(1))))
@@ -105,11 +116,18 @@ offset = cbinMeta.chunk_offsets([1:nChunks] + iChunkStart - 1);
 
 fN = dir(fileName);
 if isdir(saveFileFolder)
-    decompDataFile = [saveFileFolder, filesep, fN.name(1:end-14), '_bc_decompressed', fN.name(end-13:end-8),'.ap.bin'];
+    if onlySaveSyncChannel
+        decompDataFile = [saveFileFolder, filesep, fN.name(1:end-14), '_bc_decompressed_sync_channel', fN.name(end-13:end-8),'.mat'];
+    
+    else
+        decompDataFile = [saveFileFolder, filesep, fN.name(1:end-14), '_bc_decompressed', fN.name(end-13:end-8),'.ap.bin'];
+    end
 else
     decompDataFile = saveFileFolder;
 end
+if ~onlySaveSyncChannel
 fidOut = fopen(decompDataFile,'w');
+end
 
 if doParfor
     parfor iChunk = 1:nChunks
@@ -126,15 +144,19 @@ if doParfor
         
         decompData = zmat(compData, zmatLocalInfo);
         decompData = reshape(decompData, nSamples(iChunk), nChannels);
-        chunkData = cumsum(decompData(:, chIdx), 1);
+        chunkData = cumsum(decompData(:, allChannelIndices), 1);
         %     data(startIdx(iChunk):endIdx(iChunk), :) = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
         data{iChunk} = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
     end
     dataOut = cell2mat(data);
-    fwrite(fidOut, dataOut, 'int16');
+%     if onlySaveSync
+%         fwrite(fidOut, dataOut, 'int16');
+%     else
+%         fwrite(fidOut, dataOut, 'int16');
+%     end
 
 else
-    
+    alldata = [];
     for iChunk = 1:nChunks
 
         zmatLocalInfo = zmatInfo;
@@ -148,14 +170,23 @@ else
         fclose(fid);
         decompData = zmat(compData, zmatLocalInfo);
         decompData = reshape(decompData, nSamples(iChunk), nChannels);
-        chunkData = cumsum(decompData(:, chIdx), 1);
+        chunkData = cumsum(decompData(:, allChannelIndices), 1);
         data = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
         reshaped_data = reshape(permute(data, [2,1]), [nSamples(iChunk)*nChannels, 1]);
         %plot(reshaped_data(end-30000:end))
-        %plot(reshaped_data(385:385:end))
-        fwrite(fidOut, reshaped_data, 'int16');
+        %plot(alldata(385:385:end))
+        %
+        if ~onlySaveSyncChannel
+            fwrite(fidOut, reshaped_data, 'int16');
+        else
+            alldata = [alldata, reshaped_data];
+        end
 
 
+    end
+    if onlySaveSyncChannel
+        syncdata=alldata(385:385:end);
+        save(decompDataFile, 'syncdata')
     end
 %     dataOut = cell2mat(data);
 %     fwrite(fidOut, dataOut, 'int16');
@@ -181,6 +212,7 @@ else
 %     end
     
 end
-
-fclose(fidOut);
+if ~onlySaveSyncChannel
+    fclose(fidOut);
+end
 %fidOut_read = fopen(decompDataFile, 'r');
