@@ -72,7 +72,7 @@ else
         end
         nSpkLocal = numel(rawWaveforms(iCluster).spkIndsub);
 
-        rawWaveforms(iCluster).spkMap = nan(nChannels-param.nSyncChannels, spikeWidth, nSpikesToExtract);
+        rawWaveforms(iCluster).spkMap = nan(nChannels-param.nSyncChannels, spikeWidth, nSpkLocal);
         for iSpike = 1:nSpkLocal
             thisSpikeIdx = rawWaveforms(iCluster).spkIndsub(iSpike);
                 
