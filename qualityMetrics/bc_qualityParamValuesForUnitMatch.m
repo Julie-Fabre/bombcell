@@ -15,7 +15,7 @@ paramBC.saveAsParquet = 1; % save outputs at .parquet file
 paramBC.saveMatFileForGUI = 1; % save certain outputs at .mat file - useful for GUI
 
 % amplitude parameters
-paramBC.nRawSpikesToExtract = inf; % how many raw spikes to extract for each unit 
+paramBC.nRawSpikesToExtract = 10000; %inf if you don't encounter memory issues; % how many raw spikes to extract for each unit 
 paramBC.saveMultipleRaw = 1; % If you wish to save the nRawSpikesToExtract as well, 
 % currently needed if you want to run unit match https://github.com/EnnyvanBeest/UnitMatch
 % to track chronic cells over days after this
