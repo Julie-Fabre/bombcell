@@ -47,7 +47,7 @@ else
     clustInds = unique(spikeTemplates);
     nClust = numel(clustInds);
     rawFileInfo = dir(param.rawFile);
-
+    BatchSize = 5000;
     if param.saveMultipleRaw && ~isfolder(fullfile(savePath,'RawWaveforms'))
         mkdir(fullfile(savePath,'RawWaveforms'))
     end
@@ -97,7 +97,13 @@ else
 
         if param.saveMultipleRaw
             tmpspkmap = permute(rawWaveforms(iCluster).spkMap,[2,1,3]); % Compatible with UnitMatch QQ
-            tmpspkmap = smoothdata(tmpspkmap(:,:,1:nSpkLocal) - mean(tmpspkmap(1:param.waveformBaselineNoiseWindow,:,1:nSpkLocal),1),1,'gaussian',5); % Subtract baseline
+            %Do smoothing in batches
+            nBatch = ceil(nSpkLocal./BatchSize);
+            for bid = 1:nBatch
+                spkId = (bid-1)*BatchSize+(1:BatchSize);
+                spkId(spkId>nSpkLocal) = []; 
+                tmpspkmap(:,:,spkId) = smoothdata(tmpspkmap(:,:,spkId) - mean(tmpspkmap(1:param.waveformBaselineNoiseWindow,:,spkId),1),1,'gaussian',5); % Subtract baseline and smooth
+            end
             % Save two averages for UnitMatch
             tmpspkmap = arrayfun(@(X) nanmedian(tmpspkmap(:,:,(X-1)*floor(size(tmpspkmap,3)/2)+1:X*floor(size(tmpspkmap,3)/2)),3),1:2,'Uni',0);
             tmpspkmap = cat(3,tmpspkmap{:});
@@ -107,6 +113,8 @@ else
         rawWaveforms(iCluster).spkMapMean = nanmean(rawWaveforms(iCluster).spkMap, 3);
         rawWaveformsFull(iCluster, :, :) = rawWaveforms(iCluster).spkMapMean - mean(rawWaveforms(iCluster).spkMapMean(:, 1:param.waveformBaselineNoiseWindow), 2);
 
+        % It's save to delete raw waveforms now 
+        rawWaveforms(iCluster).spkMap = [];
         spkMapMean_sm = smoothdata(rawWaveforms(iCluster).spkMapMean, 1, 'gaussian', 5);
 
         [~, rawWaveformsPeakChan(iCluster)] = max(max(spkMapMean_sm, [], 2)-min(spkMapMean_sm, [], 2));
