@@ -306,7 +306,7 @@ end
 %     guiData.tempTitle = tempTitle;
 %     guiData.tempLegend = tempLegend;
 
-maxChan = qMetric.maxChannels(thisUnit);
+maxChan = qMetric.maxChannels(iCluster);
 maxXC = ephysData.channel_positions(maxChan, 1);
 maxYC = ephysData.channel_positions(maxChan, 2);
 chanDistances = ((ephysData.channel_positions(:, 1) - maxXC).^2 ...
@@ -344,7 +344,7 @@ tempWvTitleText = ['\\fontsize{9}Template waveform: {\\color[rgb]{%s}# detected 
 
 set(guiData.tempTitle, 'String', sprintf(tempWvTitleText, num2str(colorsGdBad(double(qMetric.nPeaks(iCluster) <= param.maxNPeaks || qMetric.nTroughs(iCluster) <= param.maxNTroughs)+1, :)), ...
     num2str(colorsGdBad(double(qMetric.isSomatic(iCluster) == 1)+1, :)), ...
-    num2str(colorsGdBad(double(qMetric.spatialDecaySlope(iCluster) > param.minSpatialDecaySlope)+1, :))));
+    num2str(colorsGdBad(double(qMetric.spatialDecaySlope(iCluster) <= param.minSpatialDecaySlope)+1, :))));
 
 set(guiData.tempLegend, 'String', {['is somatic =', num2str(qMetric.isSomatic(iCluster)), newline], ...
     [num2str(qMetric.nPeaks(iCluster)), ' peak(s)'], [num2str(qMetric.nTroughs(iCluster)), ...
