@@ -186,7 +186,6 @@ for iUnit = 1:length(uniqueTemplates)
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
 
     %% waveform
-
     waveformBaselineWindow = [param.waveformBaselineWindowStart, param.waveformBaselineWindowStop];
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), forGUI.peakLocs{iUnit},...
         forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), ...
@@ -194,8 +193,7 @@ for iUnit = 1:length(uniqueTemplates)
         forGUI.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms,thisUnit, qMetric.maxChannels(thisUnit),...
         param.ephys_sample_rate, channelPositions, param.maxWvBaselineFraction, waveformBaselineWindow,...
         param.minThreshDetectPeaksTroughs, param.plotDetails); %do we need tempWv ? 
-
-
+    
     %% amplitude
     qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit),:), ...
         param.ephysMetaFile);
@@ -212,6 +210,7 @@ for iUnit = 1:length(uniqueTemplates)
     end
 
 end
+
 
 %% get unit types and save data
 qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates)'; 
