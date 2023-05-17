@@ -152,16 +152,12 @@ for iUnit = 1:length(uniqueTemplates)
         timeChunks, param.plotDetails, NaN);
     
     %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
-    if param.computeTimeChunks
-        [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit),...
-            qMetric.RPV_tauR_estimate(iUnit)] = bc_defineTimechunksToKeep(...
-            percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
-            param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect 
-    else
-        qMetric.useTheseTimesStop(iUnit) = NaN;
-        qMetric.useTheseTimesStart(iUnit) = NaN;
-        qMetric.RPV_tauR_estimate(iUnit) = fractionRPVs;
-    end
+    
+    [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit),...
+        qMetric.RPV_tauR_estimate(iUnit)] = bc_defineTimechunksToKeep(...
+        percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
+        param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect 
+
 
     %% re-compute percentage spikes missing and fraction contamination on timechunks
     thisUnits_timesToUse = [qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)];
@@ -186,7 +182,6 @@ for iUnit = 1:length(uniqueTemplates)
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
 
     %% waveform
-
     waveformBaselineWindow = [param.waveformBaselineWindowStart, param.waveformBaselineWindowStop];
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), forGUI.peakLocs{iUnit},...
         forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), ...
@@ -194,8 +189,7 @@ for iUnit = 1:length(uniqueTemplates)
         forGUI.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms,thisUnit, qMetric.maxChannels(thisUnit),...
         param.ephys_sample_rate, channelPositions, param.maxWvBaselineFraction, waveformBaselineWindow,...
         param.minThreshDetectPeaksTroughs, param.plotDetails); %do we need tempWv ? 
-
-
+    
     %% amplitude
     qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit),:), ...
         param.ephysMetaFile);
@@ -212,6 +206,7 @@ for iUnit = 1:length(uniqueTemplates)
     end
 
 end
+
 
 %% get unit types and save data
 qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates)'; 
