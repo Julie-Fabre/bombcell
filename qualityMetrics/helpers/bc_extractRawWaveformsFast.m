@@ -60,7 +60,7 @@ else
     rawWaveforms = struct;
     rawWaveformsFull = nan(nClust, nChannels-param.nSyncChannels, spikeWidth);
     rawWaveformsPeakChan = nan(nClust, 1);
-
+    average_baseline = cell(1,nClust);
     for iCluster = 1:nClust
         rawWaveforms(iCluster).clInd = clustInds(iCluster);
         rawWaveforms(iCluster).spkInd = spikeTimes_samples(spikeTemplates == clustInds(iCluster));
@@ -113,11 +113,15 @@ else
         rawWaveforms(iCluster).spkMapMean = nanmean(rawWaveforms(iCluster).spkMap, 3);
         rawWaveformsFull(iCluster, :, :) = rawWaveforms(iCluster).spkMapMean - mean(rawWaveforms(iCluster).spkMapMean(:, 1:param.waveformBaselineNoiseWindow), 2);
 
-        % It's save to delete raw waveforms now 
-        rawWaveforms(iCluster).spkMap = [];
+
         spkMapMean_sm = smoothdata(rawWaveforms(iCluster).spkMapMean, 1, 'gaussian', 5);
 
         [~, rawWaveformsPeakChan(iCluster)] = max(max(spkMapMean_sm, [], 2)-min(spkMapMean_sm, [], 2));
+        average_baseline{iCluster} = squeeze(nanmean(rawWaveforms(iCluster).spkMap(rawWaveformsPeakChan(iCluster),...
+            1:param.waveformBaselineNoiseWindow,:),3));
+
+        % It's save to delete raw waveforms now
+        rawWaveforms(iCluster).spkMap = [];
 %          figure();
 %          plot(spkMapMean_sm(rawWaveformsPeakChan(iCluster),:))
 
@@ -137,10 +141,8 @@ else
     writeNPY(rawWaveformsFull, fullfile(savePath, 'templates._bc_rawWaveforms.npy'))
     writeNPY(rawWaveformsPeakChan, fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy'))
 
-      % save average 
-    average_baseline = arrayfun(@(x) squeeze(nanmean(rawWaveforms(x).spkMap(rawWaveformsPeakChan(x),...
-        1:param.waveformBaselineNoiseWindow,:),3)), 1:nClust, 'UniformOutput',false);
-    average_baseline_cat = cat(2, average_baseline{:})';
+     % save average 
+     average_baseline_cat = cat(2, average_baseline{:})';
     %cumSpikeCount = [1, cumsum(arrayfun(@(x) size(rawWaveforms(x).spkMap,3), 1:nClust))];
     %average_baseline_spikeCount = arrayfun(@(x) nanmean(average_baseline_cat(cumSpikeCount(x:x+1))), 1:nClust);
     average_baseline_idx = arrayfun(@(x) ones(param.waveformBaselineNoiseWindow,1)*x, 1:nClust, 'UniformOutput',false);
