@@ -107,7 +107,7 @@ else
             % Save two averages for UnitMatch
             tmpspkmap = arrayfun(@(X) nanmedian(tmpspkmap(:,:,(X-1)*floor(size(tmpspkmap,3)/2)+1:X*floor(size(tmpspkmap,3)/2)),3),1:2,'Uni',0);
             tmpspkmap = cat(3,tmpspkmap{:});
-            writeNPY(tmpspkmap, fullfile(savePath,'RawWaveforms',['Unit' num2str(iCluster) '_RawSpikes.npy']))
+            writeNPY(tmpspkmap, fullfile(savePath,'RawWaveforms',['Unit' num2str(clustInds(iCluster)-1) '_RawSpikes.npy'])) % Back to 0-indexed (same as Kilosort)
         end
 
         rawWaveforms(iCluster).spkMapMean = nanmean(rawWaveforms(iCluster).spkMap, 3);
