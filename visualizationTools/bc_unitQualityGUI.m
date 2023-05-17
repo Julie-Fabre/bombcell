@@ -285,11 +285,11 @@ colorsGdBad = [1, 0, 0; 0, 0.5, 0];
 
 %% main title
 if unitType(iCluster) == 1
-    set(guiData.mainTitle, 'String', ['Unit ', num2str(iCluster), ', single unit'], 'Color', [0, .5, 0]);
+    set(guiData.mainTitle, 'String', ['Unit ', num2str(thisUnit), ', single unit'], 'Color', [0, .5, 0]);
 elseif unitType(iCluster) == 0 || unitType(iCluster) == 3
-    set(guiData.mainTitle, 'String', ['Unit ', num2str(iCluster), ', noise/non-somatic'], 'Color', [1, 0, 0]);
+    set(guiData.mainTitle, 'String', ['Unit ', num2str(thisUnit), ', noise/non-somatic'], 'Color', [1, 0, 0]);
 elseif unitType(iCluster) == 2
-    set(guiData.mainTitle, 'String', ['Unit ', num2str(iCluster), ', multi-unit'], 'Color', [0.29, 0, 0.51]);
+    set(guiData.mainTitle, 'String', ['Unit ', num2str(thisUnit), ', multi-unit'], 'Color', [0.29, 0, 0.51]);
 end
 
 %% plot 1: update curr unit location
@@ -427,18 +427,24 @@ end
 
 %% 10. plot ampli fit
 
-
-set(guiData.ampliBins, 'XData', forGUI.ampliBinCenters{iCluster}, 'YData', forGUI.ampliBinCounts{iCluster});
-
-set(guiData.ampliFit, 'XData', forGUI.ampliGaussianFit{iCluster}, 'YData', forGUI.ampliBinCenters{iCluster})
-if qMetric.percentageSpikesMissing_gaussian(iCluster) > param.maxPercSpikesMissing
-    set(guiData.ampliFitTitle, 'String', '\color[rgb]{1 0 1}% spikes missing');
+if ~isnan(forGUI.ampliBinCenters{iCluster})
+    set(guiData.ampliBins, 'XData', forGUI.ampliBinCenters{iCluster}, 'YData', forGUI.ampliBinCounts{iCluster});
+    
+    set(guiData.ampliFit, 'XData', forGUI.ampliGaussianFit{iCluster}, 'YData', forGUI.ampliBinCenters{iCluster})
+    if qMetric.percentageSpikesMissing_gaussian(iCluster) > param.maxPercSpikesMissing
+        set(guiData.ampliFitTitle, 'String', '\color[rgb]{1 0 1}% spikes missing');
+    else
+        set(guiData.ampliFitTitle, 'String', '\color[rgb]{0 .5 0}% spikes missing');
+    end
+    set(guiData.ampliFitLegend, 'String', {[num2str(qMetric.percentageSpikesMissing_gaussian(iCluster)), ' % spikes missing'], 'rpv spikes'})
+    set(guiData.ampliFitAx, 'YLim', [min(forGUI.ampliBinCenters{iCluster}), max(forGUI.ampliBinCenters{iCluster})])
 else
-    set(guiData.ampliFitTitle, 'String', '\color[rgb]{0 .5 0}% spikes missing');
+    set(guiData.ampliBins, 'XData', forGUI.ampliBinCenters{iCluster}, 'YData', forGUI.ampliBinCounts{iCluster});
+    set(guiData.ampliFit, 'XData', forGUI.ampliGaussianFit{iCluster}, 'YData', forGUI.ampliBinCenters{iCluster})
+    set(guiData.ampliFitTitle, 'String', '\color[rgb]{1 0 1}% spikes missing');
+    set(guiData.ampliFitLegend, 'String', {[num2str(qMetric.percentageSpikesMissing_gaussian(iCluster)), ' % spikes missing'], 'rpv spikes'})
+    
 end
-set(guiData.ampliFitLegend, 'String', {[num2str(qMetric.percentageSpikesMissing_gaussian(iCluster)), ' % spikes missing'], 'rpv spikes'})
-set(guiData.ampliFitAx, 'YLim', [min(forGUI.ampliBinCenters{iCluster}), max(forGUI.ampliBinCenters{iCluster})])
-
 %% 9. plot template amplitudes and mean f.r. over recording (QQ: add experiment time epochs?)
 
 ephysData.recordingDuration = (max(ephysData.spike_times) - min(ephysData.spike_times));

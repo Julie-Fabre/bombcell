@@ -61,7 +61,7 @@ else
     rawWaveformsFull = nan(nClust, nChannels-param.nSyncChannels, spikeWidth);
     rawWaveformsPeakChan = nan(nClust, 1);
 
-    for iCluster = 2:10%:nClust
+    for iCluster = 1:20%nClust
         rawWaveforms(iCluster).clInd = clustInds(iCluster);
         rawWaveforms(iCluster).spkInd = spikeTimes_samples(spikeTemplates == clustInds(iCluster));
         if numel(rawWaveforms(iCluster).spkInd) >= nSpikesToExtract
