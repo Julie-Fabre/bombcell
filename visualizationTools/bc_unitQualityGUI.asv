@@ -340,15 +340,21 @@ for iChanToPlot = 1:min(20, size(chansToPlot, 1))
 end
 
 tempWvTitleText = ['\\fontsize{9}Template waveform: {\\color[rgb]{%s}# detected peaks/troughs, ', newline, ...
-    '\\color[rgb]{%s}is somatic  \\color[rgb]{%s}spatial decay}'];
+    '\\color[rgb]{%s}is somatic,  \\color[rgb]{%s}spatial decay, \\color[rgb]{%s}baseline flatness, ' newline, ...
+    '\\color[rgb]{%s}waveform duration}'];
 
 set(guiData.tempTitle, 'String', sprintf(tempWvTitleText, num2str(colorsGdBad(double(qMetric.nPeaks(iCluster) <= param.maxNPeaks || qMetric.nTroughs(iCluster) <= param.maxNTroughs)+1, :)), ...
     num2str(colorsGdBad(double(qMetric.isSomatic(iCluster) == 1)+1, :)), ...
-    num2str(colorsGdBad(double(qMetric.spatialDecaySlope(iCluster) <= param.minSpatialDecaySlope)+1, :))));
+    num2str(colorsGdBad(double(qMetric.spatialDecaySlope(iCluster) <= param.minSpatialDecaySlope)+1, :)),...
+    num2str(colorsGdBad(double(qMetric.waveformBaselineFlatness(iCluster) <= param.maxWvBaselineFraction)+1, :)),...
+    num2str(colorsGdBad(double(qMetric.waveformDuration_peakTrough(iCluster) <= param.minWvDuration && ...
+    qMetric.waveformDuration_peakTrough(iCluster) >= param.maxWvDuration)+1, :))));
 
 set(guiData.tempLegend, 'String', {['is somatic =', num2str(qMetric.isSomatic(iCluster)), newline], ...
     [num2str(qMetric.nPeaks(iCluster)), ' peak(s)'], [num2str(qMetric.nTroughs(iCluster)), ...
-    ' trough(s)'], ['spatial decay slope =', num2str(qMetric.spatialDecaySlope(iCluster))]})
+    ' trough(s)'], ['spatial decay slope =', num2str(qMetric.spatialDecaySlope(iCluster))],...
+    ['baseline flatness =', num2str(qMetric.waveformBaselineFlatness(iCluster))],...
+    ['waveform duration =', num2str(qMetric.waveformDuration_peakTrough(iCluster))]})
 
 %% plot 3: plot unit mean raw waveform (and individual traces)
 
@@ -368,12 +374,18 @@ for iChanToPlot = 1:min(20, size(chansToPlot, 1))
             (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) * 10));
     end
 end
-set(guiData.rawLegend, 'String', ['Amplitude =', num2str(qMetric.rawAmplitude(iCluster)), 'uV'])
-if qMetric.rawAmplitude(iCluster) < param.minAmplitude
-    set(guiData.rawTitle, 'String', '\color[rgb]{1 0 1}Mean raw waveform');
+set(guiData.rawLegend, 'String', ['Amplitude =', num2str(round(qMetric.rawAmplitude(iCluster))), 'uV', newline, ...
+    'SNR =', num2str(qMetric.signalToNoiseRatio(iCluster))])
+
+if qMetric.rawAmplitude(iCluster) >= param.minAmplitude && qMetric.spatialDecaySlope(iCluster) > param.minSNR
+    set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{0 0.5 0} amplitude, \color[rgb]{0 0.5 0} SNR ']);
+elseif qMetric.rawAmplitude(iCluster) >= param.minAmplitude
+     set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{0 0.5 0} amplitude, \color[rgb]{1 0 0} SNR ']);
 else
-    set(guiData.rawTitle, 'String', '\color[rgb]{0 .5 0}Mean raw waveform');
+    set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{1 0 0} amplitude, \color[rgb]{1 0 0} SNR ']);
+
 end
+
 
 %% 4. plot unit ACG
 tauR_values = (param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax) .* 1000;
@@ -414,7 +426,8 @@ if qMetric.fractionRPVs_estimatedTauR(iCluster) > param.maxRPVviolations
 else
     set(guiData.isiTitle, 'String', '\color[rgb]{0 .5 0}ISI');
 end
-set(guiData.isiLegend, 'String', [num2str(qMetric.fractionRPVs_estimatedTauR(iCluster)*100), ' % r.p.v.'])
+set(guiData.isiLegend, 'String', [num2str(qMetric.fractionRPVs_estimatedTauR(iCluster)*100), ' % r.p.v.', newline, ...
+    'estimated refractory period (ms): ', num2str(qMetric.RPV_tauR_estimate(iCluster))])
 
 %% 6. plot isolation distance
 if param.computeDistanceMetrics
@@ -428,16 +441,22 @@ end
 %% 10. plot ampli fit
 
 if ~isnan(forGUI.ampliBinCenters{iCluster})
-set(guiData.ampliBins, 'XData', forGUI.ampliBinCenters{iCluster}, 'YData', forGUI.ampliBinCounts{iCluster});
-
-set(guiData.ampliFit, 'XData', forGUI.ampliGaussianFit{iCluster}, 'YData', forGUI.ampliBinCenters{iCluster})
-if qMetric.percentageSpikesMissing_gaussian(iCluster) > param.maxPercSpikesMissing
-    set(guiData.ampliFitTitle, 'String', '\color[rgb]{1 0 1}% spikes missing');
+    set(guiData.ampliBins, 'XData', forGUI.ampliBinCenters{iCluster}, 'YData', forGUI.ampliBinCounts{iCluster});
+    
+    set(guiData.ampliFit, 'XData', forGUI.ampliGaussianFit{iCluster}, 'YData', forGUI.ampliBinCenters{iCluster})
+    if qMetric.percentageSpikesMissing_gaussian(iCluster) > param.maxPercSpikesMissing
+        set(guiData.ampliFitTitle, 'String', '\color[rgb]{1 0 1}% spikes missing');
+    else
+        set(guiData.ampliFitTitle, 'String', '\color[rgb]{0 .5 0}% spikes missing');
+    end
+    set(guiData.ampliFitLegend, 'String', {[num2str(qMetric.percentageSpikesMissing_gaussian(iCluster)), ' % spikes missing'], 'rpv spikes'})
+    set(guiData.ampliFitAx, 'YLim', [min(forGUI.ampliBinCenters{iCluster}), max(forGUI.ampliBinCenters{iCluster})])
 else
-    set(guiData.ampliFitTitle, 'String', '\color[rgb]{0 .5 0}% spikes missing');
-end
-set(guiData.ampliFitLegend, 'String', {[num2str(qMetric.percentageSpikesMissing_gaussian(iCluster)), ' % spikes missing'], 'rpv spikes'})
-set(guiData.ampliFitAx, 'YLim', [min(forGUI.ampliBinCenters{iCluster}), max(forGUI.ampliBinCenters{iCluster})])
+    set(guiData.ampliBins, 'XData', forGUI.ampliBinCenters{iCluster}, 'YData', forGUI.ampliBinCounts{iCluster});
+    set(guiData.ampliFit, 'XData', forGUI.ampliGaussianFit{iCluster}, 'YData', forGUI.ampliBinCenters{iCluster})
+    set(guiData.ampliFitTitle, 'String', '\color[rgb]{1 0 1}% spikes missing');
+    set(guiData.ampliFitLegend, 'String', {[num2str(qMetric.percentageSpikesMissing_gaussian(iCluster)), ' % spikes missing'], 'rpv spikes'})
+    
 end
 %% 9. plot template amplitudes and mean f.r. over recording (QQ: add experiment time epochs?)
 
@@ -469,12 +488,13 @@ set(guiData.spikeFR, 'XData', x, 'YData', n);
 set(guiData.ampliAx.YAxis(2), 'Limits', [0, 2 * ceil(max(n))])
 
 
-if qMetric.nSpikes(iCluster) > param.minNumSpikes
-    set(guiData.ampliTitle, 'String', '\color[rgb]{0 .5 0}Spikes');
+if qMetric.nSpikes(iCluster) > param.minNumSpikes && qMetric.presenceRatio(iCluster) >= param.minPresenceRatio
+    set(guiData.ampliTitle, 'String', '\color[rgb]{0 0 0}Spikes: \color[rgb]{0 .5 0}number, \color[rgb]{0 .5 0}presence ratio');
 else
     set(guiData.ampliTitle, 'String', '\color[rgb]{1 0 1}Spikes');
 end
-set(guiData.ampliLegend, 'String', {['# spikes = ', num2str(qMetric.nSpikes(iCluster))], 'rpv spikes'})
+set(guiData.ampliLegend, 'String', {['# spikes = ', num2str(qMetric.nSpikes(iCluster)), newline, ...
+    'presence ratio = ' num2str(qMetric.presenceRatio(iCluster))], 'rpv spikes'})
 
 %% 8. plot raw data
 if plotRaw
