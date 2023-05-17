@@ -109,11 +109,8 @@ if param.plotGlobal
     set(gca, 'yscale', 'log')
     yLim = ylim;
     ylabel('unit count')
-    if length(tauR_values) == 1
-        xlabel('refractory period used (s)')
-    else
-        xlabel(['estimated', newline, 'refractory period (s)'])
-    end
+    if length
+    xlabel(['estimated', newline, 'refractory period (s)'])
     makepretty;
 
 
@@ -201,18 +198,17 @@ if param.plotGlobal
     histogram(qMetric.presenceRatio, 'FaceColor', colorMtx(13, 1:3), 'FaceAlpha', colorMtx(13, 4), 'BinEdges', ...
         [0:0.05:max(qMetric.presenceRatio)]);
     yLim = ylim;
-    line([param.minPresenceRatio, param.minPresenceRatio], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    %line([param.plotDetails, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')
     xlabel('presence ratio')
     makepretty;
 
     subplot(4, 5, 14) % signal to noise ratio
     hold on;
-    set(gca, 'xscale', 'log')
     histogram(qMetric.signalToNoiseRatio, 'FaceColor', colorMtx(14, 1:3), 'FaceAlpha', colorMtx(14, 4)); %, 'BinEdges')%, ...
     %         [0:20:max(qMetric.signalToNoiseRatio(~isinf(qMetric.signalToNoiseRatio)))]);
     yLim = ylim;
-    line([param.minSignalToNoiseRatio, param.minSignalToNoiseRatio], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    %line([param.plotDetails, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')
     xlabel(['signal-to-noise', newline, 'ratio'])
     makepretty;
