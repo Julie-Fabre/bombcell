@@ -157,6 +157,10 @@ for iUnit = 1:length(uniqueTemplates)
             qMetric.RPV_tauR_estimate(iUnit)] = bc_defineTimechunksToKeep(...
             percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
             param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect 
+    else
+        qMetric.useTheseTimesStop(iUnit) = NaN;
+        qMetric.useTheseTimesStart(iUnit) = NaN;
+        qMetric.RPV_tauR_estimate(iUnit) = fractionRPVs;
     end
 
     %% re-compute percentage spikes missing and fraction contamination on timechunks
