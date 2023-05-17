@@ -34,7 +34,7 @@ if param.plotGlobal
     figure('Color', 'w');
 
     unitTypeString = {'Noise', 'Single', 'Multi', 'Non-somatic'};
-uniqueTemplates_idx = 1:size(uniqueTemplates,1);
+    uniqueTemplates_idx = 1:size(uniqueTemplates, 1);
     for iUnitType = 0:3
         subplot(2, 2, iUnitType+1)
         title([unitTypeString{iUnitType+1}, ' unit template waveforms']);
@@ -51,9 +51,10 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
     colorMtx = colorMtx([1:4:end, 2:4:end, 3:4:end, 4:4:end], :); % shuffle colors to get more distinct pairs
 
     title([num2str(sum(unitType == 1)), ' single units, ', num2str(sum(unitType == 2)), ' multi-units, ', ...
-        num2str(sum(unitType == 0)), ' noise units, ', num2str(sum(unitType == 3)), ' non-somatic units.']); hold on;
+        num2str(sum(unitType == 0)), ' noise units, ', num2str(sum(unitType == 3)), ' non-somatic units.']);
+    hold on;
     set(gcf, 'color', 'w')
-    
+
     subplot(4, 5, 1)
     hold on;
     histogram(qMetric.nPeaks, 'FaceColor', colorMtx(1, 1:3), 'FaceAlpha', colorMtx(1, 4));
@@ -79,8 +80,10 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
     histogram(1-qMetric.isSomatic, 'FaceColor', colorMtx(3, 1:3), 'FaceAlpha', colorMtx(3, 4));
     yLim = ylim;
     line([param.somatic - 0.5, param.somatic - 0.5], [0, yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    xticks([0, 1])
+    xticklabels({'Y', 'N'})
     ylabel('unit count')
-    xlabel('non somatic')
+    xlabel('somatic?')
     makepretty;
 
     subplot(4, 5, 4)
@@ -88,10 +91,10 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
     hold on;
 
     histogram(qMetric.fractionRPVs_estimatedTauR*100, 'FaceColor', colorMtx(4, 1:3), 'FaceAlpha', colorMtx(4, 4), 'BinEdges', [0:5:100]);
-    
+
     set(gca, 'yscale', 'log')
     yLim = ylim;
-    line([param.maxRPVviolations *100, param.maxRPVviolations*100], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    line([param.maxRPVviolations * 100, param.maxRPVviolations * 100], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')
     xlabel(['refractory period', newline, 'violations (%)'])
     makepretty;
@@ -100,12 +103,17 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
 
     hold on;
     tauR_values = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
-    histogram(tauR_values(qMetric.RPV_tauR_estimate), 'FaceColor', colorMtx(5, 1:3), 'FaceAlpha', colorMtx(5, 4), 'BinEdges', [param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax]);
     
+    histogram(tauR_values(qMetric.RPV_tauR_estimate), 'FaceColor', colorMtx(5, 1:3), 'FaceAlpha', colorMtx(5, 4), 'BinEdges', [param.tauR_valuesMin-1/1000:param.tauR_valuesStep:param.tauR_valuesMax+1/1000]);
+
     set(gca, 'yscale', 'log')
     yLim = ylim;
-     ylabel('unit count')
-    xlabel(['estimated', newline, 'refractory period (s)'])
+    ylabel('unit count')
+    if length(tauR_values) == 1
+        xlabel('refractory period used (s)')
+    else
+        xlabel(['estimated', newline, 'refractory period (s)'])
+    end
     makepretty;
 
 
@@ -116,9 +124,9 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
         [0:5:max(qMetric.percentageSpikesMissing_gaussian)]);
 
     yLim = ylim;
-    line([param.maxPercSpikesMissing , param.maxPercSpikesMissing ], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    line([param.maxPercSpikesMissing, param.maxPercSpikesMissing], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')
-    xlabel(['% spikes below', newline, 'detection threshold,' , newline, 'gaussian assumption'])
+    xlabel(['% spikes below', newline, 'detection threshold,', newline, 'gaussian assumption'])
     makepretty;
 
     subplot(4, 5, 7)
@@ -128,9 +136,9 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
         [0:5:max(qMetric.percentageSpikesMissing_symmetric)]);
 
     yLim = ylim;
-    line([param.maxPercSpikesMissing , param.maxPercSpikesMissing ], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    line([param.maxPercSpikesMissing, param.maxPercSpikesMissing], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')
-    xlabel(['% spikes below', newline, 'detection threshold,' , newline, 'symmetric assumption'])
+    xlabel(['% spikes below', newline, 'detection threshold,', newline, 'symmetric assumption'])
     makepretty;
 
 
@@ -141,7 +149,7 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
     histogram(qMetric.nSpikes, 'FaceColor', colorMtx(8, 1:3), 'FaceAlpha', colorMtx(8, 4), 'BinEdges', [0:100:max(qMetric.nSpikes)]);
 
     yLim = ylim;
-    line([param.minNumSpikes , param.minNumSpikes], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    line([param.minNumSpikes, param.minNumSpikes], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')
     xlabel('# spikes')
     makepretty;
@@ -163,18 +171,18 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
     yLim = ylim;
     line([param.minSpatialDecaySlope, param.minSpatialDecaySlope], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')
-    xlabel(['spatial decay' newline 'slope'])
+    xlabel(['spatial decay', newline, 'slope'])
     makepretty;
 
     subplot(4, 5, 11)
     hold on;
-    histogram(qMetric.waveformDuration_peakTrough, 'FaceColor', colorMtx(11, 1:3), 'FaceAlpha', colorMtx(11, 4), 'BinEdges',...
+    histogram(qMetric.waveformDuration_peakTrough, 'FaceColor', colorMtx(11, 1:3), 'FaceAlpha', colorMtx(11, 4), 'BinEdges', ...
         [0:40:max(qMetric.waveformDuration_peakTrough)]);
     yLim = ylim;
     line([param.minWvDuration + 0.5, param.minWvDuration + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     line([param.maxWvDuration + 0.5, param.maxWvDuration + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')
-    xlabel(['waveform' newline 'duration'])
+    xlabel(['waveform', newline, 'duration'])
     makepretty;
 
 
@@ -185,31 +193,32 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
     yLim = ylim;
     line([param.maxWvBaselineFraction, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')
-    xlabel(['waveform baseline' newline '''flatness'''])
+    xlabel(['waveform baseline', newline, '''flatness'''])
     makepretty;
 
-    subplot(4, 5, 13) % presence ratio 
+    subplot(4, 5, 13) % presence ratio
     hold on;
     histogram(qMetric.presenceRatio, 'FaceColor', colorMtx(13, 1:3), 'FaceAlpha', colorMtx(13, 4), 'BinEdges', ...
         [0:0.05:max(qMetric.presenceRatio)]);
     yLim = ylim;
-    %line([param.plotDetails, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    line([param.minPresenceRatio, param.minPresenceRatio], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')
     xlabel('presence ratio')
     makepretty;
 
-    subplot(4, 5, 14) % signal to noise ratio 
+    subplot(4, 5, 14) % signal to noise ratio
     hold on;
-    histogram(qMetric.signalToNoiseRatio, 'FaceColor', colorMtx(14, 1:3), 'FaceAlpha', colorMtx(14, 4));%, 'BinEdges')%, ...
-%         [0:20:max(qMetric.signalToNoiseRatio(~isinf(qMetric.signalToNoiseRatio)))]);
+    set(gca, 'xscale', 'log')
+    histogram(qMetric.signalToNoiseRatio, 'FaceColor', colorMtx(14, 1:3), 'FaceAlpha', colorMtx(14, 4)); %, 'BinEdges')%, ...
+    %         [0:20:max(qMetric.signalToNoiseRatio(~isinf(qMetric.signalToNoiseRatio)))]);
     yLim = ylim;
-    %line([param.plotDetails, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    line([param.minSignalToNoiseRatio, param.minSignalToNoiseRatio], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')
-    xlabel(['signal-to-noise' newline 'ratio'])
+    xlabel(['signal-to-noise', newline, 'ratio'])
     makepretty;
 
     if param.computeDrift
-        subplot(4, 5, 15) % max drift estimate 
+        subplot(4, 5, 15) % max drift estimate
         hold on;
         histogram(qMetric.maxDriftEstimate, 'FaceColor', colorMtx(15, 1:3), 'FaceAlpha', colorMtx(15, 4), 'BinEdges', ...
             [0:5:max(qMetric.maxDriftEstimate)]);
@@ -218,8 +227,8 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
         ylabel('unit count')
         xlabel('max drift estimate')
         makepretty;
-    
-        subplot(4, 5, 16) % max drift estimate 
+
+        subplot(4, 5, 16) % max drift estimate
         hold on;
         histogram(qMetric.cumDriftEstimate, 'FaceColor', colorMtx(15, 1:3), 'FaceAlpha', colorMtx(15, 4), 'BinEdges', ...
             [0:50:max(qMetric.cumDriftEstimate)]);
@@ -230,7 +239,6 @@ uniqueTemplates_idx = 1:size(uniqueTemplates,1);
         makepretty;
     end
 
-   
 
     if param.computeDistanceMetrics && ~isnan(param.isoDmin)
         subplot(4, 5, 18)
