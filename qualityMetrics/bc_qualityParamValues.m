@@ -100,7 +100,7 @@ param.maxNPeaks = 2;
 param.maxNTroughs = 1;
 param.somatic = 1; 
 param.minWvDuration = 100; % in us
-param.maxWvDuration = 800; % in us
+param.maxWvDuration = 1000; % in us
 param.minSpatialDecaySlope = -0.003;
 param.maxWvBaselineFraction = 0.3;
 

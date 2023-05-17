@@ -113,7 +113,8 @@ xlabel('Position+Time');
 ylabel('Position');
 set(gca, 'YDir', 'reverse')
 tempTitle = title('');
-tempLegend = legend([maxTemplateWaveformLines, peaks, troughs, templateWaveformLines(1)], {'', '', '', ''}, 'color', 'none');
+tempLegend = legend([maxTemplateWaveformLines, peaks, troughs, templateWaveformLines(1),...
+    ], {'', '', '', ''}, 'color', 'none');
 
 %% initialize raw waveforms
 subplot(6, 13, [8:13, 21:26])
@@ -192,6 +193,8 @@ yyaxis left;
 tempAmpli = scatter(NaN, NaN, 'black', 'filled');
 currTempAmpli = scatter(NaN, NaN, 'blue', 'filled');
 rpvAmpli = scatter(NaN, NaN, 10, 'magenta', 'filled');
+ampliLine = line([NaN, NaN], [NaN, NaN], 'LineWidth', 2.0, 'Color', [0, 0.5, 0]);
+%timeChunkLines = arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', 'k'), 1:param.deltaTimeChunk);
 xlabel('Experiment time (s)');
 ylabel('Template amplitude scaling');
 axis tight
@@ -201,8 +204,9 @@ yyaxis right
 spikeFR = stairs(NaN, NaN, 'LineWidth', 2.0, 'Color', [1, 0.5, 0]);
 set(gca, 'YColor', [1, 0.5, 0])
 ylabel('Firing rate (sp/sec)');
+
 ampliTitle = title('');
-ampliLegend = legend([tempAmpli, rpvAmpli], {'', ''});
+ampliLegend = legend([tempAmpli, rpvAmpli, ampliLine ], {'', ''});
 
 %% initialize amplitude fit
 ampliFitAx = subplot(6, 13, 78);
@@ -264,6 +268,7 @@ guiData.currTempAmpli = currTempAmpli;
 guiData.spikeFR = spikeFR;
 guiData.ampliTitle = ampliTitle;
 guiData.ampliLegend = ampliLegend;
+guiData.ampliLine = ampliLine;
 % amplitude fit
 guiData.ampliFitAx = ampliFitAx;
 guiData.ampliBins = ampliBins;
@@ -488,10 +493,16 @@ set(guiData.spikeFR, 'XData', x, 'YData', n);
 set(guiData.ampliAx.YAxis(2), 'Limits', [0, 2 * ceil(max(n))])
 
 
+set(guiData.ampliLine,'XData',[qMetric.useTheseTimesStart(iCluster), qMetric.useTheseTimesStop(iCluster)],...
+    'YData', [max(theseAmplis)*0.9, max(theseAmplis)*0.9]); 
+
 if qMetric.nSpikes(iCluster) > param.minNumSpikes && qMetric.presenceRatio(iCluster) >= param.minPresenceRatio
     set(guiData.ampliTitle, 'String', '\color[rgb]{0 0 0}Spikes: \color[rgb]{0 .5 0}number, \color[rgb]{0 .5 0}presence ratio');
+elseif qMetric.nSpikes(iCluster) > param.minNumSpikes
+    set(guiData.ampliTitle, 'String', '\color[rgb]{0 0 0}Spikes: \color[rgb]{0 .5 0}number, \color[rgb]{1 0 1}presence ratio');
 else
-    set(guiData.ampliTitle, 'String', '\color[rgb]{1 0 1}Spikes');
+    set(guiData.ampliTitle, 'String', '\color[rgb]{0 0 0}Spikes: \color[rgb]{1 0 1}number, \color[rgb]{1 0 1}presence ratio');
+
 end
 set(guiData.ampliLegend, 'String', {['# spikes = ', num2str(qMetric.nSpikes(iCluster)), newline, ...
     'presence ratio = ' num2str(qMetric.presenceRatio(iCluster))], 'rpv spikes'})

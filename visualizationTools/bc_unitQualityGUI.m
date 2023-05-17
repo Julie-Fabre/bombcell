@@ -113,7 +113,8 @@ xlabel('Position+Time');
 ylabel('Position');
 set(gca, 'YDir', 'reverse')
 tempTitle = title('');
-tempLegend = legend([maxTemplateWaveformLines, peaks, troughs, templateWaveformLines(1)], {'', '', '', ''}, 'color', 'none');
+tempLegend = legend([maxTemplateWaveformLines, peaks, troughs, templateWaveformLines(1),...
+    ], {'', '', '', ''}, 'color', 'none');
 
 %% initialize raw waveforms
 subplot(6, 13, [8:13, 21:26])
@@ -192,6 +193,8 @@ yyaxis left;
 tempAmpli = scatter(NaN, NaN, 'black', 'filled');
 currTempAmpli = scatter(NaN, NaN, 'blue', 'filled');
 rpvAmpli = scatter(NaN, NaN, 10, 'magenta', 'filled');
+ampliLine = line([NaN, NaN], [NaN, NaN], 'LineWidth', 2.0, 'Color', [0, 0.5, 0]);
+%timeChunkLines = arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', 'k'), 1:param.deltaTimeChunk);
 xlabel('Experiment time (s)');
 ylabel('Template amplitude scaling');
 axis tight
@@ -201,8 +204,9 @@ yyaxis right
 spikeFR = stairs(NaN, NaN, 'LineWidth', 2.0, 'Color', [1, 0.5, 0]);
 set(gca, 'YColor', [1, 0.5, 0])
 ylabel('Firing rate (sp/sec)');
+
 ampliTitle = title('');
-ampliLegend = legend([tempAmpli, rpvAmpli], {'', ''});
+ampliLegend = legend([tempAmpli, rpvAmpli, ampliLine ], {'', '', ''});
 
 %% initialize amplitude fit
 ampliFitAx = subplot(6, 13, 78);
@@ -264,6 +268,7 @@ guiData.currTempAmpli = currTempAmpli;
 guiData.spikeFR = spikeFR;
 guiData.ampliTitle = ampliTitle;
 guiData.ampliLegend = ampliLegend;
+guiData.ampliLine = ampliLine;
 % amplitude fit
 guiData.ampliFitAx = ampliFitAx;
 guiData.ampliBins = ampliBins;
@@ -289,7 +294,7 @@ if unitType(iCluster) == 1
 elseif unitType(iCluster) == 0 || unitType(iCluster) == 3
     set(guiData.mainTitle, 'String', ['Unit ', num2str(thisUnit), ', noise/non-somatic'], 'Color', [1, 0, 0]);
 elseif unitType(iCluster) == 2
-    set(guiData.mainTitle, 'String', ['Unit ', num2str(thisUnit), ', multi-unit'], 'Color', [0.29, 0, 0.51]);
+    set(guiData.mainTitle, 'String', ['Unit ', num2str(thisUnit), ', multi-unit'], 'Color', [1, 0, 1]);
 end
 
 %% plot 1: update curr unit location
@@ -350,11 +355,11 @@ set(guiData.tempTitle, 'String', sprintf(tempWvTitleText, num2str(colorsGdBad(do
     num2str(colorsGdBad(double(qMetric.waveformDuration_peakTrough(iCluster) <= param.minWvDuration && ...
     qMetric.waveformDuration_peakTrough(iCluster) >= param.maxWvDuration)+1, :))));
 
-set(guiData.tempLegend, 'String', {['is somatic =', num2str(qMetric.isSomatic(iCluster)), newline], ...
+set(guiData.tempLegend, 'String', {['is somatic =', num2str(qMetric.isSomatic(iCluster)), newline, ...
+    'baseline flatness =', num2str(qMetric.waveformBaselineFlatness(iCluster)), newline, ...
+    'waveform duration =', num2str(qMetric.waveformDuration_peakTrough(iCluster))], ...
     [num2str(qMetric.nPeaks(iCluster)), ' peak(s)'], [num2str(qMetric.nTroughs(iCluster)), ...
-    ' trough(s)'], ['spatial decay slope =', num2str(qMetric.spatialDecaySlope(iCluster))],...
-    ['baseline flatness =', num2str(qMetric.waveformBaselineFlatness(iCluster))],...
-    ['waveform duration =', num2str(qMetric.waveformDuration_peakTrough(iCluster))]})
+    ' trough(s)'], ['spatial decay slope =', num2str(qMetric.spatialDecaySlope(iCluster))]})
 
 %% plot 3: plot unit mean raw waveform (and individual traces)
 
@@ -377,7 +382,7 @@ end
 set(guiData.rawLegend, 'String', ['Amplitude =', num2str(round(qMetric.rawAmplitude(iCluster))), 'uV', newline, ...
     'SNR =', num2str(qMetric.signalToNoiseRatio(iCluster))])
 
-if qMetric.rawAmplitude(iCluster) >= param.minAmplitude && qMetric.spatialDecaySlope(iCluster) > param.minSNR
+if qMetric.rawAmplitude(iCluster) >= param.minAmplitude && qMetric.signalToNoiseRatio(iCluster) >= param.minSNR
     set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{0 0.5 0} amplitude, \color[rgb]{0 0.5 0} SNR ']);
 elseif qMetric.rawAmplitude(iCluster) >= param.minAmplitude
      set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{0 0.5 0} amplitude, \color[rgb]{1 0 0} SNR ']);
@@ -488,6 +493,9 @@ set(guiData.spikeFR, 'XData', x, 'YData', n);
 set(guiData.ampliAx.YAxis(2), 'Limits', [0, 2 * ceil(max(n))])
 
 
+set(guiData.ampliLine,'XData',[qMetric.useTheseTimesStart(iCluster), qMetric.useTheseTimesStop(iCluster)],...
+    'YData', [max(theseAmplis)*0.9, max(theseAmplis)*0.9]); 
+
 if qMetric.nSpikes(iCluster) > param.minNumSpikes && qMetric.presenceRatio(iCluster) >= param.minPresenceRatio
     set(guiData.ampliTitle, 'String', '\color[rgb]{0 0 0}Spikes: \color[rgb]{0 .5 0}number, \color[rgb]{0 .5 0}presence ratio');
 elseif qMetric.nSpikes(iCluster) > param.minNumSpikes
@@ -497,7 +505,8 @@ else
 
 end
 set(guiData.ampliLegend, 'String', {['# spikes = ', num2str(qMetric.nSpikes(iCluster)), newline, ...
-    'presence ratio = ' num2str(qMetric.presenceRatio(iCluster))], 'rpv spikes'})
+    'presence ratio = ' num2str(qMetric.presenceRatio(iCluster))], 'rpv spikes', ...
+    ' ''good'' time chunks'})
 
 %% 8. plot raw data
 if plotRaw
