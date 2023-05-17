@@ -152,16 +152,12 @@ for iUnit = 1:length(uniqueTemplates)
         timeChunks, param.plotDetails, NaN);
     
     %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
-    if param.computeTimeChunks
-        [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit),...
-            qMetric.RPV_tauR_estimate(iUnit)] = bc_defineTimechunksToKeep(...
-            percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
-            param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect 
-    else
-        qMetric.useTheseTimesStop(iUnit) = NaN;
-        qMetric.useTheseTimesStart(iUnit) = NaN;
-        qMetric.RPV_tauR_estimate(iUnit) = fractionRPVs;
-    end
+    
+    [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit),...
+        qMetric.RPV_tauR_estimate(iUnit)] = bc_defineTimechunksToKeep(...
+        percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
+        param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect 
+
 
     %% re-compute percentage spikes missing and fraction contamination on timechunks
     thisUnits_timesToUse = [qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)];
