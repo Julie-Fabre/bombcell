@@ -130,7 +130,7 @@ else
     decompDataFile = saveFileFolder;
 end
 if ~onlySaveSyncChannel
-fidOut = fopen(decompDataFile,'w');
+    fidOut = fopen(decompDataFile,'w');
 end
 
 if doParfor
