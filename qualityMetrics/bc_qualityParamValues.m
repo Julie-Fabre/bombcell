@@ -90,7 +90,6 @@ param.maxRPVviolations = 0.1; % fraction
 param.maxPercSpikesMissing = 20;
 param.minNumSpikes = 300;
 
-param.minSignalToNoiseRatio = 0.9;
 param.maxDrift = 100;
 param.minPresenceRatio = 0.7;
 param.minSNR = 0.1;
