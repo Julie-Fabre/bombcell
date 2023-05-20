@@ -10,11 +10,8 @@ function scalingFactor = bc_readOEMetaFile(metaFile)
 % ------
 % scaling factor: double, scaling factor value to convert raw data to
 % microvolts
-% the uV/bit scaling factor (2.34 uV/bit for the standard AP gain setting
-% of 500; 4.68 uV/bit for the standard LFP gain setting of 250) is already
-% applied by open ephys, and you just need to mutliply by 0.195: 
-% - OE docs ref: https://open-ephys.atlassian.net/wiki/spaces/OEW/pages/166789121/Flat+binary+format
-% - sanity check: AP raw numbers are quantized by 12, which *0.195 = 2.34. (Same for the LFP, quantized by 24). 
+% OE docs : raw data *0.195 to get microvolts (https://open-ephys.atlassian.net/wiki/spaces/OEW/pages/166789121/Flat+binary+format)
+% the uV/bit scaling factor (2.34 uV/bit for the standard AP gain setting of 500; 4.68 uV/bit for the)
 %
 filetext = fileread(metaFile);
 expr = '"bit_volts": '; % this is actually the scaling factor
