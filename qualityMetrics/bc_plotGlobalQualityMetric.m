@@ -212,7 +212,7 @@ if param.plotGlobal
     histogram(qMetric.signalToNoiseRatio, 'FaceColor', colorMtx(14, 1:3), 'FaceAlpha', colorMtx(14, 4)); %, 'BinEdges')%, ...
     %         [0:20:max(qMetric.signalToNoiseRatio(~isinf(qMetric.signalToNoiseRatio)))]);
     yLim = ylim;
-    line([param.minSignalToNoiseRatio, param.minSignalToNoiseRatio], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+    line([param.minSNR, param.minSNR], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')
     xlabel(['signal-to-noise', newline, 'ratio'])
     makepretty;
