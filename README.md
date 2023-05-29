@@ -113,13 +113,15 @@ In addition, Bombcells' GUI allows you to flip through cells and their quality m
 
 ##### *Setting appropriate quality metric paramaters and thresholds*
 
-To start out, we suggest you take a look at the script `bc_qualityMetrics_pipeline` for an example workflow. We suggest first computing quality metrics with the default paramater values (defined by the `param` structure in `bc_qualityParamValues`). Later on, you can fine-tune the thresholds based on your specific neuronal region and requirements by considering the following:
+To start out, we suggest you take a look at the script `bc_qualityMetrics_pipeline` for an example workflow. We suggest first computing quality metrics with the default paramater values (defined by the `param` structure in `bc_qualityParamValues`). Later on, you can fine-tune the thresholds based on your specific neuronal region and requirements by looking at the following:
 
-- individual units, in the interactive [GUI](#Quality-metrics-GUI-guide )
+- individual units, in the interactive [GUI](#Quality-metrics-GUI-guide ). Do the current quality metric threshold classify units into categories in a reasonable manner? (ie do "good"-classified units look good ?)
 
-- distribution histograms of the units' quality metrics (see General plots)
+- the distribution histograms of the units' quality metrics (see General plots). Ther can be natural places to set thresholds id there are for instance bimodal distributions.
 
-- numbers of units removed by each quality metric. It may also be helpful to plot the quantity you which to measure as a function of each quality metric (see [Fig. 2 Harris et al., Nat. Neuro, 2016](https://www.nature.com/articles/nn.4365/figures/2)).
+- the numbers of units removed by each quality metric.
+
+- It may also be helpful to plot the quantity you which to measure as a function of each quality metric (see [Fig. 2 Harris et al., Nat. Neuro, 2016](https://www.nature.com/articles/nn.4365/figures/2)).
 
 ##### *Running speed and bottlenecks*
 
