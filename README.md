@@ -23,11 +23,10 @@ To begin using Bombcell, clone the [repository](https://github.com/Julie-Fabre/b
 
 If you want to compute ephys properties, change your working directory to `bombcell\ephysProperties\helpers` in matlab and run `mex -O CCGHeart.c` to able to compute fast ACGs.
 
-If you have z-lib compressed ephys data, compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp), you will additionally need the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat).
-
 #### Dependancies
 
 - https://github.com/kwikteam/npy-matlab (to load .npy data in)
+- If you have z-lib compressed ephys data, compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp), you will additionally need the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat).
 
 ### Contact us
 
