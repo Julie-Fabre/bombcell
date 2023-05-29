@@ -21,6 +21,7 @@ Table of contents:
 4. [Ephys properties guide](#Ephys-properties-guide)
 5. [Recommended pre-processing](#Recommended-pre-processing)
 6. [Dependancies](#Dependancies)
+8. [Troubleshooting: common errors](#Troubleshooting-common-errors)
 7. [Other ephys utilities](#Other-ephys-utilities)
 
 ### Getting started
@@ -262,6 +263,20 @@ To maximize your number of single good units, we recommend looking at your raw d
 ### Dependancies
 
 - https://github.com/kwikteam/npy-matlab (to load .npy data in)
+
+### Troubleshooting: common errors
+
+#### Help, my extracted raw waveforms look very flat and odd / I get errors on the raw waveform extraction step.
+
+Check that the param.nChannels value is correctly set. This number must correspond to the total number of channels in your raw data, including any sync channels. For neuropixels probes, this value should typically be either 384 or 385 channels.
+
+#### Why do I have less units in bombcell's outputs than in kilosort?
+
+You have the same number of units (try to do `length(qMetric)` and `length(unique(spike_templates))` to check), but they stored in the bombcell structure slightly differently. Because kilosort drops units at the last stages of algorithm but does not re-label them, you often end up with a larger maximum template label than there are templates. To store things more efficiently, bombcell re-indexes all the units, giving them a label from 1 to the number of unique templates. But fear not, you can still get Kilosort's original label with `qMetric.clusterID - 1`.
+
+#### Why do my qMetric.clusterID not correspond to kilosort?
+
+They do! Kilosort's output is 0-indexed (ie starts at 0). This isn't very practical in matlab, so we add a `+ 1` to 1-index them. To find the kilosort label, simply do `qMetric.clusterID - 1`.
 
 ### Other ephys utilities:
 
