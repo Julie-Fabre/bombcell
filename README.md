@@ -1,8 +1,8 @@
-# bombcell: find bombshell cells! 
+# bombcell: find bombshell cells!
 
 <img align="left" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_logo_crop_small_flame.png" width=50% height=50%>
 
-Bombcell works with units recorded with Neuropixel probes (3A, 1.0 and 2.0, recorded with SpikeGLX or OpenEphys) and spike-sorted with kilosort. It classifies the unit into three categories: single units, multi-units and noise units, with an option to keep or remove non-somatic spikes. `param` is the structure that defines how to compute the quality metrics and which thresholds to use to classify units.
+Bombcell is a set of tools to evaluate recorded unit quality and extract unit ephys properties. Bombcell works with units recorded with Neuropixel probes (3A, 1.0 and 2.0, recorded with SpikeGLX or OpenEphys) and spike-sorted with kilosort. It classifies the unit into three categories: single units, multi-units and noise units, with an option to keep or remove non-somatic spikes.
 
 Not yet published. Please cite xxx.
 
