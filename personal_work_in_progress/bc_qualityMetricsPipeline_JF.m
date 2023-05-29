@@ -11,7 +11,6 @@ experiments = experiments([experiments.ephys]);
 
 experiment = experiments(experiment_num).experiment;
 
-
 ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site,recording);
 [spikeTimes_samples, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysPath);

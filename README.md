@@ -2,16 +2,15 @@
 
 <img align="left" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_logo_crop_small_flame.png" width=50% height=50%>
 
-Bombcell is a set of tools to evaluate recorded unit quality and extract unit ephys properties. Bombcell works with units recorded with Neuropixel probes (3A, 1.0 and 2.0, recorded with SpikeGLX or OpenEphys) and spike-sorted with kilosort. It classifies the unit into three categories: single units, multi-units and noise units, with an option to keep or remove non-somatic spikes.
+BombCell is a powerful toolkit designed to evaluate the quality of recorded units and extract essential electrophysiological properties. It is specifically tailored for units recorded with Neuropixel probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort.
 
-Not yet published. Please cite xxx.
+Please note that BombCell is currently unpublished. If you find BombCell useful in your work, we kindly request that you acknowledge its contribution by citing xxx.
 
-Preliminary versions of bombcell were used in:
+Preliminary versions of BombCell have been utilized in the following studies:
 
-- [Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020-03166-8) to define real, well isolated striatal units and classify them into MSNs, FSIs and TANs. See the script `bc_selectAndClassifyStriatum`(work in progress) to classify striatal cells in the same way.
+[Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020-03166-8). This study employed BombCell to define real, well-isolated striatal units and classify them into MSNs, FSIs, and TANs. You can refer to the script bc_selectAndClassifyStriatum (work in progress) to classify striatal cells in a similar manner.
 
-- [Peters et al., Cell Reports, 2022](https://www.cell.com/cell-reports/fulltext/S2211-1247(22)01337-7) to to define real, well isolated pre-frontal cortex units.
-
+- [Peters et al., Cell Reports, 2022](https://www.cell.com/cell-reports/fulltext/S2211-1247(22)01337-7). BombCell was utilized in this study to define real, well-isolated pre-frontal cortex units.
 
 Table of contents:
 
@@ -21,19 +20,31 @@ Table of contents:
 4. [Ephys properties guide](#Ephys-properties-guide)
 5. [Recommended pre-processing](#Recommended-pre-processing)
 6. [Dependancies](#Dependancies)
-8. [Troubleshooting: common errors](#Troubleshooting-common-errors)
-7. [Other ephys utilities](#Other-ephys-utilities)
+7. [Troubleshooting: common errors](#Troubleshooting-common-errors)
+8. [Other ephys utilities](#Other-ephys-utilities)
+9. [Contact us](#Contact-us)
 
 ### Getting started
 
-Clone the [bombcell repository](https://github.com/Julie-Fabre/bombcell/bombcell) and the [dependancies](#Dependancies). The script `bc_qualityMetrics_pipeline` provides an example workflow.
+BombCell extracts relevant quality metrics to categorize units into three categories: single units, multi-units, and noise units, while providing the option to keep or remove non-somatic spikes.
 
-To start out, we suggest you compute quality metrics with default `param` values (contained in `bc_qualityParamValues`), and then adjust the thresholds for your particular neuronal region and needs by looking at (1) individual units, in the interactive [GUI](#Quality-metrics-GUI-guide ) (2) distribution histograms of the units' quality metrics (see General plots), (3) numbers of units removed by each quality metric. It may also be useful to plot the quantity you which to measure as a function of each quality metric (see [Fig. 2 Harris et al., Nat. Neuro, 2016](https://www.nature.com/articles/nn.4365/figures/2)).
+_Installing_
 
+To begin using BombCell, clone the [bombcell repository](https://github.com/Julie-Fabre/bombcell/bombcell) and the [dependancies](#Dependancies).
 
 If you want to compute ephys properties, change your working directory to `bombcell\ephysProperties\helpers` in matlab and run `mex -O CCGHeart.c` to able to compute fast ACGs.
 
 If you have z-lib compressed ephys data, compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp), you will additionally need the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat).
+
+_Starting out_
+
+To start out, we suggest you take a look at the script `bc_qualityMetrics_pipeline` for an example workflow. We suggest first computing quality metrics with the default paramater values (defined by the `param` structure in `bc_qualityParamValues`). Later on, you can fine-tune the thresholds based on your specific neuronal region and requirements by considering the following:
+
+- individual units, in the interactive [GUI](#Quality-metrics-GUI-guide )
+
+- distribution histograms of the units' quality metrics (see General plots)
+
+- numbers of units removed by each quality metric. It may also be helpful to plot the quantity you which to measure as a function of each quality metric (see [Fig. 2 Harris et al., Nat. Neuro, 2016](https://www.nature.com/articles/nn.4365/figures/2)).
 
 
 ### Quality metrics guide
@@ -61,7 +72,7 @@ Additionally, bombcell is compatible with UnitMatch.
 
 - Set `param.plotGlobal = 1` to plot summary of the noise units' waveforms compared to single multi-units, distribution histograms of the units' quality metrics and numbers of units removed by each quality metric. See the [detailed overview of global output plots ](#Detailed-overview-of-global-output-plots) section for examples of these plots.
 
-- Set `param.plotThis = 1` to plot figures for each quality metric and for each cell (plot examples displayed below). This generates a considerable amout of plots. We suggest you only use when de-bugging or to generate example cell plots. See the [detailed overview of the quality metrics ](#Detailed-overview-of-the-quality-metrics) section for examples of these plots.
+- Set `param.plotThis = 1` to plot figures for each quality metric and for each cell (plot examples displayed below). This generates a considerable amount of plots. We suggest you only use when de-bugging or to generate example cell plots. See the [detailed overview of the quality metrics ](#Detailed-overview-of-the-quality-metrics) section for examples of these plots.
 
 In addition, bombcells' GUI allows you to flip through cells and their quality metrics. This is useful in evaluating where to set your quality metric classification thresholds and checking how bombcell behaves. See the [quality metrics GUI guide ](#Quality-metrics-GUI-guide) section for more information.
 
@@ -278,6 +289,10 @@ You have the same number of units (try to do `length(qMetric)` and `length(uniqu
 
 They do! Kilosort's output is 0-indexed (ie starts at 0). This isn't very practical in matlab, so we add a `+ 1` to 1-index them. To find the kilosort label, simply do `qMetric.clusterID - 1`.
 
+### Something else
+
+Please raise a github issue or alternatively email [us](mailto:julie.mfabre@gmail.com).
+
 ### Other ephys utilities:
 
 - generate IMRO files/channel maps : see [recordingUtilities](https://github.com/Julie-Fabre/bombcell/blob/master/recordingUtilities/)
@@ -287,3 +302,8 @@ They do! Kilosort's output is 0-indexed (ie starts at 0). This isn't very practi
 - quality metric plugins for phy : see [phyPlugins](https://github.com/Julie-Fabre/bombcell/blob/master/phyPlugins/)
 
 - decompress data z-lib compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp) : see [decompressData](https://github.com/Julie-Fabre/bombcell/blob/master/decompressData/). Requires the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat)
+
+
+### Contact us
+
+If you run into any issues or have any suggestions, please raise a github issue or alternatively email [us](mailto:julie.mfabre@gmail.com).

@@ -1,22 +1,19 @@
-function qMetric = bc_saveQMetrics(param, qMetric, forGUI, savePath)
-% JF, Reformat and save quality metrics
+function qMetric = bc_saveQMetrics(param, qMetric, savePath)
+% JF, Reformat and save ephys properties
 % ------
 % Inputs
 % ------
-% param: matlab structure defining extraction and classification parameters 
-%   (see bc_qualityParamValues for required fields
+% paramEP: matlab structure defining extraction and classification parameters 
+%   (see bc_ephysProperties Values for required fields
 %   and suggested starting values)
-% qMetric: matlab structure computed in the main loop of
-%   bc_runAllQualityMetrics, each field is a nUnits x 1 vector containing 
-%   the quality metric value for that unit 
-% forGUI: matlab structure computed in the main loop of bc_runAllQualityMetrics,
-%   for use in bc_unitQualityGUI
+% ephysProperties: matlab structure computed in the main loop of
+%   bc_computeAllEphysProperties
 % savePath: character array defining the path where you want to save your
 %   quality metrics and parameters 
 % ------
 % Outputs
 % ------
-% qMetric: reformated qMetric structure into a table array
+% ephysProperties: reformated ephysProperties structure into a table array
 
 if ~exist(savePath, 'dir')
     mkdir(fullfile(savePath))

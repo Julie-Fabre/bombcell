@@ -1,30 +1,29 @@
-function [cellType, ephysProperties] = bc_ephysPropertiesPipeline_JF(animal, day, site, experiment_num, protocol, rerun, plotGUI, runQM)
+function ephysProperties = bc_ephysPropertiesPipeline_JF(animal, day, site, recording, experiment_num, protocol, rerun, runEP, region)
 
 %% load ephys data 
 experiments = AP_find_experimentsJF(animal, protocol, true);
 experiments = experiments([experiments.ephys]);
 experiment = experiments(experiment_num).experiment;
-ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site);
-[spikeTimes_samples, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysPath);
 
-param = bc_ephysPropValues(ephysMetaDir, rawFile); 
+paramEP = bc_ephysPropValues;
 
-%% compute quality metrics 
-ephysDirPath = AP_cortexlab_filenameJF(animal, day, experiment, 'ephys_dir',site);
-savePath = fullfile(ephysDirPath, 'ephysProperties');
-qMetricsExist = dir(fullfile(savePath, 'templates._bc_qMetrics.parquet'));
-
-if (runQM && isempty(qMetricsExist)) || rerun
-    [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
-        templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
-elseif ~isempty(qMetricsExist)
-    [param, qMetric, fractionRPVs_allTauR] = bc_loadSavedMetrics(savePath); 
-    unitType = bc_getQualityUnitType(param, qMetric);
-else
-    uniqueTemplates = unique(spikeTemplates);
-    unitType = nan(length(uniqueTemplates),1);
-end
 %% compute ephys properties 
-ephysProperties = bc_computeAllEphysProperties(spikeTimes, spikeTemplates, templateWaveforms, param);
+ephysDirPath = AP_cortexlab_filenameJF(animal, day, experiment, 'ephys_dir',site, recording);
+savePath = fullfile(ephysDirPath, 'ephysProperties');
+ephysPropertiesExist = dir(fullfile(savePath, 'templates._bc_ephysProperties.parquet'));
+
+if (runEP && isempty(ephysPropertiesExist)) || rerun
+
+    ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site, recording);
+    [spikeTimes_samples, spikeTemplates, templateWaveforms,~, ~, ~, ~] = bc_loadEphysData(ephysPath);
+    ephysProperties = bc_computeAllEphysProperties(spikeTimes_samples, spikeTemplates, templateWaveforms, paramEP, savePath);
+
+elseif ~isempty(ephysPropertiesExist)
+    ephysProperties = bc_loadSavedProperties(savePath); 
+end
+
+if ~isempty(region)
+    % classify cells 
+end
+
 end
