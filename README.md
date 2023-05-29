@@ -6,7 +6,7 @@ BombCell is a powerful toolkit designed to evaluate the quality of recorded unit
 
 Please note that BombCell is currently unpublished. If you find BombCell useful in your work, we kindly request that you acknowledge its contribution by citing xxx.
 
-Preliminary versions of BombCell have been utilized in the following studies:
+Preliminary versions of BombCell have been used in the following studies:
 
 [Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020-03166-8). This study employed BombCell to define real, well-isolated striatal units and classify them into MSNs, FSIs, and TANs. You can refer to the script bc_selectAndClassifyStriatum (work in progress) to classify striatal cells in a similar manner.
 
@@ -26,7 +26,7 @@ Table of contents:
 
 ### Getting started
 
-BombCell extracts relevant quality metrics to categorize units into three categories: single units, multi-units, and noise units, while providing the option to keep or remove non-somatic spikes.
+BombCell extracts relevant quality metrics to categorize units into three categories: single somatic units, multi-units, noise units and non-somatic units.
 
 _Installing_
 
