@@ -8,9 +8,9 @@ Please note that BombCell is currently unpublished. If you find BombCell useful 
 
 Preliminary versions of BombCell have been used in the following studies:
 
-[Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020-03166-8). This study employed BombCell to define real, well-isolated striatal units and classify them into MSNs, FSIs, and TANs. You can refer to the script bc_selectAndClassifyStriatum (work in progress) to classify striatal cells in a similar manner.
+- [Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020-03166-8). This study employed BombCell to define real, well-isolated striatal units and classify them into MSNs, FSIs, and TANs. You can refer to the script `bc_selectAndClassifyStriatum` (work in progress) to classify striatal cells in a similar manner.
 
-- [Peters et al., Cell Reports, 2022](https://www.cell.com/cell-reports/fulltext/S2211-1247(22)01337-7). BombCell was utilized in this study to define real, well-isolated pre-frontal cortex units.
+- [Peters et al., Cell Reports, 2022](https://www.cell.com/cell-reports/fulltext/S2211-1247(22)01337-7). BombCell was used in this study to define real, well-isolated pre-frontal cortex units.
 
 Table of contents:
 
