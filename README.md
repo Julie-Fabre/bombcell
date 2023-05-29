@@ -74,12 +74,12 @@ Additionally, Bombcell is compatible with UnitMatch.
     `[qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates,
       templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath)`
 
-4. Look at global output plots and flip through cells with the GUI:
+3. Look at global output plots and flip through cells with the GUI:
 
     `unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms,
       param, probeLocation, unitType, loadRawTraces)`
 
-5. Refine classification based on step 4: choose quality metric thresholds
+4. Refine classification : choose quality metric thresholds (see the section Setting appropriate quality metric paramaters and thresholds below).
 
 ##### *Plotting quality metrics*
 
