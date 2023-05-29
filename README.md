@@ -2,7 +2,7 @@
 
 <img align="left" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_logo_crop_small_flame.png" width=50% height=50%>
 
-Bombcell is a powerful toolkit designed to evaluate the quality of recorded units and extract essential electrophysiological properties. It is specifically tailored for units recorded with Neuropixel probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort.
+Bombcell is a powerful toolbox designed to evaluate the quality of recorded units and extract essential electrophysiological properties. It is specifically tailored for units recorded with Neuropixel probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort.
 
 Please note that Bombcell is currently unpublished. If you find Bombcell useful in your work, we kindly request that you acknowledge its contribution by citing xxx.
 
@@ -113,7 +113,7 @@ In addition, Bombcells' GUI allows you to flip through cells and their quality m
 
 ##### *Setting appropriate quality metric paramaters and thresholds*
 
-To start out, we suggest you take a look at the script `bc_qualityMetrics_pipeline` for an example workflow. We suggest first computing quality metrics with the default paramater values (defined by the `param` structure in `bc_qualityParamValues`). Later on, you can fine-tune the thresholds based on your specific neuronal region and requirements by looking at the following:
+We suggest first computing quality metrics with the default paramater values (defined by the `param` structure in `bc_qualityParamValues`). You can fine-tune the thresholds based on your specific neuronal region and requirements by looking at the following:
 
 - individual units, in the interactive [GUI](#Quality-metrics-GUI-guide ). Do the current quality metric threshold classify units into categories in a reasonable manner? (ie do "good"-classified units look good ?)
 

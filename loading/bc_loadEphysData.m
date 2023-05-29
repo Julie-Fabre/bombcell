@@ -26,9 +26,7 @@ function [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitu
 % goodChannels: nChannels x 1 uint32 vector defining the channels used by
 %   kilosort (some are dropped during the spike sorting process)
 %
-if nargin<2  %- for unit match
-    datasetidx = 1;
-end
+
 
 
 spike_templates_0idx = readNPY([ephys_path filesep 'spike_templates.npy']);
@@ -55,9 +53,12 @@ goodChannels = readNPY([ephys_path filesep  'channel_map.npy']) + 1;
 
 
 %% Only use data set of interest - for unit match
-spikeTimes_samples = spikeTimes_samples(spikeTimes_datasets == datasetidx);
-spikeTemplates = spikeTemplates(spikeTimes_datasets == datasetidx);
-templateAmplitudes = templateAmplitudes(spikeTimes_datasets == datasetidx);
-pcFeatures=pcFeatures(spikeTimes_datasets == datasetidx,:,:);
+if nargin>2  %- for unit match
+   
+    spikeTimes_samples = spikeTimes_samples(spikeTimes_datasets == datasetidx);
+    spikeTemplates = spikeTemplates(spikeTimes_datasets == datasetidx);
+    templateAmplitudes = templateAmplitudes(spikeTimes_datasets == datasetidx);
+    pcFeatures=pcFeatures(spikeTimes_datasets == datasetidx,:,:);
+end
 
 end
