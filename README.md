@@ -1,51 +1,47 @@
-# bombcell: find bombshell cells!
+# BombCell: find bombshell cells!
 
-<img align="left" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_logo_crop_small_flame.png" width=50% height=50%>
+<img align="left" src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/Bombcell_logo_crop_small_flame.png" width=50% height=50%>
 
-BombCell is a powerful toolkit designed to evaluate the quality of recorded units and extract essential electrophysiological properties. It is specifically tailored for units recorded with Neuropixel probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort.
+Bombcell is a powerful toolkit designed to evaluate the quality of recorded units and extract essential electrophysiological properties. It is specifically tailored for units recorded with Neuropixel probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort.
 
-Please note that BombCell is currently unpublished. If you find BombCell useful in your work, we kindly request that you acknowledge its contribution by citing xxx.
+Please note that Bombcell is currently unpublished. If you find Bombcell useful in your work, we kindly request that you acknowledge its contribution by citing xxx.
 
-Preliminary versions of BombCell have been used in the following studies:
+Preliminary versions of Bombcell have been used in the following studies:
 
-- [Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020-03166-8). This study employed BombCell to define real, well-isolated striatal units and classify them into MSNs, FSIs, and TANs. You can refer to the script `bc_selectAndClassifyStriatum` (work in progress) to classify striatal cells in a similar manner.
+- [Peters et al., Nature, 2021](https://www.nature.com/articles/s41586-020-03166-8). This study employed Bombcell to define real, well-isolated striatal units and classify them into MSNs, FSIs, and TANs. You can refer to the script `bc_selectAndClassifyStriatum` (work in progress) to classify striatal cells in a similar manner.
 
-- [Peters et al., Cell Reports, 2022](https://www.cell.com/cell-reports/fulltext/S2211-1247(22)01337-7). BombCell was used in this study to define real, well-isolated pre-frontal cortex units.
+- [Peters et al., Cell Reports, 2022](https://www.cell.com/cell-reports/fulltext/S2211-1247(22)01337-7). Bombcell was used in this study to define real, well-isolated pre-frontal cortex units.
 
 Table of contents:
 
-1. [Getting started](#Getting-started)
-2. [Quality metrics guide ](#Quality-metrics-guide)
-3. [Quality metrics GUI guide ](#Quality-metrics-GUI-guide)
-4. [Ephys properties guide](#Ephys-properties-guide)
-5. [Recommended pre-processing](#Recommended-pre-processing)
-6. [Dependancies](#Dependancies)
-7. [Troubleshooting: common errors](#Troubleshooting-common-errors)
-8. [Other ephys utilities](#Other-ephys-utilities)
-9. [Contact us](#Contact-us)
+1. [TL;DR](#TL;DR)
+2. [Installation](#Installation)
+3. [Dependancies](#Dependancies)
+4. [Quality metrics guide ](#Quality-metrics-guide)
+5. [Quality metrics GUI guide ](#Quality-metrics-GUI-guide)
+6. [Ephys properties guide](#Ephys-properties-guide)
+7. [Recommended pre-processing](#Recommended-pre-processing)
+8. [Troubleshooting: common errors](#Troubleshooting-common-errors)
+9. [Other ephys utilities](#Other-ephys-utilities)
+10. [Contact us](#Contact-us)
 
-### Getting started
+### TL;DR (Too long; didn't read)
 
-BombCell extracts relevant quality metrics to categorize units into three categories: single somatic units, multi-units, noise units and non-somatic units.
+Bombcell extracts relevant quality metrics to categorize units into three categories: single somatic units, multi-units, noise units and non-somatic units.
 
-_Installing_
+The script `bc_qualityMetrics_pipeline` provides an example workflow to get started.
 
-To begin using BombCell, clone the [bombcell repository](https://github.com/Julie-Fabre/bombcell/bombcell) and the [dependancies](#Dependancies).
+### Installation
+
+To begin using Bombcell, clone the [repository](https://github.com/Julie-Fabre/bombcell/bombcell) and the [dependancies](#Dependancies).
 
 If you want to compute ephys properties, change your working directory to `bombcell\ephysProperties\helpers` in matlab and run `mex -O CCGHeart.c` to able to compute fast ACGs.
 
 If you have z-lib compressed ephys data, compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp), you will additionally need the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat).
 
-_Starting out_
+### Dependancies
 
-To start out, we suggest you take a look at the script `bc_qualityMetrics_pipeline` for an example workflow. We suggest first computing quality metrics with the default paramater values (defined by the `param` structure in `bc_qualityParamValues`). Later on, you can fine-tune the thresholds based on your specific neuronal region and requirements by considering the following:
-
-- individual units, in the interactive [GUI](#Quality-metrics-GUI-guide )
-
-- distribution histograms of the units' quality metrics (see General plots)
-
-- numbers of units removed by each quality metric. It may also be helpful to plot the quantity you which to measure as a function of each quality metric (see [Fig. 2 Harris et al., Nat. Neuro, 2016](https://www.nature.com/articles/nn.4365/figures/2)).
-
+- https://github.com/kwikteam/npy-matlab (to load .npy data in)
 
 ### Quality metrics guide
 
@@ -54,10 +50,10 @@ To start out, we suggest you take a look at the script `bc_qualityMetrics_pipeli
 
 Bombcell has been written to be as user-friendly as possible. If you run into any issues or have suggestions, please raise a github issue or email [us](mailto:julie.mfabre@gmail.com).
 
-In order to avoid possible conflicts, all bombcell functions are preceded by `bc_`.
+In order to avoid possible conflicts, all Bombcell functions are preceded by `bc_`.
 
 <!---
-Additionally, bombcell is compatible with UnitMatch.
+Additionally, Bombcell is compatible with UnitMatch.
 -->
 
 ##### *Qmetric and param structures*
@@ -65,36 +61,6 @@ Additionally, bombcell is compatible with UnitMatch.
   Bombcell is organized around two main matlab structures: `qMetrics` and `param`.
   - `qMetrics` is a structure generated by the `bc_runAllQualityMetrics` function. Its fields are different quality metrics, and each field contains a quality metric value for each unit.
   - `param` is a structure generated by the function `bc_qualityParamValues` and it contains parameters both to compute quality metrics with `bc_runAllQualityMetrics` and to then classify cells with `bc_getQualityUnitType`.
-
-##### *Plotting quality metrics*
-
-  We have added automatic plotting function at each step, in order to aid in trouble-shooting and evaluating bombcells' output:
-
-- Set `param.plotGlobal = 1` to plot summary of the noise units' waveforms compared to single multi-units, distribution histograms of the units' quality metrics and numbers of units removed by each quality metric. See the [detailed overview of global output plots ](#Detailed-overview-of-global-output-plots) section for examples of these plots.
-
-- Set `param.plotThis = 1` to plot figures for each quality metric and for each cell (plot examples displayed below). This generates a considerable amount of plots. We suggest you only use when de-bugging or to generate example cell plots. See the [detailed overview of the quality metrics ](#Detailed-overview-of-the-quality-metrics) section for examples of these plots.
-
-In addition, bombcells' GUI allows you to flip through cells and their quality metrics. This is useful in evaluating where to set your quality metric classification thresholds and checking how bombcell behaves. See the [quality metrics GUI guide ](#Quality-metrics-GUI-guide) section for more information.
-
-
-##### *Loading and saving data*
-
-  All bombcell outputs are saved in the [ONE format](https://github.com/int-brain-lab/ONE/blob/main/docs/Open_Neurophysiology_Environment_Filename_Convention.pdf), in `.npy` or `.parquet` files. `.npy` files can be read in matlab using the [npy-matlab toolbox](https://github.com/kwikteam/npy-matlab), and `.parquet` files can be read in matlab using the built-in [readparquet](https://uk.mathworks.com/help/matlab/parquet-files.html) function.
-
-  The following files are outputed by bombcell:
-  - _bc_parameters._bc_qMetrics.parquet
-  - templates._bc_fractionRefractoryPeriodViolationsPerTauR.parquet
-  - templates._bc_qMetrics.parquet
-  - templates._bc_rawWaveforms.npy
-  - templates._bc_rawWaveformPeakChannels.npy
-  - templates._bc_baselineNoiseAmplitude.npy
-  - templates._bc_baselineNoiseAmplitudeIndex.npy
-  - (optional, if `param.saveMultipleRaw` is set to true) 'Unit$CLUSTER_ID$_RawSpikes.npy'
-
-
-  These saved files can be retrieved with the function `[param, qMetric] = bc_loadSavedMetrics(savePath)`
-
-  Additionally, optionally if `param.saveMatFileForGUI` is set to true, bombcell saves a templates.qualityMetricDetailsforGUI.mat file containing various data needed for bombcells GUI. This data can also be loaded using the function `bc_loadMetricsForGUI`.
 
 ##### *A run-through of a typical workflow*
 
@@ -115,10 +81,49 @@ In addition, bombcells' GUI allows you to flip through cells and their quality m
 
 5. Refine classification based on step 4: choose quality metric thresholds
 
+##### *Plotting quality metrics*
+
+  We have added automatic plotting function at each step, in order to aid in trouble-shooting and evaluating Bombcells' output:
+
+- Set `param.plotGlobal = 1` to plot summary of the noise units' waveforms compared to single multi-units, distribution histograms of the units' quality metrics and numbers of units removed by each quality metric. See the [detailed overview of global output plots ](#Detailed-overview-of-global-output-plots) section for examples of these plots.
+
+- Set `param.plotThis = 1` to plot figures for each quality metric and for each cell (plot examples displayed below). This generates a considerable amount of plots. We suggest you only use when de-bugging or to generate example cell plots. See the [detailed overview of the quality metrics ](#Detailed-overview-of-the-quality-metrics) section for examples of these plots.
+
+In addition, Bombcells' GUI allows you to flip through cells and their quality metrics. This is useful in evaluating where to set your quality metric classification thresholds and checking how Bombcell behaves. See the [quality metrics GUI guide ](#Quality-metrics-GUI-guide) section for more information.
+
+
+##### *Loading and saving data*
+
+  All Bombcell outputs are saved in the [ONE format](https://github.com/int-brain-lab/ONE/blob/main/docs/Open_Neurophysiology_Environment_Filename_Convention.pdf), in `.npy` or `.parquet` files. `.npy` files can be read in matlab using the [npy-matlab toolbox](https://github.com/kwikteam/npy-matlab), and `.parquet` files can be read in matlab using the built-in [readparquet](https://uk.mathworks.com/help/matlab/parquet-files.html) function.
+
+  The following files are outputed by Bombcell:
+  - _bc_parameters._bc_qMetrics.parquet
+  - templates._bc_fractionRefractoryPeriodViolationsPerTauR.parquet
+  - templates._bc_qMetrics.parquet
+  - templates._bc_rawWaveforms.npy
+  - templates._bc_rawWaveformPeakChannels.npy
+  - templates._bc_baselineNoiseAmplitude.npy
+  - templates._bc_baselineNoiseAmplitudeIndex.npy
+  - (optional, if `param.saveMultipleRaw` is set to true) 'Unit$CLUSTER_ID$_RawSpikes.npy'
+
+
+  These saved files can be retrieved with the function `[param, qMetric] = bc_loadSavedMetrics(savePath)`
+
+  Additionally, optionally if `param.saveMatFileForGUI` is set to true, Bombcell saves a templates.qualityMetricDetailsforGUI.mat file containing various data needed for Bombcells GUI. This data can also be loaded using the function `bc_loadMetricsForGUI`.
+
+##### *Setting appropriate quality metric paramaters and thresholds*
+
+To start out, we suggest you take a look at the script `bc_qualityMetrics_pipeline` for an example workflow. We suggest first computing quality metrics with the default paramater values (defined by the `param` structure in `bc_qualityParamValues`). Later on, you can fine-tune the thresholds based on your specific neuronal region and requirements by considering the following:
+
+- individual units, in the interactive [GUI](#Quality-metrics-GUI-guide )
+
+- distribution histograms of the units' quality metrics (see General plots)
+
+- numbers of units removed by each quality metric. It may also be helpful to plot the quantity you which to measure as a function of each quality metric (see [Fig. 2 Harris et al., Nat. Neuro, 2016](https://www.nature.com/articles/nn.4365/figures/2)).
 
 ##### *Running speed and bottlenecks*
 
-Depending on your settings, bombcell takes between 2' and 35' for a typical 1 hour long neuropixels recording. The running time varies according to three main parameters:
+Depending on your settings, Bombcell takes between 2' and 35' for a typical 1 hour long neuropixels recording. The running time varies according to three main parameters:
 - if this is the first run, raw waveforms are extracted from your raw .bin or .dat ephys file. These are then saved in two .npy files. Subsequent runs load in the already extracted waveforms and thus take ~10-15' less. Initial running time increases or decreases as the number of spikes extracted per unit, defined  by `param.nRawSpikesToExtract`, increases or decreases.
 - if `param.computeDrift` is true, drift is computed. This can add ~10' per run, and is disabled by default.
 - if `param.computeDistanceMetrics` is true, several distance metrics are computed. This can add ~10' per run. Distance metrics are susceptible to probe drift, and correlate well with a units raw waveform amplitude. As a result, we suggest using a units amplitude instead of distance metrics and this parameter is diabled by default.
@@ -134,7 +139,7 @@ Depending on your settings, bombcell takes between 2' and 35' for a typical 1 ho
     - the slope template waveform spatial decay is above a defined threshold `param.minSpatialDecaySlope`.
 
 
-<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=100% height=100%>
+<img style="float: right;" src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/numberTroughsPeaks.png" width=100% height=100%>
 
 
 ##### Quality metrics to classify multi-units
@@ -147,7 +152,7 @@ After classifying noise units, the remaining units are classifyed as good single
 
     Below: example of unit with many spikes below the detection threshold in the first two time chunks of the recording.
 
-    <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/percSpikesMissingDrift.png" width=60% height=60%>
+    <img style="float: right;" src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/percSpikesMissingDrift.png" width=60% height=60%>
 
 - number of spikes is above `param.minSpikes`
 
@@ -159,7 +164,7 @@ After classifying noise units, the remaining units are classifyed as good single
 
     Below: examples of a unit with a small fraction of refractory period violations (left) and one with a large fraction (right).
 
-    <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/rpv.png" width=60% height=60%>
+    <img style="float: right;" src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/rpv.png" width=60% height=60%>
 
 
 - the raw mean waveform maximum amplitude is above `param.minAmplitude`
@@ -168,7 +173,7 @@ After classifying noise units, the remaining units are classifyed as good single
 
     Below: examples of a unit with high amplitude (blue) and one with low amplitude (red).
 
-    <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/amplitude.png" width=30% height=30%>
+    <img style="float: right;" src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/amplitude.png" width=30% height=30%>
 
 
 - distance metrics are above `param.minIsoD` for the isolation distance, `param.lratioMin` for l-ratio, `param.ssMin` for the silhouette score
@@ -177,7 +182,7 @@ After classifying noise units, the remaining units are classifyed as good single
 
     Below: examples of a unit with high isolation distance (left) and one with low isolation distance (right).
 
-    <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/isolationDistance.png" width=60% height=60%>
+    <img style="float: right;" src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/isolationDistance.png" width=60% height=60%>
 
 
 #### Detailed overview of global output plots
@@ -186,15 +191,15 @@ If `param.plotGlobal` is set to true, after computing quality metrics, the scrip
 
 - a [Euler diagram](https://en.wikipedia.org/wiki/Euler_diagram) of the number of units classifyed as noise/multi-unit with each quality metric. Numbers in the circles indicate the number of units classifying as noise/multi-unit by that quality metric/intersection of quality metrics.
 
-    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/unitRemovedEulerVenn.png" width=60% height=60%>
+    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/unitRemovedEulerVenn.png" width=60% height=60%>
 
 - for each a quality metric, a histogram of the distribution of values for all units. The red lines indicate classification thresholds.
 
-    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/generalPlotHist.png" width=100% height=100%>
+    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/generalPlotHist.png" width=100% height=100%>
 
 - template waveforms for each unit classiyed as good, multi-unit and noise, overlaid on top of each other. This is a quick way of checking there is no odd, noisy unit that has mistakenly been classifyed as either good or multi-unit.
 
-    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/waveformsSingleNoise.png" width=70% height=70%>
+    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/waveformsSingleNoise.png" width=70% height=70%>
 
 ### Quality metrics GUI guide
 
@@ -209,49 +214,49 @@ Press <kbd>u</kbd> to select a particular unit. Navigate in time through the raw
 
     This view plots the depth of each unit on the probe in y, and it's log-normalized firing rate in x. Single units are plotted in green, multi-units in indigo and noise in red. The current unit is plotted larger and circled in black.
 
-    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_location.png" width=30% height=30%>
+    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_location.png" width=30% height=30%>
 
 - Template waveform view
 
     This view plots the template waveforms for the current unit. The maximum waveform is in blue, and detected peaks are overlaid.
 
-    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_tempwv.png" width=30% height=30%>
+    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_tempwv.png" width=30% height=30%>
 
 - Raw waveform view
 
     This view plots the mean raw waveforms for the current unit. The maximum waveform is in blue, and detected peaks are overlaid.
 
-    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_rawWv.png" width=30% height=30%>
+    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_rawWv.png" width=30% height=30%>
 
 
 - ACG view
 
     This view plots the auto-correlogram (ACG) for the current unit. The horizontal red line indicates the ACG asymptote, which corresponds to the unit's firing rate. The vertical red line plot the refractory period location.
 
-    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_acg.png" width=30% height=30%>
+    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_acg.png" width=30% height=30%>
 
 
 - ISI view
 
     This view plots the inter-spike-intervals (ISI) for the current unit. The vertical red line plot the refractory period location.
 
-    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_isi.png" width=30% height=30%>
+    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_isi.png" width=30% height=30%>
 
 - Isolation distance view
 
-    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_isoD.png" width=30% height=30%>
+    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_isoD.png" width=30% height=30%>
 
 - Raw waveform view
 
     Plots the raw data in black, with detected spikes for this unit in blue.
 
-    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_raw.png" width=40% height=40%>
+    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_raw.png" width=40% height=40%>
 
 - Amplitude view
 
     This view plots the scaling factor applied to each spike by kilosort in black. Spikes currently displayed in the raw data view are shown in blue, and spikes that have an ISI < refractory period threshold are shown in purple.
 
-    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_ampli.png" width=60% height=60%>
+    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_ampli.png" width=60% height=60%>
 
 ### Ephys properties guide
 
@@ -271,29 +276,26 @@ To reduce the noise units you obtain, we recommend recording with either both a 
 
 To maximize your number of single good units, we recommend looking at your raw data and spikes detected by kilosort, to assess whether most spikes are being detected. If not, consider lowering kilosort's detection thresholds.
 
-### Dependancies
-
-- https://github.com/kwikteam/npy-matlab (to load .npy data in)
 
 ### Troubleshooting: common errors
 
-#### Help, my extracted raw waveforms look very flat and odd / I get errors on the raw waveform extraction step.
+##### *Help, my extracted raw waveforms look very flat and odd / I get errors on the raw waveform extraction step.*
 
 Check that the param.nChannels value is correctly set. This number must correspond to the total number of channels in your raw data, including any sync channels. For neuropixels probes, this value should typically be either 384 or 385 channels.
 
-#### Why do I have less units in bombcell's outputs than in kilosort?
+##### *Why do I have less units in Bombcell's outputs than in kilosort?*
 
-You have the same number of units (try to do `length(qMetric)` and `length(unique(spike_templates))` to check), but they are  stored in the bombcell structure slightly differently. Because kilosort drops units at the last stages of algorithm but does not re-label them, you often end up with a larger maximum template label than there are templates. To store things more efficiently, bombcell re-indexes all the units, giving them a label from 1 to the number of unique templates. But fear not, you can still get Kilosort's original label with `qMetric.clusterID - 1`.
+You have the same number of units (try to do `length(qMetric)` and `length(unique(spike_templates))` to check), but they are  stored in the Bombcell structure slightly differently. Because kilosort drops units at the last stages of algorithm but does not re-label them, you often end up with a larger maximum template label than there are templates. To store things more efficiently, Bombcell re-indexes all the units, giving them a label from 1 to the number of unique templates. But fear not, you can still get Kilosort's original label with `qMetric.clusterID - 1`.
 
-#### Why do my qMetric.clusterID not correspond to kilosort?
+##### *Why does qMetric.clusterID not correspond to kilosort's labels?*
 
-They do! Kilosort's output is 0-indexed (ie starts at 0). This isn't very practical in matlab, so we add a `+ 1` to 1-index them. To find the kilosort label, simply do `qMetric.clusterID - 1`.
+Kilosort's labels are 0-indexed (ie starts at 0). This isn't very practical in matlab, so we add a `+ 1` to 1-index them. To find the kilosort label, simply do `qMetric.clusterID - 1`.
 
-### Something else
+##### *Something else*
 
 Please raise a github issue or alternatively email [us](mailto:julie.mfabre@gmail.com).
 
-### Other ephys utilities:
+### Various other utilities:
 
 - generate IMRO files/channel maps : see [recordingUtilities](https://github.com/Julie-Fabre/bombcell/blob/master/recordingUtilities/)
 
@@ -306,4 +308,4 @@ Please raise a github issue or alternatively email [us](mailto:julie.mfabre@gmai
 
 ### Contact us
 
-If you run into any issues or have any suggestions, please raise a github issue or alternatively email [us](mailto:julie.mfabre@gmail.com).
+If you run into any issues or if you have any suggestions, please raise a github issue or alternatively email [us](mailto:julie.mfabre@gmail.com).
