@@ -26,7 +26,7 @@ Table of contents:
 
 ### Getting started
 
-Clone the [bombcell_1.0_stable repository](https://github.com/Julie-Fabre/bombcell/bombcell_1.0_stable) and the [dependancies](#Dependancies). The script `bc_qualityMetrics_pipeline` provides an example workflow.
+Clone the [bombcell repository](https://github.com/Julie-Fabre/bombcell/bombcell) and the [dependancies](#Dependancies). The script `bc_qualityMetrics_pipeline` provides an example workflow.
 
 To start out, we suggest you compute quality metrics with default `param` values (contained in `bc_qualityParamValues`), and then adjust the thresholds for your particular neuronal region and needs by looking at (1) individual units, in the interactive [GUI](#Quality-metrics-GUI-guide ) (2) distribution histograms of the units' quality metrics (see General plots), (3) numbers of units removed by each quality metric. It may also be useful to plot the quantity you which to measure as a function of each quality metric (see [Fig. 2 Harris et al., Nat. Neuro, 2016](https://www.nature.com/articles/nn.4365/figures/2)).
 
