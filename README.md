@@ -1,6 +1,6 @@
 # BombCell: find bombshell cells!
 
-<img align="left" src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/Bombcell_logo_crop_small_flame.png" width=50% height=50%>
+<img align="left" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_logo_crop_small_flame.png" width=50% height=50%>
 
 Bombcell is a powerful toolkit designed to evaluate the quality of recorded units and extract essential electrophysiological properties. It is specifically tailored for units recorded with Neuropixel probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort.
 
@@ -139,7 +139,7 @@ Depending on your settings, Bombcell takes between 2' and 35' for a typical 1 ho
     - the slope template waveform spatial decay is above a defined threshold `param.minSpatialDecaySlope`.
 
 
-<img style="float: right;" src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/numberTroughsPeaks.png" width=100% height=100%>
+<img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/numberTroughsPeaks.png" width=100% height=100%>
 
 
 ##### Quality metrics to classify multi-units
@@ -152,7 +152,7 @@ After classifying noise units, the remaining units are classifyed as good single
 
     Below: example of unit with many spikes below the detection threshold in the first two time chunks of the recording.
 
-    <img style="float: right;" src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/percSpikesMissingDrift.png" width=60% height=60%>
+    <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/percSpikesMissingDrift.png" width=60% height=60%>
 
 - number of spikes is above `param.minSpikes`
 
@@ -164,7 +164,7 @@ After classifying noise units, the remaining units are classifyed as good single
 
     Below: examples of a unit with a small fraction of refractory period violations (left) and one with a large fraction (right).
 
-    <img style="float: right;" src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/rpv.png" width=60% height=60%>
+    <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/rpv.png" width=60% height=60%>
 
 
 - the raw mean waveform maximum amplitude is above `param.minAmplitude`
@@ -173,7 +173,7 @@ After classifying noise units, the remaining units are classifyed as good single
 
     Below: examples of a unit with high amplitude (blue) and one with low amplitude (red).
 
-    <img style="float: right;" src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/amplitude.png" width=30% height=30%>
+    <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/amplitude.png" width=30% height=30%>
 
 
 - distance metrics are above `param.minIsoD` for the isolation distance, `param.lratioMin` for l-ratio, `param.ssMin` for the silhouette score
@@ -182,7 +182,7 @@ After classifying noise units, the remaining units are classifyed as good single
 
     Below: examples of a unit with high isolation distance (left) and one with low isolation distance (right).
 
-    <img style="float: right;" src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/isolationDistance.png" width=60% height=60%>
+    <img style="float: right;" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/isolationDistance.png" width=60% height=60%>
 
 
 #### Detailed overview of global output plots
@@ -191,15 +191,15 @@ If `param.plotGlobal` is set to true, after computing quality metrics, the scrip
 
 - a [Euler diagram](https://en.wikipedia.org/wiki/Euler_diagram) of the number of units classifyed as noise/multi-unit with each quality metric. Numbers in the circles indicate the number of units classifying as noise/multi-unit by that quality metric/intersection of quality metrics.
 
-    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/unitRemovedEulerVenn.png" width=60% height=60%>
+    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/unitRemovedEulerVenn.png" width=60% height=60%>
 
 - for each a quality metric, a histogram of the distribution of values for all units. The red lines indicate classification thresholds.
 
-    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/generalPlotHist.png" width=100% height=100%>
+    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/generalPlotHist.png" width=100% height=100%>
 
 - template waveforms for each unit classiyed as good, multi-unit and noise, overlaid on top of each other. This is a quick way of checking there is no odd, noisy unit that has mistakenly been classifyed as either good or multi-unit.
 
-    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/waveformsSingleNoise.png" width=70% height=70%>
+    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/waveformsSingleNoise.png" width=70% height=70%>
 
 ### Quality metrics GUI guide
 
@@ -214,49 +214,49 @@ Press <kbd>u</kbd> to select a particular unit. Navigate in time through the raw
 
     This view plots the depth of each unit on the probe in y, and it's log-normalized firing rate in x. Single units are plotted in green, multi-units in indigo and noise in red. The current unit is plotted larger and circled in black.
 
-    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_location.png" width=30% height=30%>
+    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_location.png" width=30% height=30%>
 
 - Template waveform view
 
     This view plots the template waveforms for the current unit. The maximum waveform is in blue, and detected peaks are overlaid.
 
-    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_tempwv.png" width=30% height=30%>
+    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_tempwv.png" width=30% height=30%>
 
 - Raw waveform view
 
     This view plots the mean raw waveforms for the current unit. The maximum waveform is in blue, and detected peaks are overlaid.
 
-    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_rawWv.png" width=30% height=30%>
+    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_rawWv.png" width=30% height=30%>
 
 
 - ACG view
 
     This view plots the auto-correlogram (ACG) for the current unit. The horizontal red line indicates the ACG asymptote, which corresponds to the unit's firing rate. The vertical red line plot the refractory period location.
 
-    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_acg.png" width=30% height=30%>
+    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_acg.png" width=30% height=30%>
 
 
 - ISI view
 
     This view plots the inter-spike-intervals (ISI) for the current unit. The vertical red line plot the refractory period location.
 
-    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_isi.png" width=30% height=30%>
+    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_isi.png" width=30% height=30%>
 
 - Isolation distance view
 
-    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_isoD.png" width=30% height=30%>
+    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_isoD.png" width=30% height=30%>
 
 - Raw waveform view
 
     Plots the raw data in black, with detected spikes for this unit in blue.
 
-    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_raw.png" width=40% height=40%>
+    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_raw.png" width=40% height=40%>
 
 - Amplitude view
 
     This view plots the scaling factor applied to each spike by kilosort in black. Spikes currently displayed in the raw data view are shown in blue, and spikes that have an ISI < refractory period threshold are shown in purple.
 
-    <img src="https://github.com/Julie-Fabre/Bombcell/blob/master/images/GUI_ampli.png" width=60% height=60%>
+    <img src="https://github.com/Julie-Fabre/bombcell/blob/master/images/GUI_ampli.png" width=60% height=60%>
 
 ### Ephys properties guide
 
@@ -304,7 +304,6 @@ Please raise a github issue or alternatively email [us](mailto:julie.mfabre@gmai
 - quality metric plugins for phy : see [phyPlugins](https://github.com/Julie-Fabre/bombcell/blob/master/phyPlugins/)
 
 - decompress data z-lib compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp) : see [decompressData](https://github.com/Julie-Fabre/bombcell/blob/master/decompressData/). Requires the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat)
-
 
 ### Contact us
 
