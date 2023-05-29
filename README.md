@@ -1,4 +1,4 @@
-# bombcell: evaluate unit quality and ephys properties
+# bombcell: find bombshell cells! 
 
 <img align="left" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_logo_crop_small_flame.png" width=50% height=50%>
 
