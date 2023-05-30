@@ -165,7 +165,7 @@ if param.plotGlobal
     ylabel('unit count')
     xlabel(['mean raw waveform', newline, ' peak amplitude (uV)'])
     makepretty;
-    
+    end
 
     subplot(4, 5, 10)
     hold on;
@@ -175,7 +175,7 @@ if param.plotGlobal
     ylabel('unit count')
     xlabel(['spatial decay', newline, 'slope'])
     makepretty;
-    end
+    
 
     subplot(4, 5, 11)
     hold on;
@@ -208,7 +208,8 @@ if param.plotGlobal
     ylabel('unit count')
     xlabel('presence ratio')
     makepretty;
-
+    
+    if param.extractRaw
     subplot(4, 5, 14) % signal to noise ratio
     hold on;
     set(gca, 'xscale', 'log')
@@ -219,6 +220,7 @@ if param.plotGlobal
     ylabel('unit count')
     xlabel(['signal-to-noise', newline, 'ratio'])
     makepretty;
+    end
 
     if param.computeDrift
         subplot(4, 5, 15) % max drift estimate
