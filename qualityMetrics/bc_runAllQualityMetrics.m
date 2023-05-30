@@ -109,8 +109,10 @@ qMetric.maxChannels = maxChannels;
 uniqueTemplates = unique(spikeTemplates);
 
 % extract and save or load in raw waveforms 
-[rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extractRawWaveformsFast(param, ...
-    spikeTimes_samples, spikeTemplates, param.reextractRaw, savePath, param.verbose); % takes ~10' for 
+if param.extractRaw
+    [rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extractRawWaveformsFast(param, ...
+        spikeTimes_samples, spikeTemplates, param.reextractRaw, savePath, param.verbose); % takes ~10' for 
+end
 % an average dataset, the first time it is run, <1min after that
 
 % previous, slower method: 
@@ -189,8 +191,13 @@ for iUnit = 1:length(uniqueTemplates)
         param.minThreshDetectPeaksTroughs, param.plotDetails); %do we need tempWv ? 
     
     %% amplitude
-    qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit),:), ...
-        param.ephysMetaFile);
+    if param.extractRaw
+        qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit),:), ...
+            param.ephysMetaFile);
+    else
+         qMetric.rawAmplitude(iUnit) =NaN;
+         qMetric.signalToNoiseRatio(iUnit) = NaN;
+    end
 
     %% distance metrics
     if param.computeDistanceMetrics
@@ -208,7 +215,9 @@ end
 
 %% get unit types and save data
 qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates)'; 
-qMetric.signalToNoiseRatio = signalToNoiseRatio'; 
+if param.extractRaw
+    qMetric.signalToNoiseRatio = signalToNoiseRatio'; 
+end
 
 fprintf('\n Finished extracting quality metrics from %s', param.rawFile)
 try

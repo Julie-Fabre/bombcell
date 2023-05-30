@@ -6,8 +6,8 @@ spikeTimes = spikeTimes_samples ./ paramEP.ephys_sample_rate; %convert to second
 %timeChunks = min(spikeTimes):param.deltaTimeChunk:max(spikeTimes);
 [maxChannels, templateWaveforms] = bc_getWaveformMaxChannelEP(templateWaveforms_whitened, winv);
 %% loop through units and get ephys properties
-% QQ divide in time chunks , add plotThis 
-
+% QQ didvide in time chunks , add plotThis 
+paramEP.plotThis = 0;
 fprintf('\n Extracting ephys properties ... ')
 
 for iUnit = 1:length(uniqueTemplates)

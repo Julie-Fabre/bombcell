@@ -1,4 +1,4 @@
-function qMetric = bc_saveQMetrics(param, qMetric, savePath)
+function qMetric = bc_saveQMetrics(param, qMetric, forGUI, savePath)
 % JF, Reformat and save ephys properties
 % ------
 % Inputs

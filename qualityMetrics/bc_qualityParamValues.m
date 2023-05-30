@@ -36,8 +36,9 @@ param.nRawSpikesToExtract = 100; % how many raw spikes to extract for each unit
 param.saveMultipleRaw = 0; % If you wish to save the nRawSpikesToExtract as well, 
 % currently needed if you want to run unit match https://github.com/EnnyvanBeest/UnitMatch
 % to track chronic cells over days after this
-param.decompressData = 1; % whether to decompress .cbin ephys data 
+param.decompressData = 0; % whether to decompress .cbin ephys data 
 param.spikeWidth = 82; % width in samples 
+param.extractRaw = 0; %whether to extract raw waveforms or not 
 
 % signal to noise ratio
 param.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times

@@ -1,4 +1,4 @@
-function templateDuration_us = bc_computeTemplateWaveformDuration(thisWaveform,...
+function templateDuration = bc_computeTemplateWaveformDuration(thisWaveform,...
         ephys_sample_rate)
 
 %     minProminence = 0.2 * max(abs(squeeze(thisWaveform)));
@@ -35,9 +35,16 @@ function templateDuration_us = bc_computeTemplateWaveformDuration(thisWaveform,.
 
     
     % Get trough-to-peak time for each template
+        templates_max_signfix = bsxfun(@times,thisWaveform, ...
+        sign(abs(min(templates_max,[],2)) - abs(max(templates_max,[],2))));
 
-    [~,waveform_trough] = min(thisWaveform,[],2);
-    [~,waveform_peak_rel] = max(thisWaveform(waveform_trough:end),[],2);
+    templates_max_signfix = bsxfun(@times,templates_max, ...
+        sign(abs(min(templates_max,[],2)) - abs(max(templates_max,[],2))));
+    
+    [~,waveform_trough] = min(templates_max,[],2);
+    [~,waveform_peak_rel] = arrayfun(@(x) ...
+        max(templates_max(x,waveform_trough(x):end),[],2), ...
+        transpose(1:size(templates_max,1)));
     waveform_peak = waveform_peak_rel + waveform_trough;
     
     templateDuration = waveform_peak - waveform_trough;
