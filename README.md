@@ -31,4 +31,4 @@ If you want to compute ephys properties, change your working directory to `bombc
 
 ### Contact us
 
-If you run into any issues or if you have any suggestions, please raise a github issue or alternatively email [us](mailto:julie.mfabre@gmail.com).
+If you run into any issues or if you have any suggestions, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues) or alternatively email [us](mailto:julie.mfabre@gmail.com).
