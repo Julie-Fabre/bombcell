@@ -153,7 +153,8 @@ if param.plotGlobal
     ylabel('unit count')
     xlabel('# spikes')
     makepretty;
-
+    
+    if param.extractRaw
     subplot(4, 5, 9)
 
     hold on;
@@ -164,6 +165,7 @@ if param.plotGlobal
     ylabel('unit count')
     xlabel(['mean raw waveform', newline, ' peak amplitude (uV)'])
     makepretty;
+    
 
     subplot(4, 5, 10)
     hold on;
@@ -173,6 +175,7 @@ if param.plotGlobal
     ylabel('unit count')
     xlabel(['spatial decay', newline, 'slope'])
     makepretty;
+    end
 
     subplot(4, 5, 11)
     hold on;
