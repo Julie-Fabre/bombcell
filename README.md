@@ -1,4 +1,4 @@
-# BombCell: find bombshell cells!
+# BombCell: find bombshell cells! 💣
 
 <img align="left" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_logo_crop_small_flame.png" width=50% height=50%>
 
@@ -7,6 +7,7 @@ Bombcell is a powerful toolbox designed to evaluate the quality of recorded unit
 Please note that Bombcell is currently unpublished. If you find Bombcell useful in your work, we kindly request that you acknowledge its contribution by citing xxx.
 
 ### Bombcell wiki
+
 A bombcell wiki can be found [here](https://github.com/Julie-Fabre/bombcell/wiki)
 
 ### Quick start guide
