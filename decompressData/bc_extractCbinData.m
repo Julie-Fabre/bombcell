@@ -1,4 +1,4 @@
-function decompDataFile = bc_extractCbinData(fileName, sStartEnd, allChannelIndices, doParfor, saveFileFolder, onlySaveSyncChannel)
+function decompDataFile = bc_extractCbinData(fileName, sStartEnd, allChannelIndices, doParfor, saveFileFolder, onlySaveSyncChannel, verbose)
 % adapted from a script by Micheal Krumin
 %
 % requires the zmat package:
@@ -34,7 +34,9 @@ function decompDataFile = bc_extractCbinData(fileName, sStartEnd, allChannelIndi
 % 20230322 added option to only save sync channel (hardcoded as channel 385
 % for now) 
 
-
+if nargin < 7
+    verbose = true;
+end
 
 if nargin < 1
     %     for testing
@@ -132,7 +134,9 @@ end
 if ~onlySaveSyncChannel
     fidOut = fopen(decompDataFile,'w');
 end
-
+if verbose
+    fprintf('\n decompressing data from %s to %s', fileName, decompDataFile)
+end
 if doParfor
     data = cell(nChunks, 1);
     parfor iChunk = 1:nChunks
@@ -195,7 +199,7 @@ else
         else
             syncdata = [syncdata, reshaped_data(385:385:end)];
         end
-        if (mod(iChunk, 1000) == 0) || iChunk == nChunks
+        if ((mod(iChunk, 1000) == 0) || iChunk == nChunks) & verbose
             disp(['     ', num2str(iChunk), '/' num2str(nChunks)])
         end
     end
