@@ -195,8 +195,9 @@ else
         else
             syncdata = [syncdata, reshaped_data(385:385:end)];
         end
-
-        disp(['     ', numstr(iChunk), '/' num2str(nChunks)])
+        if (mod(iChunk, 1000) == 0) || iChunk == nChunks
+            disp(['     ', num2str(iChunk), '/' num2str(nChunks)])
+        end
     end
     if onlySaveSyncChannel
         save(decompDataFile, 'syncdata')

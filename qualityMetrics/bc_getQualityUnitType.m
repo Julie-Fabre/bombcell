@@ -95,7 +95,6 @@ elseif param.computeDistanceMetrics && ~isnan(param.isoDmin)
         qMetric.Lratio' <= param.lratioMax & isnan(unitType)) = 1; % SINGLE SEXY UNIT
     unitType(isnan(unitType)) = 2; % MULTI UNIT
 elseif param.extractRaw
-
     unitType = nan(length(qMetric.percentageSpikesMissing_gaussian), 1);
     unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs |  ...
         qMetric.spatialDecaySlope >=  param.minSpatialDecaySlope | qMetric.waveformDuration_peakTrough < param.minWvDuration |...
@@ -107,7 +106,7 @@ elseif param.extractRaw
         qMetric.presenceRatio >= param.minPresenceRatio & isnan(unitType)) = 1; % SINGLE SEXY UNIT
     unitType(isnan(unitType)) = 2; % MULTI UNIT
 else
-        unitType = nan(length(qMetric.percentageSpikesMissing_gaussian), 1);
+    unitType = nan(length(qMetric.percentageSpikesMissing_gaussian), 1);
     unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs |  ...
         qMetric.spatialDecaySlope >=  param.minSpatialDecaySlope | qMetric.waveformDuration_peakTrough < param.minWvDuration |...
         qMetric.waveformDuration_peakTrough > param.maxWvDuration | qMetric.waveformBaselineFlatness >= param.maxWvBaselineFraction) = 0; % NOISE

@@ -1,4 +1,4 @@
-function [unitType, qMetric] = bc_qualityMetricsPipeline_JF(animal, day, site, recording, experiment_num, protocol, rerun, plotGUI, runQM, decompress)
+function [unitType, qMetric] = bc_qualityMetricsPipeline_JF(animal, day, site, recording, experiment_num, protocol, rerun, plotGUI, runQM)
 
 %% load data 
 % animals = {'JF070'};
@@ -22,6 +22,7 @@ savePath = fullfile(ephysDirPath, 'qMetrics');
 saveFileFolder = fullfile('/media/julie/Expansion', animal, day, ['site', num2str(site)]);
 
 %% decompress data 
+decompress = 0;%QQ
 if decompress
     rawFile = bc_manageDataCompression(ephysap_path, saveFileFolder);
 else
@@ -38,7 +39,7 @@ savePath = fullfile(ephysDirPath, 'qMetrics');
 qMetricsExist = dir(fullfile(savePath, 'templates._bc_qMetrics.parquet'));
 
 if (runQM && isempty(qMetricsExist)) || rerun
-    qMetric = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
+    [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
         templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
 elseif ~isempty(qMetricsExist)
     [param, qMetric, fractionRPVs_allTauR] = bc_loadSavedMetrics(savePath); 

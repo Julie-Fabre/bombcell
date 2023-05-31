@@ -14,7 +14,7 @@ function paramEP = bc_ephysPropValues
 % 
 
 paramEP = struct; 
-paramEP.plotThis = 1;
+paramEP.plotThis = 0;
 paramEP.verbose = 1;
 
 paramEP.ephys_sample_rate = 30000;
