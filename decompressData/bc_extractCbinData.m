@@ -199,7 +199,7 @@ else
         else
             syncdata = [syncdata, reshaped_data(385:385:end)];
         end
-        if ((mod(iChunk, 1000) == 0) || iChunk == nChunks) & verbose
+        if ((mod(iChunk, 1000) == 0) || iChunk == nChunks) && verbose
             disp(['     ', num2str(iChunk), '/' num2str(nChunks)])
         end
     end
