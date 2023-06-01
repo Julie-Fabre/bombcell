@@ -8,7 +8,7 @@ Please note that Bombcell is currently unpublished. If you find Bombcell useful 
 
 ### 📖 Bombcell wiki
 
-Thorough documentation and guide to using bombcell can be found on the dedicated [wiki](https://github.com/Julie-Fabre/bombcell/wiki)
+Thorough documentation and guides to using bombcell can be found on the dedicated [wiki](https://github.com/Julie-Fabre/bombcell/wiki)
 
 ### 🏁 Quick start guide
 
