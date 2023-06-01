@@ -67,7 +67,7 @@ if nargin < 4 || isempty(doParfor)
     doParfor = false;
 end
 
-if nargin < 5 
+if nargin < 6
     onlySaveSyncChannel = false;
 end
 
@@ -197,9 +197,10 @@ else
         if ~onlySaveSyncChannel
             fwrite(fidOut, reshaped_data, 'int16');
         else
-            syncdata = [syncdata, reshaped_data(385:385:end)];
+            
+            syncdata = [syncdata; reshaped_data(385:385:end)];
         end
-        if ((mod(iChunk, 1000) == 0) || iChunk == nChunks) && verbose
+        if ((mod(iChunk, 500) == 0) || iChunk == nChunks || iChunk == 1) && verbose
             disp(['     ', num2str(iChunk), '/' num2str(nChunks)])
         end
     end
