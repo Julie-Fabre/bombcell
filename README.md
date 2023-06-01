@@ -6,7 +6,7 @@ Bombcell is a powerful toolbox designed to evaluate the quality of recorded unit
 
 ### 📖 Bombcell wiki
 
-Thorough documentation and guides to using bombcell can be found on the dedicated [wiki](https://github.com/Julie-Fabre/bombcell/wiki)
+Documentation and guides to using and troubleshooting bombcell can be found on the dedicated [wiki](https://github.com/Julie-Fabre/bombcell/wiki)
 
 ### 🏁 Quick start guide
 
