@@ -4,8 +4,6 @@
 
 Bombcell is a powerful toolbox designed to evaluate the quality of recorded units and extract essential electrophysiological properties. It is specifically tailored for units recorded with Neuropixel probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort.
 
-Please note that Bombcell is currently unpublished. If you find Bombcell useful in your work, we kindly request that you acknowledge its contribution by citing xxx.
-
 ### 📖 Bombcell wiki
 
 Thorough documentation and guides to using bombcell can be found on the dedicated [wiki](https://github.com/Julie-Fabre/bombcell/wiki)
@@ -29,6 +27,10 @@ To begin using Bombcell,
 
 - https://github.com/kwikteam/npy-matlab (to load .npy data in)
 - If you have z-lib compressed ephys data, compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp), you will additionally need the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat). More information about compressing ephys data [here](https://www.biorxiv.org/content/biorxiv/early/2023/05/24/2023.05.22.541700.full.pdf?%3Fcollection=). 
+
+### Support and citing
+
+Please note that Bombcell is currently unpublished. If you find Bombcell useful in your work, we kindly request that you acknowledge its contribution by citing xxx (citation reference coming soon).
 
 ### 📬 Contact us
 
