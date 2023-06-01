@@ -28,7 +28,7 @@ To begin using Bombcell,
 - https://github.com/kwikteam/npy-matlab (to load .npy data in)
 - If you have z-lib compressed ephys data, compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp), you will additionally need the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat). More information about compressing ephys data [here](https://www.biorxiv.org/content/biorxiv/early/2023/05/24/2023.05.22.541700.full.pdf?%3Fcollection=). 
 
-### Support and citing
+### 🤗 Support and citing
 
 Please note that Bombcell is currently unpublished. If you find Bombcell useful in your work, we kindly request that you acknowledge its contribution by citing xxx (citation reference coming soon).
 
