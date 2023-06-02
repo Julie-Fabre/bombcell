@@ -4,7 +4,7 @@
 
 Bombcell is a powerful toolbox designed to evaluate the quality of recorded units and extract essential electrophysiological properties. It is specifically tailored for units recorded with Neuropixel probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort.
 
-### 📖 Bombcell wiki
+### 📔 Bombcell wiki
 
 Documentation and guides to using and troubleshooting bombcell can be found on the dedicated [wiki](https://github.com/Julie-Fabre/bombcell/wiki)
 
