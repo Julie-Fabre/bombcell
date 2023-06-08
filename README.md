@@ -18,15 +18,16 @@ The script [`bc_qualityMetrics_pipeline`](https://github.com/Julie-Fabre/bombcel
 
 #### Installation
 
-To begin using Bombcell, 
+To begin using Bombcell:
 - [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) the [repository](https://github.com/Julie-Fabre/bombcell/bombcell) and the [dependancies](#Dependancies).
 - add bombcell's and the dependancies' folders to [MATLAB's path](https://uk.mathworks.com/help/matlab/ref/pathtool.html)
-- in addition, if you want to compute ephys properties, change your working directory to `bombcell\ephysProperties\helpers` in matlab and run `mex -O CCGHeart.c` to able to compute fast ACGs.
+- in addition, if you want to compute ephys properties, change your working directory to `bombcell\ephysProperties\helpers` in matlab and run `mex -O CCGHeart.c` to able to compute fast ACGs, using a script written by Michaël Zugaro.
 
 #### Dependancies
 
 - https://github.com/kwikteam/npy-matlab (to load .npy data in)
 - If you have z-lib compressed ephys data, compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp), you will additionally need the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat). More information about compressing ephys data [here](https://www.biorxiv.org/content/biorxiv/early/2023/05/24/2023.05.22.541700.full.pdf?%3Fcollection=). 
+- to compute fast ACGs, we use a function written by Michaël Zugaro, and it is already included in bombcell.
 
 ### 🤗 Support and citing
 
