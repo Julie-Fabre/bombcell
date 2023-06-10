@@ -12,9 +12,9 @@ Documentation and guides to using and troubleshooting bombcell can be found on t
 
 #### Overview
 
-Bombcell extracts relevant quality metrics to categorize units into three categories: single somatic units, multi-units, noise units and non-somatic units.
+Bombcell extracts relevant quality metrics to categorize units into four categories: single somatic units, multi-units, noise units and non-somatic units.
 
-The script [`bc_qualityMetrics_pipeline`](https://github.com/Julie-Fabre/bombcell/blob/master/bc_qualityMetrics_pipeline.m) provides an example workflow to get started.
+Take a look at [`bc_qualityMetrics_pipeline`](https://github.com/Julie-Fabre/bombcell/blob/master/bc_qualityMetrics_pipeline.m) to see any example workflow.
 
 #### Installation
 
