@@ -40,7 +40,14 @@ else
 end
 templateAmplitudes = readNPY([ephys_path filesep 'amplitudes.npy']);
 
-templateWaveforms = readNPY([ephys_path filesep 'templates.npy']);
+% Load and unwhiten templates
+templateWaveforms_whitened = readNPY([ephys_path filesep 'templates.npy']);
+winv = readNPY([ephys_path filesep 'whitening_mat_inv.npy']);
+templateWaveforms = zeros(size(templateWaveforms_whitened));
+for t = 1:size(templateWaveforms,1)
+    templateWaveforms(t,:,:) = squeeze(templateWaveforms_whitened(t,:,:))*winv;
+end
+
 try %not computed in early kilosort3 version
     pcFeatures = readNPY([ephys_path filesep  'pc_features.npy']);
     pcFeatureIdx = readNPY([ephys_path filesep  'pc_feature_ind.npy']) + 1;
