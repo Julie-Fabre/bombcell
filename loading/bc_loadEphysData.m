@@ -60,7 +60,7 @@ goodChannels = readNPY([ephys_path filesep  'channel_map.npy']) + 1;
 
 
 %% Only use data set of interest - for unit match
-if nargin>2  %- for unit match
+if nargin > 2  %- for unit match
    
     spikeTimes_samples = spikeTimes_samples(spikeTimes_datasets == datasetidx);
     spikeTemplates = spikeTemplates(spikeTimes_datasets == datasetidx);
