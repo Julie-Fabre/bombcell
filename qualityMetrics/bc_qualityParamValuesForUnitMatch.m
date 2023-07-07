@@ -9,6 +9,7 @@ paramBC.plotDetails = 0; % generates a lot of plots,
 paramBC.plotGlobal = 1; % plot summary of quality metrics 
 paramBC.verbose = 1; % update user on progress
 paramBC.reextractRaw = 1; % re extract raw waveforms or not - safer this way..
+paramBC.extractRaw = 1; %whether to extract raw waveforms or not 
 
 % saving parameters 
 paramBC.saveAsParquet = 1; % save outputs at .parquet file 
@@ -21,7 +22,6 @@ paramBC.saveMultipleRaw = 1; % If you wish to save the nRawSpikesToExtract as we
 % to track chronic cells over days after this
 paramBC.decompressData = 1; % whether to decompress .cbin ephys data 
 paramBC.spikeWidth = 82; % width in samples 
-paramBC.extractRaw = 1; %whether to extract raw waveforms or not 
 
 % signal to noise ratio
 paramBC.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times
