@@ -31,7 +31,11 @@ To begin using Bombcell:
 
 ### 🤗 Support and citing
 
-Please note that Bombcell is currently unpublished. If you find Bombcell useful in your work, we kindly request that you acknowledge its contribution by citing xxx (citation reference coming soon).
+Please note that Bombcell is currently unpublished (manuscript under preparation). If you find Bombcell useful in your work, we kindly request that you email us in order to acknowledge its contribution.
+
+### :page_facing_up: License
+
+Bombcell is under the open-source [copyleft](https://www.gnu.org/licenses/copyleft.en.html) [GNU General Public License 3](https://www.gnu.org/licenses/gpl-3.0.html). You can run, study, share, and modify the software under the condition that you keep and do not modify the license.
 
 ### 📬 Contact us
 
