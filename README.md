@@ -1,5 +1,7 @@
 # 💣 BombCell: find bombshell cells! 💣
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8172822.svg)](https://doi.org/10.5281/zenodo.8172822)
+
 <img align="left" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_logo_crop_small_flame.png" width=50% height=50%>
 
 Bombcell is a powerful toolbox designed to evaluate the quality of recorded units and extract essential electrophysiological properties. It is specifically tailored for units recorded with Neuropixels probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort.
@@ -31,7 +33,7 @@ To begin using Bombcell:
 
 ### 🤗 Support and citing
 
-Please note that Bombcell is currently unpublished (manuscript under preparation). If you find Bombcell useful in your work, we kindly request that you email us in order to acknowledge its contribution.
+Please note that Bombcell is currently unpublished (manuscript under preparation). If you find Bombcell useful in your work, we kindly request that you cite Fabre, JMJ, van Beest, EH, Peters, AJ, Carandini, M, & Harris, KD. (2023). Bombcell: automated curation and cell classification of spike-sorted electrophysiology data. (1.0.0). Zenodo. https://doi.org/10.5281/zenodo.8172822.
 
 ### :page_facing_up: License
 
