@@ -149,7 +149,7 @@ channelPositions_relative = sqrt(nansum(relativePositionsXY.^2,2));
 
 [~, sortexChanPosIdx] = sort(channelPositions_relative);
 spatialDecayPoints_norm = spatialDecayPoints(sortexChanPosIdx);
-spatialDecayFit = polyfit(channelPositions_relative(sortexChanPosIdx), spatialDecayPoints_norm,1); % fit first order polynomial to data. first output is slope of polynomial, second is a constant
+spatialDecayFit = polyfit(channelPositions_relative(sortexChanPosIdx), spatialDecayPoints_norm',1); % fit first order polynomial to data. first output is slope of polynomial, second is a constant
 spatialDecaySlope = spatialDecayFit(1);
 % r_squared = corrcoef(channelPositions_relative(sortexChanPosIdx),
 else
