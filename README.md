@@ -39,4 +39,4 @@ Bombcell is under the open-source [copyleft](https://www.gnu.org/licenses/copyle
 
 ### 📬 Contact us
 
-If you run into any issues or if you have any suggestions, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues) or alternatively email [us](mailto:julie.mfabre@gmail.com).
+If you run into any issues or if you have any suggestions, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues), create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request), or alternatively email [us](mailto:julie.mfabre@gmail.com).
