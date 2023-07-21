@@ -33,7 +33,9 @@ To begin using Bombcell:
 
 ### 🤗 Support and citing
 
-Please note that Bombcell is currently unpublished (manuscript under preparation). If you find Bombcell useful in your work, we kindly request that you cite Fabre, JMJ, van Beest, EH, Peters, AJ, Carandini, M, & Harris, KD. (2023). Bombcell: automated curation and cell classification of spike-sorted electrophysiology data. (1.0.0). Zenodo. https://doi.org/10.5281/zenodo.8172822.
+Please note that Bombcell is currently unpublished (manuscript under preparation). If you find Bombcell useful in your work, we kindly request that you cite:
+
+  Fabre, JMJ, van Beest, EH, Peters, AJ, Carandini, M, & Harris, KD. (2023). Bombcell: automated curation and cell classification of spike-sorted     electrophysiology data. (1.0.0). Zenodo. https://doi.org/10.5281/zenodo.8172822.
 
 ### :page_facing_up: License
 
