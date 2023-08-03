@@ -1,7 +1,8 @@
 # 💣 BombCell: find bombshell cells! 💣
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8172822.svg)](https://doi.org/10.5281/zenodo.8172822)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8172821.svg)](https://doi.org/10.5281/zenodo.8172821)
 [![License](https://img.shields.io/badge/license-GPLv3-blue)](https://github.com/Julie-Fabre/bombcell/blob/master/LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/Julie-Fabre/bombcell/releases/tag/latest)
 
 <img align="left" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_logo_crop_small_flame.png" width=50% height=50%>
 
