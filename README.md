@@ -1,8 +1,14 @@
 # 💣 BombCell: find bombshell cells! 💣
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8172821.svg)](https://doi.org/10.5281/zenodo.8172821)
+[![License](https://img.shields.io/badge/license-GPLv3-blue)](https://github.com/Julie-Fabre/bombcell/blob/master/LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/Julie-Fabre/bombcell/releases/tag/latest)
+
 <img align="left" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_logo_crop_small_flame.png" width=50% height=50%>
 
-Bombcell is a powerful toolbox designed to evaluate the quality of recorded units and extract essential electrophysiological properties. It is specifically tailored for units recorded with Neuropixels probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort.
+Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem. It programatically evaluates the quality of recorded units and also extract essential electrophysiological properties.
+
+Bombcell is specifically tailored for units recorded with Neuropixels probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort. If you want to use bombcell in conjunction with another spike sorting algorithm, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues), create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request), or email [us](mailto:julie.mfabre@gmail.com).
 
 ### 📔 Bombcell wiki
 
@@ -31,7 +37,9 @@ To begin using Bombcell:
 
 ### 🤗 Support and citing
 
-Please note that Bombcell is currently unpublished (manuscript under preparation). If you find Bombcell useful in your work, we kindly request that you email us in order to acknowledge its contribution.
+Please note that Bombcell is currently unpublished (manuscript under preparation). If you find Bombcell useful in your work, we kindly request that you cite:
+
+> Julie M.J. Fabre, Enny H. van Beest, Andrew J. Peters, Matteo Carandini, & Kenneth D. Harris. (2023). Bombcell: automated curation and cell classification of spike-sorted electrophysiology data. Zenodo. https://doi.org/10.5281/zenodo.8172821
 
 ### :page_facing_up: License
 
