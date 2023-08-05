@@ -130,8 +130,8 @@ end
 
 %% loop through units and get quality metrics
 fprintf('\n Extracting quality metrics from %s ... ', param.rawFile)
-
-for iUnit = 1:100%length(uniqueTemplates)
+param.plotDetails = 0;
+for iUnit = 1:length(uniqueTemplates)
     
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
 
