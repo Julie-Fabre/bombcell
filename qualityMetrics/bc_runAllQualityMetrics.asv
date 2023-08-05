@@ -131,7 +131,7 @@ end
 %% loop through units and get quality metrics
 fprintf('\n Extracting quality metrics from %s ... ', param.rawFile)
 
-for iUnit = 37%length(uniqueTemplates)
+for iUnit = 28:100%length(uniqueTemplates)
     
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
 

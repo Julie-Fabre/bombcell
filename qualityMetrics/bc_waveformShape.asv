@@ -84,7 +84,8 @@ else
     nPeaks = numel(PKS);
 end
 
-peakLoc_forcedAfterTrough = 
+
+
 peakLoc = peakLocs(PKS == max(PKS)); %QQ could change to better:
 % by looking for location where the data is most tightly distributed
 if numel(peakLoc) > 1
@@ -95,14 +96,20 @@ troughLoc = troughLocs(TRS == max(TRS)); %QQ could change to better:
 if numel(troughLoc) > 1
     troughLoc = troughLoc(1);
 end
-
+if max(thisWaveform) > 0
+    [~,peakLoc_forcedAfterTrough] = max(thisWaveform(troughLoc:end)); % to calculate waveform duration
+    peakLoc_forcedAfterTrough = peakLoc_forcedAfterTrough + troughLoc -1;]
+else
+    [~,peakLoc_forcedAfterTrough] = max(thisWaveform(troughLoc:end)); % to calculate waveform duration
+    peakLoc_forcedAfterTrough = peakLoc_forcedAfterTrough + troughLoc -1;
+end
 if peakLoc > troughLoc && max(TRS) > max(PKS) % if maximum peak is after trough and maximum absolute peak value is smaller than trough
     isSomatic = 1; % is a somatic spike
 else
     isSomatic = 0;
 end
-if ~isempty(troughLoc) && ~isempty(peakLoc)
-    waveformDuration_peakTrough = 1e6 * abs(troughLoc-peakLoc) / ephys_sample_rate; %in us
+if ~isempty(troughLoc) && ~isempty(peakLoc_forcedAfterTrough)
+    waveformDuration_peakTrough = 1e6 * abs(troughLoc-peakLoc_forcedAfterTrough) / ephys_sample_rate; %in us
 else
     waveformDuration_peakTrough = NaN;
 end
@@ -205,7 +212,7 @@ if plotThis
                 (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value)], 'Color', colorMtx(4, :, :));
             
             % plot waveform duration
-            pT_locs = [troughLocs, peakLocs];
+            pT_locs = [troughLoc, peakLoc_forcedAfterTrough];
             dur = plot([(wvTime(min(pT_locs)) ...
                 +(channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
                 (wvTime(max(pT_locs)) ...
