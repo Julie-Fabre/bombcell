@@ -131,7 +131,7 @@ end
 %% loop through units and get quality metrics
 fprintf('\n Extracting quality metrics from %s ... ', param.rawFile)
 
-for iUnit = 1:length(uniqueTemplates)
+for iUnit = 300:400%:length(uniqueTemplates)
     
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
 
@@ -184,6 +184,7 @@ for iUnit = 1:length(uniqueTemplates)
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
 
     %% waveform
+    param.plotDetails = 1;
     waveformBaselineWindow = [param.waveformBaselineWindowStart, param.waveformBaselineWindowStop];
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), forGUI.peakLocs{iUnit},...
         forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), ...
@@ -191,7 +192,7 @@ for iUnit = 1:length(uniqueTemplates)
         forGUI.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms,thisUnit, qMetric.maxChannels(thisUnit),...
         param.ephys_sample_rate, channelPositions, param.maxWvBaselineFraction, waveformBaselineWindow,...
         param.minThreshDetectPeaksTroughs, param.plotDetails); %do we need tempWv ? 
-    
+     param.plotDetails = 0;
     %% amplitude
     if param.extractRaw
         qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit),:), ...

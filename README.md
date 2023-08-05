@@ -14,6 +14,8 @@ Bombcell is specifically tailored for units recorded with Neuropixels probes (3A
 
 Documentation and guides to using and troubleshooting bombcell can be found on the dedicated [wiki](https://github.com/Julie-Fabre/bombcell/wiki).
 
+<img align="center" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_flowchart.svg" width=100% height=100%>
+
 ### 🏁 Quick start guide
 
 #### Overview

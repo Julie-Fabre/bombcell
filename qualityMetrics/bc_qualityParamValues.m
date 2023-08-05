@@ -46,13 +46,13 @@ param.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times
 % waveform starts 
 
 % refractory period parameters
-param.tauR_valuesMin = 2/1000; % refractory period time (s), usually 0.0020. 
+param.tauR_valuesMin = 0.5/1000; % refractory period time (s), usually 0.0020. 
 % If this value is different than param.tauR_valuesMax, bombcell will
 % estimate the tauR value taking possible values between :
 % param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax
 param.tauR_valuesStep = 0.5/1000; % refractory period time (s) steps. Only 
 % used if param.tauR_valuesMin is different from param.tauR_valuesMax
-param.tauR_valuesMax = 2/1000; % refractory period time (s), usually 0.0020
+param.tauR_valuesMax = 10/1000; % refractory period time (s), usually 0.0020
 param.tauC = 0.1/1000; % censored period time (s)
 
 % percentage spikes missing parameters 
