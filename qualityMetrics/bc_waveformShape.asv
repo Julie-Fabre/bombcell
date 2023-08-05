@@ -207,7 +207,7 @@ if plotThis
         +(channelPositions(:, 2) - maxYC).^2).^0.5;
     chansToPlot = find(chanDistances < 70);
     wvTime = 1e3*((0:size(thisWaveform, 2) - 1) / ephys_sample_rate);
-    max_value = max(max(abs(squeeze(templateWaveforms(thisUnit, :, chansToPlot)))))*5;
+    max_value = max(max(abs(squeeze(templateWaveforms(thisUnit, :, chansToPlot)))));
     for iChanToPlot = 1:min(20, size(chansToPlot, 1))
         
         if maxChan == chansToPlot(iChanToPlot)

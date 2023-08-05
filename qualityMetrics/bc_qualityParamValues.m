@@ -86,26 +86,27 @@ param.nChannelsIsoDist = 4; % number of nearby channels to use in distance metri
 
 
 %% classifying units into good/mua/noise parameters 
-param.minAmplitude = 20; 
+param.minAmplitude = 20; % in uV
 param.maxRPVviolations = 0.1; % fraction
-param.maxPercSpikesMissing = 20;
-param.minNumSpikes = 300;
+param.maxPercSpikesMissing = 20; % in percentage
+param.minNumSpikes = 300; % number of spikes
 
 param.maxDrift = 100;
 param.minPresenceRatio = 0.7;
 param.minSNR = 0.1;
 
 %waveform 
-param.maxNPeaks = 2;
-param.maxNTroughs = 1;
-param.somatic = 1; 
+param.maxNPeaks = 2; % maximum number of peaks
+param.maxNTroughs = 1; % maximum number of troughs
+param.somatic = 1; % keep only somatic units, and reject non-somatic ones
 param.minWvDuration = 100; % in us
 param.maxWvDuration = 1000; % in us
-param.minSpatialDecaySlope = -0.003;
-param.maxWvBaselineFraction = 0.3;
+param.minSpatialDecaySlope = -0.003; % in V/um
+param.maxWvBaselineFraction = 0.3; % maximum absolute value in waveform baseline
+% should not exceed this fraction of the waveform's abolute peak value
 
 %distance metrics
-param.isoDmin = 20; 
-param.lratioMax = 0.1;
-param.ssMin = NaN; 
+param.isoDmin = 20; % minimum isolation distance value
+param.lratioMax = 0.1; % maximum l-ratio value
+param.ssMin = NaN; % minimum silhouette score 
 end
