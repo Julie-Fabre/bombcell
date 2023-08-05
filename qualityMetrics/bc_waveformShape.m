@@ -85,11 +85,11 @@ else
 end
 
 
+
 peakLoc = peakLocs(PKS == max(PKS)); %QQ could change to better:
 % by looking for location where the data is most tightly distributed
 if numel(peakLoc) > 1
     peakLoc = peakLoc(1);
-
 end
 troughLoc = troughLocs(TRS == max(TRS)); %QQ could change to better:
 % by looking for location where the data is most tightly distributed
@@ -97,13 +97,16 @@ if numel(troughLoc) > 1
     troughLoc = troughLoc(1);
 end
 
-if peakLoc > troughLoc && max(TRS) > max(PKS)
-    isSomatic = 1;
+[~,peakLoc_forcedAfterTrough] = max(thisWaveform(troughLoc:end)); % to calculate waveform duration
+peakLoc_forcedAfterTrough = peakLoc_forcedAfterTrough + troughLoc;
+
+if peakLoc > troughLoc && max(TRS) > max(PKS) % if maximum peak is after trough and maximum absolute peak value is smaller than trough
+    isSomatic = 1; % is a somatic spike
 else
     isSomatic = 0;
 end
-if ~isempty(troughLoc) && ~isempty(peakLoc)
-    waveformDuration_peakTrough = 1e6 * abs(troughLoc-peakLoc) / ephys_sample_rate; %in us
+if ~isempty(troughLoc) && ~isempty(peakLoc_forcedAfterTrough)
+    waveformDuration_peakTrough = 1e6 * abs(troughLoc-peakLoc_forcedAfterTrough) / ephys_sample_rate; %in us
 else
     waveformDuration_peakTrough = NaN;
 end
@@ -122,7 +125,8 @@ if numel(channels_withSameX) >= 5
     % get maximum value %QQ could we do value at detected trough is peak
     % waveform?
     spatialDecayPoints = max(abs(squeeze(templateWaveforms(thisUnit, :, channels_forSpatialDecayFit))));
-    estimatedUnitXY = nansum(spatialDecayPoints'.*channelPositions(channels_forSpatialDecayFit, :), 1) ./ nansum(spatialDecayPoints);
+    estimatedUnitXY = channelPositions(maxChannel, :);
+    %estimatedUnitXY = nansum(spatialDecayPoints'.*channelPositions(channels_forSpatialDecayFit, :), 1) ./ nansum(spatialDecayPoints);
     relativePositionsXY = channelPositions(channels_forSpatialDecayFit, :) - estimatedUnitXY;
     channelPositions_relative = sqrt(nansum(relativePositionsXY.^2, 2));
     %[~, sortedChanPosIdx] = sort(sptialDecayPpint);
@@ -205,7 +209,7 @@ if plotThis
                 (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value)], 'Color', colorMtx(4, :, :));
             
             % plot waveform duration
-            pT_locs = [troughLocs, peakLocs];
+            pT_locs = [troughLoc, peakLoc_forcedAfterTrough];
             dur = plot([(wvTime(min(pT_locs)) ...
                 +(channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
                 (wvTime(max(pT_locs)) ...

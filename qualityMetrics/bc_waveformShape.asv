@@ -84,12 +84,11 @@ else
     nPeaks = numel(PKS);
 end
 
-
+peakLoc_forcedAfterTrough = 
 peakLoc = peakLocs(PKS == max(PKS)); %QQ could change to better:
 % by looking for location where the data is most tightly distributed
 if numel(peakLoc) > 1
     peakLoc = peakLoc(1);
-
 end
 troughLoc = troughLocs(TRS == max(TRS)); %QQ could change to better:
 % by looking for location where the data is most tightly distributed
@@ -97,8 +96,8 @@ if numel(troughLoc) > 1
     troughLoc = troughLoc(1);
 end
 
-if peakLoc > troughLoc && max(TRS) > max(PKS)
-    isSomatic = 1;
+if peakLoc > troughLoc && max(TRS) > max(PKS) % if maximum peak is after trough and maximum absolute peak value is smaller than trough
+    isSomatic = 1; % is a somatic spike
 else
     isSomatic = 0;
 end
@@ -122,7 +121,8 @@ if numel(channels_withSameX) >= 5
     % get maximum value %QQ could we do value at detected trough is peak
     % waveform?
     spatialDecayPoints = max(abs(squeeze(templateWaveforms(thisUnit, :, channels_forSpatialDecayFit))));
-    estimatedUnitXY = nansum(spatialDecayPoints'.*channelPositions(channels_forSpatialDecayFit, :), 1) ./ nansum(spatialDecayPoints);
+    estimatedUnitXY = channelPositions(maxChannel, :);
+    %estimatedUnitXY = nansum(spatialDecayPoints'.*channelPositions(channels_forSpatialDecayFit, :), 1) ./ nansum(spatialDecayPoints);
     relativePositionsXY = channelPositions(channels_forSpatialDecayFit, :) - estimatedUnitXY;
     channelPositions_relative = sqrt(nansum(relativePositionsXY.^2, 2));
     %[~, sortedChanPosIdx] = sort(sptialDecayPpint);
@@ -194,14 +194,14 @@ if plotThis
             % plot baseline lines
             l1 = line([(wvTime(waveformBaselineWindow(1)) + (channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
                 (wvTime(waveformBaselineWindow(2)) + (channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10)], ...
-                [baselineThresh * -max(squeeze(templateWaveforms(thisUnit, :, chansToPlot(iChanToPlot))))' + ...
-                (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value), baselineThresh * -max(squeeze(templateWaveforms(thisUnit, :, chansToPlot(iChanToPlot))))' + ...
+                [baselineThresh * -max(abs(thisWaveform))' + ...
+                (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value), baselineThresh * -max(abs(thisWaveform))' + ...
                 (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value)], 'Color', colorMtx(4, :, :));
 
             line([(wvTime(waveformBaselineWindow(1)) + (channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
                 (wvTime(waveformBaselineWindow(2)) + (channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10)], ...
-                [-baselineThresh * -max(squeeze(templateWaveforms(thisUnit, :, chansToPlot(iChanToPlot))))' + ...
-                (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value), -baselineThresh * -max(squeeze(templateWaveforms(thisUnit, :, chansToPlot(iChanToPlot))))' + ...
+                [-baselineThresh * -max(abs(thisWaveform))' + ...
+                (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value), -baselineThresh * -max(abs(thisWaveform))' + ...
                 (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value)], 'Color', colorMtx(4, :, :));
             
             % plot waveform duration
