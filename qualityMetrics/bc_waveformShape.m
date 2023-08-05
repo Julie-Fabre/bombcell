@@ -96,7 +96,11 @@ troughLoc = troughLocs(TRS == max(TRS)); %QQ could change to better:
 if numel(troughLoc) > 1
     troughLoc = troughLoc(1);
 end
-if max(thisWaveform) > 0
+
+max_waveform_abs_value = max(abs(thisWaveform));
+max_waveform_location = abs(thisWaveform) == max_waveform_abs_value;
+max_waveform_value = thisWaveform(max_waveform_location);
+if max_waveform_value(end) > 0
     peakLoc_forDuration = peakLoc;
     [~,troughLoc_forDuration] = min(thisWaveform(peakLoc_forDuration:end)); % to calculate waveform duration
     troughLoc_forDuration = troughLoc_forDuration + peakLoc_forDuration -1;
