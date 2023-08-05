@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-GPLv3-yellow)](https://github.com/Julie-Fabre/bombcell/blob/master/LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.0-green)](https://github.com/Julie-Fabre/bombcell/releases/tag/latest)
 
-<img align="left" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_logo_crop_small_flame.png" width=50% height=50%>
+<img align="left" src="./images/bombcell_logo_crop_small_flame.png" width=50% height=50%>
 
 Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem. It programatically evaluates the quality of recorded units and also extract essential electrophysiological properties.
 
@@ -14,7 +14,9 @@ Bombcell is specifically tailored for units recorded with Neuropixels probes (3A
 
 Documentation and guides to using and troubleshooting bombcell can be found on the dedicated [wiki](https://github.com/Julie-Fabre/bombcell/wiki).
 
-<img align="center" src="https://github.com/Julie-Fabre/bombcell/blob/master/images/bombcell_flowchart.svg" width=100% height=100%>
+### Summary flow chart
+
+<img align="center" src="./images/bombcell_flowchart .svg" width=100% height=100%>
 
 ### 🏁 Quick start guide
 
