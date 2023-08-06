@@ -117,8 +117,9 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
        
         end
         %axis square;
-
+        
         makepretty('none')
+        set(gca, 'XScale', 'log')
     end
     
 end
