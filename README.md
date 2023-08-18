@@ -4,7 +4,6 @@
 
 # 💣 BombCell: find bombshell cells! 💣 <img src="./images/bombcell_logo_crop_small_flame.png" width="30%" title="bombcell" alt="bombcell" align="right" vspace = "50">
 
-
 Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem. It programatically evaluates the quality of recorded units and also extract essential electrophysiological properties.
 
 Bombcell is specifically tailored for units recorded with Neuropixels probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort. If you want to use bombcell in conjunction with another spike sorting algorithm, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues), create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request), or email [us: juliemfabre[at]gmail[dot]com](mailto:juliemfabre@gmail.com).
@@ -16,7 +15,7 @@ Documentation and guides to using and troubleshooting bombcell can be found on t
 ### 🔍️ How bombcell works
 
 Below is a flowchart of how bombcell evaluates and classifies each unit: 
-<img align="center" src="./images/bombcell_flowchart_is.svg" width=100% height=100%>
+<img align="center" src="https://github.com/Julie-Fabre/bombcell/assets/29582008/b0fb7cf6-4d73-456e-b944-ae31df4df34f" width=100% height=100%>
 
 ### 🏁 Quick start guide
 
