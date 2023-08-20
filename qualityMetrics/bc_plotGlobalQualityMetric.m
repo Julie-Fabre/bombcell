@@ -169,7 +169,7 @@ if param.plotGlobal
 
     subplot(4, 5, 10)
     hold on;
-    histogram(qMetric.spatialDecaySlope, 'FaceColor', colorMtx(10, 1:3), 'FaceAlpha', colorMtx(10, 4), 'BinEdges', [min(qMetric.spatialDecaySlope):0.0001:max(qMetric.spatialDecaySlope)]);
+    histogram(qMetric.spatialDecaySlope, 'FaceColor', colorMtx(10, 1:3), 'FaceAlpha', colorMtx(10, 4), 'BinEdges', [min(qMetric.spatialDecaySlope):0.001:max(qMetric.spatialDecaySlope)]);
     yLim = ylim;
     line([param.minSpatialDecaySlope, param.minSpatialDecaySlope], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
     ylabel('unit count')

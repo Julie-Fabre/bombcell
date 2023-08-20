@@ -5,6 +5,8 @@ function [unitType, qMetric] = bc_qualityMetricsPipeline_JF(animal, day, site, r
 % bhvprotocol = '';
 % 
 % animal = animals{1};
+
+cl_myPaths;
 experiments = AP_find_experimentsJF(animal, protocol, true);
 experiments = experiments([experiments.ephys]);
 
@@ -16,10 +18,10 @@ ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site,recording
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysPath);
 ephysap_path = dir(AP_cortexlab_filenameJF(animal,day,experiment,'ephys_includingCompressed',site, recording));
 %ephysMetaDir = dir([ephysap_path, '/../../../structure.oebin']);
-ephysMetaDir = dir([ephysap_path.folder, '/*ap.meta']);
+ephysMetaDir = dir([ephysap_path.folder, filesep, '*ap.meta']);
 ephysDirPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_dir',site, recording);
 savePath = fullfile(ephysDirPath, 'qMetrics'); 
-saveFileFolder = fullfile('/media/julie/Expansion', animal, day, ['site', num2str(site)]);
+saveFileFolder = fullfile(extraHDPath, animal, day, ['site', num2str(site)]);
 
 %% decompress data 
 decompress = 0;%QQ
@@ -53,7 +55,7 @@ end
 % load data for GUI
 if plotGUI
     bc_loadMetricsForGUI;
-
+param.extractRaw= 0;
     bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, param,...
        probeLocation, unitType, 0);
 end

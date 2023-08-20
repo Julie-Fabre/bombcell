@@ -117,15 +117,17 @@ tempLegend = legend([maxTemplateWaveformLines, peaks, troughs, templateWaveformL
     ], {'', '', '', ''}, 'color', 'none');
 
 %% initialize raw waveforms
-subplot(6, 13, [8:13, 21:26])
-hold on;
-rawWaveformLines = arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', 'k'), 1:max_n_channels_plot);
-maxRawWaveformLines = arrayfun(@(x) plot(nan(82, 1), nan(82, 1), 'linewidth', 2, 'color', 'b'), 1);
-set(gca, 'YDir', 'reverse')
-xlabel('Position+Time');
-ylabel('Position');
-rawTitle = title('');
-rawLegend = legend(maxRawWaveformLines, {''}, 'color', 'none');
+if param.extractRaw
+    subplot(6, 13, [8:13, 21:26])
+    hold on;
+    rawWaveformLines = arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', 'k'), 1:max_n_channels_plot);
+    maxRawWaveformLines = arrayfun(@(x) plot(nan(82, 1), nan(82, 1), 'linewidth', 2, 'color', 'b'), 1);
+    set(gca, 'YDir', 'reverse')
+    xlabel('Position+Time');
+    ylabel('Position');
+    rawTitle = title('');
+    rawLegend = legend(maxRawWaveformLines, {''}, 'color', 'none');
+end
 
 %% initialize ACG
 if plotRaw && param.computeDistanceMetrics
@@ -233,11 +235,15 @@ guiData.tempTitle = tempTitle;
 guiData.tempLegend = tempLegend;
 guiData.peaks = peaks;
 guiData.troughs = troughs;
+
 % raw waveforms
-guiData.rawWaveformLines = rawWaveformLines;
-guiData.maxRawWaveformLines = maxRawWaveformLines;
-guiData.rawTitle = rawTitle;
-guiData.rawLegend = rawLegend;
+if param.extractRaw
+    guiData.rawWaveformLines = rawWaveformLines;
+    guiData.maxRawWaveformLines = maxRawWaveformLines;
+    guiData.rawTitle = rawTitle;
+    guiData.rawLegend = rawLegend;
+end
+
 % ACG
 guiData.acgBar = acgBar;
 guiData.acgRefLine = acgRefLine;
@@ -302,7 +308,9 @@ set(guiData.currUnitDots, 'XData', guiData.norm_spike_n(thisUnit), 'YData', ephy
 
 for iCh = 1:20
     set(guiData.templateWaveformLines(iCh), 'XData', nan(82, 1), 'YData', nan(82, 1))
-    set(guiData.rawWaveformLines(iCh), 'XData', nan(82, 1), 'YData', nan(82, 1))
+    if param.extractRaw
+        set(guiData.rawWaveformLines(iCh), 'XData', nan(82, 1), 'YData', nan(82, 1))
+    end
 end
 
 %% plot 2: update unit template waveform and detected peaks
@@ -362,35 +370,35 @@ set(guiData.tempLegend, 'String', {['is somatic =', num2str(qMetric.isSomatic(iC
     ' trough(s)'], ['spatial decay slope =', num2str(qMetric.spatialDecaySlope(iCluster))]})
 
 %% plot 3: plot unit mean raw waveform (and individual traces)
-
-for iChanToPlot = 1:min(20, size(chansToPlot, 1))
-    if maxChan == chansToPlot(iChanToPlot)
-        set(guiData.maxRawWaveformLines, 'XData', (ephysData.waveform_t + ...
-            (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
-            'YData', -squeeze(rawWaveforms.average(iCluster, chansToPlot(iChanToPlot), :))'+ ...
-            (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) * 10));
-        set(guiData.rawWaveformLines(iChanToPlot), 'XData', nan(82, 1), ...
-            'YData', nan(82, 1));
-
+if param.extractRaw
+    for iChanToPlot = 1:min(20, size(chansToPlot, 1))
+        if maxChan == chansToPlot(iChanToPlot)
+            set(guiData.maxRawWaveformLines, 'XData', (ephysData.waveform_t + ...
+                (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
+                'YData', -squeeze(rawWaveforms.average(iCluster, chansToPlot(iChanToPlot), :))'+ ...
+                (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) * 10));
+            set(guiData.rawWaveformLines(iChanToPlot), 'XData', nan(82, 1), ...
+                'YData', nan(82, 1));
+    
+        else
+            set(guiData.rawWaveformLines(iChanToPlot), 'XData', (ephysData.waveform_t + ...
+                (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
+                'YData', -squeeze(rawWaveforms.average(iCluster, chansToPlot(iChanToPlot), :))'+ ...
+                (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) * 10));
+        end
+    end
+    set(guiData.rawLegend, 'String', ['Amplitude =', num2str(round(qMetric.rawAmplitude(iCluster))), 'uV', newline, ...
+        'SNR =', num2str(qMetric.signalToNoiseRatio(iCluster))])
+    
+    if qMetric.rawAmplitude(iCluster) > param.minAmplitude && qMetric.signalToNoiseRatio(iCluster) >= param.minSNR
+        set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{0 0.5 0} amplitude, \color[rgb]{0 0.5 0} SNR ']);
+    elseif qMetric.rawAmplitude(iCluster) > param.minAmplitude
+         set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{0 0.5 0} amplitude, \color[rgb]{1 0 0} SNR ']);
     else
-        set(guiData.rawWaveformLines(iChanToPlot), 'XData', (ephysData.waveform_t + ...
-            (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
-            'YData', -squeeze(rawWaveforms.average(iCluster, chansToPlot(iChanToPlot), :))'+ ...
-            (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) * 10));
+        set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{1 0 0} amplitude, \color[rgb]{1 0 0} SNR ']);
+    
     end
 end
-set(guiData.rawLegend, 'String', ['Amplitude =', num2str(round(qMetric.rawAmplitude(iCluster))), 'uV', newline, ...
-    'SNR =', num2str(qMetric.signalToNoiseRatio(iCluster))])
-
-if qMetric.rawAmplitude(iCluster) > param.minAmplitude && qMetric.signalToNoiseRatio(iCluster) >= param.minSNR
-    set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{0 0.5 0} amplitude, \color[rgb]{0 0.5 0} SNR ']);
-elseif qMetric.rawAmplitude(iCluster) > param.minAmplitude
-     set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{0 0.5 0} amplitude, \color[rgb]{1 0 0} SNR ']);
-else
-    set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{1 0 0} amplitude, \color[rgb]{1 0 0} SNR ']);
-
-end
-
 
 %% 4. plot unit ACG
 tauR_values = (param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax) .* 1000;
