@@ -2,7 +2,7 @@
 [![License](https://img.shields.io/badge/license-GPLv3-yellow)](https://github.com/Julie-Fabre/bombcell/blob/master/LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.0-green)](https://github.com/Julie-Fabre/bombcell/releases/tag/latest)
 
-# 💣 Bombcell: find bombshell cells! 💣 <img src="https://github.com/Julie-Fabre/bombcell/assets/29582008/da878d5f-7545-4adc-9b62-8a8d41b8c06e" width="30%" title="bombcell" alt="bombcell" align="right" vspace = "50">
+# 💣 Bombcell: find bombshell cells! 💣 <img src="https://github.com/Julie-Fabre/bombcell/assets/29582008/0b406cc7-1f9e-45b3-b847-a08c2a7835c4" width="30%" title="bombcell" alt="bombcell" align="right" vspace = "50">
 
 Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem. It programatically evaluates the quality of recorded units and also extract essential electrophysiological properties.
 
