@@ -1,4 +1,4 @@
-<!-- Code formating rule, modify to fit your liking ! -->
+<!-- Code form
 
 <rules>
     <indent>
@@ -8,7 +8,7 @@
         <singleIncreaseIndentation>...</singleIncreaseIndentation> <!-- indent code after this string, for one line only -->
     </indent>
     <spacing>
-        <aroundOperators>true</aroundOperators> <!-- add spacing around matlab operators (e.g. +, - *, &, &&, ==, ect.) -->
+        <aroundOperators>true</aroundOperators> <! -- add spacing around matlab operators (e.g. +, - *, &, ...) -->
         <afterCommentOperator>true</afterCommentOperator> <!-- add spacing after the matlab comment operators (%, %%) -->
         <afterComma>true</afterComma> <!-- add spacing after commas -->
     </spacing>

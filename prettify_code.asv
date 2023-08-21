@@ -25,8 +25,8 @@ function prettyCode = prettify_code(rawCode, xmlFile)
     beforeKeywords_java = split(blankLinesNode.getElementsByTagName('beforeKeywords').item(0).getFirstChild.getData, ',');
     afterKeywords = arrayfun(@(x)  afterKeywords_java(x).toCharArray', 1:size(afterKeywords_java,1), 'UniformOutput', false);
     beforeKeywords = arrayfun(@(x)  beforeKeywords_java(x).toCharArray', 1:size(beforeKeywords_java,1), 'UniformOutput', false);
-    singleBlankLines = strcmp(blankLinesNode.getElementsByTagName('singleBlankLines').item(0).getFirstChild.getData, 'true');
    
+
     % Apply beautification
     lines = split(rawCode, newline);
     indentLevel = 0;
@@ -36,7 +36,7 @@ function prettyCode = prettify_code(rawCode, xmlFile)
     while i <= numel(lines)
         
         % get line 
-        line = strtrim(lines{i});
+        line = strtrim(lines{i})
 
         % remove any leading or trailing white space
         line = regexprep(line, '^[ \t]+', ''); % leading white space
@@ -47,9 +47,12 @@ function prettyCode = prettify_code(rawCode, xmlFile)
             indentLevel = indentLevel - 1;
         end
         
-        line = regexprep(line, '\s{2,}', ' '); % remove any double (or more) spaces
-  
-        lines{i} = [repmat(' ', 1, spaceCount * indentLevel),  line]; % store line
+        % remove any double (or more) spaces
+        line = regexprep(line, '\s{2,}', ' ');
+
+        % store line
+        [repmat(' ', 1, spaceCount * indentLevel),  line]
+        lines{i} = [repmat(' ', 1, spaceCount * indentLevel),  line];
         
         % remove indent for next line if it's of type single line 
         if single_indent
@@ -57,17 +60,17 @@ function prettyCode = prettify_code(rawCode, xmlFile)
             single_indent = false;
         end
 
-        % add indent if keyword
+        %
         if any(startsWith(line, increaseIndentation))
             indentLevel = indentLevel + 1;
         end
         
-        % remove indent if it was a single line indent 
+        %
         if any(endsWith(line, increaseIndentation_single))
             indentLevel = indentLevel + 1;
             single_indent = true;
         end
-
+        
         % Add blank lines after specific keywords
         if any(startsWith(line, afterKeywords)) && (i == numel(lines) || ~isempty(lines{i+1}))
             lines = [lines(1:i); ""; lines(i+1:end)];
@@ -111,10 +114,6 @@ function prettyCode = prettify_code(rawCode, xmlFile)
     
     if afterComma % add a space after commas, if there isn't one already
         prettyCode = regexprep(prettyCode, '(?<!\s)(,)(?!\s)', ', ');
-    end
-
-    if singleBlankLines % remove any double (or more) blank lines
-        prettyCode = regexprep(prettyCode, '^(\s*\r\n){2,}', '\r\n');
     end
 
 end

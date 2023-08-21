@@ -1,7 +1,7 @@
-function makeCurrentCodePretty
+function prettify_current_code()
  % This function beautifies the content of the currently active MATLAB editor.
  
- import matlab.desktop.editor. * ;
+% import matlab.desktop.editor. * ;
  
  % get location of this script - the xml configuration will be in the
  % same spot
@@ -15,7 +15,7 @@ function makeCurrentCodePretty
  rawCode = activeEditor.Text;
  
  % Beautify the code (using our previous function)
- prettyCode = makeCodePretty(rawCode, xmlPath);
+ prettyCode = prettify_code(rawCode, xmlPath);
  
  % Update the content in the editor
  activeEditor.Text = prettyCode;
