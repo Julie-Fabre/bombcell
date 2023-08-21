@@ -1,0 +1,11 @@
+<rules>
+    <indent>
+        <spaceCount>4</spaceCount>
+        <increaseIndentation>if,else,elseif,for,while,switch,case,try,function</increaseIndentation>
+        <decreaseIndentation>end,otherwise,catch</decreaseIndentation>
+    </indent>
+    <spacing>
+        <aroundOperators>true</aroundOperators>
+        <afterComma>true</afterComma>
+    </spacing>
+</rules>
