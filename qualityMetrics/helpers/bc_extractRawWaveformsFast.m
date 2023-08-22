@@ -165,7 +165,7 @@ if ~isempty(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'))
 %     % time just before waveform. we use this as a proxy to evaluate the overall amount of noise for each unit's channel 
 %     signalToNoiseRatio = cell2mat(arrayfun(@(X) abs(squeeze(nanmax(nanmax(rawWaveformsFull(X,rawWaveformsPeakChan(X),:),3))) ./ baseline_mad(X)),1:nClust,'Uni',0))';
 
-    signalToNoiseRatio = cell2mat(arrayfun(@(X) abs(nanmax(squeeze(rawWaveformsFull(X,rawWaveformsPeakChan(X),:)))) ./...
+    signalToNoiseRatio = cell2mat(arrayfun(@(X) nanmax(abs(squeeze(rawWaveformsFull(X,rawWaveformsPeakChan(X),:)))) ./...
         nanvar(average_baseline_cat(average_baseline_idx_cat==X)),1:nClust,'Uni',0))';
 
 

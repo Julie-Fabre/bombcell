@@ -1,14 +1,16 @@
 %% ~~ Example bombcell pipeline ~~
 % Adjust the paths in the 'set paths' section and the parameters in bc_qualityParamValues
-% This pipeline will (1) load your ephys data, (2) decompress your raw data if it
-% is in .cbin format (3) run bombcell on your data and save the output and
-% finally (4) bring up summary plots and a GUI to flip through classifyed
-% cells.
+% This pipeline will:
+%   (1) load your ephys data, 
+%   (2) decompress your raw data if it is in .cbin format 
+%   (3) run bombcell on your data and save the output and
+%   (4) bring up summary plots and a GUI to flip through classified cells.
 % The first time, this pipeline will be significantly slower (10-20' more)
 % than after because it extracts raw waveforms. Subsequent times these
 % pre-extracted waveforms are simply loaded in.
-% We recomment running this pipeline on a few datasets and deciding on
-% quality metric thresholds depending on the histogram and GUI. 
+% We recommend running this pipeline on a few datasets and deciding on
+% quality metric thresholds depending on the summary plots (histograms 
+% of the distributions of quality metrics for each unit) and GUI. 
 
 
 %% set paths - EDIT THESE 
@@ -28,8 +30,7 @@ rawFile = bc_manageDataCompression(ephysRawDir, decompressDataLocal);
 
 %% which quality metric parameters to extract and thresholds 
 param = bc_qualityParamValues(ephysMetaDir, rawFile); 
-% param = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile) % Run
-% this if you want to use UnitMatch after
+% param = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile) % Run this if you want to use UnitMatch after
 
 %% compute quality metrics 
 rerun = 0;
@@ -45,7 +46,7 @@ end
 
 %% view units + quality metrics in GUI 
 % load data for GUI
-loadRawTraces = 0;
+loadRawTraces = 0; % default: don't load in raw data (this makes the GUI significantly faster)
 bc_loadMetricsForGUI;
 
 % GUI guide: 
