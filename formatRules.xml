@@ -1,9 +1,10 @@
-<!-- Code formating rule, modify to fit your liking ! -->
+<!-- Code formating rule, modify to your liking ! -->
 
 <rules>
     <indent>
         <spaceCount>4</spaceCount> <!-- indent by this many spaces -->
-        <increaseIndentation>if,else,elseif,for,while,switch,case,try,function,parfor,properties,classdef,methods,arguments,events</increaseIndentation> <!-- indent code after these keywords -->
+        <increaseIndentation>if,else,elseif,for,while,switch,case,try,function,parfor,properties,classdef,methods,
+            arguments,events</increaseIndentation> <!-- indent code after these keywords -->
         <decreaseIndentation>end,otherwise,catch,elseif,case,switch,else</decreaseIndentation> <!-- decrease indentation for code at and after these keywords -->
         <singleIncreaseIndentation>...</singleIncreaseIndentation> <!-- indent code after this string, for one line only -->
     </indent>
@@ -17,4 +18,8 @@
         <beforeKeywords>if,else,elseif,for,while,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise,catch</beforeKeywords> <!-- add blank line before these keywords -->
         <singleBlankLines>true</singleBlankLines> <!-- remove any duplicate blank lines -->
     </blankLines>
+    <singleLines>
+        <newLineBefore>for,if,elseif,else,parfor,while,catch,error,assert,warning,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise</newLineBefore>
+        <newLineAfter>for,if,elseif,else,parfor,while,catch,error,assert,warning,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise</newLineAfter>
+    </singleLines>
 </rules>

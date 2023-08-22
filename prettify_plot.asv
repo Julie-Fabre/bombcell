@@ -73,15 +73,10 @@ function prettify_plot(sameX, sameY, inputColor, titleFontSize, labelFontSize, g
         ylims_subplot(iAx,:) = ylim;
     end
     % make x and y lims the same 
-    if ismember(sameX, {'all'}) || ismember(sameY, {'all'})
+    if ismember(sameX, {'all', 'rows', 'cols'}) || ismember(sameY, {'all', 'rows', 'cols'})
         for iAx = 1:size(currFig.Children,1)
             currAx = currFig.Children(iAx);
-            if ismember(sameX, {'all'})
-                set(currAx, 'Xlim', [ min(min(xlims_subplot)), max(max(xlims_subplot))]);
-            end
-            if ismember(sameY, {'all'})
-                set(currAx, 'Ylim', [ min(min(ylims_subplot)), max(max(ylims_subplot))]);
-            end
+            set(currAx, 'color', inputColor);
         end
         
     end

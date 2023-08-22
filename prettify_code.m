@@ -26,21 +26,50 @@ function prettyCode = prettify_code(rawCode, xmlFile)
     afterKeywords = arrayfun(@(x)  afterKeywords_java(x).toCharArray', 1:size(afterKeywords_java,1), 'UniformOutput', false);
     beforeKeywords = arrayfun(@(x)  beforeKeywords_java(x).toCharArray', 1:size(beforeKeywords_java,1), 'UniformOutput', false);
     singleBlankLines = strcmp(blankLinesNode.getElementsByTagName('singleBlankLines').item(0).getFirstChild.getData, 'true');
-   
+
+    % Get newline settings
+    singleLinesNode = xDoc.getElementsByTagName('singleLines').item(0);
+    newLineBeforeKeywords_java = split(singleLinesNode.getElementsByTagName('newLineBefore').item(0).getFirstChild.getData, ',');
+    newLineBeforeKeywords = arrayfun(@(x)  newLineBeforeKeywords_java(x).toCharArray', 1:size(newLineBeforeKeywords_java,1), 'UniformOutput', false);
+    newLineAfterKeywords_java = split(singleLinesNode.getElementsByTagName('newLineAfter').item(0).getFirstChild.getData, ',');
+    newLineAfterKeywords = arrayfun(@(x)  newLineAfterKeywords_java(x).toCharArray', 1:size(newLineAfterKeywords_java,1), 'UniformOutput', false);
+    
     % Apply beautification
     lines = split(rawCode, newline);
     indentLevel = 0;
-    i = 1;
+    iLine = 1;
     single_indent = false;
 
-    while i <= numel(lines)
+    while iLine <= numel(lines)
         
         % get line 
-        line = strtrim(lines{i});
+        line = strtrim(lines{iLine});
 
         % remove any leading or trailing white space
         line = regexprep(line, '^[ \t]+', ''); % leading white space
         line = regexprep(line, '^[ \t]+$', ''); % trailing white space 
+        
+        % split string if contains relevant keywords 
+        if contains(line(2:end), newLineBeforeKeywords)
+            for iNewLine = 1:size(newLineBeforeKeywords,2)
+                line = regexprep(line, newLineBeforeKeywords{iNewLine}, [ newline newLineBeforeKeywords{iNewLine} ]);
+            end
+           line = split(line, newline);
+           for iNewLine = 1:size(line,1)
+                lines = [lines(1:iLine+iNewLine-1-1); line{iNewLine}; lines(iLine+iNewLine-1:end)];
+           end
+           line = line{1};
+        end
+        if contains(line(2:end), newLineAfterKeywords)
+            for iNewLine = 1:size(newLineAftereKeywords,2)
+                line = regexprep(line, newLineAfterKeywords{iNewLine}, [newLineAfterKeywords{iNewLine} newline]);
+            end
+           line = split(line, newline);
+           for iNewLine = 1:size(line,1)
+                lines = [lines(1:iLine+iNewLine-1-1); line{iNewLine}; lines(iLine+iNewLine-1:end)];
+           end
+           line = line{1};
+        end
 
         % add indent after keywords 
         if any(endsWith(line, decreaseIndentation)) || any(startsWith(line, decreaseIndentation))
@@ -49,7 +78,7 @@ function prettyCode = prettify_code(rawCode, xmlFile)
         
         line = regexprep(line, '\s{2,}', ' '); % remove any double (or more) spaces
   
-        lines{i} = [repmat(' ', 1, spaceCount * indentLevel),  line]; % store line
+        lines{iLine} = [repmat(' ', 1, spaceCount * indentLevel),  line]; % store line
         
         % remove indent for next line if it's of type single line 
         if single_indent
@@ -69,18 +98,18 @@ function prettyCode = prettify_code(rawCode, xmlFile)
         end
 
         % Add blank lines after specific keywords
-        if any(startsWith(line, afterKeywords)) && (i == numel(lines) || ~isempty(lines{i+1}))
-            lines = [lines(1:i); ""; lines(i+1:end)];
-            i = i + 1;
+        if any(startsWith(line, afterKeywords)) && (iLine == numel(lines) || ~isempty(lines{iLine+1}))
+            lines = [lines(1:iLine); ""; lines(iLine+1:end)];
+            iLine = iLine + 1;
         end
         
         % Add blank lines before specific keywords
-        if any(startsWith(line, beforeKeywords)) && (i == 1 || ~isempty(lines{i-1}))
-            lines = [lines(1:i-1); ""; lines(i:end)];
-            i = i + 1;
+        if any(startsWith(line, beforeKeywords)) && (iLine == 1 || ~isempty(lines{iLine-1}))
+            lines = [lines(1:iLine-1); ""; lines(iLine:end)];
+            iLine = iLine + 1;
         end
         
-        i = i + 1;
+        iLine = iLine + 1;
     end
 
     % Remove surplus blank lines
@@ -94,8 +123,8 @@ function prettyCode = prettify_code(rawCode, xmlFile)
         specialCases = {'& &', '| |', '= =', '~ =', '. /', '. \', '. ^', '&  &', '|  |', '=  =', '~  =', '.  /', '.  \', '.  ^'};
         specialCases_replace = {'&&', '||', '==', '~=', './', '.\', '.^','&&', '||', '==', '~=', './', '.\', '.^'};
         prettyCode = regexprep(prettyCode, operatorsPattern, ' $1 ');
-        for i = 1:length(specialCases)
-            prettyCode = strrep(prettyCode, specialCases{i}, specialCases_replace{i});
+        for iLine = 1:length(specialCases)
+            prettyCode = strrep(prettyCode, specialCases{iLine}, specialCases_replace{iLine});
         end
     end
 
@@ -104,8 +133,8 @@ function prettyCode = prettify_code(rawCode, xmlFile)
        specialCases = {'% %','%   %'};
        specialCases_replace = {'%%', '%%'};
        prettyCode = regexprep(prettyCode, commentOperatorPattern, '$1 ');
-       for i = 1:length(specialCases)
-           prettyCode = strrep(prettyCode, specialCases{i}, specialCases_replace{i});
+       for iLine = 1:length(specialCases)
+           prettyCode = strrep(prettyCode, specialCases{iLine}, specialCases_replace{iLine});
        end
     end
     
