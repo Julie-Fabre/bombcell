@@ -158,7 +158,12 @@ if plotThis
         ['silhouette score = ', num2str(silhouetteScore)],['l-ratio = ', num2str(Lratio)]}, 'Location', 'best','TextColor', [0.7, 0.7, 0.7],'Color', 'none');
     xlabel('PC1')
     ylabel('PC2')
-    prettify_plot('none','none', 'none');
+    if exist('prettify_plot', 'file')
+        prettify_plot('none','none','none')
+    else
+        warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
+        makepretty('none')
+    end
 end
 else
     d2_mahal = NaN;

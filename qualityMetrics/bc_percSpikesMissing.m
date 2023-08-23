@@ -138,7 +138,12 @@ for iTimeChunk = 1:numel(timeChunks) - 1
 end
 
 if plotThis 
-    prettify_plot('none','all', 'none');
+    if exist('prettify_plot', 'file')
+        prettify_plot('none','all','none')
+    else
+        warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
+        makepretty('none')
+    end
 
     subplot(2, numel(timeChunks)-1, [1:numel(timeChunks) - 1])
     scatter(theseSpikeTimes, theseAmplitudes, 4, [0, 0.35, 0.71], 'filled');
@@ -151,7 +156,12 @@ if plotThis
     end
     xlabel('time (s)')
     ylabel(['amplitude scaling', newline, 'factor'])
-    prettify_plot('none','none', 'none');
+    if exist('prettify_plot', 'file')
+        prettify_plot('none','none','none')
+    else
+        warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
+        makepretty('none')
+    end
 
 end
     function F = gaussian_cut(x, bin_centers)
