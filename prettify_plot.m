@@ -3,15 +3,31 @@ function prettify_plot(sameXLimits, sameYLimits, figureColor, titleFontSize, lab
 % ------
 % Inputs
 % ------
-% - sameXLimits
-% - sameYLimits
-% - figureColor
-% - titleFontSize
-% - labelFontSize
-% - generalFontSize
-% - pointSize
-% - lineThickness
-% - textColor
+% - sameXLimits: string. Either: 
+%       - 'none': don't change any of the xlimits 
+%       - 'all': set all xlimits to the same values 
+%       - 'row': set all xlimits to the same values for each subplot row
+%       - 'col': set all xlimits to the same values for each subplot col
+% - sameYLimits: string. Either: 
+%       - 'none': don't change any of the xlimits 
+%       - 'all': set all xlimits to the same values 
+%       - 'row': set all xlimits to the same values for each subplot row
+%       - 'col': set all xlimits to the same values for each subplot col
+% - figureColor: string (e.g. 'w', 'k', ..) or RGB value defining the plots
+%       background color. 
+% - titleFontSize: double
+% - labelFontSize: double
+% - generalFontSize: double
+% - pointSize: double
+% - lineThickness: double
+% - textColor: double
+% ------
+% to do:
+% - option to adjust vertical and horiz. lines 
+% - padding
+% - fit data to plot (adjust lims)
+% - font 
+% - padding / suptitles 
 % ------
 % Julie M. J. Fabre
 

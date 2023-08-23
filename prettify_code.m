@@ -44,29 +44,63 @@ function prettyCode = prettify_code(rawCode, xmlFile)
         
         % get line 
         line = strtrim(lines{iLine});
-
+        lines
+        line
         % remove any leading or trailing white space
         line = regexprep(line, '^[ \t]+', ''); % leading white space
         line = regexprep(line, '^[ \t]+$', ''); % trailing white space 
         
         % split string if contains relevant keywords 
         if contains(line(2:end), newLineBeforeKeywords)
-            for iNewLine = 1:size(newLineBeforeKeywords,2)
-                line = regexprep(line, newLineBeforeKeywords{iNewLine}, [ newline newLineBeforeKeywords{iNewLine} ]);
+            for iNewLine = 1:size(newLineBeforeKeywords,2) 
+                thiskey = newLineBeforeKeywords{iNewLine};
+                line = regexprep(line, [' ' thiskey ' '], [newline newLineBeforeKeywords{iNewLine} ' ']);
+                line = regexprep(line, [',' thiskey ' '], [newline newLineBeforeKeywords{iNewLine} ' ']);
+                line = regexprep(line, [',' thiskey ','], [newline newLineBeforeKeywords{iNewLine} ' ']);
+                line = regexprep(line, [' ' thiskey ','], [newline newLineBeforeKeywords{iNewLine} ' ']);
+                line = regexprep(line, [' ' thiskey '('], [newline newLineBeforeKeywords{iNewLine} '(']);
+                line = regexprep(line, [',' thiskey '('], [newline newLineBeforeKeywords{iNewLine} '(']);
+                line = regexprep(line, [';' thiskey '('], [newline newLineBeforeKeywords{iNewLine} '(']);
+                line = regexprep(line, [';' thiskey ','], [newline newLineBeforeKeywords{iNewLine} ' ']);
+                line = regexprep(line, [';' thiskey ' '], [newline newLineBeforeKeywords{iNewLine} ' ']);
+                line = regexprep(line, [';' thiskey ';'], [newline newLineBeforeKeywords{iNewLine} ' ']);
+                line = regexprep(line, [')' thiskey ';'], [')' newline newLineBeforeKeywords{iNewLine} ' ']);
+                line = regexprep(line, [',' thiskey ';'], [newline newLineBeforeKeywords{iNewLine} ' ']);
+                line = regexprep(line, [' ' thiskey ';'], [newline newLineBeforeKeywords{iNewLine} ' ']);
+                %line
             end
+
            line = split(line, newline);
-           for iNewLine = 1:size(line,1)
-                lines = [lines(1:iLine+iNewLine-1-1); line{iNewLine}; lines(iLine+iNewLine-1:end)];
+           if size(line,1) > 1
+                for iNewLine = 1:size(line,1)
+                    lines = [lines(1:iLine+iNewLine-1-1); line{iNewLine}; lines(iLine+iNewLine:end)];
+                end
            end
            line = line{1};
         end
         if contains(line(2:end), newLineAfterKeywords)
-            for iNewLine = 1:size(newLineAftereKeywords,2)
-                line = regexprep(line, newLineAfterKeywords{iNewLine}, [newLineAfterKeywords{iNewLine} newline]);
+            for iNewLine = 1:size(newLineAfterKeywords,2)
+                thiskey = newLineBeforeKeywords{iNewLine};
+                line = regexprep(line, [' ' thiskey ' '], [' ' newLineAfterKeywords{iNewLine} newline]);
+                line = regexprep(line, [' ' thiskey ' '], [' ' newLineAfterKeywords{iNewLine} newline]);
+                line = regexprep(line, [',' thiskey ' '], [' ' newLineAfterKeywords{iNewLine} newline]);
+                line = regexprep(line, [',' thiskey ','], [' ' newLineAfterKeywords{iNewLine} newline]);
+                line = regexprep(line, [' ' thiskey ','], [' ' newLineAfterKeywords{iNewLine} newline]);
+                line = regexprep(line, [' ' thiskey '('], [' ' newLineAfterKeywords{iNewLine} newline]);
+                line = regexprep(line, [',' thiskey '('], [' ' newLineAfterKeywords{iNewLine} newline]);
+                line = regexprep(line, [';' thiskey '('], [' ' newLineAfterKeywords{iNewLine} newline]);
+                line = regexprep(line, [';' thiskey ','], [' ' newLineAfterKeywords{iNewLine} newline]);
+                line = regexprep(line, [';' thiskey ' '], [' ' newLineAfterKeywords{iNewLine} newline]);
+                line = regexprep(line, [';' thiskey ';'], [' ' newLineAfterKeywords{iNewLine} newline]);
+                line = regexprep(line, [')' thiskey ';'], [')' newLineBeforeKeywords{iNewLine} newline]);
+                line = regexprep(line, [',' thiskey ';'], [' ' newLineAfterKeywords{iNewLine} newline]);
+                line = regexprep(line, [' ' thiskey ';'], [' ' newLineAfterKeywords{iNewLine} newline]);
             end
            line = split(line, newline);
-           for iNewLine = 1:size(line,1)
-                lines = [lines(1:iLine+iNewLine-1-1); line{iNewLine}; lines(iLine+iNewLine-1:end)];
+           if size(line,1) > 1
+                for iNewLine = 1:size(line,1)
+                    lines = [lines(1:iLine+iNewLine-1-1); line{iNewLine}; lines(iLine+iNewLine:end)];
+                end
            end
            line = line{1};
         end
@@ -97,17 +131,17 @@ function prettyCode = prettify_code(rawCode, xmlFile)
             single_indent = true;
         end
 
-        % Add blank lines after specific keywords
-        if any(startsWith(line, afterKeywords)) && (iLine == numel(lines) || ~isempty(lines{iLine+1}))
-            lines = [lines(1:iLine); ""; lines(iLine+1:end)];
-            iLine = iLine + 1;
-        end
-        
-        % Add blank lines before specific keywords
-        if any(startsWith(line, beforeKeywords)) && (iLine == 1 || ~isempty(lines{iLine-1}))
-            lines = [lines(1:iLine-1); ""; lines(iLine:end)];
-            iLine = iLine + 1;
-        end
+        % % Add blank lines after specific keywords
+        % if any(startsWith(line, afterKeywords)) && (iLine == numel(lines) || ~isempty(lines{iLine+1}))
+        %     lines = [lines(1:iLine); ""; lines(iLine+1:end)];
+        %     iLine = iLine + 1;
+        % end
+        % 
+        % % Add blank lines before specific keywords
+        % if any(startsWith(line, beforeKeywords)) && (iLine == 1 || ~isempty(lines{iLine-1}))
+        %     lines = [lines(1:iLine-1); ""; lines(iLine:end)];
+        %     iLine = iLine + 1;
+        % end
         
         iLine = iLine + 1;
     end
