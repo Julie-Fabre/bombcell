@@ -2,9 +2,9 @@
 [![License](https://img.shields.io/badge/license-GPLv3-yellow)](https://github.com/Julie-Fabre/bombcell/blob/master/LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.0-green)](https://github.com/Julie-Fabre/bombcell/releases/tag/latest)
 
-# 💣 Bombcell: find bombshell cells! 💣 <img src="https://github.com/Julie-Fabre/bombcell/assets/29582008/0b406cc7-1f9e-45b3-b847-a08c2a7835c4" width="30%" title="bombcell" alt="bombcell" align="right" vspace = "50">
+# 💣 Bombcell: find bombshell cells! 💣 <img src="./images/bombcell_logo_crop_small_flame.png" width="30%" title="bombcell" alt="bombcell" align="right" vspace = "50">
 
-<img src="https://github.com/Julie-Fabre/bombcell/assets/29582008/5d3f3d21-628d-46d1-8496-df9b87af66e0/ezgif com-optimize.gif" align="left" width=10% vspace="10" > Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem. It programatically evaluates the quality of recorded units and also extract essential electrophysiological properties.
+Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem. It programatically evaluates the quality of recorded units and also extract essential electrophysiological properties.
 
 Bombcell is specifically tailored for units recorded with Neuropixels probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort. If you want to use bombcell in conjunction with another spike sorting algorithm, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues), create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request), or email [us: juliemfabre[at]gmail[dot]com](mailto:juliemfabre@gmail.com).
 
