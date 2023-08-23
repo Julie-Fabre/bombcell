@@ -113,15 +113,12 @@ uniqueTemplates = unique(spikeTemplates);
 if param.extractRaw
     [rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extractRawWaveformsFast(param, ...
         spikeTimes_samples, spikeTemplates, param.reextractRaw, savePath, param.verbose); % takes ~10' for 
-    % an average dataset, the first time it is run, <1min after that
-
-    % previous, slower method: 
-    % [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
-    %     spikeTimes, spikeTemplates, usedChannels, verbose);
 end
+% an average dataset, the first time it is run, <1min after that
 
-
-
+% previous, slower method: 
+% [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
+%     spikeTimes, spikeTemplates, usedChannels, verbose);
 
 % divide recording into time chunks 
 spikeTimes_seconds = spikeTimes_samples ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
@@ -134,8 +131,7 @@ end
 %% loop through units and get quality metrics
 fprintf('\n Extracting quality metrics from %s ... ', param.rawFile)
 
-for iUnit = 51:100%length(uniqueTemplates)
-    
+for iUnit = 1:length(uniqueTemplates)
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
 
     % get this unit's attributes 
@@ -148,7 +144,6 @@ for iUnit = 51:100%length(uniqueTemplates)
 
 
     %% percentage spikes missing (false negatives)
-   
     [percentageSpikesMissing_gaussian, percentageSpikesMissing_symmetric, ksTest_pValue, ~, ~, ~] = ...
         bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails);
 
@@ -159,13 +154,12 @@ for iUnit = 51:100%length(uniqueTemplates)
         timeChunks, param.plotDetails, NaN);
     
     %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
-        [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit),...
-            qMetric.RPV_tauR_estimate(iUnit)] = bc_defineTimechunksToKeep(...
-            percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
-            param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect 
+    [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit),...
+        qMetric.RPV_tauR_estimate(iUnit)] = bc_defineTimechunksToKeep(...
+        percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
+        param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect 
 
     %% re-compute percentage spikes missing and fraction contamination on timechunks
-    param.plotDetails = 1;
     thisUnits_timesToUse = [qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)];
  
     [qMetric.percentageSpikesMissing_gaussian(iUnit), qMetric.percentageSpikesMissing_symmetric(iUnit), ...
@@ -175,7 +169,7 @@ for iUnit = 51:100%length(uniqueTemplates)
 
     [qMetric.fractionRPVs(iUnit,:), ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
         tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails, qMetric.RPV_tauR_estimate(iUnit));
-    param.plotDetails = 0;
+   
     %% presence ratio (potential false negatives)
     [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
         qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param.plotDetails);
@@ -188,7 +182,6 @@ for iUnit = 51:100%length(uniqueTemplates)
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
 
     %% waveform
-    
     waveformBaselineWindow = [param.waveformBaselineWindowStart, param.waveformBaselineWindowStop];
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), forGUI.peakLocs{iUnit},...
         forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), ...

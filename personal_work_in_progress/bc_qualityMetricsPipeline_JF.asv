@@ -52,7 +52,7 @@ end
 % load data for GUI
 if plotGUI
     bc_loadMetricsForGUI;
-    param.extractRaw= 0;
+param.extractRaw= 0;
     bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, param,...
        probeLocation, unitType, 0);
 end

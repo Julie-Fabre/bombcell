@@ -132,7 +132,6 @@ end
 fprintf('\n Extracting quality metrics from %s ... ', param.rawFile)
 
 for iUnit = 1:length(uniqueTemplates)
-    
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
 
     % get this unit's attributes 
@@ -145,7 +144,6 @@ for iUnit = 1:length(uniqueTemplates)
 
 
     %% percentage spikes missing (false negatives)
-   
     [percentageSpikesMissing_gaussian, percentageSpikesMissing_symmetric, ksTest_pValue, ~, ~, ~] = ...
         bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails);
 

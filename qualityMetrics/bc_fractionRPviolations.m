@@ -39,17 +39,6 @@ nRPVs  = nan(length(timeChunks)-1, length(tauR));
 
 if plotThis
     figure('Color','none');
-    subplot(2,numel(timeChunks)-1, 1:numel(timeChunks)-1)
-    scatter(theseSpikeTimes, theseAmplitudes, 4,[0, 0.35, 0.71],'filled'); hold on;
-    % chunk lines 
-    ylims = ylim;
-    for iTimeChunk = 1:length(timeChunks)
-        line([timeChunks(iTimeChunk),timeChunks(iTimeChunk)],...
-            [ylims(1),ylims(2)], 'Color', [0.7, 0.7, 0.7])
-    end
-    xlabel('time (s)')
-    ylabel(['amplitude scaling' newline 'factor'])
-    makepretty('none')
 end
 
 for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
@@ -106,22 +95,39 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
         if isnan(RPV_tauR_estimate)
             for iTauR_value = [1,length(tauR)]
                 line([tauR(iTauR_value)*1000, tauR(iTauR_value)*1000], [ylims(1), ylims(2)], 'Color', [0.86, 0.2, 0.13]);
-                
             end
-             legend([dummyh, dummyh], {[num2str(round(fractionRPVs(iTimeChunk,1)*100,1)), '% rpv'],...
-            [num2str(round(fractionRPVs(iTimeChunk,length(tauR))*100,1)), '% rpv']},'Location', 'NorthEast','TextColor', [0.7, 0.7, 0.7], 'Color', 'none');
+            if length(tauR) == 1
+                legend([dummyh], {[num2str(round(fractionRPVs(iTimeChunk,1)*100,1)), '% rpv']},...
+                    'Location', 'NorthEast','TextColor', [0.7, 0.7, 0.7], 'Color', 'none');
+            else
+                legend([dummyh, dummyh], {[num2str(round(fractionRPVs(iTimeChunk,1)*100,1)), '% rpv'],...
+                    [num2str(round(fractionRPVs(iTimeChunk,length(tauR))*100,1)), '% rpv']},'Location', 'NorthEast','TextColor', [0.7, 0.7, 0.7], 'Color', 'none');
+            end
       
         else
             line([tauR(RPV_tauR_estimate)*1000, tauR(RPV_tauR_estimate)*1000], [ylims(1), ylims(2)], 'Color', [0.86, 0.2, 0.13]);
-             legend([dummyh], {[num2str(fractionRPVs(RPV_tauR_estimate)*100,1), '% rpv']},'Location', 'NorthEast','TextColor', [0.7, 0.7, 0.7], 'Color', 'none');
+            legend([dummyh], {[num2str(fractionRPVs(RPV_tauR_estimate)*100,1), '% rpv']},'Location', 'NorthEast','TextColor', [0.7, 0.7, 0.7], 'Color', 'none');
        
         end
-        %axis square;
-        
-        makepretty('none')
+
         set(gca, 'XScale', 'log')
     end
-    
+  
 end
+if plotThis
+    subplot(2,numel(timeChunks)-1, 1:numel(timeChunks)-1)
+    scatter(theseSpikeTimes, theseAmplitudes, 4,[0, 0.35, 0.71],'filled'); hold on;
+    % chunk lines 
+    ylims = ylim;
+    for iTimeChunk = 1:length(timeChunks)
+        line([timeChunks(iTimeChunk),timeChunks(iTimeChunk)],...
+            [ylims(1),ylims(2)], 'Color', [0.7, 0.7, 0.7])
+    end
+    xlabel('time (s)')
+    ylabel(['amplitude scaling' newline 'factor'])
+    prettify_plot('none','none', 'none');
+ end
+    
+
 
 end

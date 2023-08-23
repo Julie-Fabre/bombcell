@@ -21,6 +21,7 @@ if param.computeDistanceMetrics && ~isnan(param.isoDmin) && param.computeDrift &
         qMetric.rawAmplitude' > param.minAmplitude & qMetric.isoD' >= param.isoDmin &...
         qMetric.Lratio' <= param.lratioMax & isnan(unitType)) = 1; % SINGLE SEXY UNIT
     unitType(isnan(unitType)) = 2; % MULTI UNIT
+
 elseif param.computeDistanceMetrics && ~isnan(param.isoDmin) && param.computeDrift 
     unitType = nan(length(qMetric.percentageSpikesMissing_gaussian), 1);
     
@@ -36,8 +37,8 @@ elseif param.computeDistanceMetrics && ~isnan(param.isoDmin) && param.computeDri
         qMetric.Lratio' <= param.lratioMax & isnan(unitType)) = 1; % SINGLE SEXY UNIT
     unitType(isnan(unitType)) = 2; % MULTI UNIT
 
-
 elseif param.computeDrift && param.extractRaw
+
     unitType = nan(length(qMetric.percentageSpikesMissing_gaussian), 1);
     
     unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs |  ...
@@ -94,6 +95,7 @@ elseif param.computeDistanceMetrics && ~isnan(param.isoDmin)
          qMetric.isoD' >= param.isoDmin &...
         qMetric.Lratio' <= param.lratioMax & isnan(unitType)) = 1; % SINGLE SEXY UNIT
     unitType(isnan(unitType)) = 2; % MULTI UNIT
+
 elseif param.extractRaw
     unitType = nan(length(qMetric.percentageSpikesMissing_gaussian), 1);
     unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs |  ...
@@ -105,6 +107,7 @@ elseif param.extractRaw
         qMetric.rawAmplitude > param.minAmplitude & qMetric.signalToNoiseRatio >= param.minSNR &...
         qMetric.presenceRatio >= param.minPresenceRatio & isnan(unitType)) = 1; % SINGLE SEXY UNIT
     unitType(isnan(unitType)) = 2; % MULTI UNIT
+    
 else
     unitType = nan(length(qMetric.percentageSpikesMissing_gaussian), 1);
     unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs |  ...

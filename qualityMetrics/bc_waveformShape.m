@@ -171,8 +171,7 @@ if plotThis
     ylabel('trough size (a.u.)')
     xlabel('distance from peak channel (um)')
     legend(lf, {['linear fit, slope = ', num2str(spatialDecaySlope)]}, 'TextColor', [0.7, 0.7, 0.7], 'Color', 'none')
-    makepretty('none')
-
+    prettify_plot('none','none', 'none');
 
     subplot(4, 2, 1:6)
     set(gca, 'YDir', 'reverse');
@@ -248,7 +247,7 @@ if plotThis
     set(gca, 'YTick', []);
     set(gca, 'XTick', []);
     set(gca, 'Visible', 'off')
-    makepretty('none');
+    prettify_plot('none', 'none', 'none');
 
 
 end

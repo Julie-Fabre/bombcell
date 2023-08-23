@@ -35,19 +35,6 @@ ksTest_pValue = nan(numel(timeChunks)-1, 1);
 
 if plotThis
     figure('Color', 'none');
-    subplot(2, numel(timeChunks)-1, [1:numel(timeChunks) - 1])
-    scatter(theseSpikeTimes, theseAmplitudes, 4, [0, 0.35, 0.71], 'filled');
-    hold on;
-    % chunk lines
-    ylims = ylim;
-    for iTimeChunk = 1:length(timeChunks)
-        line([timeChunks(iTimeChunk), timeChunks(iTimeChunk)], ...
-            [ylims(1), ylims(2)], 'Color', [0.7, 0.7, 0.7])
-    end
-    xlabel('time (s)')
-    ylabel(['amplitude scaling', newline, 'factor'])
-    makepretty('none');
-
 end
 for iTimeChunk = 1:numel(timeChunks) - 1
     % amplitude histogram
@@ -134,16 +121,37 @@ for iTimeChunk = 1:numel(timeChunks) - 1
                 xlabel('count')
                 ylabel('amplitude')
             end
+            if iTimeChunk > 1
+                set(gca,'Yticklabel',[]) 
+            end
             if iTimeChunk == numel(timeChunks) - 1
-                legend({['gaussian fit:', roundedP, '% missing spikes'], 'amplitude histogram'}, 'TextColor', [0.7, 0.7, 0.7], 'Color', 'none')
+                legend({[ roundedP, '% missing spikes']}, 'TextColor', [0.7, 0.7, 0.7], 'Color', 'none')
             else
                 legend([roundedP, '% missing spikes'], 'Location', 'NorthEast', 'TextColor', [0.7, 0.7, 0.7], 'Color', 'none');
             end
 
         end
-        makepretty('none');
+        
     end
 
+
+end
+
+if plotThis 
+    prettify_plot('none','all', 'none');
+
+    subplot(2, numel(timeChunks)-1, [1:numel(timeChunks) - 1])
+    scatter(theseSpikeTimes, theseAmplitudes, 4, [0, 0.35, 0.71], 'filled');
+    hold on;
+    % chunk lines
+    ylims = ylim;
+    for iTimeChunk = 1:length(timeChunks)
+        line([timeChunks(iTimeChunk), timeChunks(iTimeChunk)], ...
+            [ylims(1), ylims(2)], 'Color', [0.7, 0.7, 0.7])
+    end
+    xlabel('time (s)')
+    ylabel(['amplitude scaling', newline, 'factor'])
+    prettify_plot('none','none', 'none');
 
 end
     function F = gaussian_cut(x, bin_centers)

@@ -46,8 +46,7 @@ if plotThis
     
     xlabel('time (s)')
     ylabel(['amplitude scaling' newline 'factor'])
-    makepretty('none')
-
+    prettify_plot('none', 'all', 'none');
 end
 
 

@@ -158,7 +158,7 @@ if plotThis
         ['silhouette score = ', num2str(silhouetteScore)],['l-ratio = ', num2str(Lratio)]}, 'Location', 'best','TextColor', [0.7, 0.7, 0.7],'Color', 'none');
     xlabel('PC1')
     ylabel('PC2')
-    makepretty('none')
+    prettify_plot('none','none', 'none');
 end
 else
     d2_mahal = NaN;

@@ -35,7 +35,8 @@ To begin using Bombcell:
 
 #### Dependancies
 
-- [npy-matlab](https://github.com/kwikteam/npy-matlab) (to load .npy data in).
+- [npy-matlab](https://github.com/kwikteam/npy-matlab) to load .npy data in.
+- [prettify-matlab](https://github.com/Julie-Fabre/prettify-matlab) to make plots pretty.
 - If you have z-lib compressed ephys data, compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp), you will additionally need the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat). More information about compressing ephys data [here](https://www.biorxiv.org/content/biorxiv/early/2023/05/24/2023.05.22.541700.full.pdf?%3Fcollection=). 
 - MATLAB toolboxes:
     - Signal Processing Toolbox
