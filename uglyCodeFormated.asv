@@ -17,4 +17,4 @@ res =   log(x)+     cos(  x  )    ;
 y   =1 ;
 end
 
-endpre
+end

@@ -1,5 +1,9 @@
 function prettyCode = prettify_code(rawCode, xmlFile)
-
+%to do:
+%comments
+%spaces after parenthesis, commas ect 
+%commas
+%space around operators
     % Parse the XML file
     xDoc = xmlread(xmlFile);
     
@@ -44,8 +48,7 @@ function prettyCode = prettify_code(rawCode, xmlFile)
         
         % get line 
         line = strtrim(lines{iLine});
-        lines
-        line
+
         % remove any leading or trailing white space
         line = regexprep(line, '^[ \t]+', ''); % leading white space
         line = regexprep(line, '^[ \t]+$', ''); % trailing white space 
@@ -68,12 +71,19 @@ function prettyCode = prettify_code(rawCode, xmlFile)
                 line = regexprep(line, [',' thiskey ';'], [newline newLineBeforeKeywords{iNewLine} ' ']);
                 line = regexprep(line, [' ' thiskey ';'], [newline newLineBeforeKeywords{iNewLine} ' ']);
                 %line
+                if endsWith(line, newLineBeforeKeywords{iNewLine})
+                     line = regexprep(line, newLineBeforeKeywords{iNewLine}, [newline newLineBeforeKeywords{iNewLine}]);
+                end
             end
 
            line = split(line, newline);
            if size(line,1) > 1
                 for iNewLine = 1:size(line,1)
-                    lines = [lines(1:iLine+iNewLine-1-1); line{iNewLine}; lines(iLine+iNewLine:end)];
+                    if iNewLine ==1
+                        lines = [lines(1:iLine+iNewLine-1-1); line{iNewLine}; lines(iLine+iNewLine:end)];
+                    else
+                        lines = [lines(1:iLine+iNewLine-1-1); line{iNewLine}; lines(iLine+iNewLine-1:end)];
+                    end
                 end
            end
            line = line{1};
@@ -95,11 +105,16 @@ function prettyCode = prettify_code(rawCode, xmlFile)
                 line = regexprep(line, [')' thiskey ';'], [')' newLineBeforeKeywords{iNewLine} newline]);
                 line = regexprep(line, [',' thiskey ';'], [' ' newLineAfterKeywords{iNewLine} newline]);
                 line = regexprep(line, [' ' thiskey ';'], [' ' newLineAfterKeywords{iNewLine} newline]);
+                if endsWith(line, newLineAfterKeywords{iNewLine})
+                     line = regexprep(line, newLineAfterKeywords{iNewLine}, [newLineAfterKeywords{iNewLine} newline]);
+                end
             end
            line = split(line, newline);
            if size(line,1) > 1
-                for iNewLine = 1:size(line,1)
+                if iNewLine ==1
                     lines = [lines(1:iLine+iNewLine-1-1); line{iNewLine}; lines(iLine+iNewLine:end)];
+                else
+                    lines = [lines(1:iLine+iNewLine-1-1); line{iNewLine}; lines(iLine+iNewLine-1:end)];
                 end
            end
            line = line{1};
