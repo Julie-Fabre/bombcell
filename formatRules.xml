@@ -1,4 +1,4 @@
-<!-- Code formating rule, modify to your liking ! -->
+<!-- Code formating rules, modify to your liking ! -->
 
 <rules>
     <indent>
@@ -19,7 +19,7 @@
         <singleBlankLines>true</singleBlankLines> <!-- remove any duplicate blank lines -->
     </blankLines>
     <singleLines>
-        <newLineBefore>for,if,elseif,else,parfor,while,catch,error,assert,warning,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise</newLineBefore>
-        <newLineAfter>for,if,elseif,else,parfor,while,catch,error,assert,warning,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise</newLineAfter>
+        <newLineBefore>for,if,elseif,else,parfor,while,catch,error,assert,warning,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise,break,keyboard</newLineBefore>
+        <newLineAfter>for,if,elseif,else,parfor,while,catch,error,assert,warning,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise,break,keyboard</newLineAfter>
     </singleLines>
 </rules>

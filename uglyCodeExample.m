@@ -1,4 +1,5 @@
 function [f,r,t]=uglyCodeExample(n) 
+%co,,emt
 if n<0,error('Negative!');elseif isinf(n),error('Too big!'),end
 if ~(isnumeric(n )&&isscalar( n)&&mod(n,1)== 0),error('Not a pos int.');end,r=1;for i=1:n,r=r*i;end
 f=0;g=1;for j=1:n,t=f;f=f+g;g=t;end
