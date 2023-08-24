@@ -1,6 +1,8 @@
 function prettify_current_code()
-
-    % This function beautifies the content of the currently active MATLAB editor.
+% This function beautifies the content of the currently active MATLAB
+% editor, based on rules outlined in formatRules.xml 
+% ------
+% Julie M. J. Fabre
 
     % get location of this script - the xml configuration will be in the
     % same spot
