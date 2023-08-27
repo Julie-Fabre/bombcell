@@ -3,9 +3,9 @@
 function makepretty(color,  titleSize, labelSize, textSize, markerSize, lineWidth, textColor)
 
 if nargin < 7
-    if nargin < 1 
+    if nargin < 1 || strcmp(color, 'k')
         textColor = 'k';
-    elseif strcmp(color, 'k')
+    elseif strcmp(color, 'w')
         textColor = 'w';
     elseif strcmp(color, 'none')
         textColor = [0.7, 0.7, 0.7]; % gray, will will work on most backgrounds
