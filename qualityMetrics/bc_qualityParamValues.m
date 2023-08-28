@@ -75,14 +75,27 @@ param.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value
 % in a units waveform to give the minimum prominence to detect peaks using
 % matlab's findpeaks function.
 
-% recording parametrs
-param.ephys_sample_rate = 30000; % samples per second
-param.nChannels = 385; %number of recorded channels (including any sync channels)
-% recorded in the raw data. This is usually 384 or 385 for neuropixels
-% recordings
-param.nSyncChannels = 1;
+% file paths
 param.ephysMetaFile = [ephysMetaDir.folder, filesep, ephysMetaDir.name];
 param.rawFile = rawFile;
+% recording parameters
+% load .oebin file to get these paramerers:
+Lc = list_open_ephys_binary(param.ephysMetaFile, 'continuous'); % List the elements present in a Open Ephys binary format
+idx_Lc_Neuropix_AP  = find(...
+                (contains(Lc,'Neuropix')) & ...
+                (contains(Lc,'.0') | contains(Lc,'-AP'))... % '-AP' applies for OpenEphys GUI version 0.6.x.
+                );
+json = jsondecode(fileread(param.ephysMetaFile));
+header = json.continuous(idx_Lc_Neuropix_AP);
+% store recording parameters
+param.ephys_sample_rate = header.sample_rate;
+param.nChannels = header.num_channels;
+% param.ephys_sample_rate = 30000; % samples per second
+% param.nChannels = 385; %number of recorded channels (including any sync channels)
+% recorded in the raw data. This is usually 384 or 385 for neuropixels
+% recordings
+param.nSyncChannels = 0;
+
 
 % distance metric parameters
 param.computeDistanceMetrics = 0; % whether to compute distance metrics - this can be time consuming 
