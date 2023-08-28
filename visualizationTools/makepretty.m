@@ -1,64 +1,92 @@
+function makepretty(figureColor, titleFontSize, labelFontSize, generalFontSize, pointSize, lineThickness, textColor)
+% make current figure pretty
+% ------
+% Inputs
+% ------
+% - figureColor: string (e.g. 'w', 'k', ..) or RGB value defining the plots
+%       background color. 
+% - titleFontSize: double
+% - labelFontSize: double
+% - generalFontSize: double
+% - pointSize: double
+% - lineThickness: double
+% - textColor: double
+% ------
+% to do:
+% - option to adjust vertical and horiz. lines 
+% - padding
+% - fit data to plot (adjust lims)
+% - font 
+% - padding / suptitles 
+% ------
+% Julie M. J. Fabre
 
-
-function makepretty(color,  titleSize, labelSize, textSize, markerSize, lineWidth, textColor)
-
-if nargin < 7
-    if nargin < 1 
-        textColor = 'k';
-    elseif strcmp(color, 'k')
-        textColor = 'w';
-    elseif strcmp(color, 'none')
-        textColor = [0.7, 0.7, 0.7]; % gray, will will work on most backgrounds
+    % Set default parameter values
+    if nargin < 1 || isempty(figureColor)
+        figureColor = 'w';
     end
-end
-if nargin < 6
-    lineWidth = 2;
-end
-if nargin < 5
-    markerSize = 15;
-end
-if nargin < 4
-    textSize = 13;
-end
-if nargin < 3
-    labelSize = 17;
-end
-if nargin < 2
-    titleSize = 20;
-end
-if nargin < 1
-    color = 'w';
-end
-
-
-% set some graphical attributes of the current axis
-set(gcf,'color',color);
-set(gca,'color',color);
-
-set(get(gca, 'XLabel'), 'FontSize', labelSize);
-set(get(gca, 'YLabel'), 'FontSize', labelSize);
-set(gca, 'FontSize', textSize);
-set(get(gca, 'Title'), 'FontSize', titleSize);
-
-set(get(gca, 'XLabel'), 'Color', textColor);
-set(get(gca, 'YLabel'), 'Color', textColor);
-set(gca, 'GridColor', textColor);
-set(gca, 'YColor', textColor);
-set(gca, 'XColor', textColor);
-set(gca, 'MinorGridColor', textColor);
-set(get(gca, 'Title'), 'FontSize', titleSize);
-
-
-ch = get(gca, 'Children');
-axis tight;
-for c = 1:length(ch)
-    thisChild = ch(c);
-    if strcmp('line', get(thisChild, 'Type')) 
-        if strcmp('.', get(thisChild, 'Marker'))
-            set(thisChild, 'MarkerSize', markerSize);
-        end
-        if strcmp('-', get(thisChild, 'LineStyle'))
-            set(thisChild, 'LineWidth', lineWidth);
+    if nargin < 2 || isempty(titleFontSize)
+        titleFontSize = 18;
+    end
+    if nargin < 3 || isempty(labelFontSize)
+        labelFontSize = 15;
+    end
+    if nargin < 4 || isempty(generalFontSize)
+        generalFontSize = 13;
+    end
+    if nargin < 5 || isempty(pointSize)
+        pointSize = 15;
+    end
+    if nargin < 6 || isempty(lineThickness)
+        lineThickness = 2;
+    end
+    if nargin < 7 || isempty(textColor)
+        % Set default font color based on the input color
+        switch figureColor
+            case 'k'
+                textColor = 'w';
+            case 'none'
+                textColor = [0.7, 0.7, 0.7]; % Gray
+            otherwise
+                textColor = 'k';
         end
     end
+    
+    % Get handles for current figure and axis
+    currFig = gcf;
+    
+    
+    % Set color properties for figure and axis
+    set(currFig, 'color', figureColor);
+    
+    % get axes children 
+    all_axes = find(arrayfun(@(x) contains(currFig.Children(x).Type, 'axes'), 1:size(currFig.Children,1)));
+
+    for iAx = 1:size(all_axes,2)
+        thisAx = all_axes(iAx);
+        currAx = currFig.Children(thisAx);
+        set(currAx, 'color', figureColor);
+        if ~isempty(currAx)
+            % Set font properties for the axis
+            set(currAx.XLabel, 'FontSize', labelFontSize, 'Color', textColor);
+            set(currAx.YLabel, 'FontSize', labelFontSize, 'Color', textColor);
+            set(currAx.Title, 'FontSize', titleFontSize, 'Color', textColor);
+            set(currAx, 'FontSize', generalFontSize, 'GridColor', textColor, ...
+                        'YColor', textColor, 'XColor', textColor, ...
+                        'MinorGridColor', textColor);
+            
+            % Adjust properties of line children within the plot
+            childLines = findall(currAx, 'Type', 'line');
+            for thisLine = childLines'
+                if strcmp('.', get(thisLine, 'Marker'))
+                    set(thisLine, 'MarkerSize', pointSize);
+                end
+                if strcmp('-', get(thisLine, 'LineStyle'))
+                    set(thisLine, 'LineWidth', lineThickness);
+                end
+            end
+        end
+    end
 end
+
+
