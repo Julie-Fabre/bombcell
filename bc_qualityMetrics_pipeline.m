@@ -29,7 +29,7 @@ decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save r
 rawFile = bc_manageDataCompression(ephysRawDir, decompressDataLocal);
 
 %% which quality metric parameters to extract and thresholds 
-param = bc_qualityParamValues(ephysMetaDir, rawFile); 
+param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath); 
 % param = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile) % Run this if you want to use UnitMatch after
 
 %% compute quality metrics 

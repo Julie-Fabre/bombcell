@@ -1,4 +1,4 @@
-function param = bc_qualityParamValues(ephysMetaDir, rawFile)
+function param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath)
 % JF, Load a parameter structure defining extraction and
 % classification parameters
 % ------
@@ -28,7 +28,14 @@ param.verbose = 1; % update user on progress
 param.reextractRaw = 0; % re extract raw waveforms or not 
 
 % saving parameters 
-param.saveAsParquet = 1; % save outputs at .parquet file 
+param.saveAsTSV = 1; % additionally save outputs at .tsv file - this is 
+% useful if you want to use phy after bombcell: each quality metric value
+% will appear as a column in the Cluster view
+if nargin < 3
+    warning('no ephys kilosort path defined in bc_qualityParamValues, will save output tsv file in the savePath location')
+else
+    param.ephysKilosortPath = ephysKilosortPath;
+end
 param.saveMatFileForGUI = 1; % save certain outputs at .mat file - useful for GUI
 
 % amplitude parameters
