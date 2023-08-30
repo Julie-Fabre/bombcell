@@ -23,7 +23,7 @@ addpath(genpath(folder_nyumatlab));
 
 %%
 
-animalID        = 'AL211110a';
+animalID        = 'AL210629b';
 experimentDate  = []; % no need to specify if only one ephys day for that mouse
 load_data = false;
 [~, experimentDate, datafile_fullpath] = load_datafile('syncedData', [], animalID, experimentDate, [], load_data);
@@ -33,7 +33,12 @@ ephysKilosortPath = fullfile(ephysDataRootDir, 'KilosortOutput_experiment1_recor
 ephysRawDir       = dir([ephysDataRootDir filesep 'Raw\' animalID '_' experimentDate '*\**\Record Node *\**\continuous\Neuropix-PXI-100.0\continuous.dat']);
 if isempty(ephysRawDir)
     ephysRawDir  = dir([ephysDataRootDir filesep 'Raw\' animalID '_' experimentDate '*\**\Record Node *\**\continuous\Neuropix-PXI-100.ProbeA-AP\continuous.dat']);
+    if isempty(ephysRawDir)
+        ephysRawDir  = dir([ephysDataRootDir filesep 'Raw\' animalID '_' experimentDate '*\**\Record Node *\**\continuous\Neuropix-PXI-142.0\continuous.dat']);
+    end
 end
+% ephysKilosortPath = fullfile(ephysDataRootDir, 'KilosortOutput_experiment1_recording1');
+ephysKilosortPath = fullfile(ephysDataRootDir, ['KilosortOutput_experiment' ephysRawDir.folder(regexp(ephysRawDir.folder,'experiment','end')+1) '_recording' ephysRawDir.folder(regexp(ephysRawDir.folder,'recording','end')+1)]);
 assert(length(ephysRawDir)==1,'No or multiple continuous.dat files found (it must be just 1)')
 ephysMetaDir      = dir([ephysDataRootDir filesep 'Raw\' animalID '_' experimentDate '*\**\*.oebin']);
 saveLocation      = fullfile(ephysDataRootDir, 'QualityMetrics_experiment1_recording1');
