@@ -20,6 +20,6 @@
     </blankLines>
     <singleLines>
         <newLineBefore>for,if,elseif,else,parfor,while,catch,error,assert,warning,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise,break,keyboard</newLineBefore>
-        <newLineAfter>for,if,elseif,else,parfor,while,catch,error,assert,warning,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise,break,keyboard</newLineAfter>
+        <newLineAfter> end,break,keyboard</newLineAfter>
     </singleLines>
 </rules>

@@ -51,7 +51,7 @@ function prettyCode = prettify_code(rawCode, xmlFile)
     newLineBeforeKeywords = arrayfun(@(x)  newLineBeforeKeywords_java(x).toCharArray', 1:size(newLineBeforeKeywords_java,1), 'UniformOutput', false);
     newLineAfterKeywords_java = split(singleLinesNode.getElementsByTagName('newLineAfter').item(0).getFirstChild.getData, ',');
     newLineAfterKeywords = arrayfun(@(x)  newLineAfterKeywords_java(x).toCharArray', 1:size(newLineAfterKeywords_java,1), 'UniformOutput', false);
-    
+
     % Apply beautification
     codeLines = split(rawCode, newline);
     indentLevel = 0;
@@ -65,8 +65,7 @@ function prettyCode = prettify_code(rawCode, xmlFile)
         thisLine = strtrim(codeLines{iLine});
         
         % remove any leading or trailing white space
-            thisLine = regexprep(thisLine, '^[ \t]+', ''); % leading white space
-            thisLine = regexprep(thisLine, '^[ \t]+$', ''); % trailing white space
+        thisLine = prettify_trim_white_space(thisLine);
 
         % If line is a comment, skip beautification and move to next line
         if startsWith(thisLine, '%')
@@ -74,7 +73,6 @@ function prettyCode = prettify_code(rawCode, xmlFile)
             % Extracting comment and ensuring the format is "% "
             rawComment = strtrim(thisLine);
             thisLine = prettify_comments(rawComment);
-            
         else
             commentLine = false;
             % Detect if there's an inline comment
@@ -90,76 +88,9 @@ function prettyCode = prettify_code(rawCode, xmlFile)
             end
 
             % split string if contains relevant keywords 
-            if contains(thisLine(2:end), newLineBeforeKeywords)
-                for iNewLine = 1:size(newLineBeforeKeywords,2) 
-                    thiskey = newLineBeforeKeywords{iNewLine};
-                    % all possible combinations 
-                    thisLine = regexprep(thisLine, [' ' thiskey ' '], [newline newLineBeforeKeywords{iNewLine} ' ']);
-                    thisLine = regexprep(thisLine, [',' thiskey ' '], [newline newLineBeforeKeywords{iNewLine} ' ']);
-                    thisLine = regexprep(thisLine, [',' thiskey ','], [newline newLineBeforeKeywords{iNewLine} ' ']);
-                    thisLine = regexprep(thisLine, [' ' thiskey ','], [newline newLineBeforeKeywords{iNewLine} ' ']);
-                    thisLine = regexprep(thisLine, [' ' thiskey '('], [newline newLineBeforeKeywords{iNewLine} '(']);
-                    thisLine = regexprep(thisLine, [',' thiskey '('], [newline newLineBeforeKeywords{iNewLine} '(']);
-                    thisLine = regexprep(thisLine, [';' thiskey '('], [newline newLineBeforeKeywords{iNewLine} '(']);
-                    thisLine = regexprep(thisLine, [';' thiskey ','], [newline newLineBeforeKeywords{iNewLine} ' ']);
-                    thisLine = regexprep(thisLine, [';' thiskey ' '], [newline newLineBeforeKeywords{iNewLine} ' ']);
-                    thisLine = regexprep(thisLine, [';' thiskey ';'], [newline newLineBeforeKeywords{iNewLine} ' ']);
-                    thisLine = regexprep(thisLine, [')' thiskey ';'], [')' newline newLineBeforeKeywords{iNewLine} ' ']);
-                    thisLine = regexprep(thisLine, [',' thiskey ';'], [newline newLineBeforeKeywords{iNewLine} ' ']);
-                    thisLine = regexprep(thisLine, [' ' thiskey ';'], [newline newLineBeforeKeywords{iNewLine} ' ']);
-                    if endsWith(thisLine, newLineBeforeKeywords{iNewLine}) 
-                         thisLine = regexprep(thisLine, newLineBeforeKeywords{iNewLine}, [newline newLineBeforeKeywords{iNewLine}]);
-                    end
-                end
-    
-               thisLine = split(thisLine, newline);
-               
-               if size(thisLine,1) > 1
-                   thisLine = thisLine(arrayfun(@(x) ~isempty(thisLine{x}), 1:size(thisLine,1)));
-                    for iNewLine = 1:size(thisLine,1)
-                        if iNewLine == 1
-                            codeLines = [codeLines(1:iLine+iNewLine-1-1); thisLine{iNewLine}; codeLines(iLine+iNewLine:end)];
-                        else
-                            codeLines = [codeLines(1:iLine+iNewLine-1-1); thisLine{iNewLine}; codeLines(iLine+iNewLine-1:end)];
-                        end
-                    end
-               end
-               thisLine = thisLine{1};
-            end
-            if contains(thisLine(2:end), newLineAfterKeywords)
-                for iNewLine = 1:size(newLineAfterKeywords,2)
-                    thiskey = newLineBeforeKeywords{iNewLine};
-                    % all possible combinations
-                    thisLine = regexprep(thisLine, [' ' thiskey ' '], [' ' newLineAfterKeywords{iNewLine} newline]);
-                    thisLine = regexprep(thisLine, [' ' thiskey ' '], [' ' newLineAfterKeywords{iNewLine} newline]);
-                    thisLine = regexprep(thisLine, [',' thiskey ' '], [' ' newLineAfterKeywords{iNewLine} newline]);
-                    thisLine = regexprep(thisLine, [',' thiskey ','], [' ' newLineAfterKeywords{iNewLine} newline]);
-                    thisLine = regexprep(thisLine, [' ' thiskey ','], [' ' newLineAfterKeywords{iNewLine} newline]);
-                    thisLine = regexprep(thisLine, [' ' thiskey '('], [' ' newLineAfterKeywords{iNewLine} newline]);
-                    thisLine = regexprep(thisLine, [',' thiskey '('], [' ' newLineAfterKeywords{iNewLine} newline]);
-                    thisLine = regexprep(thisLine, [';' thiskey '('], [' ' newLineAfterKeywords{iNewLine} newline]);
-                    thisLine = regexprep(thisLine, [';' thiskey ','], [' ' newLineAfterKeywords{iNewLine} newline]);
-                    thisLine = regexprep(thisLine, [';' thiskey ' '], [' ' newLineAfterKeywords{iNewLine} newline]);
-                    thisLine = regexprep(thisLine, [';' thiskey ';'], [' ' newLineAfterKeywords{iNewLine} newline]);
-                    thisLine = regexprep(thisLine, [')' thiskey ';'], [')' newLineBeforeKeywords{iNewLine} newline]);
-                    thisLine = regexprep(thisLine, [',' thiskey ';'], [' ' newLineAfterKeywords{iNewLine} newline]);
-                    thisLine = regexprep(thisLine, [' ' thiskey ';'], [' ' newLineAfterKeywords{iNewLine} newline]);
-                    if endsWith(thisLine, newLineAfterKeywords{iNewLine})
-                         thisLine = regexprep(thisLine, newLineAfterKeywords{iNewLine}, [newLineAfterKeywords{iNewLine} newline]);
-                    end
-                end
-               thisLine = split(thisLine, newline);
-              
-               if size(thisLine,1) > 1
-                   thisLine = thisLine(arrayfun(@(x) ~isempty(thisLine{x}), 1:size(thisLine,1)));
-                    if iNewLine ==1
-                        codeLines = [codeLines(1:iLine+iNewLine-1-1); thisLine{iNewLine}; codeLines(iLine+iNewLine:end)];
-                    else
-                        codeLines = [codeLines(1:iLine+iNewLine-1-1); thisLine{iNewLine}; codeLines(iLine+iNewLine-1:end)];
-                    end
-               end
-               thisLine = thisLine{1};
-            end
+            [codeLines, thisLine] = prettify_split_lines(codeLines, thisLine, newLineBeforeKeywords, newLineAfterKeywords, iLine);
+
+            thisLine = prettify_trim_white_space(thisLine);
     
             % add indent after keywords 
             if any(endsWith(thisLine, decreaseIndentation)) || any(startsWith(thisLine, decreaseIndentation))
@@ -217,10 +148,17 @@ function prettyCode = prettify_code(rawCode, xmlFile)
     prettyCode = strjoin(codeLines, newline);
 
     if aroundOperators % add a space around operators, if there isn't one already
-        operatorsPattern = '(?<!\s)(=|<|>|~|&|\||-|\+|\*|/|\^)(?!\s)';
+        operatorsPattern = '(?<!\s)(=|<|>|~|&|\||-|\+|\*|/|\^)';
         specialCases = {'& &', '| |', '= =', '~ =', '. /', '. \', '. ^', '&  &', '|  |', '=  =', '~  =', '.  /', '.  \', '.  ^'};
         specialCases_replace = {'&&', '||', '==', '~=', './', '.\', '.^','&&', '||', '==', '~=', './', '.\', '.^'};
-        prettyCode = regexprep(prettyCode, operatorsPattern, ' $1 ');
+        prettyCode = regexprep(prettyCode, operatorsPattern, ' $1');
+        for iLine = 1:length(specialCases)
+            prettyCode = strrep(prettyCode, specialCases{iLine}, specialCases_replace{iLine});
+        end
+        operatorsPattern = '(=|<|>|~|&|\||-|\+|\*|/|\^)(?!\s)';
+        specialCases = {'& &', '| |', '= =', '~ =', '. /', '. \', '. ^', '&  &', '|  |', '=  =', '~  =', '.  /', '.  \', '.  ^'};
+        specialCases_replace = {'&&', '||', '==', '~=', './', '.\', '.^','&&', '||', '==', '~=', './', '.\', '.^'};
+        prettyCode = regexprep(prettyCode, operatorsPattern, '$1 ');
         for iLine = 1:length(specialCases)
             prettyCode = strrep(prettyCode, specialCases{iLine}, specialCases_replace{iLine});
         end
@@ -235,6 +173,10 @@ function prettyCode = prettify_code(rawCode, xmlFile)
            prettyCode = strrep(prettyCode, specialCases{iLine}, specialCases_replace{iLine});
        end
     end
+
+    % Remove spaces around ( and )
+    prettyCode = regexprep(prettyCode, '\s*\(\s*', '(');
+    prettyCode = regexprep(prettyCode, '\s*\)\s*', ')');
     
     if afterComma % add a space after commas, if there isn't one already
         prettyCode = regexprep(prettyCode, '(?<!\s)(,)(?!\s)', ', ');
