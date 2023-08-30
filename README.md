@@ -1,4 +1,4 @@
-# prettify matlab
+# 🪄 prettify matlab
 Functions to instantly make your MATLAB scripts and code beautiful:
 
 
