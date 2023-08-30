@@ -108,7 +108,10 @@ function prettify_plot(sameXLimits, sameYLimits, figureColor, titleFontSize, lab
             ylims_subplot(iAx,:) = currAx.YLim;
 
             % Get plot position
-            pos_subplot(iAx,:) = currAx.Position(1:2); % [left bottom width height]
+            pos_subplot(iAx,:) = currAx.Position(1:2); % [left bottom width height
+
+            % set legend position
+             legend('Location','best')
         end
     end
 
@@ -151,6 +154,8 @@ function prettify_plot(sameXLimits, sameYLimits, figureColor, titleFontSize, lab
                     set(currAx, 'Ylim', col_ylims{pos_subplot(iAx,1)==col_subplots});
                 end
             end
+            % set legend position
+             legend('Location','best')
         end
     end
 end
