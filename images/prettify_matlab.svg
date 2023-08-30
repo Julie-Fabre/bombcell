@@ -54,7 +54,10 @@
        fill-opacity="0.0"
        d="m495.5748 93.21786l389.80057 0l0 317.53278l-389.80057 0z"
        fill-rule="evenodd"
-       id="path3" /><path
+       id="path3"
+       inkscape:export-filename="prettify_plot.png"
+       inkscape:export-xdpi="500"
+       inkscape:export-ydpi="500" /><path
        fill="#000000"
        fill-opacity="0.0"
        d="m42.057743 93.19685l389.80048 0l0 317.63806l-389.80048 0z"
