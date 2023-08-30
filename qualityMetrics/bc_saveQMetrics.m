@@ -60,7 +60,7 @@ if isfield(param,'saveAsTSV') % ensure back-compatibility if users have a previo
         'is_somatic','waveform_dur', 'spatial_decay_slope','wv_baseline_flatness',...
         'SNR','frac_RPVs' };
     if param.saveAsTSV == 1 
-        cluster_id_vector = qMetric.clusterID - 1;
+        cluster_id_vector = qMetric.clusterID - 1; % from bombcell to phy nomenclature 
         if isfield(param,'ephysKilosortPath')
             saveTSV_path = param.ephysKilosortPath;
         else
