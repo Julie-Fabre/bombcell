@@ -1,12 +1,12 @@
 # prettify matlab
 Functions to instantly make your MATLAB scripts and code beautiful:
 
-- prettify_plot to make your matlab plots beautiful: run `prettify_plot` to prettify your current figure
+- run `prettify_plot` to prettify your current figure
 
 <img src="./images/prettify_plot.png" width="100%" align="left">
 
 
-- prettify_current_code to prettify code in your current MATLAB editor: run `prettify_current_code` to prettify your current script open in the matlab editor
+- run `prettify_current_code` to prettify your current script open in the MATLAB editor
   
 <img src="./images/prettify_code.png" width="100%" align="left">
 
