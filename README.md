@@ -6,7 +6,7 @@ Functions to instantly make your MATLAB scripts and code beautiful:
 <img src="./images/prettify_plot.png" width="100%" align="left">
 
 
-- prettify_current_code [! Work in progress !] to prettify code in your current MATLAB editor: run `prettify_current_code` to prettify your current script open in the matlab editor
+- prettify_current_code to prettify code in your current MATLAB editor: run `prettify_current_code` to prettify your current script open in the matlab editor
   
 <img src="./images/prettify_code.png" width="100%" align="left">
 
