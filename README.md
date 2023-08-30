@@ -1,5 +1,5 @@
 # 🪄 prettify matlab
-Functions to instantly make your MATLAB scripts and code beautiful:
+Functions to instantly make your MATLAB scripts and plots beautiful and publication-ready.
 
 
 ### Prettify plots 
