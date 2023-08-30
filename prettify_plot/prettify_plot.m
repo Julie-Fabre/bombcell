@@ -90,6 +90,7 @@ function prettify_plot(sameXLimits, sameYLimits, figureColor, titleFontSize, lab
             set(currAx, 'FontSize', generalFontSize, 'GridColor', textColor, ...
                         'YColor', textColor, 'XColor', textColor, ...
                         'MinorGridColor', textColor);
+            set(currAx.Legend, 'Color', figureColor, 'TextColor', textColor)
             
             % Adjust properties of line children within the plot
             childLines = findall(currAx, 'Type', 'line');
@@ -103,8 +104,8 @@ function prettify_plot(sameXLimits, sameYLimits, figureColor, titleFontSize, lab
             end
             
             % Get x and y limits 
-            xlims_subplot(iAx,:) = get(gca, 'XLim');
-            ylims_subplot(iAx,:) = get(gca, 'YLim');
+            xlims_subplot(iAx,:) = currAx.XLim;
+            ylims_subplot(iAx,:) = currAx.YLim;
 
             % Get plot position
             pos_subplot(iAx,:) = currAx.Position(1:2); % [left bottom width height]
