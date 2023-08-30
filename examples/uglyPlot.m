@@ -34,7 +34,6 @@ plot(x_points, y_points, 'ro'); % red circles
 title('Cosine Curve');
 xlabel('x');
 ylabel('cos(x)');
-legend('cos(x)', 'Sample Points');
 
 % Third subplot: tangent and cotangent curves
 subplot(2, 2, 3);
@@ -45,7 +44,6 @@ ylim([-10, 10]);
 title('Tangent and Cotangent Curves');
 xlabel('x');
 ylabel('Value');
-legend('tan(x)', 'cot(x)');
 
 % Fourth subplot: logarithm curve
 subplot(2, 2, 4);

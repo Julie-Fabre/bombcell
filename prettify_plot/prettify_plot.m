@@ -1,4 +1,5 @@
-function prettify_plot(sameXLimits, sameYLimits, figureColor, titleFontSize, labelFontSize, generalFontSize, pointSize, lineThickness, textColor)
+function prettify_plot(sameXLimits, sameYLimits, figureColor, legendAsTxt, titleFontSize, labelFontSize, ...
+    generalFontSize, pointSize, lineThickness, textColor)
 % make current figure pretty
 % ------
 % Inputs
@@ -15,6 +16,8 @@ function prettify_plot(sameXLimits, sameYLimits, figureColor, titleFontSize, lab
 %       - 'col': set all xlimits to the same values for each subplot col
 % - figureColor: string (e.g. 'w', 'k', ..) or RGB value defining the plots
 %       background color. 
+% - legendAsTxt: 1 if you want the legend box to be replace by text
+%       directly plotted on the figure, next to the each subplot's line/point 
 % - titleFontSize: double
 % - labelFontSize: double
 % - generalFontSize: double
@@ -41,22 +44,25 @@ function prettify_plot(sameXLimits, sameYLimits, figureColor, titleFontSize, lab
     if nargin < 3 || isempty(figureColor)
         figureColor = 'w';
     end
-    if nargin < 4 || isempty(titleFontSize)
+    if nargin < 4 || isempty(legendAsTxt)
+        legendAsTxt = 0;
+    end
+    if nargin < 5 || isempty(titleFontSize)
         titleFontSize = 18;
     end
-    if nargin < 5 || isempty(labelFontSize)
+    if nargin < 6 || isempty(labelFontSize)
         labelFontSize = 15;
     end
-    if nargin < 6 || isempty(generalFontSize)
+    if nargin < 7 || isempty(generalFontSize)
         generalFontSize = 13;
     end
-    if nargin < 7 || isempty(pointSize)
+    if nargin < 8 || isempty(pointSize)
         pointSize = 15;
     end
-    if nargin < 8 || isempty(lineThickness)
+    if nargin < 9 || isempty(lineThickness)
         lineThickness = 2;
     end
-    if nargin < 9 || isempty(textColor)
+    if nargin < 10 || isempty(textColor)
         % Set default font color based on the input color
         switch figureColor
             case 'k'
@@ -110,8 +116,11 @@ function prettify_plot(sameXLimits, sameYLimits, figureColor, titleFontSize, lab
             % Get plot position
             pos_subplot(iAx,:) = currAx.Position(1:2); % [left bottom width height
 
-            % set legend position
-             legend('Location','best')
+            if legendAsTxt ==1 
+                prettify_legend(currAx)
+            else
+                legend('Location','best')
+            end
         end
     end
 
@@ -155,7 +164,11 @@ function prettify_plot(sameXLimits, sameYLimits, figureColor, titleFontSize, lab
                 end
             end
             % set legend position
-             legend('Location','best')
+            if legendAsTxt ==1 
+                prettify_legend(currAx)
+            else
+                legend('Location','best')
+            end
         end
     end
 end
