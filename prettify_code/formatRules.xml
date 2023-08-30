@@ -14,12 +14,17 @@
         <afterComma>true</afterComma> <!-- add spacing after commas -->
     </spacing>
     <blankLines>
-        <afterKeywords>if,else,elseif,for,while,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise,catch</afterKeywords> <!-- add blank line after these keywords -->
-        <beforeKeywords>if,else,elseif,for,while,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise,catch</beforeKeywords> <!-- add blank line before these keywords -->
+        <addBlankLines>false</addBlankLines><!-- add blank lines after "afterKeywords" and before "beforeKeywords" or not -->
+        <afterKeywords>for,if,elseif,else,parfor,while,catch,error,assert,warning,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise,break,keyboard</afterKeywords> <!-- if addBlankLines is true, add blank line after these keywords -->
+        <beforeKeywords>for,if,elseif,else,parfor,while,catch,error,assert,warning,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise,break,keyboard</beforeKeywords> <!--  if addBlankLines is true, dd blank line before these keywords -->
         <singleBlankLines>true</singleBlankLines> <!-- remove any duplicate blank lines -->
     </blankLines>
-    <singleLines>
+    <singleLines><!-- add newlines lines after or before these keywords -->
         <newLineBefore>for,if,elseif,else,parfor,while,catch,error,assert,warning,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise,break,keyboard</newLineBefore>
-        <newLineAfter> end,break,keyboard</newLineAfter>
+        <newLineAfter>end,break,keyboard</newLineAfter>
     </singleLines>
+    <lineEndings><!-- currently dsiabled- work in progress --> 
+        <noPunctuationEnding>for,if,elseif,else,parfor,while,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,break,keyboard</noPunctuationEnding>
+        <semicolonEnding>true</semicolonEnding>
+    </lineEndings>
 </rules>

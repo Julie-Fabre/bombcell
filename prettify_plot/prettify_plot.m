@@ -33,10 +33,10 @@ function prettify_plot(sameXLimits, sameYLimits, figureColor, titleFontSize, lab
 
     % Set default parameter values
     if nargin < 1 || isempty(sameXLimits)
-        sameXLimits = 'all';
+        sameXLimits = 'none';
     end
     if nargin < 2 || isempty(sameYLimits)
-        sameYLimits = 'all';
+        sameYLimits = 'none';
     end
     if nargin < 3 || isempty(figureColor)
         figureColor = 'w';

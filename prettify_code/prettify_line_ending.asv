@@ -1,0 +1,15 @@
+function formatedLine = prettify_line_ending(lineToEnd, noPunctuationEnding, semiColonEnding)
+    
+    if contains(lineToEnd(1:end), noPunctuationEnding)
+        lineToEnd = regexprep(lineToEnd, ',', '');
+        lineToEnd = regexprep(lineToEnd, ';', '');
+    else
+        if semiColonEndind == 1
+            if ~endsWith(lineToEnd, ';')
+                lineToEnd = [lineToEnd ';'];
+            end
+        end
+    end
+    formatedLine = lineToEnd;
+
+end
