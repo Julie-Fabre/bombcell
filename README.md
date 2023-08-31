@@ -23,7 +23,3 @@ To use prettify_matlab:
 
 prettify_matlab doesn't use any of MATLAB's add-on toolboxes and doesn't have any dependancies. 
 
-
-<img src="https://github.com/Julie-Fabre/prettify_matlab/assets/29582008/dd45780b-9897-491d-ab41-23a509c3d4f6.giphy.gif" width="40" align="left">
-
-P.S. It's prettify m*a*tlab, not prettify matl**aaaaaa**b 
