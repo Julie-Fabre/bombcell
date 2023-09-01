@@ -23,3 +23,9 @@ To use prettify_matlab:
 
 prettify_matlab doesn't use any of MATLAB's add-on toolboxes and doesn't have any dependancies. 
 
+
+
+---
+To do:
+- integrate my colorblind simulator
+- perceptually-uniform colormaps 
