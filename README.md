@@ -1,5 +1,5 @@
 # 🪄 prettify matlab
-Functions to instantly make your MATLAB scripts and plots beautiful and publication-ready.
+Your one-stop shop to instantly make your MATLAB scripts and plots beautiful and publication-ready.
 
 
 ## :triangular_flag_on_post: Features 
