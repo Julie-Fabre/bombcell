@@ -1,5 +1,5 @@
 # 🪄 prettify matlab
-Your one-stop shop to instantly make your MATLAB scripts and plots beautiful and publication-ready.
+My one-stop shop to instantly make your MATLAB scripts and plots beautiful and publication-ready.
 
 
 ## :triangular_flag_on_post: Features 
@@ -29,3 +29,4 @@ prettify_matlab doesn't use any of MATLAB's add-on toolboxes and doesn't have an
 To do:
 - integrate my colorblind simulator
 - perceptually-uniform colormaps 
+- inkscape / scientific 
