@@ -31,13 +31,3 @@ Uses the matrices from:
 
 #### Colormaps
 [Coming soon] Perceptually-uniform, colorblind friendly colormaps. 
-
-
-
-
-
----
-To do:
-- integrate my colorblind simulator
-- perceptually-uniform colormaps 
-- inkscape / scientific 
