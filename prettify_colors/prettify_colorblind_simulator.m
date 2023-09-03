@@ -76,5 +76,6 @@ for i = 1:length(transforms)
         imshow(transformed);
         
     end
+    prettify_plot;
 end
 end

@@ -115,11 +115,12 @@ function prettify_plot(sameXLimits, sameYLimits, figureColor, legendAsTxt, title
 
             % Get plot position
             pos_subplot(iAx,:) = currAx.Position(1:2); % [left bottom width height
-
-            if legendAsTxt ==1 
-                prettify_legend(currAx)
-            else
-                legend('Location','best')
+                if ~isempty(currAx.Legend)
+                if legendAsTxt ==1 
+                    prettify_legend(currAx)
+                else
+                    legend('Location','best')
+                end
             end
         end
     end
