@@ -24,7 +24,6 @@ Run `prettify_current_code;` to prettify your current script open in the MATLAB 
 ### Prettify colors
 #### Colorblind simulator 
 Run `prettify_colorblind_simulator;` to plot your current figure as it would seen with different types of color blindness.
-![cb](https://github.com/Julie-Fabre/prettify_matlab/assets/29582008/689b0442-873d-4880-aaa7-87cddc9be847)
 
 #### Colormaps
 [Coming soon] Perceptually-uniform, colorblind friendly colormaps. 
