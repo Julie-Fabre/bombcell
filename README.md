@@ -1,15 +1,15 @@
 # 🪄 prettify matlab
 My one-stop shop to instantly make your MATLAB scripts and plots beautiful, publication-ready and colorblind friendly.
 
-[Installation](https://github.com/Julie-Fabre/prettify_matlab/main/README.md#-🏁-Installation)
+## 🏁 Installation
 
-[Features](https://github.com/Julie-Fabre/prettify_matlab/main/README.md#-:triangular_flag_on_post:-Features)
-- [Prettify plots](https://github.com/Julie-Fabre/prettify_matlab/main/README.md#prettify-plots)
-- [Prettify code](https://github.com/Julie-Fabre/prettify_matlab/main/README.md#prettify-code)
-- [Prettify colors](https://github.com/Julie-Fabre/prettify_matlab/main/README.md#prettify-colors)
-    - [Colorblind simulator](https://github.com/Julie-Fabre/prettify_matlab/main/README.md#Colorblind-simulator)
-    - [Colormaps - coming soon](https://github.com/Julie-Fabre/prettify_matlab/main/README.md#Colormaps)
- 
+To use prettify_matlab:
+
+- clone the repository
+- add the repository folder to MATLAB's path.
+
+prettify_matlab doesn't use any of MATLAB's add-on toolboxes and doesn't have any dependancies. 
+
 ## :triangular_flag_on_post: Features     
 ### Prettify plots
 
@@ -29,14 +29,6 @@ Run `prettify_colorblind_simulator;` to plot your current figure as it would see
 [Coming soon] Perceptually-uniform, colorblind friendly colormaps. 
 
 
-## 🏁 Installation
-
-To use prettify_matlab:
-
-- clone the repository
-- add the repository folder to MATLAB's path.
-
-prettify_matlab doesn't use any of MATLAB's add-on toolboxes and doesn't have any dependancies. 
 
 
 
