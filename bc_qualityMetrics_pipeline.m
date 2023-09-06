@@ -60,3 +60,16 @@ unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI,
     param, probeLocation, unitType, loadRawTraces);
 
 
+%% example: get the quality metrics for one unit
+% this is an example to get the quality metric for the unit with the
+% original kilosort and phy label of xx (0-indexed), which corresponds to
+% the unit with qMetric.clusterID == xx + 1. This is *NOT NECESSARILY* the
+% (xx + 1)th row of the structure qMetric - some of the  clusters that kilosort
+% outputs are empty, because they were dropped in the last stages of the
+% algorithm. These empty clusters are not included in the qMetric structure
+original_id_we_want_to_load = 0;
+id_we_want_to_load_1_indexed = original_id_we_want_to_load + 1;
+number_of_spikes_for_this_cluster = qMetric.nSpikes(qMetric.clusterID == id_we_want_to_load_1_indexed);
+
+
+
