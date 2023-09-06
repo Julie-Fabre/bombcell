@@ -4,9 +4,9 @@
 
 # 💣 Bombcell: find bombshell cells! 💣 <img src="./images/bombcell_logo_crop_small_flame.png" width="30%" title="bombcell" alt="bombcell" align="right" vspace = "50">
 
-Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem. It evaluates the quality of recorded units and extracts essential electrophysiological properties. 
+Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem, evaluating the quality of recorded units and extracting essential electrophysiological properties. Bombcell can replace manual curation or can be used as a tool to aid manual curation.
 
-Bombcell is specifically tailored for units recorded with Neuropixels probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort. If you want to use bombcell in conjunction with another spike sorting algorithm, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues), create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request), or email [us: juliemfabre[at]gmail[dot]com](mailto:juliemfabre@gmail.com).
+Bombcell is specifically tailored for units recorded with Neuropixels probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort. If you want to use bombcell in conjunction with another spike sorting algorithm, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues), create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request), or email [us: juliemfabre[at]gmail[dot]com](mailto:juliemfabre@gmail.com). Follow us on [twitter: basal_gang](https://twitter.com/basal_gang) for updates on bombcell.
 
 
 ### 📔 Bombcell wiki
@@ -36,7 +36,7 @@ To begin using Bombcell:
 #### Dependancies
 
 - [npy-matlab](https://github.com/kwikteam/npy-matlab) to load .npy data in.
-- [prettify-matlab](https://github.com/Julie-Fabre/prettify-matlab) to make plots pretty.
+- [prettify-matlab](https://github.com/Julie-Fabre/prettify_matlab) to make plots pretty.
 - If you have z-lib compressed ephys data, compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp), you will additionally need the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat). More information about compressing ephys data [here](https://www.biorxiv.org/content/biorxiv/early/2023/05/24/2023.05.22.541700.full.pdf?%3Fcollection=). 
 - MATLAB toolboxes:
     - Signal Processing Toolbox
