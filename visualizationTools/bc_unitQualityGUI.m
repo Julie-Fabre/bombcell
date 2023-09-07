@@ -442,8 +442,7 @@ if qMetric.fractionRPVs_estimatedTauR(iCluster) > param.maxRPVviolations
 else
     set(guiData.isiTitle, 'String', '\color[rgb]{0 .5 0}ISI');
 end
-set(guiData.isiLegend, 'String', [num2str(qMetric.fractionRPVs_estimatedTauR(iCluster)*100), ' % r.p.v.', newline, ...
-    'estimated refractory period (ms): ', num2str(qMetric.RPV_tauR_estimate(iCluster))])
+set(guiData.isiLegend, 'String', [num2str(qMetric.fractionRPVs_estimatedTauR(iCluster)*100), ' % r.p.v.'])
 
 %% 6. plot isolation distance
 if param.computeDistanceMetrics

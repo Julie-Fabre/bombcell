@@ -136,7 +136,9 @@ for iUnit = 1:length(uniqueTemplates)
 
     % get this unit's attributes 
     thisUnit = uniqueTemplates(iUnit);
-    qMetric.clusterID(iUnit) = thisUnit;
+    qMetric.phy_clusterID(iUnit) = thisUnit - 1; % this is the cluster ID as it appears in phy
+    qMetric.clusterID(iUnit) = thisUnit; % this is the cluster ID as it appears in phy, 1-indexed (adding 1)
+
     theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
 
