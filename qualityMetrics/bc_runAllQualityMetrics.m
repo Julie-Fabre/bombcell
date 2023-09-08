@@ -233,5 +233,5 @@ catch
 end
 
 unitType = bc_getQualityUnitType(param, qMetric);
-%bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
+bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
 end
