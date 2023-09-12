@@ -4,6 +4,8 @@
 
 # 💣 Bombcell: find bombshell cells! 💣 <img src="./images/bombcell_logo_crop_small_flame.png" width="30%" title="bombcell" alt="bombcell" align="right" vspace = "50">
 
+📢 **I will be giving a talk on quality metrics and bombcell on the 17th of October, at 4:40 BST. To attend the talk, register [here](https://docs.google.com/forms/d/e/1FAIpQLSdDuDIW-u2oGFhkyLTPRqH1pU6esn5xJgm5Zh2YBg-xVEfvmg/viewform) (the talks are online and free).**
+
 Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem, evaluating the quality of recorded units and extracting essential electrophysiological properties. Bombcell can replace manual curation or can be used as a tool to aid manual curation.
 
 Bombcell is specifically tailored for units recorded with Neuropixels probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort. If you want to use bombcell in conjunction with another spike sorting algorithm, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues), create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request), or email [us: juliemfabre[at]gmail[dot]com](mailto:juliemfabre@gmail.com). Follow us on [twitter: basal_gang](https://twitter.com/basal_gang) for updates on bombcell.
