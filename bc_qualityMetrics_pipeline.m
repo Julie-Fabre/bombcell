@@ -78,11 +78,11 @@ original_id_we_want_to_load = 0;
 number_of_spikes_for_this_cluster = qMetric.nSpikes(qMetric.phy_clusterID == original_id_we_want_to_load);
 
 
-%% get unit labels 
+%% example: get unit labels 
 % the output of `uunitType = bc_getQualityUnitType(param, qMetric);` gives
 % the unitType in a number format. 1 inidicates good units, 2 inidicates mua units, 3
 % indicates non-somatic units and 0 indicates noise units (see below) 
-% 
+ 
 goodUnits = unitType == 1;
 muaUnits = unitType == 2;
 noiseUnits = unitType == 0;
@@ -90,3 +90,9 @@ nonSomaticUnits = unitType == 3;
 
 % example: get all good units number of spikes
 all_good_units_number_of_spikes = qMetric.nSpikes(goodUnits);
+
+% (for use with another language: output a .tsv file of labels. You can then simply load this) 
+label_table = table(unitType);
+writetable(label_table,[savePath filesep 'templates._bc_unit_labels.tsv'],'FileType', 'text','Delimiter','\t');  
+       
+
