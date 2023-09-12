@@ -63,13 +63,28 @@ unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI,
 %% example: get the quality metrics for one unit
 % this is an example to get the quality metric for the unit with the
 % original kilosort and phy label of xx (0-indexed), which corresponds to
-% the unit with qMetric.clusterID == xx + 1. This is *NOT NECESSARILY* the
+% the unit with qMetric.clusterID == xx + 1, and to
+% qMetric.phy_clusterID == xx . This is *NOT NECESSARILY* the
 % (xx + 1)th row of the structure qMetric - some of the  clusters that kilosort
 % outputs are empty, because they were dropped in the last stages of the
 % algorithm. These empty clusters are not included in the qMetric structure
+% there are two ways to do this: 
+% 1:
 original_id_we_want_to_load = 0;
-1_Indexed_id_we_want_to_load = 0;
-qMetric.nSpikes(qMetric.clusterID == id_we_want_to_load + 1)
+id_we_want_to_load_1_indexed = original_id_we_want_to_load + 1; 
+number_of_spikes_for_this_cluster = qMetric.nSpikes(qMetric.clusterID == id_we_want_to_load_1_indexed);
+% or 2:
+original_id_we_want_to_load = 0;
+number_of_spikes_for_this_cluster = qMetric.nSpikes(qMetric.phy_clusterID == original_id_we_want_to_load);
 
+
+%% get unit labels 
+% the output of `uunitType = bc_getQualityUnitType(param, qMetric);` gives
+% the unitType in a number format. 1 means good units, 2 means mua units, 3
+% 
+goodUnits = unitType == 1;
+muaUnits = unitType == 2;
+noiseUnits = unitType == 0;
+nonSomaticUnits = unitType == 3; 
 
 
