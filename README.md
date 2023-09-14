@@ -4,7 +4,7 @@
 
 # 💣 Bombcell: find bombshell cells! 💣 <img src="./images/bombcell_logo_crop_small_flame.png" width="30%" title="bombcell" alt="bombcell" align="right" vspace = "50">
 
-📢 **I will be giving a talk on quality metrics and bombcell on the 17th of October 2023, at 4:40 BST. To attend the talk, register [here](https://docs.google.com/forms/d/e/1FAIpQLSdDuDIW-u2oGFhkyLTPRqH1pU6esn5xJgm5Zh2YBg-xVEfvmg/viewform) (the talks are online and free).**
+📢 **I will be giving a talk on quality metrics and bombcell on the 17th of October 2023, at 4:40 BST, as aprt of the 2023 Neuropixels course. To attend the talk, register for the course [here](https://docs.google.com/forms/d/e/1FAIpQLSdDuDIW-u2oGFhkyLTPRqH1pU6esn5xJgm5Zh2YBg-xVEfvmg/viewform) (the talks are online and free).**
 
 Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem, evaluating the quality of recorded units and extracting essential electrophysiological properties. Bombcell can replace manual curation or can be used as a tool to aid manual curation.
 
