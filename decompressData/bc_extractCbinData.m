@@ -15,7 +15,8 @@ function decompDataFile = bc_extractCbinData(fileName, sStartEnd, allChannelIndi
 %           using parfor regularly crashed on my computer, so I have
 %           disabled by default. 
 % saveFileFolder - where to save your data 
-% onlySaveSyncChannel - if true, only save the sync channel
+% onlySaveSyncChannel - if true, only save the sync channel. This speeds up
+%   the function
 % verbose - if true, dispply information about progress
 % ------
 % Outputs
@@ -76,7 +77,7 @@ if sStartEnd(1) < cbinMeta.chunk_bounds(1)
     startEnd(1) = cbinMeta.chunk_bounds(1);
 end
 
-if sStartEnd(2) < cbinMeta.chunk_bounds(2) 
+if sStartEnd(2) > cbinMeta.chunk_bounds(2) 
    warning(sprintf('samples to read outside of file range, changing end sample from %s to %s',num2str(sStartEnd(2)), num2str(cbinMeta.chunk_bounds(end))))
    startEnd(2) = cbinMeta.chunk_bounds(end);
 end
@@ -102,15 +103,6 @@ iChunkEnd = find(sampleEnd <= cbinMeta.chunk_bounds, 1, 'first') - 1;
 nSamplesPerChunk = diff(cbinMeta.chunk_bounds(iChunkStart:iChunkEnd+1));
 iSampleStart = max(sampleStart - cbinMeta.chunk_bounds(iChunkStart:iChunkEnd), 1);
 iSampleEnd = min(sampleEnd - cbinMeta.chunk_bounds(iChunkStart:iChunkEnd), nSamplesPerChunk);
-% nSamples we will actually need from each chunk
-% nSamplesToExtract = iSampleEnd - iSampleStart + 1;
-% these are start and end indices for extracted samples in the output data array
-% startIdx = cumsum([1; nSamplesToExtract(1:end-1)]);
-% endIdx = cumsum(nSamplesToExtract);
-
-% nSamplesOut = sampleEnd - sampleStart + 1;
-% nChannelsOut = numel(chIdx);
-% data = zeros(nSamplesOut, nChannelsOut, cbinMeta.dtype);
 
 nChunks = iChunkEnd - iChunkStart + 1;
 
@@ -139,7 +131,6 @@ end
 if doParfor
     data = cell(nChunks, 1);
     parfor iChunk = 1:nChunks
-        %     chunkInd = iChunk + iChunkStart - 1;
         % size of expected decompressed data for that chunk
         zmatLocalInfo = zmatInfo;
         zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
@@ -153,18 +144,12 @@ if doParfor
         decompData = zmat(compData, zmatLocalInfo);
         decompData = reshape(decompData, nSamples(iChunk), nChannels);
         chunkData = cumsum(decompData(:, allChannelIndices), 1);
-        %     data(startIdx(iChunk):endIdx(iChunk), :) = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
         data{iChunk} = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
     end
     dataOut = cell2mat(data);
-%     if onlySaveSync
-%         fwrite(fidOut, dataOut, 'int16');
-%     else
-%         fwrite(fidOut, dataOut, 'int16');
-%     end
+
     if onlySaveSyncChannel
         error('saving only sync channel not yet implemented in parfor')
-        %save(decompDataFile, 'syncdata')
     else
         fwrite(fidOut, dataOut, 'int16');
     end
@@ -175,7 +160,6 @@ else
 
         zmatLocalInfo = zmatInfo;
         zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
-        % only for one channel : new offset and chunkSizeBytes 
 
         
         % read a chunk from the compressed data
@@ -190,9 +174,7 @@ else
         data = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
         reshaped_data = reshape(permute(data, [2,1]), [nSamples(iChunk)*nChannels, 1]);
         
-        %plot(reshaped_data(end-30000:end))
-        %plot(alldata(385:385:end))
-        %
+        
         if ~onlySaveSyncChannel
             fwrite(fidOut, reshaped_data, 'int16');
         else
@@ -206,31 +188,9 @@ else
     if onlySaveSyncChannel
         save(decompDataFile, 'syncdata')
     end
-%     dataOut = cell2mat(data);
-%     fwrite(fidOut, dataOut, 'int16');
-    % save in particular locations. open file size 
-%     for iChannel = 1:nChannels % can't decompress channel-wise 
-%         
-%         zmatLocalInfo = zmatInfo;
-%         zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
-% 
-%         
-%         % read a chunk from the compressed data
-%         fid = fopen(fileName, 'r');
-%         fseek(fid, offset(iChunk), 'bof');
-%         compData = fread(fid, chunkSizeBytes(iChunk), '*uint8');
-%         fclose(fid);
-%         decompData = zmat(compData, zmatLocalInfo);
-%         decompData = reshape(decompData, nSamples(iChunk), nChannels);
-%         chunkData = cumsum(decompData(:, chIdx), 1);
-%         data{iChunk} = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
-%         fwrite(fidOut, dataOut, 'int16');
-% 
-% 
-%     end
-    
+
 end
 if ~onlySaveSyncChannel
     fclose(fidOut);
 end
-%fidOut_read = fopen(decompDataFile, 'r');
+
