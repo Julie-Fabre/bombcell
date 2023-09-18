@@ -34,10 +34,7 @@ function decompDataFile = bc_extractCbinData(fileName, sStartEnd, allChannelIndi
 % 20230322 added option to only save sync channel (hardcoded as channel 385
 % for now) 
 
-if nargin < 7
-    verbose = true;
-end
-
+%% sanitize/check inputs 
 if nargin < 1
     %     for testing
     fileName = '/home/netshare/zinu/JF070/2022-06-18/ephys/site1_shank0/2022-06_18_JF070_shank1-1_g0_t0.imec0.ap.cbin';
@@ -51,7 +48,7 @@ data = fread(fid, 'uint8=>char');
 fclose(fid);
 cbinMeta = jsondecode(data');
 
-% sanitize/check inputs 
+
 if nargin < 2 || isempty(sStartEnd)
     sStartEnd = [cbinMeta.chunk_bounds(1), cbinMeta.chunk_bounds(end)];
 end
@@ -71,6 +68,9 @@ if nargin < 6
     onlySaveSyncChannel = false;
 end
 
+if nargin < 7
+    verbose = true;
+end
 
 if sStartEnd(1) < cbinMeta.chunk_bounds(1) 
     warning(sprintf('samples to read outside of file range, changing start sample from %s to %s',num2str(sStartEnd(1)), num2str(cbinMeta.chunk_bounds(1))))
@@ -85,6 +85,8 @@ end
 sampleStart = sStartEnd(1);
 sampleEnd = sStartEnd(2);
 
+
+%% decompress and save data 
 
 % build zmat info struct
 zmatInfo = struct;
@@ -111,6 +113,7 @@ nSamples = cbinMeta.chunk_bounds([1:nChunks] + iChunkStart) - cbinMeta.chunk_bou
 chunkSizeBytes = cbinMeta.chunk_offsets([1:nChunks] + iChunkStart) - cbinMeta.chunk_offsets([1:nChunks] + iChunkStart - 1);
 offset = cbinMeta.chunk_offsets([1:nChunks] + iChunkStart - 1);
 
+% get file names and prepare for saving 
 fN = dir(fileName);
 if isdir(saveFileFolder)
     if onlySaveSyncChannel
@@ -122,12 +125,16 @@ if isdir(saveFileFolder)
 else
     decompDataFile = saveFileFolder;
 end
+
 if ~onlySaveSyncChannel
     fidOut = fopen(decompDataFile,'w');
 end
+
 if verbose
     fprintf('\n decompressing data from %s to %s', fileName, decompDataFile)
 end
+
+% main loop
 if doParfor
     data = cell(nChunks, 1);
     parfor iChunk = 1:nChunks
@@ -141,13 +148,15 @@ if doParfor
         compData = fread(fid, chunkSizeBytes(iChunk), '*uint8');
         fclose(fid);
         
+        % store decompressed data 
         decompData = zmat(compData, zmatLocalInfo);
         decompData = reshape(decompData, nSamples(iChunk), nChannels);
         chunkData = cumsum(decompData(:, allChannelIndices), 1);
         data{iChunk} = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
     end
     dataOut = cell2mat(data);
-
+    
+    % save data 
     if onlySaveSyncChannel
         error('saving only sync channel not yet implemented in parfor')
     else
@@ -157,15 +166,15 @@ if doParfor
 else
     syncdata = [];
     for iChunk = 1:nChunks
-
+        % size of expected decompressed data for that chunk
         zmatLocalInfo = zmatInfo;
         zmatLocalInfo.size = [nSamples(iChunk)*nChannels, 1];
 
-        
         % read a chunk from the compressed data
         fid = fopen(fileName, 'r');
         fseek(fid, offset(iChunk), 'bof');
-       
+        
+        % reformat and store decompressed data 
         compData = fread(fid, chunkSizeBytes(iChunk), '*uint8');
         fclose(fid);
         decompData = zmat(compData, zmatLocalInfo);
@@ -174,13 +183,14 @@ else
         data = chunkData(iSampleStart(iChunk):iSampleEnd(iChunk), :);
         reshaped_data = reshape(permute(data, [2,1]), [nSamples(iChunk)*nChannels, 1]);
         
-        
+        % save data 
         if ~onlySaveSyncChannel
             fwrite(fidOut, reshaped_data, 'int16');
         else
-            
             syncdata = [syncdata; reshaped_data(385:385:end)];
         end
+        
+        % verbose: progress fraction
         if ((mod(iChunk, 500) == 0) || iChunk == nChunks || iChunk == 1) && verbose
             disp(['     ', num2str(iChunk), '/' num2str(nChunks)])
         end
