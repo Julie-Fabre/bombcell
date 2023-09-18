@@ -1,5 +1,4 @@
 function decompDataFile = bc_extractCbinData(fileName, sStartEnd, allChannelIndices, doParfor, saveFileFolder, onlySaveSyncChannel, verbose)
-% adapted from a script by Micheal Krumin
 %
 % requires the zmat package:
 % https://github.com/fangq/zmat
@@ -16,14 +15,14 @@ function decompDataFile = bc_extractCbinData(fileName, sStartEnd, allChannelIndi
 %           using parfor regularly crashed on my computer, so I have
 %           disabled by default. 
 % saveFileFolder - where to save your data 
-% onlySaveSyncChannels - if true, only save the sync channel
-% 
+% onlySaveSyncChannel - if true, only save the sync channel
+% verbose - if true, dispply information about progress
 % ------
 % Outputs
 % ------
 % decompDataFile - nSamples x nChannels array of decompressed data
 %
-
+% adapted from a script by Micheal Krumin
 % JF: added sanity checks, more options including parfor,
 % save output as matrix 
 % added size, byte, method info (zmat version used previously
