@@ -76,7 +76,7 @@ if sStartEnd(1) < cbinMeta.chunk_bounds(1)
     startEnd(1) = cbinMeta.chunk_bounds(1);
 end
 
-if sStartEnd(1) < cbinMeta.chunk_bounds(1) 
+if sStartEnd(2) < cbinMeta.chunk_bounds(2) 
    warning(sprintf('samples to read outside of file range, changing end sample from %s to %s',num2str(sStartEnd(2)), num2str(cbinMeta.chunk_bounds(end))))
    startEnd(2) = cbinMeta.chunk_bounds(end);
 end
