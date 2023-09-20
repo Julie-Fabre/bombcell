@@ -14,6 +14,7 @@ ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site,recording
 [spikeTimes_samples, spikeTemplates, ...
     templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysPath);
 ephysap_path = dir(AP_cortexlab_filenameJF(animal,day,experiment,'ephys_includingCompressed',site, recording));
+
 %ephysMetaDir = dir([ephysap_path, '/../../../structure.oebin']);
 ephysMetaDir = dir([ephysap_path.folder, filesep, '*ap.meta']);
 ephysDirPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys_dir',site, recording);
@@ -37,7 +38,14 @@ ephysDirPath = AP_cortexlab_filenameJF(animal, day, experiment, 'ephys_dir',site
 savePath = fullfile(ephysDirPath, 'qMetrics');
 qMetricsExist = dir(fullfile(savePath, 'templates._bc_qMetrics.parquet'));
 
-if (runQM && isempty(qMetricsExist)) || rerunQM
+if isempty(qMetricsExist)% try diff location
+    ksDirPath = AP_cortexlab_filenameJF(animal, day, experiment, 'ephys',site, recording);
+
+    savePath = ksDirPath;
+    qMetricsExist = dir(fullfile(ksDirPath, 'templates._bc_qMetrics.parquet'));
+end
+
+if(runQM && isempty(qMetricsExist)) || rerunQM
     [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
         templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
 elseif ~isempty(qMetricsExist)
