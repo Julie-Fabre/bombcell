@@ -77,7 +77,7 @@ if sStartEnd(1) < cbinMeta.chunk_bounds(1)
     startEnd(1) = cbinMeta.chunk_bounds(1);
 end
 
-if sStartEnd(2) > cbinMeta.chunk_bounds(2) 
+if sStartEnd(2) > cbinMeta.chunk_bounds(end) 
    warning(sprintf('samples to read outside of file range, changing end sample from %s to %s',num2str(sStartEnd(2)), num2str(cbinMeta.chunk_bounds(end))))
    startEnd(2) = cbinMeta.chunk_bounds(end);
 end
@@ -115,7 +115,7 @@ offset = cbinMeta.chunk_offsets([1:nChunks] + iChunkStart - 1);
 
 % get file names and prepare for saving 
 fN = dir(fileName);
-if isdir(saveFileFolder)
+if isfolder(saveFileFolder)
     if onlySaveSyncChannel
         decompDataFile = [saveFileFolder, filesep, fN.name(1:end-14), '_bc_decompressed_sync_channel', fN.name(end-13:end-8),'.mat'];
     
