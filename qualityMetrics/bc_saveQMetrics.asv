@@ -60,15 +60,10 @@ if isfield(param,'saveAsTSV') % ensure back-compatibility if users have a previo
         'is_somatic','waveform_dur', 'spatial_decay_slope','wv_baseline_flatness',...
         'SNR','frac_RPVs' };
     if param.saveAsTSV == 1 
-        cluster_id_vector = qMetric.clusterID - 1; % from bombcell to phy nomenclature 
-        if isfield(param,'ephysKilosortPath')
-            saveTSV_path = param.ephysKilosortPath;
-        else
-            saveTSV_path = savePath;
-        end
+        cluster_id_vector = qMetric.clusterID - 1;
         for fid = 1:length(fieldsToSave)
             cluster_table = table(cluster_id_vector, qMetric.(fieldsToSave{fid}), 'VariableNames', {'cluster_id', fieldsRename{fid}});
-            writetable(cluster_table,[saveTSV_path filesep 'cluster_' fieldsRename{fid} '.tsv'],'FileType', 'text','Delimiter','\t');  
+            writetable(cluster_table,[savePath 'cluster_' fieldsRename{fid} '.tsv'],'FileType', 'text','Delimiter','\t');  
         end
     end
 end

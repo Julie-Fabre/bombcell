@@ -1,4 +1,4 @@
-function param = bc_qualityParamValues(ephysMetaDir, rawFile)
+function param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath)
 % JF, Load a parameter structure defining extraction and
 % classification parameters
 % ------
@@ -28,7 +28,14 @@ param.verbose = 1; % update user on progress
 param.reextractRaw = 0; % re extract raw waveforms or not 
 
 % saving parameters 
-param.saveAsParquet = 1; % save outputs at .parquet file 
+param.saveAsTSV = 1; % additionally save outputs at .tsv file - this is 
+% useful if you want to use phy after bombcell: each quality metric value
+% will appear as a column in the Cluster view
+if nargin < 3
+    warning('no ephys kilosort path defined in bc_qualityParamValues, will save output tsv file in the savePath location')
+else
+    param.ephysKilosortPath = ephysKilosortPath;
+end
 param.saveMatFileForGUI = 1; % save certain outputs at .mat file - useful for GUI
 
 % amplitude parameters
@@ -38,7 +45,7 @@ param.saveMultipleRaw = 0; % If you wish to save the nRawSpikesToExtract as well
 % to track chronic cells over days after this
 param.decompressData = 0; % whether to decompress .cbin ephys data 
 param.spikeWidth = 82; % width in samples 
-param.extractRaw = 0; %whether to extract raw waveforms or not 
+param.extractRaw = 1; %whether to extract raw waveforms or not 
 
 % signal to noise ratio
 param.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times
@@ -46,9 +53,13 @@ param.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times
 % waveform starts 
 
 % refractory period parameters
-param.tauR_valuesMin = 0.5/1000; % refractory period time (s), usually 0.0020
-param.tauR_valuesStep = 0.5/1000; % refractory period time (s), usually 0.0020
-param.tauR_valuesMax = 10/1000; % refractory period time (s), usually 0.0020
+param.tauR_valuesMin = 2/1000; % refractory period time (s), usually 0.0020. 
+% If this value is different than param.tauR_valuesMax, bombcell will
+% estimate the tauR value taking possible values between :
+% param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax
+param.tauR_valuesStep = 0.5/1000; % refractory period time (s) steps. Only 
+% used if param.tauR_valuesMin is different from param.tauR_valuesMax
+param.tauR_valuesMax = 2/1000; % refractory period time (s), usually 0.0020
 param.tauC = 0.1/1000; % censored period time (s)
 
 % percentage spikes missing parameters 
@@ -86,26 +97,27 @@ param.nChannelsIsoDist = 4; % number of nearby channels to use in distance metri
 
 
 %% classifying units into good/mua/noise parameters 
-param.minAmplitude = 20; 
+param.minAmplitude = 20; % in uV
 param.maxRPVviolations = 0.1; % fraction
-param.maxPercSpikesMissing = 20;
-param.minNumSpikes = 300;
+param.maxPercSpikesMissing = 20; % in percentage
+param.minNumSpikes = 300; % number of spikes
 
 param.maxDrift = 100;
 param.minPresenceRatio = 0.7;
 param.minSNR = 0.1;
 
 %waveform 
-param.maxNPeaks = 2;
-param.maxNTroughs = 1;
-param.somatic = 1; 
+param.maxNPeaks = 2; % maximum number of peaks
+param.maxNTroughs = 1; % maximum number of troughs
+param.somatic = 1; % keep only somatic units, and reject non-somatic ones
 param.minWvDuration = 100; % in us
 param.maxWvDuration = 1000; % in us
-param.minSpatialDecaySlope = -0.003;
-param.maxWvBaselineFraction = 0.3;
+param.minSpatialDecaySlope = -0.003; % in V/um
+param.maxWvBaselineFraction = 0.3; % maximum absolute value in waveform baseline
+% should not exceed this fraction of the waveform's abolute peak value
 
 %distance metrics
-param.isoDmin = 20; 
-param.lratioMax = 0.1;
-param.ssMin = NaN; 
+param.isoDmin = 20; % minimum isolation distance value
+param.lratioMax = 0.1; % maximum l-ratio value
+param.ssMin = NaN; % minimum silhouette score 
 end

@@ -16,7 +16,7 @@
 %% set paths - EDIT THESE 
 ephysKilosortPath = '/home/netshare/zinu/CB016/2021-10-07/ephys/CB016_2021-10-07_NatImages_g0/CB016_2021-10-07_NatImages_g0/pyKS/output/';% path to your kilosort output files 
 ephysRawDir = dir('/home/netshare/zinu/CB016/2021-10-07/ephys/CB016_2021-10-07_NatImages_g0/CB016_2021-10-07_NatImages_g0/*.*bin'); % path to yourraw .bin or .dat data
-ephysMetaDir = dir('/home/netshare/zinu/CB016/2021-10-07/ephys/CB016_2021-10-07_NatImages_g0/CB016_2021-10-07_NatImages_g0/*.*meta'); % path to your meta file
+ephysMetaDir = dir('/home/netshare/zinu/CB016/2021-10-07/ephys/CB016_2021-10-07_NatImages_g0/CB016_2021-10-07_NatImages_g0/*.*meta'); % path to your .meta or .oebin meta file
 saveLocation = '/media/julie/ExtraHD/CB016'; % where you want to save the quality metrics 
 savePath = fullfile(saveLocation, 'qMetrics'); 
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
@@ -29,7 +29,7 @@ decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save r
 rawFile = bc_manageDataCompression(ephysRawDir, decompressDataLocal);
 
 %% which quality metric parameters to extract and thresholds 
-param = bc_qualityParamValues(ephysMetaDir, rawFile); 
+param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath); 
 % param = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile) % Run this if you want to use UnitMatch after
 
 %% compute quality metrics 
@@ -59,4 +59,40 @@ bc_loadMetricsForGUI;
 unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, ...
     param, probeLocation, unitType, loadRawTraces);
 
+
+%% example: get the quality metrics for one unit
+% this is an example to get the quality metric for the unit with the
+% original kilosort and phy label of xx (0-indexed), which corresponds to
+% the unit with qMetric.clusterID == xx + 1, and to
+% qMetric.phy_clusterID == xx . This is *NOT NECESSARILY* the
+% (xx + 1)th row of the structure qMetric - some of the  clusters that kilosort
+% outputs are empty, because they were dropped in the last stages of the
+% algorithm. These empty clusters are not included in the qMetric structure
+% there are two ways to do this: 
+% 1:
+original_id_we_want_to_load = 0;
+id_we_want_to_load_1_indexed = original_id_we_want_to_load + 1; 
+number_of_spikes_for_this_cluster = qMetric.nSpikes(qMetric.clusterID == id_we_want_to_load_1_indexed);
+% or 2:
+original_id_we_want_to_load = 0;
+number_of_spikes_for_this_cluster = qMetric.nSpikes(qMetric.phy_clusterID == original_id_we_want_to_load);
+
+
+%% example: get unit labels 
+% the output of `uunitType = bc_getQualityUnitType(param, qMetric);` gives
+% the unitType in a number format. 1 inidicates good units, 2 inidicates mua units, 3
+% indicates non-somatic units and 0 indicates noise units (see below) 
+ 
+goodUnits = unitType == 1;
+muaUnits = unitType == 2;
+noiseUnits = unitType == 0;
+nonSomaticUnits = unitType == 3; 
+
+% example: get all good units number of spikes
+all_good_units_number_of_spikes = qMetric.nSpikes(goodUnits);
+
+% (for use with another language: output a .tsv file of labels. You can then simply load this) 
+label_table = table(unitType);
+writetable(label_table,[savePath filesep 'templates._bc_unit_labels.tsv'],'FileType', 'text','Delimiter','\t');  
+       
 

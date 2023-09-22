@@ -46,8 +46,12 @@ if plotThis
     
     xlabel('time (s)')
     ylabel(['amplitude scaling' newline 'factor'])
-    makepretty('none')
-
+    if exist('prettify_plot', 'file')
+        prettify_plot('none','all','none')
+    else
+        warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
+        makepretty('none')
+    end
 end
 
 
