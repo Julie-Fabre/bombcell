@@ -197,7 +197,7 @@ if param.plotGlobal
         yLim = ylim;
         line([param.maxWvBaselineFraction, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         xLim = xlim;
-        rectangle('Position',[xLim(1), yLim(1), param.maxWvBaselineFraction-xLim(1), yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
+        rectangle('Position',[xLim(1), yLim(1), param.minSpatialDecaySlope-xLim(1), yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
         
         ylabel('unit count')
         xlabel(['waveform baseline', newline, '''flatness'''])
@@ -208,9 +208,6 @@ if param.plotGlobal
             [0:0.05:max(qMetric.presenceRatio)]);
         yLim = ylim;
         line([param.minPresenceRatio, param.minPresenceRatio], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        xLim = xlim;
-        rectangle('Position',[param.minPresenceRatio, yLim(1), xLim(2)-param.minPresenceRatio, yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
-        
         ylabel('unit count')
         xlabel('presence ratio')
 
@@ -222,9 +219,6 @@ if param.plotGlobal
             %         [0:20:max(qMetric.signalToNoiseRatio(~isinf(qMetric.signalToNoiseRatio)))]);
             yLim = ylim;
             line([param.minSNR, param.minSNR], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-            xLim = xlim;
-            rectangle('Position',[param.minSNR, yLim(1), xLim(2)-param.minSNR, yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
-        
             ylabel('unit count')
             xlabel(['signal-to-noise', newline, 'ratio'])
         end
@@ -236,9 +230,6 @@ if param.plotGlobal
                 [0:5:max(qMetric.maxDriftEstimate)]);
             yLim = ylim;
             %line([param.plotDetails, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-            xLim = xlim;
-            %rectangle('Position',[xLim(1), yLim(1), param.maxWvBaselineFraction-xLim(1), yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
-        
             ylabel('unit count')
             xlabel('max drift estimate')
 
