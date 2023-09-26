@@ -41,7 +41,7 @@ if param.plotGlobal
         hold on;
         singleU = uniqueTemplates_idx(find(unitType == iUnitType));
         set(gca, 'XColor', 'w', 'YColor', 'w')
-        singleUnitLines = arrayfun(@(x) plot(squeeze(templateWaveforms(singleU(x), :)), 'linewidth', 1, 'Color', [0,0,0,0.2]), 1:size(singleU, 2));
+        singleUnitLines = arrayfun(@(x) plot(squeeze(templateWaveforms(singleU(x), :)), 'linewidth', 1, 'Color', [0, 0, 0, 0.2]), 1:size(singleU, 2));
         xlim([21, 82])
     end
 
@@ -62,7 +62,7 @@ if param.plotGlobal
         yLim = ylim;
         xLim = xlim;
         line([param.maxNPeaks + 0.5, param.maxNPeaks + 0.5], [0, yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        rectangle('Position',[xLim(1) yLim(1) param.maxNPeaks+0.5-xLim(1) yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
+        rectangle('Position', [xLim(1), yLim(1), param.maxNPeaks + 0.5 - xLim(1), yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
         ylabel('unit count')
         xlabel('# peaks')
 
@@ -73,7 +73,7 @@ if param.plotGlobal
         yLim = ylim;
         xLim = xlim;
         line([param.maxNTroughs + 0.5, param.maxNTroughs + 0.5], [0, yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        rectangle('Position',[xLim(1) yLim(1) param.maxNTroughs+0.5-xLim(1) yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
+        rectangle('Position', [xLim(1), yLim(1), param.maxNTroughs + 0.5 - xLim(1), yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
         ylabel('unit count')
         xlabel('# troughs')
 
@@ -82,9 +82,9 @@ if param.plotGlobal
         hold on;
         histogram(1-qMetric.isSomatic, 'FaceColor', colorMtx(3, 1:3), 'FaceAlpha', colorMtx(3, 4));
         yLim = ylim;
-        xLim=xlim;
+        xLim = xlim;
         line([param.somatic - 0.5, param.somatic - 0.5], [0, yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        rectangle('Position',[xLim(1) yLim(1) param.somatic - 0.5-xLim(1) yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
+        rectangle('Position', [xLim(1), yLim(1), param.somatic - 0.5 - xLim(1), yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
         xticks([0, 1])
         xticklabels({'Y', 'N'})
         ylabel('unit count')
@@ -98,7 +98,7 @@ if param.plotGlobal
         yLim = ylim;
         line([param.maxRPVviolations * 100, param.maxRPVviolations * 100], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         xLim = xlim;
-        rectangle('Position',[xLim(1) yLim(1)  param.maxRPVviolations * 100 -xLim(1) yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
+        rectangle('Position', [xLim(1), yLim(1), param.maxRPVviolations * 100 - xLim(1), yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
         ylabel('unit count')
         xlabel(['refractory period', newline, 'violations (%)'])
 
@@ -124,7 +124,7 @@ if param.plotGlobal
         yLim = ylim;
         line([param.maxPercSpikesMissing, param.maxPercSpikesMissing], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         xLim = xlim;
-        rectangle('Position',[xLim(1), yLim(1), param.maxPercSpikesMissing-xLim(1), yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
+        rectangle('Position', [xLim(1), yLim(1), param.maxPercSpikesMissing - xLim(1), yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
         ylabel('unit count')
         xlabel(['% spikes below', newline, 'detection threshold,', newline, 'gaussian assumption'])
 
@@ -137,8 +137,8 @@ if param.plotGlobal
         %xLim = xlim;
         %rectangle('Position',[xLim(1) yLim(1)  param.maxPercSpikesMissing
         %- 0.5-xLim(1) yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2]) % not
-        %currently used 
-        ylabel('unit count') 
+        %currently used
+        ylabel('unit count')
         xlabel(['% spikes below', newline, 'detection threshold,', newline, 'symmetric assumption'])
 
         subplot(4, 5, 8)
@@ -148,8 +148,8 @@ if param.plotGlobal
         yLim = ylim;
         line([param.minNumSpikes, param.minNumSpikes], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         xLim = xlim;
-        rectangle('Position',[param.minNumSpikes, yLim(1),  xLim(2) - param.minNumSpikes, yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
-        
+        rectangle('Position', [param.minNumSpikes, yLim(1), xLim(2) - param.minNumSpikes, yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
+
         ylabel('unit count')
         xlabel('# spikes')
 
@@ -162,7 +162,7 @@ if param.plotGlobal
             yLim = ylim;
             line([param.minAmplitude, param.minAmplitude], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
             xLim = xlim;
-            rectangle('Position',[param.minAmplitude, yLim(1),  xLim(2) - param.minAmplitude, yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
+            rectangle('Position', [param.minAmplitude, yLim(1), xLim(2) - param.minAmplitude, yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
             ylabel('unit count')
             xlabel(['mean raw waveform', newline, ' peak amplitude (uV)'])
         end
@@ -173,8 +173,8 @@ if param.plotGlobal
         yLim = ylim;
         line([param.minSpatialDecaySlope, param.minSpatialDecaySlope], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         xLim = xlim;
-        rectangle('Position',[xLim(1), yLim(1), param.minSpatialDecaySlope-xLim(1), yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
-        
+        rectangle('Position', [xLim(1), yLim(1), param.minSpatialDecaySlope - xLim(1), yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
+
         ylabel('unit count')
         xlabel(['spatial decay', newline, 'slope'])
 
@@ -185,8 +185,8 @@ if param.plotGlobal
         yLim = ylim;
         line([param.minWvDuration + 0.5, param.minWvDuration + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         line([param.maxWvDuration + 0.5, param.maxWvDuration + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        rectangle('Position',[param.minWvDuration, yLim(1),  param.maxWvDuration-param.minWvDuration, yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
-            
+        rectangle('Position', [param.minWvDuration, yLim(1), param.maxWvDuration - param.minWvDuration, yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
+
         ylabel('unit count')
         xlabel(['waveform', newline, 'duration'])
 
@@ -197,8 +197,8 @@ if param.plotGlobal
         yLim = ylim;
         line([param.maxWvBaselineFraction, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         xLim = xlim;
-        rectangle('Position',[xLim(1), yLim(1), param.maxWvBaselineFraction-xLim(1), yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
-        
+        rectangle('Position', [xLim(1), yLim(1), param.maxWvBaselineFraction - xLim(1), yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
+
         ylabel('unit count')
         xlabel(['waveform baseline', newline, '''flatness'''])
 
@@ -209,8 +209,8 @@ if param.plotGlobal
         yLim = ylim;
         line([param.minPresenceRatio, param.minPresenceRatio], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         xLim = xlim;
-        rectangle('Position',[param.minPresenceRatio, yLim(1), xLim(2)-param.minPresenceRatio, yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
-        
+        rectangle('Position', [param.minPresenceRatio, yLim(1), xLim(2) - param.minPresenceRatio, yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
+
         ylabel('unit count')
         xlabel('presence ratio')
 
@@ -223,8 +223,8 @@ if param.plotGlobal
             yLim = ylim;
             line([param.minSNR, param.minSNR], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
             xLim = xlim;
-            rectangle('Position',[param.minSNR, yLim(1), xLim(2)-param.minSNR, yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
-        
+            rectangle('Position', [param.minSNR, yLim(1), xLim(2) - param.minSNR, yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
+
             ylabel('unit count')
             xlabel(['signal-to-noise', newline, 'ratio'])
         end
@@ -238,7 +238,7 @@ if param.plotGlobal
             %line([param.plotDetails, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
             xLim = xlim;
             %rectangle('Position',[xLim(1), yLim(1), param.maxWvBaselineFraction-xLim(1), yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
-        
+
             ylabel('unit count')
             xlabel('max drift estimate')
 
