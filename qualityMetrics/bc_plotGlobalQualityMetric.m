@@ -124,7 +124,7 @@ if param.plotGlobal
         yLim = ylim;
         line([param.maxPercSpikesMissing, param.maxPercSpikesMissing], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         xLim = xlim;
-        rectangle('Position',[xLim(1) yLim(1)  param.maxPercSpikesMissing -xLim(1) yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
+        rectangle('Position',[xLim(1), yLim(1), param.maxPercSpikesMissing-xLim(1), yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
         ylabel('unit count')
         xlabel(['% spikes below', newline, 'detection threshold,', newline, 'gaussian assumption'])
 

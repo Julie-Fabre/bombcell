@@ -46,8 +46,14 @@ if isempty(qMetricsExist)% try diff location
 end
 
 if(runQM && isempty(qMetricsExist)) || rerunQM
-    [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
-        templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
+    try
+        [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
+            templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
+    catch
+        param = bc_qualityParamValues_noRaw(ephysMetaDir, rawFile); 
+        [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
+            templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
+    end
 elseif ~isempty(qMetricsExist)
     [param, qMetric, fractionRPVs_allTauR] = bc_loadSavedMetrics(savePath); 
     unitType = bc_getQualityUnitType(param, qMetric);
