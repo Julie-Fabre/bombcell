@@ -91,7 +91,11 @@ function prettify_plot(sameXLimits, sameYLimits, figureColor, legendAsTxt, title
         if ~isempty(currAx)
             % Set font properties for the axis
             set(currAx.XLabel, 'FontSize', labelFontSize, 'Color', textColor);
-            set(currAx.YLabel, 'FontSize', labelFontSize, 'Color', textColor);
+            if strcmp(currAx.YAxisLocation, 'left')% if there is both a left and right yaxis, keep the colors 
+                set(currAx.YLabel, 'FontSize', labelFontSize);
+            else
+                set(currAx.YLabel, 'FontSize', labelFontSize, 'Color', textColor);
+            end
             set(currAx.Title, 'FontSize', titleFontSize, 'Color', textColor);
             set(currAx, 'FontSize', generalFontSize, 'GridColor', textColor, ...
                         'YColor', textColor, 'XColor', textColor, ...
