@@ -100,7 +100,9 @@ function prettify_plot(sameXLimits, sameYLimits, figureColor, legendAsTxt, title
             set(currAx, 'FontSize', generalFontSize, 'GridColor', textColor, ...
                         'YColor', textColor, 'XColor', textColor, ...
                         'MinorGridColor', textColor);
-            set(currAx.Legend, 'Color', figureColor, 'TextColor', textColor)
+            if ~isempty(currAx.Legend)
+                set(currAx.Legend, 'Color', figureColor, 'TextColor', textColor)
+            end
             
             % Adjust properties of line children within the plot
             childLines = findall(currAx, 'Type', 'line');
@@ -112,6 +114,17 @@ function prettify_plot(sameXLimits, sameYLimits, figureColor, legendAsTxt, title
                     set(thisLine, 'LineWidth', lineThickness);
                 end
             end
+
+            % Adjust properties of errorbars children within the plot
+            childErrBars = findall(currAx, 'Type', 'ErrorBar');
+            for thisErrBar = childErrBars'
+                if strcmp('.', get(thisErrBar, 'Marker'))
+                    set(thisErrBar, 'MarkerSize', pointSize);
+                end
+                if strcmp('-', get(thisErrBar, 'LineStyle'))
+                    set(thisErrBar, 'LineWidth', lineThickness);
+                end
+            end
             
             % Get x and y limits 
             xlims_subplot(iAx,:) = currAx.XLim;
@@ -119,7 +132,7 @@ function prettify_plot(sameXLimits, sameYLimits, figureColor, legendAsTxt, title
 
             % Get plot position
             pos_subplot(iAx,:) = currAx.Position(1:2); % [left bottom width height
-                if ~isempty(currAx.Legend)
+            if ~isempty(currAx.Legend)
                 if legendAsTxt ==1 
                     prettify_legend(currAx)
                 else
