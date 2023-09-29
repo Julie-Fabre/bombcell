@@ -37,9 +37,9 @@ if nargin < 3 || isempty(labelX)
 end
 if nargin < 4 || isempty(labelY)
      if nargin < 7 || isempty(unitY)
-        labelY = sprintf('%.2f units', yLength);
+        labelX = sprintf('%.2f units', yLength);
     else
-        labelY = sprintf('%.2f %s', yLength, unitY);
+        labelX = sprintf('%.2f %s', yLength, unitY);
     end
 end
 if nargin < 5 || isempty(position)
@@ -71,17 +71,12 @@ switch position
         error('Invalid position. Choose from: bottomLeft, bottomRight, topLeft, topRight');
 end
 
-% Select color for plotting
-if sum(ax.Color >= 0.7) == 3 % dark figure -> plot in white 
-    thisColor = 'w';
-else
-    thisColor = 'k';
-end
 
 % Plot scale bars and prevent them from being added to legend
 hold on;
-h1 = plot([xBarStart, xBarEnd], [yBarStart, yBarStart], [thisColor '-'], 'LineWidth', 2);
-h2 = plot([xBarStart, xBarStart], [yBarStart, yBarEnd], [thisColor '-'], 'LineWidth', 2);
+if ax.Color: [0 0 0]
+h1 = plot([xBarStart, xBarEnd], [yBarStart, yBarStart], 'k-', 'LineWidth', 2);
+h2 = plot([xBarStart, xBarStart], [yBarStart, yBarEnd], 'k-', 'LineWidth', 2);
 hold off;
 
 % Exclude scale bars from legend
@@ -107,27 +102,27 @@ end
 switch position
     case 'bottomRight'
         text((xBarStart + xBarEnd)/2, yBarStart-0.02*range(yLim)*sign(yLength), labelX, ...
-            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2}, 'Color', thisColor);
+            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2});
         text(xBarStart+0.06*range(xLim)*sign(xLength), (yBarStart + yBarEnd)/2, labelY, ...
-            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90, 'Color', thisColor);
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90);
 
     case 'bottomLeft'
         text((xBarStart + xBarEnd)/2, yBarStart-0.02*range(yLim)*sign(yLength), labelX, ...
-            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2}, 'Color', thisColor);
+            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2});
         text(xBarStart-0.05*range(xLim), (yBarStart + yBarEnd)/2, labelY, ...
-            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90, 'Color', thisColor);
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90);
 
     case 'topRight'
         text((xBarStart + xBarEnd)/2, yBarStart+0.03*range(yLim)*sign(yLength), labelX, ...
-            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2}, 'Color', thisColor);
+            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2});
         text(xBarStart+0.06*range(xLim)*sign(xLength), (yBarStart + yBarEnd)/2, labelY, ...
-            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90, 'Color', thisColor);
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90);
 
     case 'topLeft'
         text((xBarStart + xBarEnd)/2, yBarStart+0.03*range(yLim)*sign(yLength), labelX, ...
-            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2}, 'Color', thisColor);
+            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2});
         text(xBarStart-0.05*range(xLim), (yBarStart + yBarEnd)/2, labelY, ...
-            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90, 'Color', thisColor);
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90);
 end
 
 
