@@ -1,4 +1,4 @@
-function prettify_addScaleBars(xLength, yLength, labelX, labelY, position)
+function prettify_addScaleBars(xLength, yLength, labelX, labelY, position, unitX, unitY)
 % prettify_addScaleBars Add scale bars to a MATLAB figure
 %
 %   prettify_addScaleBars(xLength, yLength, labelX, labelY, position) adds scale bars to
@@ -29,10 +29,18 @@ if nargin < 2 || isempty(yLength)
     yLength = roundToNearestTenPercent(diff(yLim));
 end
 if nargin < 3 || isempty(labelX)
-    labelX = sprintf('%.2f units', xLength);
+    if nargin < 6 || isempty(unitX)
+        labelX = sprintf('%.2f units', xLength);
+    else
+        labelX = sprintf('%.2f %s', xLength, unitX);
+    end
 end
 if nargin < 4 || isempty(labelY)
-    labelY = sprintf('%.2f units', yLength);
+     if nargin < 7 || isempty(unitY)
+        labelX = sprintf('%.2f units', yLength);
+    else
+        labelX = sprintf('%.2f %s', yLength, unitY);
+    end
 end
 if nargin < 5 || isempty(position)
     position = 'bottomLeft';
