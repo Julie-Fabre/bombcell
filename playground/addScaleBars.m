@@ -7,7 +7,8 @@ function addScaleBars(xLength, yLength, labelX, labelY, position)
 %   labels for the x and y scale bars, and position specifies the
 %   location ('bottomLeft', 'bottomRight', 'topLeft', 'topRight').
 %
-%   If no arguments are provided, the function will default to 10% of
+%   If no arguments are provided, the function will default to 25% 
+%   (finding the nearest integer or decimal) of
 %   the respective axis range and 'bottomRight' position.
 %
 %   Example:
