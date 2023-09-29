@@ -72,7 +72,7 @@ switch position
 end
 
 % Select color for plotting
-if sum(ax.Color >= 0.7) == 3 % dark figure -> plot in white 
+if sum(ax.Color <= 0.3) == 3 % dark figure -> plot in white 
     thisColor = 'w';
 else
     thisColor = 'k';
