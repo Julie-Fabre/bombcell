@@ -1,7 +1,7 @@
-function addScaleBars(xLength, yLength, labelX, labelY, position)
-% addScaleBars Add scale bars to a MATLAB figure
+function prettify_addScaleBars(xLength, yLength, labelX, labelY, position)
+% prettify_addScaleBars Add scale bars to a MATLAB figure
 %
-%   addScaleBars(xLength, yLength, labelX, labelY, position) adds scale bars to
+%   prettify_addScaleBars(xLength, yLength, labelX, labelY, position) adds scale bars to
 %   the current figure. xLength and yLength specify the lengths of the
 %   x and y scale bars respectively, labelX and labelY are the
 %   labels for the x and y scale bars, and position specifies the
@@ -13,7 +13,7 @@ function addScaleBars(xLength, yLength, labelX, labelY, position)
 %
 %   Example:
 %   plot(rand(10, 1))
-%   addScaleBars([], [], [], [], 'topLeft')
+%   prettify_addScaleBars([], [], [], [], 'topLeft')
 
 % Get axis limits
 ax = gca;
