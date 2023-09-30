@@ -1,4 +1,4 @@
-function prettify_addScaleBars(xLength, yLength, labelX, labelY, position, unitX, unitY)
+function prettify_addScaleBars(xLength, yLength, labelX, labelY, position, unitX, unitY, scaleLineWidth, fontSize)
 % prettify_addScaleBars Add scale bars to a MATLAB figure
 %
 %   prettify_addScaleBars(xLength, yLength, labelX, labelY, position) adds scale bars to
@@ -46,6 +46,14 @@ if nargin < 5 || isempty(position)
     position = 'bottomLeft';
 end
 
+if nargin < 8 || isempty(scaleLineWidth)
+    scaleLineWidth = 4;
+end
+
+if nargin < 9 || isempty(fontSize)
+    fontSize = 14;
+end
+
 switch position
     case 'bottomRight'
         xBarStart = xLim(2);
@@ -80,8 +88,10 @@ end
 
 % Plot scale bars and prevent them from being added to legend
 hold on;
-h1 = plot([xBarStart, xBarEnd], [yBarStart, yBarStart], [thisColor '-'], 'LineWidth', 2);
-h2 = plot([xBarStart, xBarStart], [yBarStart, yBarEnd], [thisColor '-'], 'LineWidth', 2);
+h1 = plot([xBarStart, xBarEnd], [yBarStart, yBarStart], [thisColor '-'], ...
+    'LineWidth', scaleLineWidth);
+h2 = plot([xBarStart, xBarStart], [yBarStart, yBarEnd], [thisColor '-'], ...
+    'LineWidth', scaleLineWidth);
 hold off;
 
 % Exclude scale bars from legend
@@ -107,27 +117,34 @@ end
 switch position
     case 'bottomRight'
         text((xBarStart + xBarEnd)/2, yBarStart-0.02*range(yLim)*sign(yLength), labelX, ...
-            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2}, 'Color', thisColor);
+            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2}, ...
+            'Color', thisColor, 'FontSize', fontSize);
         text(xBarStart+0.06*range(xLim)*sign(xLength), (yBarStart + yBarEnd)/2, labelY, ...
-            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90, 'Color', thisColor);
-
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90, ...
+            'Color', thisColor, 'FontSize', fontSize);
     case 'bottomLeft'
         text((xBarStart + xBarEnd)/2, yBarStart-0.02*range(yLim)*sign(yLength), labelX, ...
-            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2}, 'Color', thisColor);
+            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2}, ...
+            'Color', thisColor, 'FontSize', fontSize);
         text(xBarStart-0.05*range(xLim), (yBarStart + yBarEnd)/2, labelY, ...
-            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90, 'Color', thisColor);
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90, ...
+            'Color', thisColor, 'FontSize', fontSize);
 
     case 'topRight'
         text((xBarStart + xBarEnd)/2, yBarStart+0.03*range(yLim)*sign(yLength), labelX, ...
-            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2}, 'Color', thisColor);
+            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2}, ...
+            'Color', thisColor, 'FontSize', fontSize);
         text(xBarStart+0.06*range(xLim)*sign(xLength), (yBarStart + yBarEnd)/2, labelY, ...
-            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90, 'Color', thisColor);
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90, ...
+            'Color', thisColor, 'FontSize', fontSize);
 
     case 'topLeft'
         text((xBarStart + xBarEnd)/2, yBarStart+0.03*range(yLim)*sign(yLength), labelX, ...
-            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2}, 'Color', thisColor);
+            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2}, ...
+            'Color', thisColor, 'FontSize', fontSize);
         text(xBarStart-0.05*range(xLim), (yBarStart + yBarEnd)/2, labelY, ...
-            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90, 'Color', thisColor);
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90, ...
+            'Color', thisColor, 'FontSize', fontSize);
 end
 
 
