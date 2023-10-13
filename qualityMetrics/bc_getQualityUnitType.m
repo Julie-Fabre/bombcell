@@ -7,9 +7,11 @@ function unitType = bc_getQualityUnitType(param, qMetric)
 % ------
 % Outputs
 % ------
-if ~isfield('fractionRPVs_estimatedTauR', qMetric)
-    qMetric.fractionRPVs_estimatedTauR = arrayfun(@(x) qMetric.fractionRPVs(x, qMetric.RPV_tauR_estimate(x)), 1:size(qMetric.fractionRPVs,1));
-    qMetric = rmfield(qMetric, 'fractionRPVs');
+if istruct(qMetric) % if saving failed, qMetric is a structure and the fractionRPVs_estimatedTauR field we need below is not computed yet
+    if ~isfield('fractionRPVs_estimatedTauR', qMetric)
+        qMetric.fractionRPVs_estimatedTauR = arrayfun(@(x) qMetric.fractionRPVs(x, qMetric.RPV_tauR_estimate(x)), 1:size(qMetric.fractionRPVs,1));
+        qMetric = rmfield(qMetric, 'fractionRPVs');
+    end
 end
 
 
