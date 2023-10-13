@@ -7,6 +7,12 @@ function unitType = bc_getQualityUnitType(param, qMetric)
 % ------
 % Outputs
 % ------
+if ~isfield('fractionRPVs_estimatedTauR', qMetric)
+    qMetric.fractionRPVs_estimatedTauR = arrayfun(@(x) qMetric.fractionRPVs(x, qMetric.RPV_tauR_estimate(x)), 1:size(qMetric.fractionRPVs,1));
+    qMetric = rmfield(qMetric, 'fractionRPVs');
+end
+
+
 if param.computeDistanceMetrics && ~isnan(param.isoDmin) && param.computeDrift && param.extractRaw
     unitType = nan(length(qMetric.percentageSpikesMissing_gaussian), 1);
     
