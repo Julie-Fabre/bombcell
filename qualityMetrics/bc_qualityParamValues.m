@@ -49,7 +49,7 @@ param.extractRaw = 1; %whether to extract raw waveforms or not
 param.probeType = 1; % if you are using spikeGLX and your meta file does 
     % not contain information about your
     % probe type (e.g. https://github.com/Julie-Fabre/bombcell/issues/31) 
-    % specify it here: 1 for 1.0 (3Bs) and 2 for 2.0 (single or 4-shanks)
+    % specify it here: '1' for 1.0 (3Bs) and '2' for 2.0 (single or 4-shanks)
     % For additional probe types, make a pull request with more
     % information.  If your spikeGLX meta file contains information about your probe
     % type, or if you are using open ephys, this paramater wil be ignored.

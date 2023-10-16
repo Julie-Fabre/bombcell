@@ -16,7 +16,9 @@ function rawAmplitude = bc_getRawAmplitude(rawWaveforms, metaFile, probeType)
 
 % sanitize inputs
 if nargin < 3 || isempty(probeType)
-    probeType = NaN;
+    probeType = 'NaN';
+else
+    probeType = num2str(probeType);
 end
 
 % get scaling factor 
