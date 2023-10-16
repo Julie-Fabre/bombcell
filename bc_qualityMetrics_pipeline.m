@@ -41,7 +41,7 @@ if qMetricsExist == 0 || rerun
         templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
 else
     [param, qMetric] = bc_loadSavedMetrics(savePath); 
-    unitType = bc_getQualityUnitType(param, qMetric);
+    unitType = bc_getQualityUnitType(param, qMetric, savePath);
 end
 
 %% view units + quality metrics in GUI 
