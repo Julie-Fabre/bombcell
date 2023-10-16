@@ -24,7 +24,7 @@ if isempty(startIndex) % try second option: there are two different saving conve
     [~, startIndex] = regexp(filetext, expr_scaling);
 end
 if isempty(startIndex) % if still no probe type information is found, use the param value 
-    if isnan(probeType)
+    if strcmp(probeType, 'NaN')
         error(['no probe type found in spikeGLX meta file and no param.probeType specified. ' ...
             'Edit the param.probeType value in bc_qualityParamValues.'])
     end
