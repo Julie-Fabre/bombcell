@@ -5,7 +5,7 @@
 
 # 💣 Bombcell: find bombshell cells! 💣 <img src="./images/bombcell_logo_crop_small_flame.png" width="30%" title="bombcell" alt="bombcell" align="right" vspace = "50">
 
-📢 **Now award-winning! Bombcell is a recipient of University College London's inaugural Open Science Award, in the category 'PhD Students'. I will give a brief talk on the 24th of October between 14:00 and 16:00 BST at the award ceremony. More details and how to attend coming soon.**
+📢 **Now award-winning! Bombcell is a recipient of University College London's inaugural Open Science Award, in the category 'PhD Students'. I will give a brief talk on the 24th of October between 14:00 and 16:00 BST at the award ceremony. If you want to attend, send me a message and I will share the invite.**
 
 📢 **I will be giving a talk on quality metrics and bombcell at 16:40 BST on the 17th of October 2023, as part of the 2023 Neuropixels course. To attend the talk, register for the course [here](https://docs.google.com/forms/d/e/1FAIpQLSdDuDIW-u2oGFhkyLTPRqH1pU6esn5xJgm5Zh2YBg-xVEfvmg/viewform) (the talks are online and free).**
 
