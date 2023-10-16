@@ -31,6 +31,7 @@ param.reextractRaw = 0; % re extract raw waveforms or not
 param.saveAsTSV = 1; % additionally save outputs at .tsv file - this is 
     % useful if you want to use phy after bombcell: each quality metric value
     % will appear as a column in the Cluster view
+param.unitType_for_phy = 1; %
 if nargin < 3
     warning('no ephys kilosort path defined in bc_qualityParamValues, will save output tsv file in the savePath location')
 else

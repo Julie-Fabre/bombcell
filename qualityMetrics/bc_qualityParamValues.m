@@ -28,9 +28,10 @@ param.verbose = 1; % update user on progress
 param.reextractRaw = 0; % re extract raw waveforms or not 
 
 % saving parameters 
-param.saveAsTSV = 1; % additionally save outputs at .tsv file - this is 
+param.saveAsTSV = 1; % additionally save outputs in .tsv file - this is 
     % useful if you want to use phy after bombcell: each quality metric value
     % will appear as a column in the Cluster view
+param.unitType_for_phy = 1; % whether to save the output of unitType in .tsv file for phy
 if nargin < 3
     warning('no ephys kilosort path defined in bc_qualityParamValues, will save output tsv file in the savePath location')
 else
@@ -47,8 +48,7 @@ param.decompressData = 0; % whether to decompress .cbin ephys data
 param.spikeWidth = 82; % width in samples 
 param.extractRaw = 1; %whether to extract raw waveforms or not 
 param.probeType = 1; % if you are using spikeGLX and your meta file does 
-    % not contain information about your
-    % probe type (e.g. https://github.com/Julie-Fabre/bombcell/issues/31) 
+    % not contain information about your probe type for some reason
     % specify it here: '1' for 1.0 (3Bs) and '2' for 2.0 (single or 4-shanks)
     % For additional probe types, make a pull request with more
     % information.  If your spikeGLX meta file contains information about your probe
