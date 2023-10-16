@@ -46,7 +46,7 @@ param.saveMultipleRaw = 0; % If you wish to save the nRawSpikesToExtract as well
 param.decompressData = 0; % whether to decompress .cbin ephys data 
 param.spikeWidth = 82; % width in samples 
 param.extractRaw = 1; %whether to extract raw waveforms or not 
-%param.probeType = 1; % if you are using spikeGLX and your meta file does 
+param.probeType = 1; % if you are using spikeGLX and your meta file does 
     % not contain information about your
     % probe type (e.g. https://github.com/Julie-Fabre/bombcell/issues/31) 
     % specify it here: 1 for 1.0 (3Bs) and 2 for 2.0 (single or 4-shanks)
