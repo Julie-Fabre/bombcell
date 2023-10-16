@@ -129,7 +129,7 @@ else
 end
 
 %% loop through units and get quality metrics
-fprintf('\n Extracting quality metrics from %s ... ', param.rawFile)
+fprintf('\n Extracting quality metrics from %s ... \n', param.rawFile)
 
 for iUnit = 1:length(uniqueTemplates)
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
@@ -196,7 +196,7 @@ for iUnit = 1:length(uniqueTemplates)
     %% amplitude
     if param.extractRaw
         qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit),:), ...
-            param.ephysMetaFile);
+            param.ephysMetaFile, param.probeType);
     else
          qMetric.rawAmplitude(iUnit) =NaN;
          qMetric.signalToNoiseRatio(iUnit) = NaN;
