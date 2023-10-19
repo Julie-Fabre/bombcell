@@ -195,7 +195,7 @@ for iUnit = 1:length(uniqueTemplates)
     %% amplitude
     if param.extractRaw
         qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit),:), ...
-            param.ephysMetaFile, param.probeType);
+            param.ephysMetaFile, param.probeType, param.gain_to_uV);
     else
          qMetric.rawAmplitude(iUnit) =NaN;
          qMetric.signalToNoiseRatio(iUnit) = NaN;
@@ -231,6 +231,6 @@ catch
     warning('\n Warning, quality metrics from %s not saved! \n', param.rawFile)
 end
 
-unitType = bc_getQualityUnitType(param, qMetric);
+unitType = bc_getQualityUnitType(param, qMetric, savePath);
 bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
 end

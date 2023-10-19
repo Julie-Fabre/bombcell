@@ -1,4 +1,4 @@
-function rawAmplitude = bc_getRawAmplitude(rawWaveforms, metaFile, probeType)
+function rawAmplitude = bc_getRawAmplitude(rawWaveforms, metaFile, probeType, gain_to_uV)
 % JF, Get the amplitude of the mean raw waveform for a unit
 % ------
 % Inputs
@@ -22,12 +22,16 @@ else
 end
 
 % get scaling factor 
+if strcmp(metaFile, 'NaN') == 0
 if contains(metaFile, 'oebin')
     % open ephys format
     scalingFactor = bc_readOEMetaFile(metaFile);
 else
     % spikeGLX format
     [scalingFactor, ~, ~] = bc_readSpikeGLXMetaFile(metaFile, probeType);
+end
+else
+    scalingFactor = gain_to_uV;
 end
 
 % scale waveforms to get amplitude in microVolts 

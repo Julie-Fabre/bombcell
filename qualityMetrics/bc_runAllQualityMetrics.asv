@@ -129,9 +129,9 @@ else
 end
 
 %% loop through units and get quality metrics
-fprintf('\n Extracting quality metrics from %s ... ', param.rawFile)
+fprintf('\n Extracting quality metrics from %s ... \n', param.rawFile)
 
-for iUnit = 1:length(uniqueTemplates)
+for iUnit = 61:80%length(uniqueTemplates)
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
 
     % get this unit's attributes 
@@ -146,6 +146,7 @@ for iUnit = 1:length(uniqueTemplates)
 
 
     %% percentage spikes missing (false negatives)
+     param.plotDetails=1
     [percentageSpikesMissing_gaussian, percentageSpikesMissing_symmetric, ksTest_pValue, ~, ~, ~] = ...
         bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails);
 
@@ -156,11 +157,12 @@ for iUnit = 1:length(uniqueTemplates)
         timeChunks, param.plotDetails, NaN);
     
     %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
+   
     [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit),...
         qMetric.RPV_tauR_estimate(iUnit)] = bc_defineTimechunksToKeep(...
         percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
         param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect 
-
+param.plotDetails=0
     %% re-compute percentage spikes missing and fraction contamination on timechunks
     thisUnits_timesToUse = [qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)];
  
@@ -184,7 +186,6 @@ for iUnit = 1:length(uniqueTemplates)
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
 
     %% waveform
-    
     waveformBaselineWindow = [param.waveformBaselineWindowStart, param.waveformBaselineWindowStop];
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), forGUI.peakLocs{iUnit},...
         forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), ...
@@ -196,7 +197,7 @@ for iUnit = 1:length(uniqueTemplates)
     %% amplitude
     if param.extractRaw
         qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit),:), ...
-            param.ephysMetaFile);
+            param.ephysMetaFile, param.probeType);
     else
          qMetric.rawAmplitude(iUnit) =NaN;
          qMetric.signalToNoiseRatio(iUnit) = NaN;
@@ -232,6 +233,6 @@ catch
     warning('\n Warning, quality metrics from %s not saved! \n', param.rawFile)
 end
 
-unitType = bc_getQualityUnitType(param, qMetric);
+unitType = bc_getQualityUnitType(param, qMetric, savePath);
 bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
 end

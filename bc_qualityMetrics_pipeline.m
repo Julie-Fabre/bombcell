@@ -14,13 +14,13 @@
 
 
 %% set paths - EDIT THESE 
-ephysKilosortPath = '/home/netshare/zinu/CB016/2021-10-07/ephys/CB016_2021-10-07_NatImages_g0/CB016_2021-10-07_NatImages_g0/pyKS/output/';% path to your kilosort output files 
-ephysRawDir = dir('/home/netshare/zinu/CB016/2021-10-07/ephys/CB016_2021-10-07_NatImages_g0/CB016_2021-10-07_NatImages_g0/*.*bin'); % path to yourraw .bin or .dat data
-ephysMetaDir = dir('/home/netshare/zinu/CB016/2021-10-07/ephys/CB016_2021-10-07_NatImages_g0/CB016_2021-10-07_NatImages_g0/*.*meta'); % path to your .meta or .oebin meta file
-saveLocation = '/media/julie/ExtraHD/CB016'; % where you want to save the quality metrics 
-savePath = fullfile(saveLocation, 'qMetrics'); 
+ephysKilosortPath = '/home/netshare/zaru/JF093/2023-03-06/ephys/kilosort2/site1/';% path to your kilosort output files 
+ephysRawDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*bin'); % path to yourraw .bin or .dat data
+ephysMetaDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*meta'); % path to your .meta or .oebin meta file
+savePath = '/media/julie/ExtraHD/JF093/qMetrics'; % where you want to save the quality metrics 
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
-
+gain_to_uV = 0.195; % use this if you are not using spikeGLX or openEphys to record your data. You can then leave ephysMetaDir 
+    % empty(e.g. ephysMetaDir = '')
 %% load data 
 [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitudes, pcFeatures, ...
     pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysKilosortPath);
@@ -29,7 +29,7 @@ decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save r
 rawFile = bc_manageDataCompression(ephysRawDir, decompressDataLocal);
 
 %% which quality metric parameters to extract and thresholds 
-param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath); 
+param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV); 
 % param = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile) % Run this if you want to use UnitMatch after
 
 %% compute quality metrics 
@@ -94,5 +94,9 @@ all_good_units_number_of_spikes = qMetric.nSpikes(goodUnits);
 % (for use with another language: output a .tsv file of labels. You can then simply load this) 
 label_table = table(unitType);
 writetable(label_table,[savePath filesep 'templates._bc_unit_labels.tsv'],'FileType', 'text','Delimiter','\t');  
-       
+      
+
+
+
+
 
