@@ -95,7 +95,7 @@ param.nChannels = 385; %number of recorded channels (including any sync channels
     % recorded in the raw data. This is usually 384 or 385 for neuropixels
     % recordings
 param.nSyncChannels = 1;
-if  ~isempty(ephysMetaFile)
+if  ~isempty(ephysMetaDir)
     param.ephysMetaFile = [ephysMetaDir.folder, filesep, ephysMetaDir.name];
     param.gain_to_uV = NaN;
 else
