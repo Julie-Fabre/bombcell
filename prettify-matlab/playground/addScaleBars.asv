@@ -1,0 +1,130 @@
+function addScaleBars(xLength, yLength, labelX, labelY, position)
+% addScaleBars Add scale bars to a MATLAB figure
+%
+%   addScaleBars(xLength, yLength, labelX, labelY, position) adds scale bars to
+%   the current figure. xLength and yLength specify the lengths of the
+%   x and y scale bars respectively, labelX and labelY are the
+%   labels for the x and y scale bars, and position specifies the
+%   location ('bottomLeft', 'bottomRight', 'topLeft', 'topRight').
+%
+%   If no arguments are provided, the function will default to 10% of
+%   the respective axis range and 'bottomRight' position.
+%
+%   Example:
+%   plot(rand(10, 1))
+%   addScaleBars([], [], [], [], 'topLeft')
+
+% Get axis limits
+ax = gca;
+xLim = ax.XLim;
+yLim = ax.YLim;
+
+% Default values
+% Default values
+if nargin < 1 || isempty(xLength)
+    xLength = roundToNearestTenPercent(diff(xLim));
+end
+if nargin < 2 || isempty(yLength)
+    yLength = roundToNearestTenPercent(diff(yLim));
+end
+if nargin < 3 || isempty(labelX)
+    labelX = sprintf('%.2f units', xLength);
+end
+if nargin < 4 || isempty(labelY)
+    labelY = sprintf('%.2f units', yLength);
+end
+if nargin < 5 || isempty(position)
+    position = 'bottomLeft';
+end
+
+switch position
+    case 'bottomRight'
+        xBarStart = xLim(2);
+        yBarStart = yLim(1);
+        xBarEnd = xBarStart - xLength;
+        yBarEnd = yBarStart + yLength;
+    case 'bottomLeft'
+        xBarStart = xLim(1);
+        yBarStart = yLim(1);
+        xBarEnd = xBarStart + xLength;
+        yBarEnd = yBarStart + yLength;
+    case 'topRight'
+        xBarStart = xLim(2);
+        yBarStart = yLim(2);
+        xBarEnd = xBarStart - xLength;
+        yBarEnd = yBarStart - yLength;
+    case 'topLeft'
+        xBarStart = xLim(1);
+        yBarStart = yLim(2);
+        xBarEnd = xBarStart + xLength;
+        yBarEnd = yBarStart - yLength;
+    otherwise
+        error('Invalid position. Choose from: bottomLeft, bottomRight, topLeft, topRight');
+end
+
+
+% Plot scale bars and prevent them from being added to legend
+hold on;
+h1 = plot([xBarStart, xBarEnd], [yBarStart, yBarStart], 'k-', 'LineWidth', 2);
+h2 = plot([xBarStart, xBarStart], [yBarStart, yBarEnd], 'k-', 'LineWidth', 2);
+hold off;
+
+% Exclude scale bars from legend
+set(get(get(h1, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
+set(get(get(h2, 'Annotation'), 'LegendInformation'), 'IconDisplayStyle', 'off');
+
+
+% Hide x and y axis
+ax.XAxis.Visible = 'off';
+ax.YAxis.Visible = 'off'; % Add labels for scale bars based on position
+switch position
+    case 'bottomRight'
+        textPos = {'center', 'top'; 'left', 'middle'};
+    case 'bottomLeft'
+        textPos = {'center', 'top'; 'right', 'middle'};
+    case 'topRight'
+        textPos = {'center', 'bottom'; 'left', 'middle'};
+    case 'topLeft'
+        textPos = {'center', 'bottom'; 'right', 'middle'};
+end
+
+
+switch position
+    case 'bottomRight'
+        text((xBarStart + xBarEnd)/2, yBarStart-0.02*range(yLim)*sign(yLength), labelX, ...
+            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2});
+        text(xBarStart+0.04*range(xLim)*sign(xLength), (yBarStart + yBarEnd)/2, labelY, ...
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90);
+
+    case 'bottomLeft'
+        text((xBarStart + xBarEnd)/2, yBarStart-0.02*range(yLim)*sign(yLength), labelX, ...
+            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2});
+        text(xBarStart-0.01*range(xLim), (yBarStart + yBarEnd)/2, labelY, ...
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90);
+
+    case 'topRight'
+        text((xBarStart + xBarEnd)/2, yBarStart+0.03*range(yLim)*sign(yLength), labelX, ...
+            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2});
+        text(xBarStart+0.04*range(xLim)*sign(xLength), (yBarStart + yBarEnd)/2, labelY, ...
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90);
+
+    case 'topLeft'
+        text((xBarStart + xBarEnd)/2, yBarStart+0.03*range(yLim)*sign(yLength), labelX, ...
+            'HorizontalAlignment', textPos{1, 1}, 'VerticalAlignment', textPos{1, 2});
+        text(xBarStart-0.05*range(xLim), (yBarStart + yBarEnd)/2, labelY, ...
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'Rotation', 90);
+end
+
+
+end
+function val = roundToNearestTenPercent(rangeVal)
+   % rangeVal/5
+
+    if rangeVal >= 5
+        scale = 10^floor(log10(rangeVal));
+        val = round(0.25 * rangeVal / scale) * scale;
+    else
+        scale = 10^ceil(log10(rangeVal));
+        val = round(0.25 * rangeVal * scale) / scale;
+    end
+end
