@@ -5,11 +5,7 @@
 
 # 💣 Bombcell: find bombshell cells! 💣 <img src="./images/bombcell_logo_crop_small_flame.png" width="30%" title="bombcell" alt="bombcell" align="right" vspace = "50">
 
-📢 **Now award-winning! Bombcell is a recipient of University College London's inaugural Open Science Award, in the category 'PhD Students'. I will give a brief talk on the 24th of October between 14:00 and 16:00 BST at the award ceremony. If you want to attend, send me a message and I will share the invite.**
-
-📢 **I will be giving a talk on quality metrics and bombcell at 16:40 BST on the 17th of October 2023, as part of the 2023 Neuropixels course. To attend the talk, register for the course [here](https://docs.google.com/forms/d/e/1FAIpQLSdDuDIW-u2oGFhkyLTPRqH1pU6esn5xJgm5Zh2YBg-xVEfvmg/viewform) (the talks are online and free).**
-
-Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem, evaluating the quality of recorded units and extracting essential electrophysiological properties. Bombcell can replace manual curation or can be used as a tool to aid manual curation.
+Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem, evaluating the quality of recorded units and extracting essential electrophysiological properties. Bombcell can replace manual curation or can be used as a tool to aid manual curation. See [this talk](https://www.youtube.com/watch?v=8Gauba3KzvM&list=PLfhWmWntvjl7kljKozClpjS29DoY8V5pB&index=12) at the anual Neuropixels course about quality control. 
 
 Bombcell is specifically tailored for units recorded with Neuropixels probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort. If you want to use bombcell in conjunction with another spike sorting algorithm, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues), create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request), or email [us: juliemfabre[at]gmail[dot]com](mailto:juliemfabre@gmail.com). Follow us on [twitter: basal_gang](https://twitter.com/basal_gang) for updates on bombcell.
 
