@@ -6,14 +6,14 @@ function [rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extra
 % Inputs
 % ------
 % param with:
-% rawFile: raw .bin or .dat file location
-% nChannels: number of recorded channels (including sync), (eg 385)
-% nSpikesToExtract: number of spikes to extract per template
-% rawFile: string containing the location of the raw .dat or .bin file
-%
+    % rawFile: string containing the location of the raw .bin or .dat file location
+    % nChannels: number of recorded channels (including sync), (eg 385)
+    % nSpikesToExtract: number of spikes to extract per template
+    % detrendWaveforms: boolean, whether to detrend spikes or not
 % spikeTimes_samples: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
 % spikeTemplates: nSpikes × 1 uint32 vector giving the identity of each
 %   spike's matched template
+% reextract: boolean, whether to reextract raw waveforms or not
 % verbose: boolean, display progress bar or not
 % savePath: where to save output data
 % ------
@@ -27,18 +27,17 @@ function [rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extra
 %       value of the mean raw waveform for that value divided by the variance
 %       of the data before detected waveforms. implementation : Enny van Beest 
 
-%% Check if data already extracted
+%% Check if data needs to be extracted
 rawWaveformFolder = dir(fullfile(savePath, 'templates._bc_rawWaveforms.npy'));
 
-if ~isempty(rawWaveformFolder) && reExtract == 0
-
+if ~isempty(rawWaveformFolder) && reExtract == 0 % no need to extract data, 
+    % simply load it in
     rawWaveformsFull = readNPY(fullfile(savePath, 'templates._bc_rawWaveforms.npy'));
     rawWaveformsPeakChan = readNPY(fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy'));
 
 else
-
-    %% Initialize stuff
-    % Get spike times and indices
+%% Extract raw waveforms
+    %% Initialize parameters
     nChannels = param.nChannels; % (385)
     nSpikesToExtract = param.nRawSpikesToExtract;
     spikeWidth = param.spikeWidth;
@@ -56,14 +55,20 @@ else
     % Get binary file name
     fid = fopen(param.rawFile, 'r');
 
-    %% Interate over spike clusters and find all the data associated with them
+    %% Interate over spike clusters and find spikes associated with them
+    % Initialize and pre-allocate variables
     rawWaveforms = struct;
     rawWaveformsFull = nan(nClust, nChannels-param.nSyncChannels, spikeWidth);
     rawWaveformsPeakChan = nan(nClust, 1);
     average_baseline = cell(1,nClust);
+
+    % loop over spike clusters 
     for iCluster = 1:nClust
+        % Get cluster information
         rawWaveforms(iCluster).clInd = clustInds(iCluster);
         rawWaveforms(iCluster).spkInd = spikeTimes_samples(spikeTemplates == clustInds(iCluster));
+
+        % Determine # of spikes to extract
         if numel(rawWaveforms(iCluster).spkInd) >= nSpikesToExtract
             spksubi = round(linspace(1, numel(rawWaveforms(iCluster).spkInd), nSpikesToExtract))';
             rawWaveforms(iCluster).spkIndsub = rawWaveforms(iCluster).spkInd(spksubi);
@@ -72,13 +77,14 @@ else
         end
         nSpkLocal = numel(rawWaveforms(iCluster).spkIndsub);
 
+        % loop over spikes for this cluster
         rawWaveforms(iCluster).spkMap = nan(nChannels-param.nSyncChannels, spikeWidth, nSpkLocal);
         for iSpike = 1:nSpkLocal
             thisSpikeIdx = rawWaveforms(iCluster).spkIndsub(iSpike);
                 
             if ((thisSpikeIdx - halfWidth) * nChannels) * dataTypeNBytes > halfWidth &&...
                     (thisSpikeIdx + halfWidth) * nChannels * dataTypeNBytes < rawFileInfo.bytes % check that it's not out of bounds
-
+                % extract spike
                 bytei = ((thisSpikeIdx - halfWidth) * nChannels) * dataTypeNBytes;
                 fseek(fid, bytei, 'bof');
                 data0 = fread(fid, nChannels*spikeWidth, 'int16=>int16'); % read individual waveform from binary file
@@ -90,9 +96,10 @@ else
                 %         if size(data, 2) == spikeWidth
                 %             rawWaveforms(iCluster).spkMap(:, :, iSpike) = data;
                 %         end
+                
+                % detrend spike if required 
                 if param.detrendWaveform
-                    rawWaveforms(iCluster).spkMap(:, :, iSpike) = detrend(data(1:nChannels-param.nSyncChannels, :));
-       
+                    rawWaveforms(iCluster).spkMap(:, :, iSpike) = permute(detrend(permute(data(1:nChannels-param.nSyncChannels, :),[2,1])), [2,1]);
                 else
                     rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels-param.nSyncChannels, :); %remove sync channel
                 end
@@ -100,7 +107,8 @@ else
             end
 
         end
-
+        
+        % save waveforms for unitmatch 
         if param.saveMultipleRaw
             tmpspkmap = permute(rawWaveforms(iCluster).spkMap,[2,1,3]); % Compatible with UnitMatch QQ
             %Do smoothing in batches
@@ -116,17 +124,14 @@ else
             writeNPY(tmpspkmap, fullfile(savePath,'RawWaveforms',['Unit' num2str(clustInds(iCluster)-1) '_RawSpikes.npy'])) % Back to 0-indexed (same as Kilosort)
         end
         
-        %figure(); plot(squeeze(rawWaveforms(iCluster).spkMap(rawWaveformsPeakChan(iCluster),:,1)))
-         %figure(); plot(squeeze(spikeMap(rawWaveformsPeakChan(iCluster),:,1)))
-
-
-        rawWaveforms(iCluster).spkMapMean = nanmean(rawWaveforms(iCluster).spkMap, 3);
-        rawWaveformsFull(iCluster, :, :) = rawWaveforms(iCluster).spkMapMean - mean(rawWaveforms(iCluster).spkMapMean(:, 1:param.waveformBaselineNoiseWindow), 2);
+        % get average, baseline-subtracted and smoothed raw waveform
+        rawWaveforms(iCluster).spkMapMean = nanmean(rawWaveforms(iCluster).spkMap, 3); % initialize and pre-allocate
+        rawWaveformsFull(iCluster, :, :) = rawWaveforms(iCluster).spkMapMean - mean(rawWaveforms(iCluster).spkMapMean(:, 1:param.waveformBaselineNoiseWindow), 2); % remove basel
 
         spkMapMean_sm = smoothdata(rawWaveforms(iCluster).spkMapMean, 1, 'gaussian', 5);
 
-        [~, rawWaveformsPeakChan(iCluster)] = max(max(spkMapMean_sm, [], 2)-min(spkMapMean_sm, [], 2));
-        average_baseline{iCluster} = squeeze(nanmean(rawWaveforms(iCluster).spkMap(rawWaveformsPeakChan(iCluster),1:param.waveformBaselineNoiseWindow,:),3));
+        [~, rawWaveformsPeakChan(iCluster)] = max(max(spkMapMean_sm, [], 2)-min(spkMapMean_sm, [], 2)); % maximum channel per cluster 
+        average_baseline{iCluster} = squeeze(nanmean(rawWaveforms(iCluster).spkMap(rawWaveformsPeakChan(iCluster),1:param.waveformBaselineNoiseWindow,:),3)); % waveform baseline
 
         % It's save to delete raw waveforms now
         rawWaveforms(iCluster).spkMap = [];
@@ -175,8 +180,11 @@ if ~isempty(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'))
 %     % time just before waveform. we use this as a proxy to evaluate the overall amount of noise for each unit's channel 
 %     signalToNoiseRatio = cell2mat(arrayfun(@(X) abs(squeeze(nanmax(nanmax(rawWaveformsFull(X,rawWaveformsPeakChan(X),:),3))) ./ baseline_mad(X)),1:nClust,'Uni',0))';
 
-    signalToNoiseRatio = cell2mat(arrayfun(@(X) nanmax(abs(squeeze(rawWaveformsFull(X,rawWaveformsPeakChan(X),:)))) ./...
-        nanvar(average_baseline_cat(average_baseline_idx_cat==X)),1:nClust,'Uni',0))';
+    signalToNoiseRatio = cell2mat(arrayfun(@(X) max(abs(squeeze(rawWaveformsFull(X,rawWaveformsPeakChan(X),:)))) ./...
+        var(average_baseline_cat(average_baseline_idx_cat==X)),1:nClust,'Uni',0))';
+
+    %signalToNoiseRatio = cell2mat(arrayfun(@(X) max(abs(squeeze(rawWaveformsFull(X,rawWaveformsPeakChan(X),:))),[],'omitnan') ./...
+    %    var(average_baseline_cat(average_baseline_idx_cat==X)),1:nClust,'Uni',0), 'omitnan')';
 
 
 else
