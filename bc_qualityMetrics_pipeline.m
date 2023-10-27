@@ -19,14 +19,13 @@ ephysRawDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*bin');
 ephysMetaDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*meta'); % path to your .meta or .oebin meta file
 savePath = '/media/julie/ExtraHD/JF093/qMetrics'; % where you want to save the quality metrics 
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
-gain_to_uV = 0.195; % use this if you are not using spikeGLX or openEphys to record your data. You can then leave ephysMetaDir 
+gain_to_uV = 0.195; % use this if you are not using spikeGLX or openEphys to record your data. You then must leave the ephysMetaDir 
     % empty(e.g. ephysMetaDir = '')
 
 %% check MATLAB version 
 oldMATLAB = isMATLABReleaseOlderThan("R2019a");
 if oldMATLAB
-    error(['MATLAB version is older than 2019a - download a more recent version' newline ...
-        'before continuing'])
+    error('This MATLAB version is older than 2019a - download a more recent version before continuing')
 end
 
 %% load data 

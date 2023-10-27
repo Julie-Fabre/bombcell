@@ -109,16 +109,11 @@ qMetric.maxChannels = maxChannels;
 uniqueTemplates = unique(spikeTemplates);
 
 % extract and save or load in raw waveforms 
-
 if param.extractRaw
     [rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extractRawWaveformsFast(param, ...
         spikeTimes_samples, spikeTemplates, param.reextractRaw, savePath, param.verbose); % takes ~10' for 
+    % an average dataset, the first time it is run, <1min after that
 end
-% an average dataset, the first time it is run, <1min after that
-
-% previous, slower method: 
-% [qMetric.rawWaveforms, qMetric.rawMemMap] = bc_extractRawWaveforms(param.rawFolder, param.nChannels, param.nRawSpikesToExtract, ...
-%     spikeTimes, spikeTemplates, usedChannels, verbose);
 
 % divide recording into time chunks 
 spikeTimes_seconds = spikeTimes_samples ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms

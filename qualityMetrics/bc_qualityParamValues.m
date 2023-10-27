@@ -40,6 +40,16 @@ end
 param.saveMatFileForGUI = 1; % save certain outputs at .mat file - useful for GUI
 
 % amplitude / raw waveform parameters
+param.detrendWaveform = 1; % If this is set to 1, each raw extracted spike is
+    % detrended (we remove the best straight-fit line from the spike)
+    % using MATLAB's builtin function detrend. This is only
+    % possible if using MATLAB >= R2023a.
+oldMATLAB = isMATLABReleaseOlderThan("R2023a");
+if oldMATLAB
+    warning(['This MATLAB version is older than 2023a, we cannot perform spike' ...
+        'detrending.'])
+    param.detrendWaveform = 0;
+end
 param.nRawSpikesToExtract = 100; % how many raw spikes to extract for each unit 
 param.saveMultipleRaw = 0; % If you wish to save the nRawSpikesToExtract as well, 
     % currently needed if you want to run unit match https://github.com/EnnyvanBeest/UnitMatch

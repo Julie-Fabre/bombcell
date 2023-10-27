@@ -90,7 +90,15 @@ else
                 %         if size(data, 2) == spikeWidth
                 %             rawWaveforms(iCluster).spkMap(:, :, iSpike) = data;
                 %         end
-                rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels-param.nSyncChannels, :); %remove sync channel
+                if param.detrendWaveform
+                    rawWaveforms(iCluster).spkMap(:, :, iSpike) = permute(detrend(permute(data(1:nChannels-param.nSyncChannels, :),[2,1])), [2,1]);
+                     %figure(); plot(squeeze(rawWaveforms(iCluster).spkMap(rawWaveformsPeakChan(iCluster),:,1)))
+                    %figure(); plot(squeeze(permute(detrend(permute(spikeMap(rawWaveformsPeakChan(iCluster),:,1),[2,1, 3])), [2,1,3])));
+
+                else
+                    rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels-param.nSyncChannels, :); %remove sync channel
+                end
+             
             end
 
         end
