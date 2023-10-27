@@ -108,7 +108,13 @@ else
 
         end
 
-        % align raw spikes to each other (using the trough) 
+        % % TODO align raw spikes to each other (using the trough) 
+        % clearvars meanWaveform_temp peakChan_temp
+        % % baseline subtract, smooth
+        % meanWaveform_temp = nanmean(rawWaveforms(iCluster).spkMap,3);
+        % [~, peakChan_temp] = max(max(meanWaveform_temp, [], 2) - min(meanWaveform_temp, [], 2)); % maximum channel per cluster 
+        % [~, troughLocation] = min(squeeze(rawWaveforms(iCluster).spkMap(peakChan_temp, :, :)));
+        
         
         % save waveforms for unitmatch 
         if param.saveMultipleRaw
@@ -132,7 +138,7 @@ else
             mean(rawWaveforms(iCluster).spkMapMean(:, 1:param.waveformBaselineNoiseWindow), 2); % remove baseline
         spkMapMean_sm = smoothdata(rawWaveforms(iCluster).spkMapMean, 1, 'gaussian', 5); % smooth
 
-        [~, rawWaveformsPeakChan(iCluster)] = max(max(spkMapMean_sm, [], 2)-min(spkMapMean_sm, [], 2)); % maximum channel per cluster 
+        [~, rawWaveformsPeakChan(iCluster)] = max(max(spkMapMean_sm, [], 2) - min(spkMapMean_sm, [], 2)); % maximum channel per cluster 
         average_baseline{iCluster} = squeeze(nanmean(rawWaveforms(iCluster).spkMap(rawWaveformsPeakChan(iCluster),...
             1:param.waveformBaselineNoiseWindow,:),3)); % waveform baseline (for signal-to-noise calculation)
 
