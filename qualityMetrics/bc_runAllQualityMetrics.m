@@ -94,8 +94,6 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples
 %   threshold criterion to be classified as a single unit (1), noise
 %   (0) or multi-unit (2)
 
-%% if some manual curation already performed, remove bad units
-
 %% prepare for quality metrics computations
 % initialize structures 
 qMetric = struct;
@@ -217,14 +215,9 @@ if param.extractRaw
 end
 
 fprintf('\n Finished extracting quality metrics from %s', param.rawFile)
-try
-    qMetric = bc_saveQMetrics(param, qMetric, forGUI, savePath);
-    fprintf('\n Saved quality metrics from %s to %s \n', param.rawFile, savePath)
-    %% get some summary plots
-    
-catch
-    warning('\n Warning, quality metrics from %s not saved! \n', param.rawFile)
-end
+
+qMetric = bc_saveQMetrics(param, qMetric, forGUI, savePath);
+fprintf('\n Saved quality metrics from %s to %s \n', param.rawFile, savePath)
 
 unitType = bc_getQualityUnitType(param, qMetric, savePath);
 bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
