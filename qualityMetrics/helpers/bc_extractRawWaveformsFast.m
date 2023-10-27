@@ -176,6 +176,9 @@ if ~isempty(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'))
     signalToNoiseRatio = cell2mat(arrayfun(@(X) nanmax(abs(squeeze(rawWaveformsFull(X,rawWaveformsPeakChan(X),:)))) ./...
         nanvar(average_baseline_cat(average_baseline_idx_cat==X)),1:nClust,'Uni',0))';
 
+    %signalToNoiseRatio = cell2mat(arrayfun(@(X) max(abs(squeeze(rawWaveformsFull(X,rawWaveformsPeakChan(X),:))),[],'omitnan') ./...
+    %    var(average_baseline_cat(average_baseline_idx_cat==X)),1:nClust,'Uni',0), 'omitnan')';
+
 
 else
     fprintf('No saved waveform baseline file found, skipping signal to noise calculation')

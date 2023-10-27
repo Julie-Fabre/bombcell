@@ -1,4 +1,4 @@
-function paramBC = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile)
+function paramBC = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV)
 paramBC = struct;
 
 %% calculating quality metrics parameters 
@@ -11,10 +11,28 @@ paramBC.verbose = 1; % update user on progress
 paramBC.reextractRaw = 1; % re extract raw waveforms or not - safer this way..
 
 % saving parameters 
-paramBC.saveAsParquet = 1; % save outputs at .parquet file 
+paramBC.saveAsTSV = 1; % additionally save outputs in .tsv file - this is 
+    % useful if you want to use phy after bombcell: each quality metric value
+    % will appear as a column in the Cluster view
+paramBC.unitType_for_phy = 1; % whether to save the output of unitType in .tsv file for phy
+if nargin < 3
+    warning('no ephys kilosort path defined in bc_qualityParamValues, will save output tsv file in the savePath location')
+else
+    paramBC.ephysKilosortPath = ephysKilosortPath;
+end
 paramBC.saveMatFileForGUI = 1; % save certain outputs at .mat file - useful for GUI
 
 % amplitude parameters
+paramBC.detrendWaveform = 0; % If this is set to 1, each raw extracted spike is
+    % detrended (we remove the best straight-fit line from the spike)
+    % using MATLAB's builtin function detrend. This is only
+    % possible if using MATLAB >= R2023a.
+oldMATLAB = isMATLABReleaseOlderThan("R2023a");
+if oldMATLAB
+    warning(['This MATLAB version is older than 2023a, we cannot perform spike' ...
+        'detrending.'])
+    paramBC.detrendWaveform = 0;
+end
 paramBC.nRawSpikesToExtract = 1000;%inf; %inf if you don't encounter memory issues and want to load all spikes; % how many raw spikes to extract for each unit 
 paramBC.saveMultipleRaw = 1; % If you wish to save the nRawSpikesToExtract as well, 
 % currently needed if you want to run unit match https://github.com/EnnyvanBeest/UnitMatch
@@ -22,6 +40,12 @@ paramBC.saveMultipleRaw = 1; % If you wish to save the nRawSpikesToExtract as we
 paramBC.decompressData = 1; % whether to decompress .cbin ephys data 
 paramBC.spikeWidth = 82; % width in samples 
 paramBC.extractRaw = 1; %whether to extract raw waveforms or not 
+paramBC.probeType = 1; % if you are using spikeGLX and your meta file does 
+    % not contain information about your probe type for some reason
+    % specify it here: '1' for 1.0 (3Bs) and '2' for 2.0 (single or 4-shanks)
+    % For additional probe types, make a pull request with more
+    % information.  If your spikeGLX meta file contains information about your probe
+    % type, or if you are using open ephys, this paramater wil be ignored.
 
 % signal to noise ratio
 paramBC.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times
@@ -60,10 +84,14 @@ paramBC.nChannels = 385; %number of recorded channels (including any sync channe
 % recorded in the raw data. This is usually 384 or 385 for neuropixels
 % recordings
 paramBC.nSyncChannels = 1;
-if nargin
+if  ~isempty(ephysMetaDir)
     paramBC.ephysMetaFile = [ephysMetaDir.folder, filesep, ephysMetaDir.name];
-    paramBC.rawFile = rawFile;
+    paramBC.gain_to_uV = NaN;
+else
+    paramBC.ephysMetaFile = 'NaN';
+    paramBC.gain_to_uV = gain_to_uV;
 end
+paramBC.rawFile = rawFile;
 
 % distance metric parameters
 paramBC.computeDistanceMetrics = 0; % whether to compute distance metrics - this can be time consuming 
