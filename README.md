@@ -29,6 +29,8 @@ Take a look at [`bc_qualityMetrics_pipeline`](https://github.com/Julie-Fabre/bom
 
 #### Installation
 
+Bombcell requires MATLAB>=2019a.
+
 To begin using Bombcell:
 - [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) the [repository](https://github.com/Julie-Fabre/bombcell/bombcell) and the [dependancies](#Dependancies).
 - add bombcell's and the dependancies' folders to [MATLAB's path](https://uk.mathworks.com/help/matlab/ref/pathtool.html).
