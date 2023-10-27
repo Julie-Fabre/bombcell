@@ -17,10 +17,14 @@
 ephysKilosortPath = '/home/netshare/zaru/JF093/2023-03-06/ephys/kilosort2/site1/';% path to your kilosort output files 
 ephysRawDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*bin'); % path to yourraw .bin or .dat data
 ephysMetaDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*meta'); % path to your .meta or .oebin meta file
-saveLocation = '/media/julie/ExtraHD/JF093'; % where you want to save the quality metrics 
-savePath = fullfile(saveLocation, 'qMetrics'); 
+savePath = '/media/julie/ExtraHD/JF093/qMetrics'; % where you want to save the quality metrics 
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
-gain_to_uV = 0.195; % use this if you are not using spikeGLX or openEphys to record your data. You can then leave ephysMetaDir empty(e.g. ephysMetaDir = '')
+gain_to_uV = 0.195; % use this if you are not using spikeGLX or openEphys to record your data. You can then leave ephysMetaDir 
+    % empty(e.g. ephysMetaDir = '')
+
+%% check MATLAB version 
+oldMATLAB = isMATLABReleaseOlderThan("R2019a");
+of
 %% load data 
 [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitudes, pcFeatures, ...
     pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysKilosortPath);
@@ -33,14 +37,12 @@ param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_
 % param = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile) % Run this if you want to use UnitMatch after
 
 %% compute quality metrics 
-rerun = 1;
+rerun = 0;
 qMetricsExist = ~isempty(dir(fullfile(savePath, 'qMetric*.mat'))) || ~isempty(dir(fullfile(savePath, 'templates._bc_qMetrics.parquet')));
 
 if qMetricsExist == 0 || rerun
-    tic
     [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
         templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
-    toc
 else
     [param, qMetric] = bc_loadSavedMetrics(savePath); 
     unitType = bc_getQualityUnitType(param, qMetric, savePath);

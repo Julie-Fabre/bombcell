@@ -21,6 +21,14 @@ savePath = '/media/julie/ExtraHD/JF093/qMetrics'; % where you want to save the q
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
 gain_to_uV = 0.195; % use this if you are not using spikeGLX or openEphys to record your data. You can then leave ephysMetaDir 
     % empty(e.g. ephysMetaDir = '')
+
+%% check MATLAB version 
+oldMATLAB = isMATLABReleaseOlderThan("R2019a");
+if oldMATLAB
+    error(['MATLAB version is older than 2019a - download a more recent version' newline ...
+        'before continuing'])
+end
+
 %% load data 
 [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitudes, pcFeatures, ...
     pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysKilosortPath);
