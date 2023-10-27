@@ -99,7 +99,7 @@ else
                 
                 % detrend spike if required 
                 if param.detrendWaveform
-                    rawWaveforms(iCluster).spkMap(:, :, iSpike) = permute(detrend(permute(data(1:nChannels-param.nSyncChannels, :),[2,1])), [2,1]);
+                    rawWaveforms(iCluster).spkMap(:, :, iSpike) = permute(detrend(double(permute(data(1:nChannels-param.nSyncChannels, :),[2,1]))), [2,1]);
                 else
                     rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels-param.nSyncChannels, :); %remove sync channel
                 end
