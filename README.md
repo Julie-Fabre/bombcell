@@ -51,7 +51,7 @@ In addition we would like to acknowledge:
   
 ### 🤗 Support and citing
 
-Please note that Bombcell is currently unpublished (manuscript under preparation). If you find Bombcell useful in your work, we kindly request that you cite:
+If you find Bombcell useful in your work, we kindly request that you cite:
 
 > Julie M.J. Fabre, Enny H. van Beest, Andrew J. Peters, Matteo Carandini, & Kenneth D. Harris. (2023). Bombcell: automated curation and cell classification of spike-sorted electrophysiology data. Zenodo. https://doi.org/10.5281/zenodo.8172821
 
