@@ -7,6 +7,10 @@ function unitType = bc_getQualityUnitType(param, qMetric, savePath)
 % ------
 % Outputs
 % ------
+
+% check paramaters 
+param = bc_checkParameterFields(param);
+
 if nargin < 3 && param.unitType_for_phy == 1
     savePath = pwd;
     warning('no save path specified. using current working directory')

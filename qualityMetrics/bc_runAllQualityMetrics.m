@@ -71,12 +71,12 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples
 qMetric = struct;
 forGUI = struct;
 
+% check parameter values 
+param = bc_checkParameterFields(param);
+
 % get unit max channels
 maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 qMetric.maxChannels = maxChannels;
-
-% get unique templates 
-uniqueTemplates = unique(spikeTemplates);
 
 % extract and save or load in raw waveforms 
 if param.extractRaw
@@ -86,11 +86,6 @@ if param.extractRaw
 end
 
 % remove any duplicate spikes 
-param.removeDuplicateSpikes = 1;
-param.duplicateSpikeWindow_s = 0.000166;
-param.saveSpikes_withoutDuplicates = 1;
-param.recomputeDuplicateSpikes = 0;
-
 [uniqueTemplates, ~, spikeTimes_samples, spikeTemplates, templateAmplitudes, ...
     pcFeatures, rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = ...
     bc_removeDuplicateSpikes(spikeTimes_samples, spikeTemplates, templateAmplitudes,...
