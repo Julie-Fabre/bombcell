@@ -4,39 +4,8 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples
 % ------
 % Inputs
 % ------
-% param: parameter structure with fields:
-%   tauR = 0.0010; %refractory period time (s)
-%   tauC = 0.0002; %censored period time (s)
-%   maxPercSpikesMissing: maximum percent (eg 30) of estimated spikes below detection
-%       threshold to define timechunks in the recording on which to compute
-%       quality metrics for each unit.
-%   minNumSpikes: minimum number of spikes (eg 300) for unit to classify it as good
-%   maxNtroughsPeaks: maximum number of troughs and peaks (eg 3) to classify unit
-%       waveform as good
-%   isSomatic: boolean, whether to keep only somatic spikes
-%   maxRPVviolations: maximum estimated % (eg 20) of refractory period violations to classify unit as good
-%   minAmplitude: minimum amplitude of raw waveform in microVolts to
-%       classify unit as good
-%   plotThis: boolean, whether to plot figures for each metric and unit - !
-%       this will create * a lot * of plots if run on all units - use just
-%       for debugging a particular issue / creating plots for one single
-%       unit
-%   rawFolder: string containing the location of the raw .dat or .bin file
-%   deltaTimeChunk: size of time chunks to cut the recording in, in seconds
-%       (eg 600 for 10 min time chunks or duration of recording if you don't
-%       want time chunks)
-%   ephys_sample_rate: recording sample rate (eg 30000)
-%   nChannels: number of recorded channels, including any sync channels (eg
-%       385)
-%   nRawSpikesToExtract: number of spikes to extract from the raw data for
-%       each waveform (eg 100)
-%   nChannelsIsoDist: number of channels on which to compute the distance
-%       metrics (eg 4)
-%   computeDistanceMetrics: boolean, whether to compute distance metrics or not
-%   isoDmin: minimum isolation distance to classify unit as single-unit
-%   lratioMin: minimum l-ratio to classify unit as single-unit
-%   ssMin: silhouette score to classify unit as single-unit
-%   computeTimeChunks
+% param: parameter structure. See bc_qualityParamValues for all fields
+%   anf information about them.
 %
 % spikeTimes_samples: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
 %
@@ -55,8 +24,11 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples
 % pcFeatureIdx: nTemplates × nPCFeatures uint32  matrix specifying which
 %   channels contribute to each entry in dim 3 of the pc_features matrix
 %
-% channelPositions
-% goodChannels 
+% channelPositions: nChannels x 2 double matrix corresponding to the x and
+%   z locations of each channel on the probe, in um
+% 
+% savePath: sting defining the path where to save bombcell's output
+%
 %------
 % Outputs
 % ------
@@ -113,6 +85,19 @@ if param.extractRaw
     % an average dataset, the first time it is run, <1min after that
 end
 
+% remove any duplicate spikes 
+param.removeDuplicateSpikes = 1;
+param.duplicateSpikeWindow_s = 0.000166;
+param.saveSpikes_withoutDuplicates = 1;
+param.recomputeDuplicateSpikes = 0;
+
+[uniqueTemplates, ~, spikeTimes_samples, spikeTemplates, templateAmplitudes, ...
+    pcFeatures, rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = ...
+    bc_removeDuplicateSpikes(spikeTimes_samples, spikeTemplates, templateAmplitudes,...
+    pcFeatures, rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio,...
+    param.removeDuplicateSpikes, param.duplicateSpikeWindow_s, ...
+    param.ephys_sample_rate, param.saveSpikes_withoutDuplicates, savePath, param.recomputeDuplicateSpikes);
+
 % divide recording into time chunks 
 spikeTimes_seconds = spikeTimes_samples ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
 if param.computeTimeChunks
@@ -121,12 +106,13 @@ else
     timeChunks = [min(spikeTimes_seconds), max(spikeTimes_seconds)];
 end
 
+
 %% loop through units and get quality metrics
 fprintf('\n Extracting quality metrics from %s ... \n', param.rawFile)
 
-for iUnit = 1:length(uniqueTemplates)
-    clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
+for iUnit = 1:size(uniqueTemplates,1)
 
+    clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
     % get this unit's attributes 
     thisUnit = uniqueTemplates(iUnit);
     qMetric.phy_clusterID(iUnit) = thisUnit - 1; % this is the cluster ID as it appears in phy
@@ -134,8 +120,6 @@ for iUnit = 1:length(uniqueTemplates)
 
     theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
-
-    %% remove duplicate spikes 
 
 
     %% percentage spikes missing (false negatives)

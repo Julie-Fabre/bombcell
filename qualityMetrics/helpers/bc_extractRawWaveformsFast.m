@@ -90,12 +90,6 @@ else
                 data0 = fread(fid, nChannels*spikeWidth, 'int16=>int16'); % read individual waveform from binary file
                 frewind(fid);
                 data = reshape(data0, nChannels, []);
-                %         if whitenBool
-                %             [data, mu, invMat, whMat]=whiten(double(data));
-                %         end
-                %         if size(data, 2) == spikeWidth
-                %             rawWaveforms(iCluster).spkMap(:, :, iSpike) = data;
-                %         end
                 
                 % detrend spike if required 
                 if param.detrendWaveform
