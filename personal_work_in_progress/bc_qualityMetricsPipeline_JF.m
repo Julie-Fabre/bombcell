@@ -30,7 +30,7 @@ else
 
 end
 %% run qmetrics 
-param = bc_qualityParamValues(ephysMetaDir, rawFile); 
+param = bc_qualityParamValues_JF(ephysMetaDir, rawFile); 
 %param.computeDistanceMetrics = 1;
 
 %% compute quality metrics 

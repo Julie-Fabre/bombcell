@@ -28,6 +28,7 @@ function [rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extra
 %       of the data before detected waveforms. implementation : Enny van Beest 
 
 %% Check if data needs to be extracted
+if param.extractRaw
 rawWaveformFolder = dir(fullfile(savePath, 'templates._bc_rawWaveforms.npy'));
 
 if ~isempty(rawWaveformFolder) && reExtract == 0 % no need to extract data, 
@@ -90,12 +91,6 @@ else
                 data0 = fread(fid, nChannels*spikeWidth, 'int16=>int16'); % read individual waveform from binary file
                 frewind(fid);
                 data = reshape(data0, nChannels, []);
-                %         if whitenBool
-                %             [data, mu, invMat, whMat]=whiten(double(data));
-                %         end
-                %         if size(data, 2) == spikeWidth
-                %             rawWaveforms(iCluster).spkMap(:, :, iSpike) = data;
-                %         end
                 
                 % detrend spike if required 
                 if param.detrendWaveform
@@ -189,3 +184,8 @@ else
     signalToNoiseRatio = nan(nClust,1);
 end
 
+else
+    rawWaveformsFull = [];
+    rawWaveformsPeakChan = [];
+    signalToNoiseRatio = [];
+end
