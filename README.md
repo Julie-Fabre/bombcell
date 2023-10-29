@@ -57,6 +57,8 @@ If you find Bombcell useful in your work, we kindly request that you cite:
 
 > Julie M.J. Fabre, Enny H. van Beest, Andrew J. Peters, Matteo Carandini, & Kenneth D. Harris. (2023). Bombcell: automated curation and cell classification of spike-sorted electrophysiology data. Zenodo. https://doi.org/10.5281/zenodo.8172821
 
+You can additionally star this repository using the top-right star button to help it gain more visibility.
+
 ### :page_facing_up: License
 
 Bombcell is under the open-source [copyleft](https://www.gnu.org/licenses/copyleft.en.html) [GNU General Public License 3](https://www.gnu.org/licenses/gpl-3.0.html). You can run, study, share, and modify the software under the condition that you keep and do not modify the license.
