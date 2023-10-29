@@ -61,10 +61,14 @@ if removeDuplicateSpikes_flag
     spikeTimes_samples = spikeTimes_samples(~duplicateSpikes_idx);
     spikeTemplates = spikeTemplates(~duplicateSpikes_idx);
     templateAmplitudes = templateAmplitudes(~duplicateSpikes_idx);
-    pcFeatures = pcFeatures(~duplicateSpikes_idx, :, :);
+    if ~isempty(pcFeatures)
+        pcFeatures = pcFeatures(~duplicateSpikes_idx, :, :);
+    end
     rawWaveformsFull = rawWaveformsFull(~emptyUnits_idx, :, :);
     rawWaveformsPeakChan = rawWaveformsPeakChan(~emptyUnits_idx);
-    signalToNoiseRatio = signalToNoiseRatio(~emptyUnits_idx);
+    if ~isempty(signalToNoiseRatio)
+        signalToNoiseRatio = signalToNoiseRatio(~emptyUnits_idx);
+    end
 
 
 end

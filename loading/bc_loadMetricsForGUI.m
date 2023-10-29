@@ -43,6 +43,19 @@ probeLocation = [];
 rawWaveforms.average = readNPY([fullfile(savePath, 'templates._bc_rawWaveforms.npy')]);
 rawWaveforms.peakChan = readNPY([fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy')]);
 
+% remove any duplicate spikes 
+param.removeDuplicateSpikes = 1;
+param.duplicateSpikeWindow_s = 0.000166;
+param.saveSpikes_withoutDuplicates = 1;
+param.recomputeDuplicateSpikes = 0;
+
+[uniqueTemplates, ~, ephysData.spike_times_samples, ephysData.spike_templates, ephysData.template_amplitudes, ...
+    ~, rawWaveforms.average, rawWaveforms.peakChan, signalToNoiseRatio] = ...
+    bc_removeDuplicateSpikes(ephysData.spike_times_samples, ephysData.spike_templates, ephysData.template_amplitudes,...
+    [], rawWaveforms.average, rawWaveforms.peakChan,[],...
+    param.removeDuplicateSpikes, param.duplicateSpikeWindow_s, ...
+    param.ephys_sample_rate, param.saveSpikes_withoutDuplicates, savePath, param.recomputeDuplicateSpikes);
+
 % load other gui stuffs 
 if ~exist('forGUI', 'var') || ~isempty(dir([savePath, filesep, 'templates.qualityMetricDetailsforGUI.mat']))
     load([savePath, filesep, 'templates.qualityMetricDetailsforGUI.mat'])
