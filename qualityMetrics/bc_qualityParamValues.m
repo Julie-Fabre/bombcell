@@ -39,6 +39,12 @@ else
 end
 param.saveMatFileForGUI = 1; % save certain outputs at .mat file - useful for GUI
 
+% duplicate spikes parameters 
+param.removeDuplicateSpikes = 1;
+param.duplicateSpikeWindow_s = 0.000166; % in seconds 
+param.saveSpikes_withoutDuplicates = 1;
+param.recomputeDuplicateSpikes = 0;
+
 % amplitude / raw waveform parameters
 param.detrendWaveform = 1; % If this is set to 1, each raw extracted spike is
     % detrended (we remove the best straight-fit line from the spike)
@@ -56,6 +62,7 @@ param.probeType = 1; % if you are using spikeGLX and your meta file does
     % For additional probe types, make a pull request with more
     % information.  If your spikeGLX meta file contains information about your probe
     % type, or if you are using open ephys, this paramater wil be ignored.
+param.detrendWaveforms = 0;
 
 % signal to noise ratio
 param.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times

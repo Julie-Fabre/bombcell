@@ -70,7 +70,12 @@ if removeDuplicateSpikes_flag
         signalToNoiseRatio = signalToNoiseRatio(~emptyUnits_idx);
     end
 
+    fprintf('\n Removed %.0f spike duplicates out of %.0f. \n', sum(duplicateSpikes_idx), length(duplicateSpikes_idx))
 
+else
+    nonEmptyUnits = unique(spikeTemplates);
+    duplicateSpikes_idx = zeros(size(spikeTimes_samples,1),1);
+    
 end
 
 

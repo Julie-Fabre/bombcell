@@ -33,7 +33,9 @@ defaultValues.unitType_for_phy = 0;
 [param_complete, missingFields] = bc_addMissingFieldsWithDefault(param, defaultValues);
 
 %% Display result
-disp('Missing param fields filled in with default values');
-disp(missingFields);
+if ~isempty(missingFields)
+    disp('Missing param fields filled in with default values');
+    disp(missingFields);
+end
 
 end
