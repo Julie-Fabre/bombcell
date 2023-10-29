@@ -41,7 +41,7 @@ param.saveMatFileForGUI = 1; % save certain outputs at .mat file - useful for GU
 
 % duplicate spikes parameters 
 param.removeDuplicateSpikes = 1;
-param.duplicateSpikeWindow_s = 0.0000025; % in seconds 
+param.duplicateSpikeWindow_s = 0.00001; % in seconds 
 param.saveSpikes_withoutDuplicates = 1;
 param.recomputeDuplicateSpikes = 0;
 

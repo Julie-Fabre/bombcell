@@ -42,7 +42,8 @@ if removeDuplicateSpikes_flag
             batch_templateAmplitudes = templateAmplitudes(start_idx:end_idx);
 
             [~, ~, batch_removeIdx] = removeDuplicates(batch_spikeTimes_samples, ...
-                batch_spikeTemplates, batch_templateAmplitudes, duplicateSpikeWindow_samples, spikeTemplates_flat);
+                batch_spikeTemplates, batch_templateAmplitudes, duplicateSpikeWindow_samples, ...
+                maxChannels, spikeTemplates_flat);
 
             duplicateSpikes_idx(start_idx:end_idx) = batch_removeIdx;
 
