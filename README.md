@@ -18,7 +18,7 @@ Run `prettify_plot;` to prettify your current figure (includes all subplots). In
 
 ### Prettify code
 
-Run `prettify_current_code;` to prettify your current script open in the MATLAB editor. Prettify rules are stored in the `formatRules.xml` file. 
+Run `prettify_current_code;` to prettify your current script open in the MATLAB editor. All code editing rules are stored in the `formatRules.xml` file, where they can easily be changed.
 <img src="./images/prettify_code.png" width="100%">
 
 ### Prettify colors
