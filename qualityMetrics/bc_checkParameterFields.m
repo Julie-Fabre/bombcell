@@ -12,21 +12,21 @@ function param_complete = bc_checkParameterFields(param)
 
 %% Default values for fields
 % duplicate spikes
-param.removeDuplicateSpikes = 0;
-param.duplicateSpikeWindow_s = 0.000166;
-param.saveSpikes_withoutDuplicates = 1;
-param.recomputeDuplicateSpikes = 0;
+defaultValues.removeDuplicateSpikes = 0;
+defaultValues.duplicateSpikeWindow_s = 0.000166;
+defaultValues.saveSpikes_withoutDuplicates = 1;
+defaultValues.recomputeDuplicateSpikes = 0;
 
 % raw waveforms 
-param.detrendWaveforms = 0;
-param.extractRaw = 1;
+defaultValues.detrendWaveforms = 0;
+defaultValues.extractRaw = 1;
 
 % amplitude 
-param.gain_to_uV = NaN;
+defaultValues.gain_to_uV = NaN;
 
 % phy saving 
-param.saveAsTSV = 0;
-param.unitType_for_phy = 0;
+defaultValues.saveAsTSV = 0;
+defaultValues.unitType_for_phy = 0;
 
 
 %% Check for missing fields and add them with default value
