@@ -28,6 +28,7 @@ function [rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extra
 %       of the data before detected waveforms. implementation : Enny van Beest 
 
 %% Check if data needs to be extracted
+if param.extractRaw
 rawWaveformFolder = dir(fullfile(savePath, 'templates._bc_rawWaveforms.npy'));
 
 if ~isempty(rawWaveformFolder) && reExtract == 0 % no need to extract data, 
@@ -183,3 +184,8 @@ else
     signalToNoiseRatio = nan(nClust,1);
 end
 
+else
+    rawWaveformsFull = [];
+    rawWaveformsPeakChan = [];
+    signalToNoiseRatio = [];
+end

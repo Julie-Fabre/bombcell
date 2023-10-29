@@ -13,7 +13,7 @@ function param_complete = bc_checkParameterFields(param)
 %% Default values for fields
 % duplicate spikes
 defaultValues.removeDuplicateSpikes = 0;
-defaultValues.duplicateSpikeWindow_s = 0.000166;
+defaultValues.duplicateSpikeWindow_s = 0.00005;
 defaultValues.saveSpikes_withoutDuplicates = 1;
 defaultValues.recomputeDuplicateSpikes = 0;
 

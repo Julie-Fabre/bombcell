@@ -1,8 +1,8 @@
 function [nonEmptyUnits, duplicateSpikes_idx, spikeTimes_samples, spikeTemplates, templateAmplitudes, ...
-    pcFeatures, rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio, maxChannels] = ...
+    pcFeatures, rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = ...
     bc_removeDuplicateSpikes(spikeTimes_samples, spikeTemplates, templateAmplitudes, ...
     pcFeatures, rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio, ...
-    maxChannels, removeDuplicateSpikes_flag, ...
+    removeDuplicateSpikes_flag, ...
     duplicateSpikeWindow_s, ephys_sample_rate, saveSpikes_withoutDuplicates_flag, savePath, recompute)
 % JF, Remove any duplicate spikes
 % Some spike sorters (including kilosort) can sometimes count spikes twice
@@ -28,12 +28,6 @@ if removeDuplicateSpikes_flag
         % initialize and re-allocate
         duplicateSpikes_idx = false(1, numSpikes_full);
 
-        % Rename the spike templates according to the remaining templates
-        good_templates_idx = unique(spikeTemplates);
-        new_spike_idx = nan(max(spikeTemplates), 1);
-        new_spike_idx(good_templates_idx) = 1:length(good_templates_idx);
-        spikeTemplates_flat = new_spike_idx(spikeTemplates);
-
         % check for duplicate spikes in batches
         for start_idx = 1:batch_size - overlap_size:numSpikes_full
             end_idx = min(start_idx+batch_size-1, numSpikes_full);
@@ -42,7 +36,7 @@ if removeDuplicateSpikes_flag
             batch_templateAmplitudes = templateAmplitudes(start_idx:end_idx);
 
             [~, ~, batch_removeIdx] = removeDuplicates(batch_spikeTimes_samples, ...
-                batch_spikeTemplates, batch_templateAmplitudes, duplicateSpikeWindow_samples, spikeTemplates_flat);
+                batch_spikeTemplates, batch_templateAmplitudes, duplicateSpikeWindow_samples);
 
             duplicateSpikes_idx(start_idx:end_idx) = batch_removeIdx;
 
@@ -90,33 +84,30 @@ end
 
 
     function [spikeTimes_samples, spikeTemplates, removeIdx] = removeDuplicates(spikeTimes_samples, ...
-            spikeTemplates, templateAmplitudes, duplicateSpikeWindow_samples, maxChannels, spikeTemplates_flat)
+            spikeTemplates, templateAmplitudes, duplicateSpikeWindow_samples)
         numSpikes = length(spikeTimes_samples);
         removeIdx = false(1, numSpikes);
 
         % Intra-unit duplicate removal
-        for iSpike1 = 1:numSpikes
-            if removeIdx(iSpike1)
+        for i = 1:numSpikes
+            if removeIdx(i)
                 continue;
             end
 
-            for iSpike2 = iSpike1 + 1:numSpikes
-                if removeIdx(iSpike2)
-                    continue;
-                end
-                if maxChannels(spikeTemplates_flat(iSpike2)) ~= maxChannels(spikeTemplates_flat(iSpike1)) % spikes are not on same channel
+            for j = i + 1:numSpikes
+                if removeIdx(j)
                     continue;
                 end
 
-                if spikeTemplates(iSpike1) == spikeTemplates(iSpike2) 
-                    if abs(spikeTimes_samples(iSpike1)-spikeTimes_samples(iSpike2)) <= duplicateSpikeWindow_samples
-                        if templateAmplitudes(iSpike1) < templateAmplitudes(iSpike2)
-                            spikeTimes_samples(iSpike1) = NaN;
-                            removeIdx(iSpike1) = true;
+                if spikeTemplates(i) == spikeTemplates(j)
+                    if abs(spikeTimes_samples(i)-spikeTimes_samples(j)) <= duplicateSpikeWindow_samples
+                        if templateAmplitudes(i) < templateAmplitudes(j)
+                            spikeTimes_samples(i) = NaN;
+                            removeIdx(i) = true;
                             break;
                         else
-                            spikeTimes_samples(iSpike2) = NaN;
-                            removeIdx(iSpike2) = true;
+                            spikeTimes_samples(j) = NaN;
+                            removeIdx(j) = true;
                         end
                     end
                 end
@@ -126,28 +117,25 @@ end
 
         % Inter-unit duplicate removal
         unitSpikeCounts = accumarray(spikeTemplates, 1);
-        for iSpike1 = 1:length(spikeTimes_samples)
-            if removeIdx(iSpike1)
+        for i = 1:length(spikeTimes_samples)
+            if removeIdx(i)
                 continue;
             end
 
-            for iSpike2 = iSpike1 + 1:length(spikeTimes_samples)
-                if removeIdx(iSpike2)
-                    continue;
-                end
-                if maxChannels(spikeTemplates_flat(iSpike2)) ~= maxChannels(spikeTemplates_flat(iSpike1)) % spikes are not on same channel
+            for j = i + 1:length(spikeTimes_samples)
+                if removeIdx(j)
                     continue;
                 end
 
-                if spikeTemplates(iSpike1) ~= spikeTemplates(iSpike2)
-                    if abs(spikeTimes_samples(iSpike1)-spikeTimes_samples(iSpike2)) <= duplicateSpikeWindow_samples
-                        if unitSpikeCounts(spikeTemplates(iSpike1)) < unitSpikeCounts(spikeTemplates(iSpike2))
-                            spikeTimes_samples(iSpike1) = NaN;
-                            removeIdx(iSpike1) = true;
+                if spikeTemplates(i) ~= spikeTemplates(j)
+                    if abs(spikeTimes_samples(i)-spikeTimes_samples(j)) <= duplicateSpikeWindow_samples
+                        if unitSpikeCounts(spikeTemplates(i)) < unitSpikeCounts(spikeTemplates(j))
+                            spikeTimes_samples(i) = NaN;
+                            removeIdx(i) = true;
                             break;
                         else
-                            spikeTimes_samples(iSpike2) = NaN;
-                            removeIdx(iSpike2) = true;
+                            spikeTimes_samples(j) = NaN;
+                            removeIdx(j) = true;
                         end
                     end
                 end
