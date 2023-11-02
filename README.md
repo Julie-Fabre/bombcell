@@ -14,12 +14,12 @@ prettify_matlab doesn't use any of MATLAB's add-on toolboxes and doesn't have an
 ### Prettify plots
 
 Run `prettify_plot;` to prettify your current figure (includes all subplots). Includes options to modify the background color, text size and homogenize x and y limits across plots. 
-<img src="./images/prettify_plot.png" width="100%">
+<img src="./images/prettify_plot.gif" width="100%">
 
 ### Prettify code
 
 Run `prettify_current_code;` to prettify your current script open in the MATLAB editor. All code editing rules are stored in the `formatRules.xml` file, where they can easily be changed.
-<img src="./images/prettify_code.png" width="100%">
+<img src="./images/prettify_code_4.gif" width="100%">
 
 ### Prettify colors
 #### Colorblind simulator 

@@ -11,7 +11,7 @@ y4 = log(x + 1); % Adding 1 to avoid negative values and log(0)
 y_cot = cot(x); % Cotangent values
 
 % Create a new figure
-figure;
+figure(1); clf;
 
 % First subplot: sine curve
 subplot(2, 2, 1);

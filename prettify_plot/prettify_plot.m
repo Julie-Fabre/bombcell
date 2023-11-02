@@ -165,7 +165,7 @@ if ismember(sameXLimits, {'all', 'row', 'col'}) || ismember(sameYLimits, {'all',
         thisAx = all_axes(iAx);
         currAx = currFig.Children(thisAx);
         if ~isempty(currAx)
-            try
+            %try
                 if ismember(sameXLimits, {'all'})
                     set(currAx, 'Xlim', [min(min(xlims_subplot)), max(max(xlims_subplot))]);
                 end
@@ -184,8 +184,8 @@ if ismember(sameXLimits, {'all', 'row', 'col'}) || ismember(sameYLimits, {'all',
                 if ismember(sameYLimits, {'col'})
                     set(currAx, 'Ylim', col_ylims{pos_subplot(iAx, 1) == col_subplots});
                 end
-            catch
-            end
+            %catch
+            %end
         end
         % set legend position
         if ~isempty(currAx.Legend)
