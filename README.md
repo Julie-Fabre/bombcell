@@ -1,3 +1,5 @@
+[![View prettify_matlab on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://uk.mathworks.com/matlabcentral/fileexchange/154567-prettify_matlab)
+
 # 🪄 prettify matlab
 My one-stop shop to instantly make your MATLAB scripts and plots beautiful, publication-ready and colorblind friendly.
 
