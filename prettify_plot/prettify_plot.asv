@@ -40,8 +40,9 @@ function prettify_plot(varargin)
 %   'southwestoutside'	Outside bottom-left corner of the axes
 %   'best'	Inside axes where least conflict occurs with the plot data at the time that you create the legend. If the plot data changes, you might need to reset the location to 'best'.
 %   'bestoutside'	Outside top-right corner of the axes (when the legend has a vertical orientation) or below the axes (when the legend has a horizontal orientation)
-% - LegendReplace: boolean, if you want the legend box to be replace by text
-%       directly plotted on the figure, next to the each subplot's line/point
+% - LegendReplace: ! buggy ! boolean, if you want the legend box to be replace by text
+%       directly plotted on the figure, next to the each subplot's
+%       line/point 
 % - titleFontSize: double
 % - labelFontSize: double
 % - generalFontSize: double
@@ -50,7 +51,8 @@ function prettify_plot(varargin)
 % - lineThickness: double
 % - AxisTicks
 % - AxisBox
-% - AxisAspectRatio
+% - AxisAspectRatio 'equal', 'square', 'image'
+% - AxisTightness 'tickaligned' 'tight', 'padded'
 % ------
 % to do:
 % - option to adjust vertical and horiz. lines
@@ -65,7 +67,7 @@ options = struct('XLimits', 'keep', ...
     'YLimits', 'keep', ...
     'FigureColor', [1, 1, 1], ...
     'TextColor', [0, 0, 0], ...
-    'LegendLocation', 'bestLocation', ...
+    'LegendLocation', 'best', ...
     'LegendReplace', false, ...
     'TitleFontSize', 15, ...
     'LabelFontSize', 15, ...
@@ -73,11 +75,12 @@ options = struct('XLimits', 'keep', ...
     'Font', 'Arial', ...
     'BoldTitle', 'off', ...
     'PointSize', 15, ...
-    'LineThickness', 2, ...
+    'LineThickness', 4, ...
     'AxisTicks', 'out', ...
     'AxisBox', 'off', ...
     'AxisGrid', 'off',...
-    'AxisAspectRatio', 'keep');
+    'AxisAspectRatio', 'keep',...
+    'AxisTightness', 'keep');
 
 % read the acceptable names
 optionNames = fieldnames(options);
@@ -89,7 +92,8 @@ if round(nArgs/2) ~= nArgs / 2
 end
 
 for iPair = reshape(varargin, 2, []) % pair is {propName;propValue}
-    inputName = lower(iPair{1}); % make case insensitive
+    %inputName = lower(iPair{1}); % make case insensitive
+    inputName = iPair{1};
 
     if any(strcmp(inputName, optionNames))
         % overwrite options. If you want you can test for the right class here
@@ -138,9 +142,13 @@ for iAx = 1:size(all_axes, 2)
             % Set grid/box/tick options 
             set(currAx, 'TickDir', options.AxisTicks)
             set(currAx, 'Box', options.AxisBox)
-            set(currAx, 'Grid', options.AxisGrid)
-            if strcmp(options.AxisAspectRatio
-            set(currAx, )
+            %set(currAx, 'Grid', options.AxisGrid)
+            if strcmp(options.AxisAspectRatio, 'keep') == 0
+                axis(currAx, options.AxisAspectRatio)
+            end
+            if strcmp(options.AxisTightness, 'keep') == 0
+                axis(currAx, options.AxisTightness)
+            end
 
             % Set text properties
             set(currAx.XLabel, 'FontSize', options.LabelFontSize, 'Color', options.TextColor);
@@ -166,9 +174,16 @@ for iAx = 1:size(all_axes, 2)
             % Adjust properties of line children within the plot
             childLines = findall(currAx, 'Type', 'line');
             for thisLine = childLines'
+                % if any lines/points become the same as background, change
+            % these. 
+                if sum(thisLine.Color == options.FigureColor) == 3
+                    thisLine.Color = options.TextColor;
+                end
+                % adjust markersize
                 if strcmp('.', get(thisLine, 'Marker'))
                     set(thisLine, 'MarkerSize', options.PointSize);
                 end
+                % adjust line thickness 
                 if strcmp('-', get(thisLine, 'LineStyle'))
                     set(thisLine, 'LineWidth', options.LineThickness);
                 end
@@ -195,7 +210,8 @@ for iAx = 1:size(all_axes, 2)
                 if options.LegendReplace
                     prettify_legend(currAx)
                 else
-                    legend('Location', options.LegendLocation)
+                    set(currAx.Legend, 'Location', options.LegendLocation)
+                    set(currAx.Legend, 'Location', options.LegendLocation)
                 end
             end
     end
@@ -246,6 +262,7 @@ if ismember(options.XLimits, {'all', 'row', 'col'}) || ismember(options.YLimits,
                     prettify_legend(currAx)
             else
                     legend('Location', options.LegendLocation)
+                    legend('boxoff')
             end
         end
     end

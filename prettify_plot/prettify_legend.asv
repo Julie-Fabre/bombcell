@@ -4,14 +4,11 @@ function prettify_legend(ax)
     
     handles = findall(ax);
 
-    lines = handles(ishandle(handles) & strcmp(get(handles, 'Type'), 'line'));
+    lines = handles(ishandle(handles) & strcmp(get(handles, 'Type'), 'line');
     points = handles(ishandle(handles) & strcmp(get(handles, 'Type'), 'scatter'));
 
     %remove any points
-    for h = lines'
-        keepLine = length(h.XData) > 1;
-    end
-    lines = lines(keepLine);
+    
 
     for h = lines'
         % Extract color and display name
@@ -63,6 +60,4 @@ function prettify_legend(ax)
         % Place the text
         text(xdata, ydata + offset, name, 'Color', color, 'FontWeight', 'bold', 'HorizontalAlignment', 'center');
     end
-
-    % remove legend
 end
