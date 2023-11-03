@@ -31,5 +31,9 @@ Uses the matrices from:
 
 ![cb](https://github.com/Julie-Fabre/prettify_matlab/assets/29582008/6ca9b2c6-5560-45f3-8f1b-767f9ce37965)
 
-#### Colormaps
-[Coming soon] Perceptually-uniform, colorblind friendly colormaps. 
+
+#### To do list 
+- [ ] Perceptually-uniform, colorblind friendly colormaps.
+- [ ] Prettify colorbars and labels
+- [ ] Add pvalue bars above plots 
+
