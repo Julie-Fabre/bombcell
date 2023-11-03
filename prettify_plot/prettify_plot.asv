@@ -3,14 +3,14 @@ function prettify_plot(varargin)
 % ------
 % Inputs: Name - Pair arguments
 % ------
-% - XLimits: string or number. 
+% - XLimits: string or number.
 %   If a string, either:
 %       - 'keep': don't change any of the xlimits
 %       - 'same': set all xlimits to the same values
 %       - 'row': set all xlimits to the same values for each subplot row
 %       - 'col': set all xlimits to the same values for each subplot col
 %   If a number, 1 * 2 double setting the minimum and maximum values
-% - YLimits: string or number. 
+% - YLimits: string or number.
 %   If a string, either:
 %       - 'keep': don't change any of the ylimits
 %       - 'same': set all ylimits to the same values
@@ -21,7 +21,7 @@ function prettify_plot(varargin)
 %       background color.
 % - TextColor: string (e.g. 'w', 'k', 'Black', ..) or RGB value defining the plots
 %       text color.
-% - LegendLocation: string determining where the legend is. Either: 
+% - LegendLocation: string determining where the legend is. Either:
 %   'north'	Inside top of axes
 %   'south'	Inside bottom of axes
 %   'east'	Inside right of axes
@@ -42,11 +42,11 @@ function prettify_plot(varargin)
 %   'bestoutside'	Outside top-right corner of the axes (when the legend has a vertical orientation) or below the axes (when the legend has a horizontal orientation)
 % - LegendReplace: ! buggy ! boolean, if you want the legend box to be replace by text
 %       directly plotted on the figure, next to the each subplot's
-%       line/point 
+%       line/point
 % - titleFontSize: double
 % - labelFontSize: double
 % - generalFontSize: double
-% - Font: string. See listfonts() for a list of all available fonts 
+% - Font: string. See listfonts() for a list of all available fonts
 % - pointSize: double
 % - lineThickness: double
 % - AxisTicks
@@ -78,8 +78,8 @@ options = struct('XLimits', 'keep', ...
     'LineThickness', 4, ...
     'AxisTicks', 'out', ...
     'AxisBox', 'off', ...
-    'AxisGrid', 'off',...
-    'AxisAspectRatio', 'keep',...
+    'AxisGrid', 'off', ...
+    'AxisAspectRatio', 'keep', ...
     'AxisTightness', 'keep');
 
 % read the acceptable names
@@ -138,82 +138,85 @@ for iAx = 1:size(all_axes, 2)
     currAx = currFig.Children(thisAx);
     set(currAx, 'color', options.FigureColor);
     if ~isempty(currAx)
-            
-            % Set grid/box/tick options 
-            set(currAx, 'TickDir', options.AxisTicks)
-            set(currAx, 'Box', options.AxisBox)
-            %set(currAx, 'Grid', options.AxisGrid)
-            if strcmp(options.AxisAspectRatio, 'keep') == 0
-                axis(currAx, options.AxisAspectRatio)
-            end
-            if strcmp(options.AxisTightness, 'keep') == 0
-                axis(currAx, options.AxisTightness)
-            end
 
-            % Set text properties
-            set(currAx.XLabel, 'FontSize', options.LabelFontSize, 'Color', options.TextColor);
-            if strcmp(currAx.YAxisLocation, 'left') % if there is both a left and right yaxis, keep the colors
-                set(currAx.YLabel, 'FontSize', options.LabelFontSize);
+        % Set grid/box/tick options
+        set(currAx, 'TickDir', options.AxisTicks)
+        set(currAx, 'Box', options.AxisBox)
+        set(currAx, 'TickLength' = [k, k]; % Make tick marks longer.
+        ax.LineWidth = 100*k; % Make tick marks thicker.
+
+        %set(currAx, 'Grid', options.AxisGrid)
+        if strcmp(options.AxisAspectRatio, 'keep') == 0
+            axis(currAx, options.AxisAspectRatio)
+        end
+        if strcmp(options.AxisTightness, 'keep') == 0
+            axis(currAx, options.AxisTightness)
+        end
+
+        % Set text properties
+        set(currAx.XLabel, 'FontSize', options.LabelFontSize, 'Color', options.TextColor);
+        if strcmp(currAx.YAxisLocation, 'left') % if there is both a left and right yaxis, keep the colors
+            set(currAx.YLabel, 'FontSize', options.LabelFontSize);
+        else
+            set(currAx.YLabel, 'FontSize', options.LabelFontSize, 'Color', options.TextColor);
+        end
+        if strcmp(options.BoldTitle, 'on')
+            set(currAx.Title, 'FontSize', options.TitleFontSize, 'Color', options.TextColor, ...
+                'FontWeight', 'Bold')
+        else
+            set(currAx.Title, 'FontSize', options.TitleFontSize, 'Color', options.TextColor, ...
+                'FontWeight', 'Normal');
+        end
+        set(currAx, 'FontSize', options.GeneralFontSize, 'GridColor', options.TextColor, ...
+            'YColor', options.TextColor, 'XColor', options.TextColor, ...
+            'MinorGridColor', options.TextColor);
+        if ~isempty(currAx.Legend)
+            set(currAx.Legend, 'Color', options.FigureColor, 'TextColor', options.TextColor)
+        end
+
+        % Adjust properties of line children within the plot
+        childLines = findall(currAx, 'Type', 'line');
+        for thisLine = childLines'
+            % if any lines/points become the same as background, change
+            % these.
+            if sum(thisLine.Color == options.FigureColor) == 3
+                thisLine.Color = options.TextColor;
+            end
+            % adjust markersize
+            if strcmp('.', get(thisLine, 'Marker'))
+                set(thisLine, 'MarkerSize', options.PointSize);
+            end
+            % adjust line thickness
+            if strcmp('-', get(thisLine, 'LineStyle'))
+                set(thisLine, 'LineWidth', options.LineThickness);
+            end
+        end
+
+        % Adjust properties of errorbars children within the plot
+        childErrBars = findall(currAx, 'Type', 'ErrorBar');
+        for thisErrBar = childErrBars'
+            if strcmp('.', get(thisErrBar, 'Marker'))
+                set(thisErrBar, 'MarkerSize', options.PointSize);
+            end
+            if strcmp('-', get(thisErrBar, 'LineStyle'))
+                set(thisErrBar, 'LineWidth', options.LineThickness);
+            end
+        end
+
+        % Get x and y limits
+        xlims_subplot(iAx, :) = currAx.XLim;
+        ylims_subplot(iAx, :) = currAx.YLim;
+
+        % Get plot position
+        pos_subplot(iAx, :) = currAx.Position(1:2); % [left bottom width height
+        if ~isempty(currAx.Legend)
+            if options.LegendReplace
+                prettify_legend(currAx)
             else
-                set(currAx.YLabel, 'FontSize', options.LabelFontSize, 'Color', options.TextColor);
+                set(currAx.Legend, 'Location', options.LegendLocation)
+                set(currAx.Legend, 'Box', 'off')
             end
-            if strcmp(options.BoldTitle, 'on')
-                set(currAx.Title, 'FontSize', options.TitleFontSize, 'Color', options.TextColor, ...
-                    'FontWeight', 'Bold')
-            else
-                set(currAx.Title, 'FontSize', options.TitleFontSize, 'Color', options.TextColor, ...
-                   'FontWeight', 'Normal');
-            end
-            set(currAx, 'FontSize', options.GeneralFontSize, 'GridColor', options.TextColor, ...
-                'YColor', options.TextColor, 'XColor', options.TextColor, ...
-                'MinorGridColor', options.TextColor);
-            if ~isempty(currAx.Legend)
-                set(currAx.Legend, 'Color', options.FigureColor, 'TextColor', options.TextColor)
-            end
-
-            % Adjust properties of line children within the plot
-            childLines = findall(currAx, 'Type', 'line');
-            for thisLine = childLines'
-                % if any lines/points become the same as background, change
-            % these. 
-                if sum(thisLine.Color == options.FigureColor) == 3
-                    thisLine.Color = options.TextColor;
-                end
-                % adjust markersize
-                if strcmp('.', get(thisLine, 'Marker'))
-                    set(thisLine, 'MarkerSize', options.PointSize);
-                end
-                % adjust line thickness 
-                if strcmp('-', get(thisLine, 'LineStyle'))
-                    set(thisLine, 'LineWidth', options.LineThickness);
-                end
-            end
-
-            % Adjust properties of errorbars children within the plot
-            childErrBars = findall(currAx, 'Type', 'ErrorBar');
-            for thisErrBar = childErrBars'
-                if strcmp('.', get(thisErrBar, 'Marker'))
-                    set(thisErrBar, 'MarkerSize', options.PointSize);
-                end
-                if strcmp('-', get(thisErrBar, 'LineStyle'))
-                    set(thisErrBar, 'LineWidth', options.LineThickness);
-                end
-            end
-
-            % Get x and y limits
-            xlims_subplot(iAx, :) = currAx.XLim;
-            ylims_subplot(iAx, :) = currAx.YLim;
-
-            % Get plot position
-            pos_subplot(iAx, :) = currAx.Position(1:2); % [left bottom width height
-            if ~isempty(currAx.Legend)
-                if options.LegendReplace
-                    prettify_legend(currAx)
-                else
-                    set(currAx.Legend, 'Location', options.LegendLocation)
-                    set(currAx.Legend, 'Location', options.LegendLocation)
-                end
-            end
+        end
     end
 end
 
@@ -256,17 +259,14 @@ if ismember(options.XLimits, {'all', 'row', 'col'}) || ismember(options.YLimits,
                 set(currAx, 'Ylim', col_ylims{pos_subplot(iAx, 1) == col_subplots});
             end
         end
-        % set legend position
         if ~isempty(currAx.Legend)
             if options.LegendReplace
-                    prettify_legend(currAx)
+                prettify_legend(currAx)
             else
-                    legend('Location', options.LegendLocation)
-                    legend('boxoff')
+                set(currAx.Legend, 'Location', options.LegendLocation)
+                set(currAx.Legend, 'Box', 'off')
             end
         end
     end
 end
 end
-
-
