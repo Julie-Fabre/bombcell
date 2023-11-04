@@ -63,24 +63,35 @@ function prettify_plot(varargin)
 % Julie M. J. Fabre
 
 % Set default parameter values
-options = struct('XLimits', 'keep', ...
-    'YLimits', 'keep', ...
-    'FigureColor', [1, 1, 1], ...
-    'TextColor', [0, 0, 0], ...
-    'LegendLocation', 'best', ...
-    'LegendReplace', false, ...
-    'TitleFontSize', 15, ...
-    'LabelFontSize', 15, ...
-    'GeneralFontSize', 15, ...
-    'Font', 'Arial', ...
-    'BoldTitle', 'off', ...
-    'PointSize', 15, ...
-    'LineThickness', 4, ...
-    'AxisTicks', 'out', ...
-    'AxisBox', 'off', ...
-    'AxisGrid', 'off', ...
-    'AxisAspectRatio', 'keep', ...
-    'AxisTightness', 'keep');
+options = struct('XLimits', 'keep',... %set to 'keep' if you don't want any changes
+    'YLimits', 'keep',... %set to 'keep' if you don't want any changes
+    'FigureColor', [1, 1, 1],...
+    'TextColor', [0, 0, 0],...
+    'LegendLocation', 'best',...
+    'LegendReplace', false,...%BUGGY
+    'LegendBox', 'off',...
+    'TitleFontSize', 15,...
+    'LabelFontSize', 15,...
+    'GeneralFontSize', 15,...
+    'Font', 'Arial',...
+    'BoldTitle', 'off',...
+    'WrapText', 'on',...
+    'PointSize', 15,...
+    'LineThickness', 2,...
+    'AxisTicks', 'out',...
+    'TickLength', 0.035,...
+    'TickWidth', 1.3,...
+    'AxisBox', 'off',...
+    'AxisGrid', 'off',...
+    'AxisAspectRatio', 'keep',... %set to 'keep' if you don't want any changes
+    'AxisTightness', 'keep',... %BUGGY set to 'keep' if you don't want any changes
+    'AxisWidth', 'keep',... %BUGGY set to 'keep' if you don't want any changes
+    'AxisHeight', 'keep',...%BUGGY set to 'keep' if you don't want any changes
+    'AxisUnits', 'points',...
+    'DivergingColormap', '*RdBu',... %set to 'keep' if you don't want any changes
+    'SequentialColormap', 'YlOrRd',... %set to 'keep' if you don't want any changes
+    'PairedColormap', 'Paired',... %set to 'keep' if you don't want any changes
+    'QualitativeColormap', 'Set1'); %set to 'keep' if you don't want any changes
 
 % read the acceptable names
 optionNames = fieldnames(options);
@@ -142,8 +153,8 @@ for iAx = 1:size(all_axes, 2)
         % Set grid/box/tick options
         set(currAx, 'TickDir', options.AxisTicks)
         set(currAx, 'Box', options.AxisBox)
-        set(currAx, 'TickLength' = [k, k]; % Make tick marks longer.
-        ax.LineWidth = 100*k; % Make tick marks thicker.
+        set(currAx, 'TickLength', [options.TickLength, options.TickLength]); % Make tick marks longer.
+        set(currAx, 'LineWidth', options.TickWidth); % Make tick marks and axis lines thicker.
 
         %set(currAx, 'Grid', options.AxisGrid)
         if strcmp(options.AxisAspectRatio, 'keep') == 0
@@ -202,39 +213,153 @@ for iAx = 1:size(all_axes, 2)
                 set(thisErrBar, 'LineWidth', options.LineThickness);
             end
         end
+        
+        % Adjust axis position 
+        %set(currAx, 'Units', options.AxisUnits); % Set units to pixels
+        % if ~strcmp(options.AxisWidth, 'keep') && ~strcmp(options.AxisHeight, 'keep')
+        %     AxisHeight = str2num(options.AxisHeight);
+        %     AxisWidth = str2num(options.AxisWidth);
+        %     ax_pos_ori = get(currAx, 'Position');
+        %     % Scale subplot width and height independently to maintain aspect ratio
+        %     scale_w = AxisWidth / ax_pos_ori(3);
+        %     scale_h = AxisHeight / ax_pos_ori(4);
+        %     new_pos = [ax_pos_ori(1), ax_pos_ori(2) + (ax_pos_ori(4) - AxisHeight * scale_h),...
+        %                ax_pos_ori(3) * scale_w, ax_pos_ori(4) * scale_h];
+        %     set(currAx, 'Position', new_pos);
+        %     ax_pos(iAx,:) = new_pos;
+        % elseif ~strcmp(options.AxisWidth, 'keep')
+        % 
+        %     AxisWidth = str2num(options.AxisWidth);
+        %     ax_pos_ori = get(currAx, 'Position');
+        %     % Scale subplot width and height independently to maintain aspect ratio
+        %     scale_w = AxisWidth / ax_pos_ori(3);
+        %     scale_h = 1;
+        %     new_pos = [ax_pos_ori(1), ax_pos_ori(2) + ax_pos_ori(4),...
+        %                ax_pos_ori(3) * scale_w, ax_pos_ori(4)];
+        %     set(currAx, 'Position', new_pos);
+        %     ax_pos(iAx,:) = new_pos;
+        % elseif ~strcmp(options.AxisHeight, 'keep')
+        %      AxisHeight = str2num(options.AxisHeight);
+        %     ax_pos_ori = get(currAx, 'Position');
+        %     % Scale subplot width and height independently to maintain aspect ratio
+        %     scale_w = 1;
+        %     scale_h = AxisHeight / ax_pos_ori(4);
+        %     new_pos = [ax_pos_ori(1), ax_pos_ori(2) + (ax_pos_ori(4) - AxisHeight * scale_h),...
+        %                ax_pos_ori(3) * scale_w, ax_pos_ori(4) * scale_h];
+        %     set(currAx, 'Position', new_pos);
+        %     ax_pos(iAx,:) = new_pos;
+        % else
+        %     ax_pos = get(currAx, 'Position');
+        % end
+        ax_pos = get(currAx, 'Position');
 
         % Get x and y limits
         xlims_subplot(iAx, :) = currAx.XLim;
         ylims_subplot(iAx, :) = currAx.YLim;
-
-        % Get plot position
-        pos_subplot(iAx, :) = currAx.Position(1:2); % [left bottom width height
+        
+        % adjust legend
         if ~isempty(currAx.Legend)
             if options.LegendReplace
                 prettify_legend(currAx)
             else
                 set(currAx.Legend, 'Location', options.LegendLocation)
-                set(currAx.Legend, 'Box', 'off')
+                set(currAx.Legend, 'Box', options.LegendBox)
             end
         end
+        
+
+      
     end
+end
+
+
+
+% adjust/add colorbar 
+colorbars = findobj(currFig, 'Type', 'colorbar');
+for iColorBar = 1:length(colorbars)
+    currColorbar = colorbars(iColorBar);
+    colorbarProperties(iColorBar) = struct;
+
+    % set limits in smart way + choose colormap. 
+    if currColorbar.Limits(1) < 0 && currColorbar.Limits(2) > 0 % equalize, and use a diverging colormap 
+        if max(abs(currColorbar.Limits)) > 4
+            currColorbar.Limits = [-ceil(max(abs(currColorbar.Limits))), ...
+                ceil(max(abs(currColorbar.Limits)))];
+        else % don't round up
+             currColorbar.Limits = [-max(abs(currColorbar.Limits)), ...
+                max(abs(currColorbar.Limits))];
+        end
+        colormap(currColorbar.Parent, brewermap(100, options.DivergingColormap))
+    else %use a sequential colormap 
+        if max(abs(currColorbar.Limits)) > 4
+            currColorbar.Limits = [min(0, ceil(max(currColorbar.Limits))),...
+                max(0, ceil(max(currColorbar.Limits)))];
+        else % don't round up
+              currColorbar.Limits = [min(0, max(currColorbar.Limits)),...
+                max(0, max(currColorbar.Limits))];
+        end
+        colormap(currColorbar.Parent, brewermap(100, options.SequentialColormap))
+    end
+    colorbarProperties(iColorBar).Limits = currColorbar.Limits;
+    colorbarProperties(iColorBar).Parent = currColorbar.Parent;
+    % get label 
+    if ~isempty(currColorbar.Label.String) % label string
+        label = currColorbar.Label.String;
+    elseif ~isempty(currColorbar.Title.String) % title
+        label = currColorbar.Title.String;
+    elseif ~isempty(currColorbar.Xlabel) %x label string
+    elseif    ~isempty(currColorbar.Label.String) %y label string
+    else
+    end
+
+    colorbarProperties(iColorBar).Label = currColorbar.Label.String;
+    currColorbar.Units = 'Points'; %get old, add padding. 
+    colorbarProperties(iColorBar).Position_ori = currColorbar.Position;
+    
+    % remove colorbar
+     % get parent axis size
+    parentPosition_ori = colorbarProperties(iColorBar).Parent.Position; % [left bottom width height]
+    delete(currColorbar)
+
+    % get parent axis size
+    parentPosition = colorbarProperties(iColorBar).Parent.Position; % [left bottom width height]
+    padding = 5;
+    colorbarProperties(iColorBar).Position = [parentPosition(3) + padding,...
+            padding, colorbarProperties(iColorBar).Position_ori(3), parentPosition(4) - 2*padding];
+
+    % add colorbar back
+    newColorbar  = colorbar;
+    newColorbar.Parent = colorbarProperties(iColorBar).Parent;
+    newColorbar.Units = 'Points';
+    newColorbar.Position =  colorbarProperties(iColorBar).Position_ori + [50, 30, 0, -60]; % QQ
+    newColorbar.Label.String = colorbarProperties(iColorBar).Label;
+    newColorbar.Limits = colorbarProperties(iColorBar).Limits;
+    newColorbar.Units = 'Normalized'; % set back to normalized so it scales with figure 
+
+    % add colorbar limits above and below
+    newColorbar.Title.String = num2str(colorbarProperties(iColorBar).Limits(2));
+    set(newColorbar.XLabel,{'String','Rotation','Position'},{num2str(colorbarProperties(iColorBar).Limits(1)),...
+        0,[0.5-0.01, colorbarProperties(iColorBar).Limits(1)-1]})
+    newColorbar.TickLabels ={};
+
+
 end
 
 
 % make x and y lims the same
 if ismember(options.XLimits, {'all', 'row', 'col'}) || ismember(options.YLimits, {'all', 'row', 'col'})
     % get rows and cols
-    col_subplots = unique(pos_subplot(:, 1));
-    row_subplots = unique(pos_subplot(:, 2));
+    col_subplots = unique(ax_pos(:, 1));
+    row_subplots = unique(ax_pos(:, 2));
 
-    col_xlims = arrayfun(@(x) [min(min(xlims_subplot(pos_subplot(:, 1) == col_subplots(x), :))), ...
-        max(max(xlims_subplot(pos_subplot(:, 1) == col_subplots(x), :)))], 1:size(col_subplots, 1), 'UniformOutput', false);
-    row_xlims = arrayfun(@(x) [min(min(xlims_subplot(pos_subplot(:, 2) == row_subplots(x), :))), ...
-        max(max(xlims_subplot(pos_subplot(:, 2) == row_subplots(x), :)))], 1:size(row_subplots, 1), 'UniformOutput', false);
-    col_ylims = arrayfun(@(x) [min(min(ylims_subplot(pos_subplot(:, 1) == col_subplots(x), :))), ...
-        max(max(ylims_subplot(pos_subplot(:, 1) == col_subplots(x), :)))], 1:size(col_subplots, 1), 'UniformOutput', false);
-    row_ylims = arrayfun(@(x) [min(min(ylims_subplot(pos_subplot(:, 2) == row_subplots(x), :))), ...
-        max(max(ylims_subplot(pos_subplot(:, 2) == row_subplots(x), :)))], 1:size(row_subplots, 1), 'UniformOutput', false);
+    col_xlims = arrayfun(@(x) [min(min(xlims_subplot(ax_pos(:, 1) == col_subplots(x), :))), ...
+        max(max(xlims_subplot(ax_pos(:, 1) == col_subplots(x), :)))], 1:size(col_subplots, 1), 'UniformOutput', false);
+    row_xlims = arrayfun(@(x) [min(min(xlims_subplot(ax_pos(:, 2) == row_subplots(x), :))), ...
+        max(max(xlims_subplot(ax_pos(:, 2) == row_subplots(x), :)))], 1:size(row_subplots, 1), 'UniformOutput', false);
+    col_ylims = arrayfun(@(x) [min(min(ylims_subplot(ax_pos(:, 1) == col_subplots(x), :))), ...
+        max(max(ylims_subplot(ax_pos(:, 1) == col_subplots(x), :)))], 1:size(col_subplots, 1), 'UniformOutput', false);
+    row_ylims = arrayfun(@(x) [min(min(ylims_subplot(ax_pos(:, 2) == row_subplots(x), :))), ...
+        max(max(ylims_subplot(ax_pos(:, 2) == row_subplots(x), :)))], 1:size(row_subplots, 1), 'UniformOutput', false);
 
     for iAx = 1:size(all_axes, 2)
         thisAx = all_axes(iAx);
@@ -247,16 +372,16 @@ if ismember(options.XLimits, {'all', 'row', 'col'}) || ismember(options.YLimits,
                 set(currAx, 'Ylim', [min(min(ylims_subplot)), max(max(ylims_subplot))]);
             end
             if ismember(options.XLimits, {'row'})
-                set(currAx, 'Xlim', row_xlims{pos_subplot(iAx, 2) == row_subplots});
+                set(currAx, 'Xlim', row_xlims{ax_pos(iAx, 2) == row_subplots});
             end
             if ismember(options.YLimits, {'row'})
-                set(currAx, 'Ylim', row_ylims{pos_subplot(iAx, 2) == row_subplots});
+                set(currAx, 'Ylim', row_ylims{ax_pos(iAx, 2) == row_subplots});
             end
             if ismember(options.XLimits, {'col'})
-                set(currAx, 'Xlim', col_xlims{pos_subplot(iAx, 1) == col_subplots});
+                set(currAx, 'Xlim', col_xlims{ax_pos(iAx, 1) == col_subplots});
             end
             if ismember(options.YLimits, {'col'})
-                set(currAx, 'Ylim', col_ylims{pos_subplot(iAx, 1) == col_subplots});
+                set(currAx, 'Ylim', col_ylims{ax_pos(iAx, 1) == col_subplots});
             end
         end
         if ~isempty(currAx.Legend)
@@ -264,9 +389,32 @@ if ismember(options.XLimits, {'all', 'row', 'col'}) || ismember(options.YLimits,
                 prettify_legend(currAx)
             else
                 set(currAx.Legend, 'Location', options.LegendLocation)
-                set(currAx.Legend, 'Box', 'off')
+                set(currAx.Legend, 'Box', options.LegendBox)
             end
         end
     end
 end
+end
+
+
+function resize_subplots(fig_handles, width, height)
+    for fig_idx = 1:length(fig_handles)
+        fig = fig_handles(fig_idx);
+        ax_handles = findobj(fig, 'Type', 'axes');
+
+        % Resize subplots
+        for ax_idx = 1:length(ax_handles)
+            ax = ax_handles(ax_idx);
+            ax_pos = get(ax, 'Position');
+            % Scale subplot width and height independently to maintain aspect ratio
+            scale_w = width / ax_pos(3);
+            scale_h = height / ax_pos(4);
+            new_pos = [ax_pos(1), ax_pos(2) + (ax_pos(4) - height * scale_h),...
+                       ax_pos(3) * scale_w, ax_pos(4) * scale_h];
+            set(ax, 'Position', new_pos);
+        end
+
+        % Optionally, adjust figure size here if needed
+        % For example, to make room for suptitle or other figure-level annotations.
+    end
 end

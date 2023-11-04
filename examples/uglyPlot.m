@@ -11,7 +11,7 @@ y4 = log(x + 1); % Adding 1 to avoid negative values and log(0)
 y_cot = cot(x); % Cotangent values
 
 % Create a new figure
-figure(1); clf;
+figure(2); clf;
 
 % First subplot: sine curve
 subplot(2, 2, 1);
@@ -35,18 +35,8 @@ title('Cosine Curve');
 xlabel('x');
 ylabel('cos(x)');
 
-% Third subplot: tangent and cotangent curves
+% Third subplot: logarithm curve
 subplot(2, 2, 3);
-plot(x, y3, 'g'); 
-hold on;
-plot(x, y_cot, 'c'); % Cyan color for cotangent
-ylim([-10, 10]);
-title('Tangent and Cotangent Curves');
-xlabel('x');
-ylabel('Value');
-
-% Fourth subplot: logarithm curve
-subplot(2, 2, 4);
 plot(x, y4, 'm');
 hold on;
 % Point at the maximum value of the logarithm curve
@@ -56,4 +46,23 @@ title('Logarithm Curve');
 xlabel('x');
 ylabel('log(x+1)');
 legend('log(x+1)', 'Max Point');
+
+% Activity plot 
+% Generate some random data
+time = linspace(0, 24, 100); % Time from 0 to 24 hours
+activity = cumsum(randn(15, 100)); % Random walk for activity
+
+% Create an "ugly" colormap
+subplot(2, 2, 4);
+uglyColors = [1 0 1; 0 1 0; 0 0 1; 1 1 0; 1 0.5 0.2];
+colormap(uglyColors);
+
+% Plot the activity data
+imagesc(time, [1], activity);
+ylabel('Activity');
+xlabel('Time (ms)');
+
+% Add a colorbar which may not be necessary
+colorbar;
+
 
