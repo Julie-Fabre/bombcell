@@ -24,7 +24,7 @@ ylabel('sin(x)');
 legend('sin(x)', 'y = 0.5');
 
 % Second subplot: cosine curve
-subplot(2, 2, 2);
+subplot(2, 2, 3);
 plot(x, y2, 'b'); 
 hold on;
 % Sample points
@@ -35,34 +35,27 @@ title('Cosine Curve');
 xlabel('x');
 ylabel('cos(x)');
 
-% Third subplot: logarithm curve
-subplot(2, 2, 3);
-plot(x, y4, 'm');
-hold on;
-% Point at the maximum value of the logarithm curve
-[max_y4, idx_max] = max(y4);
-plot(x(idx_max), max_y4, 'bo'); % blue circle
-title('Logarithm Curve');
-xlabel('x');
-ylabel('log(x+1)');
-legend('log(x+1)', 'Max Point');
-
-% Activity plot 
-% Generate some random data
+% ac
 time = linspace(0, 24, 100); % Time from 0 to 24 hours
 activity = cumsum(randn(15, 100)); % Random walk for activity
+subplot(2, 2, 2);
+uglyColors = [1 0 1; 0 1 0; 0 0 1; 1 1 0; 1 0.5 0.2];
+colormap(uglyColors);
+imagesc(time, [1], activity);
+ylabel('Activity');
+xlabel('Time (ms)');
+colorbar;
 
-% Create an "ugly" colormap
+% Activity plot 
+time = linspace(0, 24, 100); % Time from 0 to 24 hours
+activity = cumsum(randn(15, 100)); % Random walk for activity
 subplot(2, 2, 4);
 uglyColors = [1 0 1; 0 1 0; 0 0 1; 1 1 0; 1 0.5 0.2];
 colormap(uglyColors);
-
 % Plot the activity data
 imagesc(time, [1], activity);
 ylabel('Activity');
 xlabel('Time (ms)');
-
-% Add a colorbar which may not be necessary
 colorbar;
 
 
