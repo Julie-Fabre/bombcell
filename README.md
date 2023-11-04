@@ -1,3 +1,5 @@
+[![View prettify_matlab on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://uk.mathworks.com/matlabcentral/fileexchange/154567-prettify_matlab)
+
 # 🪄 prettify matlab
 My one-stop shop to instantly make your MATLAB scripts and plots beautiful, publication-ready and colorblind friendly.
 
@@ -36,4 +38,7 @@ Uses the matrices from:
 - [ ] Perceptually-uniform, colorblind friendly colormaps.
 - [ ] Prettify colorbars and labels
 - [ ] Add pvalue bars above plots 
+- [ ] wrap titles/labels 
+- [ ] bar plots, violin plots 
+- [ ] shaded, shaded gradual 
 
