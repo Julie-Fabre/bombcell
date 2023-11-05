@@ -41,21 +41,23 @@ activity = cumsum(randn(15, 100)); % Random walk for activity
 subplot(2, 2, 2);
 uglyColors = [1 0 1; 0 1 0; 0 0 1; 1 1 0; 1 0.5 0.2];
 colormap(uglyColors);
-imagesc(time, [1], activity);
+imagesc(time, [], activity);
 ylabel('Activity');
 xlabel('Time (ms)');
-colorbar;
+c = colorbar;
+c.Title.String = 'Zscore';
 
 % Activity plot 
 time = linspace(0, 24, 100); % Time from 0 to 24 hours
-activity = cumsum(randn(15, 100)); % Random walk for activity
+activity = cumsum(randn(15, 100)).*5; % Random walk for activity
 subplot(2, 2, 4);
 uglyColors = [1 0 1; 0 1 0; 0 0 1; 1 1 0; 1 0.5 0.2];
 colormap(uglyColors);
 % Plot the activity data
-imagesc(time, [1], activity);
+imagesc(time, [], activity);
 ylabel('Activity');
 xlabel('Time (ms)');
-colorbar;
+c2 = colorbar;
+c2.Title.String = 'Zscore';
 
 
