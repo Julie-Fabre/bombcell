@@ -39,14 +39,15 @@ for iColorBar = 1:length(colorbars)
     colorbarProperties(iColorBar).Position_ori = currColorbar.Position;
 
     currColorbar.Parent = colorbarProperties(iColorBar).Parent;
-    currColorbar.Units = 'Points';
-    currColorbar.Position = [colorbarProperties(iColorBar).Position_ori(1)+35, colorbarProperties(iColorBar).Position_ori(2:4)]; % QQ hardcoded
+    %currColorbar.Units = 'Points';
+    %colorbarProperties(iColorBar).Parent.Position
+    %currColorbar.Position = [colorbarProperties(iColorBar).Position_ori(1)+35, colorbarProperties(iColorBar).Position_ori(2:4)]; % QQ hardcoded
     currColorbar.Label.String = colorbarProperties(iColorBar).Label;%QQ error - this doesn't work with XLabel. 
     currColorbar.Label.Rotation = 270; % Rotate the label to be horizontal
     currColorbar.Label.Position = [3, 0.5, 0]; % You might need to adjust these values
 
     currColorbar.Limits = colorbarProperties(iColorBar).Limits;
-    currColorbar.Units = 'Normalized'; % set back to normalized so it scales with figure
+    %currColorbar.Units = 'Normalized'; % set back to normalized so it scales with figure
 
     % add colorbar limits above and below
     % currColorbar.Title.String = num2str(colorbarProperties(iColorBar).Limits(2));
