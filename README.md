@@ -7,10 +7,16 @@ My one-stop shop to instantly make your MATLAB scripts and plots beautiful, publ
 
 To use prettify_matlab:
 
-- clone the repository
+- clone the repository and it's dependancies 
 - add the repository folder to MATLAB's path.
 
-prettify_matlab doesn't use any of MATLAB's add-on toolboxes and doesn't have any dependancies. 
+prettify_matlab doesn't use any of MATLAB's add-on toolboxes.
+
+### Dependencies 
+
+- [colorbrewer](https://github.com/DrosteEffect/BrewerMap), to generate colormaps 
+
+- [rgb](https://uk.mathworks.com/matlabcentral/fileexchange/1805-rgb-m) - modified version (called with `prettify_rgb()`) already included. 
 
 ## :triangular_flag_on_post: Features     
 

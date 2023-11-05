@@ -1,7 +1,14 @@
 
-%
-function prettify_axis_limits(XLimits, YLimits, CLimits, LegendReplaceall_axes, currFig, ax_pos, xlims_subplot, ylims_subplot, clims_subplot)
-% make x and y lims the same
+function prettify_axis_limits(all_axes, currFig, ax_pos, xlims_subplot, ylims_subplot, clims_subplot, ...
+    XLimits, YLimits, CLimits, LimitsRound, SymmetricalCLimits, LegendReplace, LegendLocation)
+
+if ~isnan(LimitsRound) % round up all limits to the nearest LimitsRound decimal place
+    xlims_subplot = arrayfun(@(x) prettify_roundUpNatural(x, LimitsRound), xlims_subplot);
+    ylims_subplot = arrayfun(@(x) prettify_roundUpNatural(x, LimitsRound), ylims_subplot);
+    clims_subplot = arrayfun(@(x) prettify_roundUpNatural(x, LimitsRound), clims_subplot);
+end
+
+% homogenize x, y, and climits across rows/columns of plots.
 if ismember(XLimits, {'all', 'row', 'col'}) || ismember(YLimits, {'all', 'row', 'col'}) || ismember(CLimits, {'all', 'row', 'col'})
     % get rows and cols
     col_subplots = unique(ax_pos(:, 1));
@@ -19,48 +26,77 @@ if ismember(XLimits, {'all', 'row', 'col'}) || ismember(YLimits, {'all', 'row', 
         max(max(clims_subplot(ax_pos(:, 1) == col_subplots(x), :)))], 1:size(col_subplots, 1), 'UniformOutput', false);
     row_clims = arrayfun(@(x) [min(min(clims_subplot(ax_pos(:, 2) == row_subplots(x), :))), ...
         max(max(clims_subplot(ax_pos(:, 2) == row_subplots(x), :)))], 1:size(row_subplots, 1), 'UniformOutput', false);
-  
+
 
     for iAx = 1:size(all_axes, 2)
         thisAx = all_axes(iAx);
         currAx = currFig.Children(thisAx);
-        if ~isempty(currAx)
-            if ismember(XLimits, {'all'})
-                set(currAx, 'Xlim', [min(min(xlims_subplot)), max(max(xlims_subplot))]);
-            end
-            if ismember(YLimits, {'all'})
-                set(currAx, 'Ylim', [min(min(ylims_subplot)), max(max(ylims_subplot))]);
-            end
+        if ~isempty(currAx) %(currAx, limits, limitRows, limitCols, axPos, limitIdx_row, limitIdx_col, limitType)
+            setNewXYLimits(currAx, xlims_subplot, row_xlims, col_xlims, ax_pos, row_subplots, col_subplots, XLimits) %set x limits
+            setNewXYLimits(currAx, ylims_subplot, row_ylims, col_ylims, ax_pos, row_subplots, col_subplots, YLimits) %set y limits
+
+
             if ismember(CLimits, {'all'})
-                set(currAx, 'Clim', [min(min(clims_subplot)), max(max(clims_subplot))]);
+                theseCLims = clims_subplot;
+            elseif ismember(CLimits, {'col'})
+                theseCLims = col_clims{ax_pos(iAx, 1) == col_subplots};
+            elseif ismember(CLimits, {'row'})
+                theseCLims = row_clims{ax_pos(iAx, 2) == row_subplots};
             end
-            if ismember(XLimits, {'row'})
-                set(currAx, 'Xlim', row_xlims{ax_pos(iAx, 2) == row_subplots});
-            end
-            if ismember(YLimits, {'row'})
-                set(currAx, 'Ylim', row_ylims{ax_pos(iAx, 2) == row_subplots});
-            end
-            if ismember(CLimits, {'row'})
-                set(currAx, 'Clim', row_clims{ax_pos(iAx, 2) == row_subplots});
-            end
-            if ismember(XLimits, {'col'})
-                set(currAx, 'Xlim', col_xlims{ax_pos(iAx, 1) == col_subplots});
-            end
-            if ismember(YLimits, {'col'})
-                set(currAx, 'Ylim', col_ylims{ax_pos(iAx, 1) == col_subplots});
-            end
-            if ismember(CLimits, {'col'})
-                set(currAx, 'Clim', col_clims{ax_pos(iAx, 1) == col_subplots});
+            if SymmetricalCLimits && any(theseCLims < 0) && any(theseCLims > 0) % diverging
+                set(currAx, 'Clim', [-max(max(abs(theseCLims))), max(max(abs(theseCLims)))]);
+            elseif SymmetricalCLimits && any(theseCLims < 0)
+                set(currAx, 'Clim', [-max(max(abs(theseCLims))), 0]);
+            elseif SymmetricalCLimits && any(theseCLims > 0)
+                set(currAx, 'Clim', [0, max(max(abs(theseCLims)))]);
+            else
+                set(currAx, 'Clim', [min(min(theseCLims)), max(max(theseCLims))]);
             end
         end
-        if ~isempty(currAx.Legend)
-            if LegendReplace
-                prettify_legend(currAx)
-            else
-                set(currAx.Legend, 'Location', LegendLocation)
-                set(currAx.Legend, 'Box', LegendBox)
-            end
+
+
+    end
+
+    % re-check legend location is correctly set
+    if ~isempty(currAx.Legend)
+        if LegendReplace
+            prettify_legend(currAx)
+        else
+            set(currAx.Legend, 'Location', LegendLocation)
         end
     end
+elseif SymmetricalCLimits
+    theseCLims
+    if SymmetricalCLimits && any(theseCLims < 0) && any(theseCLims > 0) % diverging
+        set(currAx, 'Clim', [-max(max(abs(theseCLims))), max(max(abs(theseCLims)))]);
+    elseif SymmetricalCLimits && any(theseCLims < 0)
+        set(currAx, 'Clim', [-max(max(abs(theseCLims))), 0]);
+    elseif SymmetricalCLimits && any(theseCLims > 0)
+        set(currAx, 'Clim', [0, max(max(abs(theseCLims)))]);
+    else
+        set(currAx, 'Clim', [min(min(theseCLims)), max(max(theseCLims))]);
+    end
 end
+
+
+function setNewXYLimits(currAx, limits, limitRows, limitCols, axPos, limitIdx_row, limitIdx_col, limitType)
+if ismember(limitType, {'all'})
+    set(currAx, 'Xlim', [min(min(limits)), max(max(limits))]);
+elseif ismember(limitType, {'row'})
+    set(currAx, 'Xlim', limitRows{axPos(:, 2) == limitIdx_row});
+elseif ismember(limitType, {'col'})
+    set(currAx, 'Xlim', limitCols{axPos(:, 1) == limitIdx_col});
+end
+
+    function setNewCLimits(currAx, theseCLims, SymmetricalCLimits)
+            if SymmetricalCLimits && any(theseCLims < 0) && any(theseCLims > 0) % diverging
+        set(currAx, 'Clim', [-max(max(abs(theseCLims))), max(max(abs(theseCLims)))]);
+    elseif SymmetricalCLimits && any(theseCLims < 0)
+        set(currAx, 'Clim', [-max(max(abs(theseCLims))), 0]);
+    elseif SymmetricalCLimits && any(theseCLims > 0)
+        set(currAx, 'Clim', [0, max(max(abs(theseCLims)))]);
+    else
+        set(currAx, 'Clim', [min(min(theseCLims)), max(max(theseCLims))]);
+    end
+    end
 end

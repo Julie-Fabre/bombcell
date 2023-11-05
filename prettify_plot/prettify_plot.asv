@@ -66,6 +66,7 @@ function prettify_plot(varargin)
 options = struct('XLimits', 'keep', ... %set to 'keep' if you don't want any changes
     'YLimits', 'keep', ... %set to 'keep' if you don't want any changes
     'CLimits', 'all', ... %set to 'keep' if you don't want any changes
+    'LimitsRound', 2, ... % set to NaN if you don't want any changes 
     'FigureColor', [1, 1, 1], ...
     'TextColor', [0, 0, 0], ...
     'LegendLocation', 'best', ...
@@ -87,10 +88,11 @@ options = struct('XLimits', 'keep', ... %set to 'keep' if you don't want any cha
     'AxisAspectRatio', 'keep', ... %set to 'keep' if you don't want any changes
     'AxisTightness', 'keep', ... %BUGGY set to 'keep' if you don't want any changes %'AxisWidth', 'keep',... %BUGGY set to 'keep' if you don't want any changes %'AxisHeight', 'keep',...%BUGGY set to 'keep' if you don't want any changes
     'AxisUnits', 'points', ...
-    'DivergingColormap', '*RdBu', ... %set to 'keep' if you don't want any changes
-    'SequentialColormap', 'YlOrRd', ... %set to 'keep' if you don't want any changes
-    'PairedColormap', 'Paired', ... %set to 'keep' if you don't want any changes
-    'QualitativeColormap', 'Set1'); %set to 'keep' if you don't want any changes
+    'ChangeColormaps', true,... %set to false if you don't want any changes
+    'DivergingColormap', '*RdBu', ... 
+    'SequentialColormap', 'YlOrRd', ... 
+    'PairedColormap', 'Paired', ... 
+    'QualitativeColormap', 'Set1'); %
 
 % read the acceptable names
 optionNames = fieldnames(options);
@@ -234,8 +236,17 @@ for iAx = 1:size(all_axes, 2)
     end
 end
 
-prettify_axis_limits(options.XLimits, options.YLimits, options.CLimits, all_axes, ax_pos, xlims_subplot, ylims_subplot, clims_subplot);
-prettify_colorbar;
-prettify_axis_locations;
+prettify_axis_limits(all_axes, currFig, ...
+    ax_pos, xlims_subplot, ylims_subplot, clims_subplot, ...
+    options.XLimits, options.YLimits, options.CLimits, ...
+    options.LimitsRound, options.LegendReplace, options.LegendLocation);
+
+colorbars = findobj(currFig, 'Type', 'colorbar');
+prettify_colorbar(colorbars, options.ChangeColormaps, options.DivergingColormap, options.SequentialColormap
+    'PairedColormap', 'Paired', ... 
+    'QualitativeColormap', 'Set1'););
+
+
+%prettify_axis_locations;
 
 

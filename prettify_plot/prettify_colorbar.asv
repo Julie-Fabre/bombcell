@@ -5,8 +5,6 @@
 function prettify_colorbar(colorbars, ChangeColormaps, DivergingColormap,...
     SequentialColormap)
 colorbarProperties = struct;
-
-
 for iColorBar = 1:length(colorbars)
     currColorbar = colorbars(iColorBar);
 
@@ -39,6 +37,8 @@ for iColorBar = 1:length(colorbars)
     currColorbar.Units = 'Points';
     currColorbar.Position = [400, colorbarProperties(iColorBar).Position_ori(2:4)]; % QQ hardcoded
     currColorbar.Label.String = colorbarProperties(iColorBar).Label;%QQ error
+    %findall(colorbarProperties(iColorBar).Parent,'type','axes');
+    %clim(colorbarProperties(iColorBar).Parent, colorbarProperties(iColorBar).Limits)
     currColorbar.Limits = colorbarProperties(iColorBar).Limits;
     currColorbar.Units = 'Normalized'; % set back to normalized so it scales with figure
 
@@ -50,4 +50,3 @@ for iColorBar = 1:length(colorbars)
 
 
 end
-
