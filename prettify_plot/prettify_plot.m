@@ -78,8 +78,7 @@ options = struct('XLimits', 'keep', ... %set to 'keep' if you don't want any cha
     'GeneralFontSize', 15, ...
     'Font', 'Arial', ...
     'BoldTitle', 'off', ...
-    'WrapText', 'on', ...
-    'PointSize', 15, ...
+    'PointSize', 8, ...
     'LineThickness', 2, ...
     'AxisTicks', 'out', ...
     'TickLength', 0.035, ...
@@ -145,6 +144,11 @@ all_axes = find(arrayfun(@(x) contains(currFig.Children(x).Type, 'axes'), 1:size
 % update font
 fontname(options.Font)
 
+% pre-allocate memory
+xlims_subplot = nan(size(all_axes, 2), 2);
+ylims_subplot = nan(size(all_axes, 2), 2);
+clims_subplot = nan(size(all_axes, 2), 2);
+
 % update (sub)plot properties
 for iAx = 1:size(all_axes, 2)
     thisAx = all_axes(iAx);
@@ -196,12 +200,35 @@ for iAx = 1:size(all_axes, 2)
                 thisLine.Color = options.TextColor;
             end
             % adjust markersize
-            if strcmp('.', get(thisLine, 'Marker'))
+            if sum(get(thisLine, 'Marker') == 'none') < 4
                 set(thisLine, 'MarkerSize', options.PointSize);
+                set(thisLine, 'MarkerFaceColor', thisLine.Color);
             end
             % adjust line thickness
             if strcmp('-', get(thisLine, 'LineStyle'))
                 set(thisLine, 'LineWidth', options.LineThickness);
+            end
+        end
+        
+        % Adjust properties of dots children within the plot
+        childPoints = findall(currAx, 'Type', 'scatter');
+        for thisPoint = childPoints'
+            % if any lines/points become the same as background, change
+            % these.
+            if size(thisPoint.CData,1) == 1 % one uniform color
+                if sum(thisPoint.CData == options.FigureColor) == 3
+                    thisPoint.CData = options.TextColor;
+                end
+            else
+                points_sub = sum(thisPoint.CData == options.FigureColor,2) == 3;
+                if any(points_sub)
+                    set(thisPoint, 'MarkerEdgeColor', options.TextColor)
+                end
+            end
+            % adjust markersize
+            if sum(get(thisPoint, 'Marker') == 'none') < 4
+                set(thisPoint, 'SizeData', options.PointSize);
+                set(thisPoint, 'MarkerFaceColor', thisPoint.CData);
             end
         end
 

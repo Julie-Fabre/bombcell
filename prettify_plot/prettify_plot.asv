@@ -67,6 +67,7 @@ options = struct('XLimits', 'keep', ... %set to 'keep' if you don't want any cha
     'YLimits', 'keep', ... %set to 'keep' if you don't want any changes
     'CLimits', 'all', ... %set to 'keep' if you don't want any changes
     'LimitsRound', 2, ... % set to NaN if you don't want any changes 
+    'SymmetricalCLimits', true, ...
     'FigureColor', [1, 1, 1], ...
     'TextColor', [0, 0, 0], ...
     'LegendLocation', 'best', ...
@@ -77,8 +78,7 @@ options = struct('XLimits', 'keep', ... %set to 'keep' if you don't want any cha
     'GeneralFontSize', 15, ...
     'Font', 'Arial', ...
     'BoldTitle', 'off', ...
-    'WrapText', 'on', ...
-    'PointSize', 15, ...
+    'PointSize', 5, ...
     'LineThickness', 2, ...
     'AxisTicks', 'out', ...
     'TickLength', 0.035, ...
@@ -144,6 +144,11 @@ all_axes = find(arrayfun(@(x) contains(currFig.Children(x).Type, 'axes'), 1:size
 % update font
 fontname(options.Font)
 
+% pre-allocate memory
+xlims_subplot = nan(size(all_axes, 2), 2);
+ylims_subplot = nan(size(all_axes, 2), 2);
+clims_subplot = nan(size(all_axes, 2), 2);
+
 % update (sub)plot properties
 for iAx = 1:size(all_axes, 2)
     thisAx = all_axes(iAx);
@@ -195,12 +200,39 @@ for iAx = 1:size(all_axes, 2)
                 thisLine.Color = options.TextColor;
             end
             % adjust markersize
-            if strcmp('.', get(thisLine, 'Marker'))
+            if sum(get(thisLine, 'Marker') == 'none') < 4
                 set(thisLine, 'MarkerSize', options.PointSize);
+                set(thisLine, 'MarkerFaceColor', thisLine.Color);
             end
             % adjust line thickness
             if strcmp('-', get(thisLine, 'LineStyle'))
                 set(thisLine, 'LineWidth', options.LineThickness);
+            end
+        end
+        
+        % Adjust properties of dots children within the plot
+        childPoints = findall(currAx, 'Type', 'scatter');
+        for thisPoint = childPoints'
+            % if any lines/points become the same as background, change
+            % these.
+            if size(CData,1) == 1 % one uniform color
+                if sum(thisPoint.CData == options.FigureColor) == 3
+                    thisPoint.CData = options.TextColor;
+                end
+            else
+                points_sub = sum(thisPoint.CData == options.FigureColor,2) == 3;
+                if any(points_sub)
+                    if any(thisPoint.CData == [0, 0, 0],2) && any(thisPoint.CData == [1, 1, 1],2)
+                        thisPoint.CData = abs(1 - thisPoint.CData); % flip the colormap if it's a white-to-black one
+                    else
+                        if sum(options.FigureColor)
+                    end
+                end
+            end
+            % adjust markersize
+            if sum(get(thisPoint, 'Marker') == 'none') < 4
+                set(thisPoint, 'SizeData', options.PointSize);
+                set(thisPoint, 'MarkerFaceColor', thisPoint.CData);
             end
         end
 
@@ -239,12 +271,12 @@ end
 prettify_axis_limits(all_axes, currFig, ...
     ax_pos, xlims_subplot, ylims_subplot, clims_subplot, ...
     options.XLimits, options.YLimits, options.CLimits, ...
-    options.LimitsRound, options.LegendReplace, options.LegendLocation);
+    options.LimitsRound, options.SymmetricalCLimits, ...
+    options.LegendReplace, options.LegendLocation);
 
 colorbars = findobj(currFig, 'Type', 'colorbar');
-prettify_colorbar(colorbars, options.ChangeColormaps, options.DivergingColormap, options.SequentialColormap
-    'PairedColormap', 'Paired', ... 
-    'QualitativeColormap', 'Set1'););
+prettify_colorbar(colorbars, options.ChangeColormaps, options.DivergingColormap,...
+    options.SequentialColormap);
 
 
 %prettify_axis_locations;
