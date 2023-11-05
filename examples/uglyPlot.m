@@ -11,7 +11,7 @@ y4 = log(x + 1); % Adding 1 to avoid negative values and log(0)
 y_cot = cot(x); % Cotangent values
 
 % Create a new figure
-figure(2); clf;
+hFig = figure(2); clf;
 
 % First subplot: sine curve
 subplot(2, 2, 1);
@@ -61,3 +61,6 @@ c2 = colorbar;
 c2.Title.String = 'Zscore';
 
 prettify_plot;
+
+
+set(hFig, 'SizeChangedFcn', @(src, evnt)wrapTitle(hFig));
