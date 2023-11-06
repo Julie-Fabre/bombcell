@@ -28,7 +28,7 @@ addParameter(p, 'TextMargin', 0.035, @isnumeric);
 addParameter(p, 'PlotNonSignif', true); % whether to plot the non-significant values or not
 addParameter(p, 'NaNCutoff', 0.05, @isnumeric); % any p values above this 
 % will be plotted as 'n.s.'. Set to 1 or Inf to disable this feature
-addParameter(p, 'FullDisplayCutoff', 0.001, @isnumeric); % any p values 
+addParameter(p, 'FullDisplayCutoff', 0.035, @isnumeric); % any p values 
 % below this will be plotted as 'p < thisValue'. Set to 0 or -Inf to disable this feature
 addParameter(p, 'OnlyStars', false); % set to true to only plot stars rather
 % than full p values 
@@ -99,20 +99,12 @@ for i = 1:length(pvals_sorted)
     % Format p-value text
     if pvals_sorted(i) >= params.NaNCutoff || isnan(pvals_sorted(i))
         pval_text = 'n.s.';
-    elseif params.OnlyStars
-        if pvals_sorted(i) < params.StarsLevel_1
-           pval_text = '*';
-        elseif pvals_sorted(i) < params.StarsLevel_2
-           pval_text = '**';
-        elseif pvals_sorted(i) < params.StarsLevel_3
-           pval_text = '***';
-        end
+    elseif par
+    if pvals_sorted(i) < param.FullDisplayCutoff
+        pval_text = ['p < ', str2num(param.FullDisplayCutoff)];
     else
-        if pvals_sorted(i) < params.FullDisplayCutoff
-            pval_text = ['p < ', num2str(params.FullDisplayCutoff)];
-        else
-            pval_text = sprintf('p = %0.3f', pvals_sorted(i));
-        end
+        pval_text = sprintf('p = %0.3f', pvals_sorted(i));
+    end
     end
 
     % Add text for p-value
