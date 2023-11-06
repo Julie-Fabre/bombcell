@@ -138,11 +138,14 @@ currFig = gcf;
 % Set color properties for figure and axis
 set(currFig, 'color', options.FigureColor);
 
-% get axes children
-all_axes = find(arrayfun(@(x) contains(currFig.Children(x).Type, 'axes'), 1:size(currFig.Children, 1)));
 
 % update font
 fontname(options.Font)
+
+% get axes children
+currFig_children = currFig.Children;
+all_axes = find(arrayfun(@(x) contains(currFig_children(x).Type, 'axes'), 1:size(currFig_children, 1)));
+
 
 % pre-allocate memory
 xlims_subplot = nan(size(all_axes, 2), 2);
@@ -152,7 +155,7 @@ clims_subplot = nan(size(all_axes, 2), 2);
 % update (sub)plot properties
 for iAx = 1:size(all_axes, 2)
     thisAx = all_axes(iAx);
-    currAx = currFig.Children(thisAx);
+    currAx = currFig_children(thisAx);
     set(currAx, 'color', options.FigureColor);
     if ~isempty(currAx)
 
@@ -184,6 +187,7 @@ for iAx = 1:size(all_axes, 2)
             set(currAx.Title, 'FontSize', options.TitleFontSize, 'Color', options.TextColor, ...
                 'FontWeight', 'Normal');
         end
+        disp(currAx)
         set(currAx, 'FontSize', options.GeneralFontSize, 'GridColor', options.TextColor, ...
             'YColor', options.TextColor, 'XColor', options.TextColor, ...
             'MinorGridColor', options.TextColor);
@@ -264,13 +268,13 @@ for iAx = 1:size(all_axes, 2)
     end
 end
 
-prettify_axis_limits(all_axes, currFig, ...
+prettify_axis_limits(all_axes, currFig_children, ...
     ax_pos, xlims_subplot, ylims_subplot, clims_subplot, ...
     options.XLimits, options.YLimits, options.CLimits, ...
     options.LimitsRound, options.SymmetricalCLimits, ...
     options.LegendReplace, options.LegendLocation);
 
-colorbars = findobj(currFig, 'Type', 'colorbar');
+colorbars = findobj(currFig_children, 'Type', 'colorbar');
 prettify_colorbar(colorbars, options.ChangeColormaps, options.DivergingColormap,...
     options.SequentialColormap);
 

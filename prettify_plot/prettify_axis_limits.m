@@ -1,5 +1,5 @@
 
-function prettify_axis_limits(all_axes, currFig, ax_pos, xlims_subplot, ylims_subplot, clims_subplot, ...
+function prettify_axis_limits(all_axes, currFig_children, ax_pos, xlims_subplot, ylims_subplot, clims_subplot, ...
     XLimits, YLimits, CLimits, LimitsRound, SymmetricalCLimits, LegendReplace, LegendLocation)
 
 if ~isnan(LimitsRound) % round up all limits to the nearest LimitsRound decimal place
@@ -30,7 +30,7 @@ if ismember(XLimits, {'all', 'row', 'col'}) || ismember(YLimits, {'all', 'row', 
 
     for iAx = 1:size(all_axes, 2)
         thisAx = all_axes(iAx);
-        currAx = currFig.Children(thisAx);
+        currAx = currFig_children(thisAx);
         if ~isempty(currAx) %(currAx, limits, limitRows, limitCols, axPos, limitIdx_row, limitIdx_col, limitType)
             setNewXYLimits(currAx, xlims_subplot, row_xlims, col_xlims, ax_pos, row_subplots, col_subplots, XLimits, 'Xlim') %set x limits
             setNewXYLimits(currAx, ylims_subplot, row_ylims, col_ylims, ax_pos, row_subplots, col_subplots, YLimits, 'Ylim') %set y limits
@@ -60,7 +60,7 @@ if ismember(XLimits, {'all', 'row', 'col'}) || ismember(YLimits, {'all', 'row', 
 elseif SymmetricalCLimits
     for iAx = 1:size(all_axes, 2)
         thisAx = all_axes(iAx);
-        currAx = currFig.Children(thisAx);
+        currAx = currFig_children(thisAx);
         theseCLims = currAx.CLim;
         setNewCLimits(currAx, theseCLims, SymmetricalCLimits)
     end
