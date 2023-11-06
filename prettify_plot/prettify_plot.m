@@ -187,7 +187,7 @@ for iAx = 1:size(all_axes, 2)
             set(currAx.Title, 'FontSize', options.TitleFontSize, 'Color', options.TextColor, ...
                 'FontWeight', 'Normal');
         end
-        disp(currAx)
+        %disp(currAx)
         set(currAx, 'FontSize', options.GeneralFontSize, 'GridColor', options.TextColor, ...
             'YColor', options.TextColor, 'XColor', options.TextColor, ...
             'MinorGridColor', options.TextColor);
@@ -248,6 +248,12 @@ for iAx = 1:size(all_axes, 2)
         end
 
         ax_pos = get(currAx, 'Position');
+
+        % Adjust properties of any plotted text
+       childTexts = findall(currAx, 'Type', 'Text');
+        for thisText = childTexts'
+            set(thisText, 'FontSize', options.GeneralFontSize, 'Color', options.TextColor);
+        end
 
         % Get x and y limits
         xlims_subplot(iAx, :) = currAx.XLim;

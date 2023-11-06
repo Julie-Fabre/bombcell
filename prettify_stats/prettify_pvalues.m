@@ -22,7 +22,7 @@ addParameter(p, 'TextRotation', 0, @isnumeric);
 addParameter(p, 'TextFontSize', 10, @isnumeric);
 addParameter(p, 'LineColor', 'k');
 addParameter(p, 'LineWidth', 1.5, @isnumeric);
-addParameter(p, 'OffsetMultiplier', 0.07, @isnumeric);
+addParameter(p, 'OffsetMultiplier', 0.12, @isnumeric);
 addParameter(p, 'TickLength', 0.03, @isnumeric);
 addParameter(p, 'TextMargin', 0.035, @isnumeric);
 

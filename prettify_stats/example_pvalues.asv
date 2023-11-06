@@ -28,4 +28,4 @@ ax = gca;
 % Here we assume that the p-value should appear at y = 3, change this value as needed for your plot.
 % x-coordinates (1 and 2) correspond to the bar centers.
 prettify_pvalues(ax, [1,1,1,1,2,2,2,3,3,4], [2,3,4,5,3,4,5,4,5,5], pval);
-prettify_plot;
+prettif
