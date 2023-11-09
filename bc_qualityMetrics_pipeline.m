@@ -15,10 +15,10 @@
 
 %% set paths - EDIT THESE 
 % '/home/netshare/zaru/JF093/2023-03-06/ephys/kilosort2/site1
-ephysKilosortPath = '/home/netshare/zaru/JF093/2023-03-08/ephys/pykilosort/site2/output';% path to your kilosort output files 
-ephysRawDir = dir('/home/netshare/zaru/JF093/2023-03-08/ephys/site2/*ap*.*bin'); % path to your raw .bin or .dat data
-ephysMetaDir = dir('/home/netshare/zaru/JF093/2023-03-08/ephys/site2/*ap*.*meta'); % path to your .meta or .oebin meta file
-savePath = '/media/julie/ExtraHD/JF093/2023-03-08/ephys/site2/qMetrics'; % where you want to save the quality metrics 
+ephysKilosortPath = '/home/netshare/zaru/JF093/2023-03-06/ephys/kilosort2/site1';% path to your kilosort output files 
+ephysRawDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*bin'); % path to your raw .bin or .dat data
+ephysMetaDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*meta'); % path to your .meta or .oebin meta file
+savePath = '/media/julie/ExtraHD/JF093/2023-03-06/ephys/site1/qMetrics'; % where you want to save the quality metrics 
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
 gain_to_uV = 0.195; % use this if you are not using spikeGLX or openEphys to record your data. You then must leave the ephysMetaDir 
     % empty(e.g. ephysMetaDir = '')
@@ -47,7 +47,7 @@ qMetricsExist = ~isempty(dir(fullfile(savePath, 'qMetric*.mat'))) || ~isempty(di
 
 if qMetricsExist == 0 || rerun
     [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
-        templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
+        templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath);
 else
     [param, qMetric] = bc_loadSavedMetrics(savePath); 
     unitType = bc_getQualityUnitType(param, qMetric, savePath);

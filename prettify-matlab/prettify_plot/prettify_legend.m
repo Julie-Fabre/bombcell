@@ -7,6 +7,12 @@ function prettify_legend(ax)
     lines = handles(ishandle(handles) & strcmp(get(handles, 'Type'), 'line'));
     points = handles(ishandle(handles) & strcmp(get(handles, 'Type'), 'scatter'));
 
+    %remove any points
+    for h = lines'
+        keepLine = length(h.XData) > 1;
+    end
+    lines = lines(keepLine);
+
     for h = lines'
         % Extract color and display name
         color = h.Color;
@@ -20,16 +26,28 @@ function prettify_legend(ax)
         for i = length(ydata):-1:1
             for hl = lines'
                 if hl ~= h
-                    separation(i) = separation(i) + abs(ydata(i) - interp1(hl.XData, hl.YData, xdata(i), 'linear', 'extrap'));
+                    if size(xdata) > 1
+                        separation(i) = separation(i) + abs(ydata(i) - interp1(hl.XData, hl.YData, xdata(i), 'linear', 'extrap'));
+                    else
+                        separation(i) =0;
+                    end
                 end
             end
         end
 
-        [~, idx] = max(separation(end-5:end)); % considering last 6 points for better labeling
-        idx = idx + length(ydata) - 6 - 1;
+        if separation == 0
+            [~, idx] = max(ydata);
+        else
+            [~, idx] = max(separation(end-5:end)); % considering last 6 points for better labeling
+            idx = idx + length(ydata) - 6;
+        end
+
+       
 
         % Adjust label position based on the position of other lines
-        yOffset = sign(median([h.YData(idx) - ax.YLim(1), ax.YLim(2) - h.YData(idx)])) * offset;
+        
+            yOffset = sign(median([h.YData(idx) - ax.YLim(1), ax.YLim(2) - h.YData(idx)])) * offset;
+       
         
         % Place the text
         text(xdata(idx), ydata(idx) + yOffset, name, 'Color', color, 'FontWeight', 'bold');
@@ -45,4 +63,6 @@ function prettify_legend(ax)
         % Place the text
         text(xdata, ydata + offset, name, 'Color', color, 'FontWeight', 'bold', 'HorizontalAlignment', 'center');
     end
+
+    % remove legend
 end

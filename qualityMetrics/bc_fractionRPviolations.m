@@ -91,22 +91,21 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
         ylims = ylim;
         [fr, ~] = histcounts(theseisiclean*1000, [0:0.5:5000]);
         line([0, 10], [nanmean(fr(800:1000)), nanmean(fr(800:1000))], 'Color', [0.86, 0.2, 0.13], 'LineStyle', '--');
-        dummyh = line(nan, nan, 'Linestyle', 'none', 'Marker', 'none', 'Color', 'none');
+        %dummyh = line(nan, nan, 'Linestyle', 'none', 'Marker', 'none', 'Color', 'none');
         if isnan(RPV_tauR_estimate)
             for iTauR_value = [1, length(tauR)]
                 line([tauR(iTauR_value) * 1000, tauR(iTauR_value) * 1000], [ylims(1), ylims(2)], 'Color', [0.86, 0.2, 0.13]);
             end
             if length(tauR) == 1
-                legend([dummyh], {[num2str(round(fractionRPVs(iTimeChunk, 1)*100, 1)), '% rpv']}, ...
-                    'Location', 'NorthEast', 'TextColor', [0.7, 0.7, 0.7], 'Color', 'none');
+                title({[num2str(round(fractionRPVs(iTimeChunk, 1)*100, 1)), '% rpv']});
             else
-                legend([dummyh, dummyh], {[num2str(round(fractionRPVs(iTimeChunk, 1)*100, 1)), '% rpv'], ...
-                    [num2str(round(fractionRPVs(iTimeChunk, length(tauR))*100, 1)), '% rpv']}, 'Location', 'NorthEast', 'TextColor', [0.7, 0.7, 0.7], 'Color', 'none');
+                title([num2str(round(fractionRPVs(iTimeChunk, 1)*100, 1)), '% rpv' newline, ...
+                    num2str(round(fractionRPVs(iTimeChunk, length(tauR))*100, 1)), '% rpv']);
             end
 
         else
             line([tauR(RPV_tauR_estimate) * 1000, tauR(RPV_tauR_estimate) * 1000], [ylims(1), ylims(2)], 'Color', [0.86, 0.2, 0.13]);
-            legend([dummyh], {[num2str(fractionRPVs(RPV_tauR_estimate)*100, 1), '% rpv']}, 'Location', 'NorthEast', 'TextColor', [0.7, 0.7, 0.7], 'Color', 'none');
+            title({[num2str(fractionRPVs(RPV_tauR_estimate)*100, 1), '% rpv']});
 
         end
 
@@ -114,6 +113,7 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
     end
 
 end
+
 if plotThis
     subplot(2, numel(timeChunks)-1, 1:numel(timeChunks)-1)
     scatter(theseSpikeTimes, theseAmplitudes, 4, [0, 0.35, 0.71], 'filled');
@@ -127,7 +127,7 @@ if plotThis
     xlabel('time (s)')
     ylabel(['amplitude scaling', newline, 'factor'])
     if exist('prettify_plot', 'file')
-        prettify_plot('none', 'none', 'none')
+        prettify_plot('FigureColor', 'w', 'TickLength', 0.01)
     else
         warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
         makepretty('none')

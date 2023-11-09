@@ -47,11 +47,11 @@ if nargin < 5 || isempty(position)
 end
 
 if nargin < 8 || isempty(scaleLineWidth)
-    scaleLineWidth = 4;
+    scaleLineWidth = 2;
 end
 
 if nargin < 9 || isempty(fontSize)
-    fontSize = 14;
+    fontSize = 12;
 end
 
 switch position
