@@ -11,10 +11,12 @@ y4 = log(x + 1); % Adding 1 to avoid negative values and log(0)
 y_cot = cot(x); % Cotangent values
 
 % Create a new figure
-figure;
+figure(2); clf;
 
+
+%% line plots 
 % First subplot: sine curve
-subplot(2, 2, 1);
+subplot(2, 3, 1);
 plot(x, y1, 'r'); 
 hold on; % Keep the current plot and add new plots to it
 plot(x, 0.5*ones(size(x)), 'k--'); % Dashed line at y = 0.5
@@ -24,7 +26,7 @@ ylabel('sin(x)');
 legend('sin(x)', 'y = 0.5');
 
 % Second subplot: cosine curve
-subplot(2, 2, 2);
+subplot(2, 3, 4);
 plot(x, y2, 'b'); 
 hold on;
 % Sample points
@@ -35,25 +37,51 @@ title('Cosine Curve');
 xlabel('x');
 ylabel('cos(x)');
 
-% Third subplot: tangent and cotangent curves
-subplot(2, 2, 3);
-plot(x, y3, 'g'); 
-hold on;
-plot(x, y_cot, 'c'); % Cyan color for cotangent
-ylim([-10, 10]);
-title('Tangent and Cotangent Curves');
-xlabel('x');
-ylabel('Value');
+% scatter plots
 
-% Fourth subplot: logarithm curve
-subplot(2, 2, 4);
-plot(x, y4, 'm');
-hold on;
-% Point at the maximum value of the logarithm curve
-[max_y4, idx_max] = max(y4);
-plot(x(idx_max), max_y4, 'bo'); % blue circle
-title('Logarithm Curve');
-xlabel('x');
-ylabel('log(x+1)');
-legend('log(x+1)', 'Max Point');
+numDots = 20;
+subplot(2, 3, 2);
+x = rand(numDots, 1); % Random numbers between 0 and 1 for the x-axis
+y = rand(numDots, 1); % Random numbers between 0 and 1 for the y-axis
+scatter(x, y);
+xlabel('X-axis');
+ylabel('Y-axis');
+title('Scatter Plot of Random Dots');
 
+
+
+numDots = 25;
+subplot(2, 3, 5);
+x = rand(numDots, 1); % Random numbers between 0 and 1 for the x-axis
+y = rand(numDots, 1); % Random numbers between 0 and 1 for the y-axis
+scatter(x, y);
+xlabel('X-axis');
+ylabel('Y-axis');
+title('Scatter Plot of Random Dots');
+
+%% images 
+time = linspace(0, 24, 100); % Time from 0 to 24 hours
+activity = cumsum(randn(15, 100)); % Random walk for activity
+subplot(2, 3, 3);
+uglyColors = [1 0 1; 0 1 0; 0 0 1; 1 1 0; 1 0.5 0.2];
+colormap(uglyColors);
+imagesc(time, [], activity);
+ylabel('Activity');
+xlabel('Time (ms)');
+c = colorbar;
+c.Title.String = 'Zscore';
+
+% Activity plot 
+time = linspace(0, 24, 100); % Time from 0 to 24 hours
+activity = cumsum(randn(15, 100)).*2; % Random walk for activity
+subplot(2, 3, 6);
+uglyColors = [1 0 1; 0 1 0; 0 0 1; 1 1 0; 1 0.5 0.2];
+colormap(uglyColors);
+% Plot the activity data
+imagesc(time, [], activity);
+ylabel('Activity');
+xlabel('Time (ms)');
+c2 = colorbar;
+c2.Title.String = 'Zscore';
+
+prettify_plot;
