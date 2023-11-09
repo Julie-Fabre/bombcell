@@ -125,7 +125,7 @@ for iTimeChunk = 1:numel(timeChunks) - 1
                 set(gca,'Yticklabel',[]) 
             end
             if iTimeChunk == 1
-                title({['% missing spikes: ', newline, roundedP]}, 'Color', [0.7, 0.7, 0.7])
+                title({[roundedP, '% missing spikes']}, 'Color', [0.7, 0.7, 0.7])
             else
                 title(roundedP, 'Color', [0.7, 0.7, 0.7]);
             end
@@ -157,7 +157,7 @@ if plotThis
     xlabel('time (s)')
     ylabel(['amplitude scaling', newline, 'factor'])
     if exist('prettify_plot', 'file')
-        prettify_plot('FigureColor', 'w', 'XLimits', 'keep', 'YLimits', 'keep', 'TickLength', 0.01)
+        prettify_plot('none','none','none')
     else
         warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
         makepretty('none')

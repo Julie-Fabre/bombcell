@@ -159,7 +159,7 @@ if plotThis
     xlabel('PC1')
     ylabel('PC2')
     if exist('prettify_plot', 'file')
-        prettify_plot('none','none','none')
+        prettify_plot('FigureColor', 'w')
     else
         warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
         makepretty('none')
