@@ -16,22 +16,27 @@ function prettify_pvalues(ax, x1, x2, pvals, varargin)
 % - options to plot below certain amount, NaNs or not
 % - options to just have stars
 
-% Parse optional parameters
+% (Parse optional parameters)
 p = inputParser;
+% Visual parameters
 addParameter(p, 'TextRotation', 0, @isnumeric);
 addParameter(p, 'TextFontSize', 10, @isnumeric);
 addParameter(p, 'LineColor', 'k');
 addParameter(p, 'LineWidth', 1.5, @isnumeric);
-addParameter(p, 'OffsetMultiplier', 0.12, @isnumeric);
-addParameter(p, 'TickLength', 0.03, @isnumeric);
-addParameter(p, 'TextMargin', 0.035, @isnumeric);
+addParameter(p, 'LineMargin', 0.0025, @isnumeric);
+addParameter(p, 'TickLength', 0.01, @isnumeric);
+addParameter(p, 'TextMargin', 0.01, @isnumeric);
+% Plot type paramaters 
+% addParameter(p, 'AxisForPvalues', 'Y'); % Y axis by default. Change to X
+% or Z if necessary %QQ to add 
+% P value display parameters 
 addParameter(p, 'PlotNonSignif', true); % whether to plot the non-significant values or not
 addParameter(p, 'NaNCutoff', 0.05, @isnumeric); % any p values above this 
-% will be plotted as 'n.s.'. Set to 1 or Inf to disable this feature
+    % will be plotted as 'n.s.'. Set to 1 or Inf to disable this feature
 addParameter(p, 'FullDisplayCutoff', 0.001, @isnumeric); % any p values 
-% below this will be plotted as 'p < thisValue'. Set to 0 or -Inf to disable this feature
+    % below this will be plotted as 'p < thisValue'. Set to 0 or -Inf to disable this feature
 addParameter(p, 'OnlyStars', false); % set to true to only plot stars rather
-% than full p values 
+    % than full p values 
 addParameter(p, 'StarsLevel_1', 0.050, @isnumeric); % *
 addParameter(p, 'StarsLevel_2', 0.010, @isnumeric); % **
 addParameter(p, 'StarsLevel_3', 0.001, @isnumeric); % ***
@@ -52,10 +57,13 @@ hold(ax, 'on');
 
 % Calculate a consistent tick length adjusted by the number of p-value lines
 baseTickLength = params.TickLength; % Default base tick length
-tickLength = baseTickLength * length(pvals); % Adjust tick length based on number of p-values
+tickLength = baseTickLength * length(pvals) * diff(ax.YLim); % Adjust tick length based on number of p-values
 
 baseTextMargin = params.TextMargin;
-textMargin = baseTextMargin * length(pvals);
+textMargin = baseTextMargin * length(pvals) * diff(ax.YLim);
+
+baseLineMargin = params.LineMargin;
+LineMargin = baseLineMargin * length(pvals) * diff(ax.YLim);
 
 % Calculate the y limits based on the bars involved in the comparisons
 yLimits = arrayfun(@(x) ylim(ax), 1:length(pvals), 'UniformOutput', false);
@@ -68,7 +76,7 @@ pvals_sorted = pvals(sortIdx);
 
 % Initialize the highest level already used for placing a p-value line
 highestYLevel = 0;
-y_offset = range(ylim) * params.OffsetMultiplier; % 5 % offset
+y_offset = range(ylim) * LineMargin; % 5 % offset
 
 for i = 1:length(pvals_sorted)
     % Find the y-values of bars involved in the comparison (including in-between bars)
@@ -97,9 +105,9 @@ for i = 1:length(pvals_sorted)
     line(ax, [x2(i), x2(i)], [y_line + 0.015, y_line - tickLength], 'Color', params.LineColor, 'LineWidth', params.LineWidth);
 
     % Format p-value text
-    if pvals_sorted(i) >= params.NaNCutoff || isnan(pvals_sorted(i))
+    if pvals_sorted(i) >= params.NaNCutoff || isnan(pvals_sorted(i)) % plot non significant values as n.s.
         pval_text = 'n.s.';
-    elseif params.OnlyStars
+    elseif params.OnlyStars % only display stars
         if pvals_sorted(i) < params.StarsLevel_1
            pval_text = '*';
         elseif pvals_sorted(i) < params.StarsLevel_2
@@ -128,6 +136,7 @@ end
 % Release the plot hold
 hold(ax, 'off');
 end
+
 function Y = minY_involvedBars(x)
 % hacky way of getting the maximum y value for the bars at the
 % locations x (and in between)
@@ -136,18 +145,19 @@ function Y = minY_involvedBars(x)
 original_XLim = get(gca, 'XLim');
 original_YLim = get(gca, 'YLim');
 
-axis(gca, 'tight')
 % add a little padding to ensure the function behaves nicely
 x(1) = x(1) - 0.1;
 x(2) = x(2) + 0.1;
 
 % artifically set the xlimits to only include the bars at locations x
 % and extract the new xlims from this
+axis(gca, 'tight')
 set(gca, 'xlim', x)
 yLim = get(gca, 'YLim');
 Y = max(yLim);
 
+% set back the axis to the original values
 axis(gca, 'normal')
-set(gca, 'XLim', original_XLim, 'YLim', original_YLim) % set back the axis to the original values
+set(gca, 'XLim', original_XLim, 'YLim', original_YLim) 
 
 end

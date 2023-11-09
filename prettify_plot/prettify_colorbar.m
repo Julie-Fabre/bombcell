@@ -2,13 +2,16 @@
 
 %'YTickLabel'
 
-function prettify_colorbar(colorbars, ChangeColormaps, DivergingColormap,...
+function prettify_colorbar(colorbars, colorsToReplace, mainColor, ChangeColormaps, DivergingColormap,...
     SequentialColormap)
 colorbarProperties = struct;
 
 
 for iColorBar = 1:length(colorbars)
     currColorbar = colorbars(iColorBar);
+
+    %text color
+    colorbarProperties(iColorBar).Color = mainColor;
 
     % check/change colormap 
     currColorbar.Limits = colorbars(iColorBar).Limits;
@@ -55,6 +58,7 @@ for iColorBar = 1:length(colorbars)
     %    0, [0.5 - 0.01, colorbarProperties(iColorBar).Limits(1) - 1]})
     currColorbar.Ticks = [currColorbar.Limits(1), currColorbar.Limits(2)];
     currColorbar.TickLabels = {num2str(currColorbar.Limits(1)), num2str(currColorbar.Limits(2))};
+    currColorbar.Color = colorbarProperties(iColorBar).Color;
 
 
 end

@@ -1,6 +1,6 @@
 % Sample data for two groups
 group1 = randn(10, 1) + 1; % Random data centered around 1
-group2 = randn(10, 1) + 2; % Random data centered around 2
+group2 = randn(10, 1) + 1; % Random data centered around 2
 group3 = randn(10, 1);
 group4 = randn(10, 1) + 5;
 group5 = randn(10, 1) + 5;
@@ -27,5 +27,5 @@ ax = gca;
 % Add the p-value to the plot
 % Here we assume that the p-value should appear at y = 3, change this value as needed for your plot.
 % x-coordinates (1 and 2) correspond to the bar centers.
-prettify_pvalues(ax, [1,1,1,1,2,2,2,3,3,4], [2,3,4,5,3,4,5,4,5,5], pval);
-prettify_plot;
+prettify_pvalues(ax, [1,1,1,1,2,2,2,3,3,4], [2,3,4,5,3,4,5,4,5,5], pval,'PlotNonSignif', false);
+prettify_plot('FigureColor', 'k');
