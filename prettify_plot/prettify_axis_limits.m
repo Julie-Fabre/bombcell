@@ -1,6 +1,6 @@
 
 function prettify_axis_limits(all_axes, currFig_children, ax_pos, xlims_subplot, ylims_subplot, clims_subplot, ...
-    XLimits, YLimits, CLimits, LimitsRound, SymmetricalCLimits, LegendReplace, LegendLocation)
+    XLimits, YLimits, CLimits, LimitsRound, SymmetricalCLimits)
 
 if ~isnan(LimitsRound) % round up all limits to the nearest LimitsRound decimal place
     xlims_subplot = arrayfun(@(x) prettify_roundUpNatural(x, LimitsRound), xlims_subplot);
@@ -49,14 +49,7 @@ if ismember(XLimits, {'all', 'row', 'col'}) || ismember(YLimits, {'all', 'row', 
 
     end
 
-    % re-check legend location is correctly set
-    if ~isempty(currAx.Legend)
-        if LegendReplace
-            prettify_legend(currAx)
-        else
-            set(currAx.Legend, 'Location', LegendLocation)
-        end
-    end
+
 elseif SymmetricalCLimits
     for iAx = 1:size(all_axes, 2)
         thisAx = all_axes(iAx);
@@ -78,14 +71,16 @@ end
     end
 
     function setNewCLimits(currAx, theseCLims, SymmetricalCLimits)
-        if SymmetricalCLimits && any(any(theseCLims < 0)) && any(any(theseCLims > 0)) % diverging
-            set(currAx, 'Clim', [-max(max(abs(theseCLims))), max(max(abs(theseCLims)))]);
-        elseif SymmetricalCLimits && any(any(theseCLims < 0))
-            set(currAx, 'Clim', [-max(max(abs(theseCLims))), 0]);
-        elseif SymmetricalCLimits && any(any(theseCLims > 0))
-            set(currAx, 'Clim', [0, max(max(abs(theseCLims)))]);
-        else
-            set(currAx, 'Clim', [min(min(theseCLims)), max(max(theseCLims))]);
+        if any(any(~isnan(theseCLims)))
+            if SymmetricalCLimits && any(any(theseCLims < 0)) && any(any(theseCLims > 0)) % diverging
+                set(currAx, 'Clim', [-nanmax(nanmax(abs(theseCLims))), nanmax(nanmax(abs(theseCLims)))]);
+            elseif SymmetricalCLimits && any(any(theseCLims < 0))
+                set(currAx, 'Clim', [-nanmax(nanmax(abs(theseCLims))), 0]);
+            elseif SymmetricalCLimits && any(any(theseCLims > 0))
+                set(currAx, 'Clim', [0, nanmax(nanmax(abs(theseCLims)))]);
+            else
+                set(currAx, 'Clim', [nanmin(nanmin(theseCLims)), nanmax(nanmax(theseCLims))]);
+            end
         end
     end
 end

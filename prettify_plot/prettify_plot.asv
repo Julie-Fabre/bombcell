@@ -308,11 +308,8 @@ prettify_colorbar(colorbars, colorsToReplace, mainColor, options.ChangeColormaps
         % adjust legend
         if ~isempty(currAx.Legend)
             if options.LegendReplace
-                prettify_legend(currAx)
-            else
-                set(currAx.Legend, 'Location', options.LegendLocation)
-                set(currAx.Legend, 'Box', options.LegendBox)
-            end
+                prettify_legend(currAx, options.LegendLocation, options.LegendBox)
+
         end
 
 

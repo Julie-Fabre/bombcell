@@ -168,6 +168,22 @@ else
     mainColor = options.TextColor;
 end
 
+% update axis limits
+for iAx =  1:size(all_axes, 2)
+    thisAx = all_axes(iAx);
+    currAx = currFig_children(thisAx);
+    ax_pos = get(currAx, 'Position');
+end
+prettify_axis_limits(all_axes, currFig_children, ...
+    ax_pos, xlims_subplot, ylims_subplot, clims_subplot, ...
+    options.XLimits, options.YLimits, options.CLimits, ...
+    options.LimitsRound, options.SymmetricalCLimits);
+
+% update colorbars
+colorbars = findobj(currFig_children, 'Type', 'colorbar');
+prettify_colorbar(colorbars, colorsToReplace, mainColor, options.ChangeColormaps, options.DivergingColormap, ...
+    options.SequentialColormap);
+
 % update (sub)plot properties
 for iAx = 1:size(all_axes, 2)
     thisAx = all_axes(iAx);
@@ -287,27 +303,9 @@ for iAx = 1:size(all_axes, 2)
 
         % adjust legend
         if ~isempty(currAx.Legend)
-            if options.LegendReplace
-                prettify_legend(currAx)
-            else
-                set(currAx.Legend, 'Location', options.LegendLocation)
-                set(currAx.Legend, 'Box', options.LegendBox)
-            end
+            prettify_legend(currAx, options.LegendReplace, options.LegendLocation, options.LegendBox)
         end
 
 
     end
 end
-
-prettify_axis_limits(all_axes, currFig_children, ...
-    ax_pos, xlims_subplot, ylims_subplot, clims_subplot, ...
-    options.XLimits, options.YLimits, options.CLimits, ...
-    options.LimitsRound, options.SymmetricalCLimits, ...
-    options.LegendReplace, options.LegendLocation);
-
-colorbars = findobj(currFig_children, 'Type', 'colorbar');
-prettify_colorbar(colorbars, colorsToReplace, mainColor, options.ChangeColormaps, options.DivergingColormap, ...
-    options.SequentialColormap);
-
-
-%prettify_axis_locations;

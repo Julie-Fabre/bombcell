@@ -1,68 +1,86 @@
-function prettify_legend(ax)
-    yRange = ax.YLim(2) - ax.YLim(1);
-    offset = yRange * 0.1;  % This is 5% of the y-axis range; adjust as needed for a larger/smaller offset
-    
+function prettify_legend(ax, LegendReplace, LegendLocation, LegendBox)
+
+
+if ~LegendReplace 
+    set(ax.Legend, 'Location', LegendLocation)
+    set(ax.Legend, 'Box', LegendBox)
+
+    % based on location, order the legend in the same order the lines/ dots
+    % are in 
+    xvalues = [ax.Legend.Position(1) .* ax.XLim(2) + ax.XLim(1),...
+        (ax.Legend.Position(1) +  ax.Legend.Position(3)) .* ax.XLim(2) + ax.XLim(1)];
+
     handles = findall(ax.Children);
 
+    for iHandle = 1:length(handles)
+
+        h = handles(iHandle);
+        % Extract color and display name
+        if strcmp(get(h, 'Type'), 'line')
+            color = h.Color;
+        elseif strcmp(get(h, 'Type'), 'scatter')
+            color = h.CData;
+        end
+        name = h.DisplayName;
+
+        % Calculate label position based on average y-value
+        ydata = h.YData;
+        if contains(ax.Legend.Location, 'eastoutside')
+            yavg(iHandle) = mean(ydata(h.XData(end)));
+        elseif contains(ax.Legend.Location, 'westoutside')
+            yavg(iHandle) = mean(ydata(h.XData(1)));
+        elseif contains(ax.Legend.Location, 'bestoutside') && contains(ax.Legend.Orientation, 'vertical')
+            yavg(iHandle) = mean(ydata(h.XData >= xvalues(end)));
+        else
+            yavg(iHandle) = mean(ydata(h.XData <= xvalues(1)));
+        end
+        
+    end
+
+    [~, order] = sort(yavg);
+    legend(ax, handles(order)); 
+
+
+
+else
+    yRange = ax.YLim(2) - ax.YLim(1);
+    offset = yRange * 0.05;  % Adjust offset as needed for better spacing
+
+    handles = findall(ax.Children);
+    
     lines = handles(ishandle(handles) & strcmp(get(handles, 'Type'), 'line'));
     points = handles(ishandle(handles) & strcmp(get(handles, 'Type'), 'scatter'));
 
-    %remove any points
-    for iLine = 1:length(lines)
-        thisLine = lines(iLine);
-        keepLine(iLine) = length(thisLine.XData) > 1;
-    end
-    lines = lines(keepLine);
+    % Remove any single points from legend
+    lines = lines(arrayfun(@(x) numel(x.XData) > 1, lines));
 
     for h = lines'
         % Extract color and display name
         color = h.Color;
         name = h.DisplayName;
 
-        % Identify the position with maximum separation from other lines
-        xdata = h.XData;
+        % Calculate label position based on average y-value
         ydata = h.YData;
-        separation = zeros(size(ydata));
-        
-        for i = round(3*length(ydata)/4):-1:1
-            for hl = lines'
-                if hl ~= h
-                    if length(xdata) > 1
-                        separation(i) = separation(i) + abs(ydata(i) - interp1(hl.XData, hl.YData, xdata(i), 'linear', 'extrap'));
-                    else
-                        separation(i) = 0;
-                    end
-                end
-            end
-        end
+        yavg = mean(ydata);
 
-        if sum(separation) == 0
-            [~, idx] = max(ydata);
-        else
-            [~, idx] = max(separation); % considering last 6 points for better labeling
-            %idx = idx + length(ydata);
-        end
-
-       
-
-        % Adjust label position based on the position of other lines
-        yOffset = sign(median([h.YData(idx) - ax.YLim(1), ax.YLim(2) - h.YData(idx)])) * offset;
-       
-        
         % Place the text
-        text(ax, xdata(idx), ydata(idx) + yOffset, name, 'Color', color, 'FontWeight', 'bold');
+        text(ax, max(h.XData), yavg + offset, name, 'Color', color, 'FontWeight', 'bold', 'HorizontalAlignment', 'right');
     end
-    
+
     for h = points'
         % Extract color and display name
         color = h.CData;
         name = h.DisplayName;
-        xdata = h.XData;
+
+        % Calculate label position based on average y-value
         ydata = h.YData;
+        yavg = mean(ydata);
 
         % Place the text
-        text(xdata, ydata + offset, name, 'Color', color, 'FontWeight', 'bold', 'HorizontalAlignment', 'center');
+        text(h.XData, yavg + offset, name, 'Color', color, 'FontWeight', 'bold', 'HorizontalAlignment', 'center');
     end
 
-    % remove legend
+    % Remove legend
+    ax.Legend.Visible = 'off';
+end
 end
