@@ -4,55 +4,82 @@ function prettify_plot(varargin)
 % Inputs: Name - Pair arguments
 % ------
 % - XLimits: string or number.
-%   If a string, either:
-%       - 'keep': don't change any of the xlimits
-%       - 'same': set all xlimits to the same values
-%       - 'row': set all xlimits to the same values for each subplot row
-%       - 'col': set all xlimits to the same values for each subplot col
-%   If a number, 1 * 2 double setting the minimum and maximum values
+%       If a string, either:
+%           - 'keep': don't change any of the xlimits
+%           - 'same': set all xlimits to the same values
+%           - 'row': set all xlimits to the same values for each subplot row
+%           - 'col': set all xlimits to the same values for each subplot col
+%       If a number, 1 * 2 double setting the minimum and maximum values
 % - YLimits: string or number.
-%   If a string, either:
-%       - 'keep': don't change any of the ylimits
-%       - 'same': set all ylimits to the same values
-%       - 'row': set all ylimits to the same values for each subplot row
-%       - 'col': set all ylimits to the same values for each subplot col
-%   If a number, 1 * 2 double setting the minimum and maximum values
+%       If a string, either:
+%           - 'keep': don't change any of the ylimits
+%           - 'same': set all ylimits to the same values
+%           - 'row': set all ylimits to the same values for each subplot row
+%           - 'col': set all ylimits to the same values for each subplot col
+%       If a number, 1 * 2 double setting the minimum and maximum values
+% - CLimits, string or number.
+%       If a string, either:
+%           - 'keep': don't change any of the xlimits
+%           - 'same': set all xlimits to the same values
+%           - 'row': set all xlimits to the same values for each subplot row
+%           - 'col': set all xlimits to the same values for each subplot col
+%       If a number, 1 * 2 double setting the minimum and maximum values
+% - LimitsRound % Number of decimals to keep when rounding. set to NaN if you don't want any changes
+% - SymmetricalCLimits: boolean. Whether to make CLimits symmetrical around 0
 % - FigureColor: string (e.g. 'w', 'k', 'Black', ..) or RGB value defining the plots
 %       background color.
 % - TextColor: string (e.g. 'w', 'k', 'Black', ..) or RGB value defining the plots
 %       text color.
+% - NeutralColor: string (e.g. 'w', 'k', 'Black', ..) or RGB value defining the plots
+%       text color.
 % - LegendLocation: string determining where the legend is. Either:
-%   'north'	Inside top of axes
-%   'south'	Inside bottom of axes
-%   'east'	Inside right of axes
-%   'west'	Inside left of axes
-%   'northeast'	Inside top-right of axes (default for 2-D axes)
-%   'northwest'	Inside top-left of axes
-%   'southeast'	Inside bottom-right of axes
-%   'southwest'	Inside bottom-left of axes
-%   'northoutside'	Above the axes
-%   'southoutside'	Below the axes
-%   'eastoutside'	To the right of the axes
-%   'westoutside'	To the left of the axes
-%   'northeastoutside'	Outside top-right corner of the axes (default for 3-D axes)
-%   'northwestoutside'	Outside top-left corner of the axes
-%   'southeastoutside'	Outside bottom-right corner of the axes
-%   'southwestoutside'	Outside bottom-left corner of the axes
-%   'best'	Inside axes where least conflict occurs with the plot data at the time that you create the legend. If the plot data changes, you might need to reset the location to 'best'.
-%   'bestoutside'	Outside top-right corner of the axes (when the legend has a vertical orientation) or below the axes (when the legend has a horizontal orientation)
-% - LegendReplace: ! buggy ! boolean, if you want the legend box to be replace by text
+%       'north'	Inside top of axes
+%       'south'	Inside bottom of axes
+%       'east'	Inside right of axes
+%       'west'	Inside left of axes
+%       'northeast'	Inside top-right of axes (default for 2-D axes)
+%       'northwest'	Inside top-left of axes
+%       'southeast'	Inside bottom-right of axes
+%       'southwest'	Inside bottom-left of axes
+%       'northoutside'	Above the axes
+%       'southoutside'	Below the axes
+%       'eastoutside'	To the right of the axes
+%       'westoutside'	To the left of the axes
+%       'northeastoutside'	Outside top-right corner of the axes (default for 3-D axes)
+%       'northwestoutside'	Outside top-left corner of the axes
+%       'southeastoutside'	Outside bottom-right corner of the axes
+%       'southwestoutside'	Outside bottom-left corner of the axes
+%       'best'	Inside axes where least conflict occurs with the plot data at the time that you create the legend. If the plot data changes, you might need to reset the location to 'best'.
+%       'bestoutside'	Outside top-right corner of the axes (when the legend has a vertical orientation) or below the axes (when the legend has a horizontal orientation)
+% - LegendReplace: ! buggy sometimes ! boolean, if you want the legend box to be replace by text
 %       directly plotted on the figure, next to the each subplot's
 %       line/point
-% - titleFontSize: double
-% - labelFontSize: double
-% - generalFontSize: double
+% - titleFontSize: double, font size for titles
+% - labelFontSize: double, font size for x, y, z axis labels
+% - generalFontSize: double, font size for other figure elements (legends,
+%       colorbars, x/y/z ticks, text elements, ...)
 % - Font: string. See listfonts() for a list of all available fonts
-% - pointSize: double
-% - lineThickness: double
-% - AxisTicks
-% - AxisBox
-% - AxisAspectRatio 'equal', 'square', 'image'
-% - AxisTightness 'tickaligned' 'tight', 'padded'
+% - pointSize: double, size for point elements
+% - lineThickness: double, thickness value for lines 
+% - AxisTicks: string. Either 'out' (the tick marks come out of the axis)
+%       or 'in' (the tick marks go in of the axis)
+% - TickLength: number, determines size of ticks
+% - TickWidth: number, determines size of ticks
+% - AxisBox: String. Either 'off' (no box) or 'on' (a box)
+% - AxisAspectRatio: String. Either 'equal', 'square' or 'image'
+% - AxisTightness: String. Either 'tickaligned', 'tight' or 'padded'
+% - AxisUnits - not in use yet
+% - ChangeColormaps: boolean, whether to adjust the colormaps or not
+% - DivergingColormap: String corresponding to the brewermap colormap for
+%       sequential data. Options: 'BrBG', 'PRGn', 'PuOr', 'RdBu', 'RdGy',
+%       'RdYlBu', 'RdYlGn', 'Spectral'. Add a * before to reverse (eg: '*RdBu')
+% - SequentialColormap: String corresponding to the brewermap colormap for
+%       sequential data. Options: 'Blues', 'BuGn', 'BuPu', 'GnBu', 'Greens',
+%       'Greys', 'OrRd', 'Oranges', 'PuBu', 'PuBuGn', 'PuRd', 'Purples', 'RdPu',
+%       'Reds', 'YlGn', 'YlGnBu', 'YlOrBr', 'YlOrRd'. Add a * before to
+%       reverse (eg: '*Blues')
+% - PairedColormap - not in use yet
+% - QualitativeColormap - not in use yet
 % ------
 % to do:
 % - option to adjust vertical and horiz. lines
@@ -63,16 +90,16 @@ function prettify_plot(varargin)
 % Julie M. J. Fabre
 
 % Set default parameter values
-options = struct('XLimits', 'keep', ... %set to 'keep' if you don't want any changes
-    'YLimits', 'keep', ... %set to 'keep' if you don't want any changes
-    'CLimits', 'all', ... %set to 'keep' if you don't want any changes
+options = struct('XLimits', 'keep', ... % set to 'keep' if you don't want any changes
+    'YLimits', 'keep', ... % set to 'keep' if you don't want any changes
+    'CLimits', 'all', ... % set to 'keep' if you don't want any changes
     'LimitsRound', 2, ... % set to NaN if you don't want any changes
     'SymmetricalCLimits', true, ...
     'FigureColor', [1, 1, 1], ...
     'TextColor', [0, 0, 0], ...
     'NeutralColor', [0.6, 0.6, 0.6], ... % used if figure background color is set to 'none'
     'LegendLocation', 'best', ...
-    'LegendReplace', false, ... %BUGGY
+    'LegendReplace', false, ... % BUGGY sometimes
     'LegendBox', 'off', ...
     'TitleFontSize', 15, ...
     'LabelFontSize', 15, ...
@@ -86,10 +113,10 @@ options = struct('XLimits', 'keep', ... %set to 'keep' if you don't want any cha
     'TickWidth', 1.3, ...
     'AxisBox', 'off', ...
     'AxisGrid', 'off', ...
-    'AxisAspectRatio', 'keep', ... %set to 'keep' if you don't want any changes
-    'AxisTightness', 'keep', ... %BUGGY set to 'keep' if you don't want any changes %'AxisWidth', 'keep',... %BUGGY set to 'keep' if you don't want any changes %'AxisHeight', 'keep',...%BUGGY set to 'keep' if you don't want any changes
+    'AxisAspectRatio', 'keep', ... % set to 'keep' if you don't want any changes
+    'AxisTightness', 'keep', ... % BUGGY set to 'keep' if you don't want any changes 
     'AxisUnits', 'points', ...
-    'ChangeColormaps', true, ... %set to false if you don't want any changes
+    'ChangeColormaps', true, ... % set to false if you don't want any changes
     'DivergingColormap', '*RdBu', ...
     'SequentialColormap', 'YlOrRd', ...
     'PairedColormap', 'Paired', ...
@@ -141,10 +168,8 @@ end
 % Get handles for current figure and axis
 currFig = gcf;
 
-
 % Set color properties for figure and axis
 set(currFig, 'color', options.FigureColor);
-
 
 % update font
 fontname(options.Font)
@@ -152,7 +177,6 @@ fontname(options.Font)
 % get axes children
 currFig_children = currFig.Children;
 all_axes = find(arrayfun(@(x) contains(currFig_children(x).Type, 'axes'), 1:size(currFig_children, 1)));
-
 
 % pre-allocate memory
 xlims_subplot = nan(size(all_axes, 2), 2);
@@ -288,8 +312,6 @@ for iAx = 1:size(all_axes, 2)
             end
         end
 
-        ax_pos = get(currAx, 'Position');
-
         % Adjust properties of any plotted text
         childTexts = findall(currAx, 'Type', 'Text');
         for thisText = childTexts'
@@ -305,7 +327,6 @@ for iAx = 1:size(all_axes, 2)
         if ~isempty(currAx.Legend)
             prettify_legend(currAx, options.LegendReplace, options.LegendLocation, options.LegendBox)
         end
-
 
     end
 end
