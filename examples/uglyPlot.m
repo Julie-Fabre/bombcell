@@ -84,4 +84,4 @@ xlabel('Time (ms)');
 c2 = colorbar;
 c2.Title.String = 'Zscore';
 
-prettify_plot;
+%prettify_plot;

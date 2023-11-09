@@ -161,10 +161,24 @@ clims_subplot = nan(size(all_axes, 2), 2);
 
 % set colors to replace and default text/axis colors
 if strcmp(options.FigureColor, 'none')
-    colorsToReplace = [];
+    colorsToReplace = [0, 0, 0; 1, 1, 1];
     mainColor = options.NeutralColor;
 else
+    colorsToReplace = options.FigureColor;
+    mainColor = options.TextColor;
 end
+
+% update axis limits
+prettify_axis_limits(all_axes, currFig_children, ...
+    ax_pos, xlims_subplot, ylims_subplot, clims_subplot, ...
+    options.XLimits, options.YLimits, options.CLimits, ...
+    options.LimitsRound, options.SymmetricalCLimits, ...
+    options.LegendReplace, options.LegendLocation);
+
+% update colorbars
+colorbars = findobj(currFig_children, 'Type', 'colorbar');
+prettify_colorbar(colorbars, colorsToReplace, mainColor, options.ChangeColormaps, options.DivergingColormap, ...
+    options.SequentialColormap);
 
 % update (sub)plot properties
 for iAx = 1:size(all_axes, 2)
@@ -178,7 +192,15 @@ for iAx = 1:size(all_axes, 2)
         set(currAx, 'Box', options.AxisBox)
         set(currAx, 'TickLength', [options.TickLength, options.TickLength]); % Make tick marks longer.
         set(currAx, 'LineWidth', options.TickWidth); % Make tick marks and axis lines thicker.
+prettify_axis_limits(all_axes, currFig_children, ...
+    ax_pos, xlims_subplot, ylims_subplot, clims_subplot, ...
+    options.XLimits, options.YLimits, options.CLimits, ...
+    options.LimitsRound, options.SymmetricalCLimits, ...
+    options.LegendReplace, options.LegendLocation);
 
+colorbars = findobj(currFig_children, 'Type', 'colorbar');
+prettify_colorbar(colorbars, colorsToReplace, mainColor, options.ChangeColormaps, options.DivergingColormap, ...
+    options.SequentialColormap);
         %set(currAx, 'Grid', options.AxisGrid)
         if strcmp(options.AxisAspectRatio, 'keep') == 0
             axis(currAx, options.AxisAspectRatio)
@@ -188,25 +210,25 @@ for iAx = 1:size(all_axes, 2)
         end
 
         % Set text properties
-        set(currAx.XLabel, 'FontSize', options.LabelFontSize, 'Color', options.TextColor);
+        set(currAx.XLabel, 'FontSize', options.LabelFontSize, 'Color', mainColor);
         if strcmp(currAx.YAxisLocation, 'left') % if there is both a left and right yaxis, keep the colors
             set(currAx.YLabel, 'FontSize', options.LabelFontSize);
         else
-            set(currAx.YLabel, 'FontSize', options.LabelFontSize, 'Color', options.TextColor);
+            set(currAx.YLabel, 'FontSize', options.LabelFontSize, 'Color', mainColor);
         end
         if strcmp(options.BoldTitle, 'on')
-            set(currAx.Title, 'FontSize', options.TitleFontSize, 'Color', options.TextColor, ...
+            set(currAx.Title, 'FontSize', options.TitleFontSize, 'Color', mainColor, ...
                 'FontWeight', 'Bold')
         else
-            set(currAx.Title, 'FontSize', options.TitleFontSize, 'Color', options.TextColor, ...
+            set(currAx.Title, 'FontSize', options.TitleFontSize, 'Color', mainColor, ...
                 'FontWeight', 'Normal');
         end
         %disp(currAx)
-        set(currAx, 'FontSize', options.GeneralFontSize, 'GridColor', options.TextColor, ...
-            'YColor', options.TextColor, 'XColor', options.TextColor, ...
-            'MinorGridColor', options.TextColor);
+        set(currAx, 'FontSize', options.GeneralFontSize, 'GridColor', mainColor, ...
+            'YColor', mainColor, 'XColor', mainColor, ...
+            'MinorGridColor',mainColor);
         if ~isempty(currAx.Legend)
-            set(currAx.Legend, 'Color', options.FigureColor, 'TextColor', options.TextColor)
+            set(currAx.Legend, 'Color', options.FigureColor, 'TextColor', mainColor)
         end
 
         % Adjust properties of line children within the plot
@@ -215,12 +237,8 @@ for iAx = 1:size(all_axes, 2)
             % if any lines/points become the same as background, change
             % these.
 
-            if strcmp(options.FigureColor, 'none') && ismember(thisLine.Color, [0, 0, 0; 1, 1, 1], 'rows')
-                thisLine.Color = options.NeutralColor;
-            elseif ~strcmp(options.FigureColor, 'none')
-                if sum(thisLine.Color == options.FigureColor) == 3
-                    thisLine.Color = options.TextColor;
-                end
+            if ismember(thisLine.Color, colorsToReplace, 'rows')
+               thisLine.Color = mainColor;
             end
             % adjust markersize
             if sum(get(thisLine, 'Marker') == 'none') < 4
@@ -240,25 +258,18 @@ for iAx = 1:size(all_axes, 2)
             % if any lines/points become the same as background, change
             % these.
             if size(thisPoint.CData, 1) == 1 % one uniform color
-
-                if strcmp(options.FigureColor, 'none') && ismember(thisPoint.CData, [0, 0, 0; 1, 1, 1], 'rows')
-                    thisPoint.CData = options.NeutralColor;
-                elseif ~strcmp(options.FigureColor, 'none')
-                    if sum(thisPoint.CData == options.FigureColor) == 3
-                        thisPoint.CData = options.TextColor;
-                    end
+                if ismember(thisPoint.CData, colorsToReplace, 'rows')
+                    thisPoint.CData = mainColor;
                 end
             else
 
-                if strcmp(options.FigureColor, 'none') && ismember(thisPoint.CData, [0, 0, 0; 1, 1, 1], 'rows')
+                if ismember(thisPoint.CData, colorsToReplace, 'rows')
                     points_sub = ismember(thisPoint.CData == [0, 0, 0; 1, 1, 1], 'rows');
-                    set(thisPoint, 'MarkerEdgeColor', options.NeutralColor)
-                elseif ~strcmp(options.FigureColor, 'none')
-                    points_sub = sum(thisPoint.CData == options.FigureColor, 2) == 3;
                     if any(points_sub)
-                        set(thisPoint, 'MarkerEdgeColor', options.TextColor)
+                        set(thisPoint, 'MarkerEdgeColor', mainColor)
                     end
                 end
+                
             end
             % adjust markersize
             if sum(get(thisPoint, 'Marker') == 'none') < 4
@@ -286,11 +297,7 @@ for iAx = 1:size(all_axes, 2)
         % Adjust properties of any plotted text
         childTexts = findall(currAx, 'Type', 'Text');
         for thisText = childTexts'
-            if strcmp(options.FigureColor, 'none')
-                set(thisText, 'FontSize', options.GeneralFontSize, 'Color', options.NeutralColor);
-            else
-                set(thisText, 'FontSize', options.GeneralFontSize, 'Color', options.TextColor);
-            end
+            set(thisText, 'FontSize', options.GeneralFontSize, 'Color', mainColor);
         end
 
         % Get x and y limits
@@ -312,15 +319,7 @@ for iAx = 1:size(all_axes, 2)
     end
 end
 
-prettify_axis_limits(all_axes, currFig_children, ...
-    ax_pos, xlims_subplot, ylims_subplot, clims_subplot, ...
-    options.XLimits, options.YLimits, options.CLimits, ...
-    options.LimitsRound, options.SymmetricalCLimits, ...
-    options.LegendReplace, options.LegendLocation);
 
-colorbars = findobj(currFig_children, 'Type', 'colorbar');
-prettify_colorbar(colorbars, options.ChangeColormaps, options.DivergingColormap, ...
-    options.SequentialColormap);
 
 
 %prettify_axis_locations;

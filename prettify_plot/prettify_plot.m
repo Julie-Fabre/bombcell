@@ -278,7 +278,6 @@ for iAx = 1:size(all_axes, 2)
         childTexts = findall(currAx, 'Type', 'Text');
         for thisText = childTexts'
             set(thisText, 'FontSize', options.GeneralFontSize, 'Color', mainColor);
-            
         end
 
         % Get x and y limits
