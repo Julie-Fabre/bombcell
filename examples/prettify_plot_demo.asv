@@ -1,0 +1,23 @@
+
+% generate an uglyPlot
+uglyPlot;
+
+% Make it pretty with default settings 
+prettify_plot;
+
+% Change the figure color, fonts, fontsizes, ticks 
+prettify_plot('FigureColor', 'k')
+prettify_plot('FigureColor', 'none', 'Font', 'TitleFontSize', 'LegendFontSize', 'GeneralFontSize',...
+    'AxisTicks', 'in', 'TickLength', 0.01, 'TickWidth', 1)
+
+% Homogenize the x, y and climits by rows of subplots (other options include by columns
+% ('col') and for all aubplots ('all')
+prettify_plot('Xlimits', 'rows',
+
+% Change the legends
+'LegendReplace'
+% Change colormaps, make symmetric 
+'SymmetricalCLimits'
+% Replace axis by scale bars 
+prettify_addScaleBars
+% Add p-values 

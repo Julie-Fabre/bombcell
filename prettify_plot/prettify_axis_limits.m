@@ -9,7 +9,7 @@ if ~isnan(LimitsRound) % round up all limits to the nearest LimitsRound decimal 
 end
 
 % homogenize x, y, and climits across rows/columns of plots.
-if ismember(XLimits, {'all', 'row', 'col'}) || ismember(YLimits, {'all', 'row', 'col'}) || ismember(CLimits, {'all', 'row', 'col'})
+%if ismember(XLimits, {'all', 'row', 'col'}) || ismember(YLimits, {'all', 'row', 'col'}) || ismember(CLimits, {'all', 'row', 'col'})
     % get rows and cols
     col_subplots = unique(ax_pos(:, 1));
     row_subplots = unique(ax_pos(:, 2));
@@ -32,16 +32,20 @@ if ismember(XLimits, {'all', 'row', 'col'}) || ismember(YLimits, {'all', 'row', 
         thisAx = all_axes(iAx);
         currAx = currFig_children(thisAx);
         if ~isempty(currAx) %(currAx, limits, limitRows, limitCols, axPos, limitIdx_row, limitIdx_col, limitType)
-            setNewXYLimits(currAx, xlims_subplot, row_xlims, col_xlims, ax_pos, row_subplots, col_subplots, XLimits, 'Xlim') %set x limits
-            setNewXYLimits(currAx, ylims_subplot, row_ylims, col_ylims, ax_pos, row_subplots, col_subplots, YLimits, 'Ylim') %set y limits
+            setNewXYLimits(currAx, xlims_subplot, row_xlims, col_xlims, ax_pos, row_subplots,...
+                col_subplots, XLimits, 'Xlim', iAx) %set x limits
+            setNewXYLimits(currAx, ylims_subplot, row_ylims, col_ylims, ax_pos, row_subplots,...
+                col_subplots, YLimits, 'Ylim', iAx) %set y limits
 
 
             if ismember(CLimits, {'all'})
                 theseCLims = clims_subplot;
-            elseif ismember(CLimits, {'col'})
+            elseif ismember(CLimits, {'cols'})
                 theseCLims = col_clims{ax_pos(iAx, 1) == col_subplots};
-            elseif ismember(CLimits, {'row'})
+            elseif ismember(CLimits, {'rows'})
                 theseCLims = row_clims{ax_pos(iAx, 2) == row_subplots};
+            else
+                theseCLims = clims_subplot(iAx,:);
             end
             setNewCLimits(currAx, theseCLims, SymmetricalCLimits)
         end
@@ -50,23 +54,23 @@ if ismember(XLimits, {'all', 'row', 'col'}) || ismember(YLimits, {'all', 'row', 
     end
 
 
-elseif SymmetricalCLimits
-    for iAx = 1:size(all_axes, 2)
-        thisAx = all_axes(iAx);
-        currAx = currFig_children(thisAx);
-        theseCLims = currAx.CLim;
-        setNewCLimits(currAx, theseCLims, SymmetricalCLimits)
-    end
-end
+% elseif SymmetricalCLimits
+%     for iAx = 1:size(all_axes, 2)
+%         thisAx = all_axes(iAx);
+%         currAx = currFig_children(thisAx);
+%         theseCLims = currAx.CLim;
+%         setNewCLimits(currAx, theseCLims, SymmetricalCLimits)
+%     end
+% end
 
 
-    function setNewXYLimits(currAx, limits, limitRows, limitCols, axPos, limitIdx_row, limitIdx_col, limitType, textLim)
+    function setNewXYLimits(currAx, limits, limitRows, limitCols, axPos, limitIdx_row, limitIdx_col, limitType, textLim, iAx)
         if ismember(limitType, {'all'})
             set(currAx, textLim, [min(min(limits)), max(max(limits))]);
-        elseif ismember(limitType, {'row'})
-            set(currAx, textLim, limitRows{axPos(:, 2) == limitIdx_row});
-        elseif ismember(limitType, {'col'})
-            set(currAx, textLim, limitCols{axPos(:, 1) == limitIdx_col});
+        elseif ismember(limitType, {'rows'})
+            set(currAx, textLim, limitRows{limitIdx_row == axPos(iAx, 2)});
+        elseif ismember(limitType, {'cols'})
+            set(currAx, textLim, limitCols{limitIdx_col == axPos(iAx, 1)});
         end
     end
 

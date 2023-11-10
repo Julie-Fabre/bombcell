@@ -54,13 +54,15 @@ function prettify_plot(varargin)
 % - LegendReplace: ! buggy sometimes ! boolean, if you want the legend box to be replace by text
 %       directly plotted on the figure, next to the each subplot's
 %       line/point
-% - titleFontSize: double, font size for titles
-% - labelFontSize: double, font size for x, y, z axis labels
-% - generalFontSize: double, font size for other figure elements (legends,
+% - LegendReorder: boolean, whether to reorder or not the legend elements
+%       according to their location on the graph
+% - TitleFontSize: double, font size for titles
+% - LabelFontSize: double, font size for x, y, z axis labels
+% - GeneralFontSize: double, font size for other figure elements (legends,
 %       colorbars, x/y/z ticks, text elements, ...)
 % - Font: string. See listfonts() for a list of all available fonts
-% - pointSize: double, size for point elements
-% - lineThickness: double, thickness value for lines 
+% - PointSize: double, size for point elements
+% - LineThickness: double, thickness value for lines 
 % - AxisTicks: string. Either 'out' (the tick marks come out of the axis)
 %       or 'in' (the tick marks go in of the axis)
 % - TickLength: number, determines size of ticks
@@ -92,9 +94,9 @@ function prettify_plot(varargin)
 % Set default parameter values
 options = struct('XLimits', 'keep', ... % set to 'keep' if you don't want any changes
     'YLimits', 'keep', ... % set to 'keep' if you don't want any changes
-    'CLimits', 'all', ... % set to 'keep' if you don't want any changes
+    'CLimits', 'keep', ... % set to 'keep' if you don't want any changes
     'LimitsRound', 2, ... % set to NaN if you don't want any changes
-    'SymmetricalCLimits', true, ...
+    'SymmetricalCLimits', false, ...
     'FigureColor', [1, 1, 1], ...
     'TextColor', [0, 0, 0], ...
     'NeutralColor', [0.6, 0.6, 0.6], ... % used if figure background color is set to 'none'
@@ -116,7 +118,7 @@ options = struct('XLimits', 'keep', ... % set to 'keep' if you don't want any ch
     'AxisAspectRatio', 'keep', ... % set to 'keep' if you don't want any changes
     'AxisTightness', 'keep', ... % BUGGY set to 'keep' if you don't want any changes 
     'AxisUnits', 'points', ...
-    'ChangeColormaps', true, ... % set to false if you don't want any changes
+    'ChangeColormaps', false, ... % set to false if you don't want any changes
     'DivergingColormap', '*RdBu', ...
     'SequentialColormap', 'YlOrRd', ...
     'PairedColormap', 'Paired', ...
@@ -166,7 +168,7 @@ if ~strcmp(options.FigureColor, 'none')
     end
 end
 % Get handles for current figure and axis
-currFig = gcf;
+currFig = gcf; 
 
 % Set color properties for figure and axis
 set(currFig, 'color', options.FigureColor);
@@ -196,7 +198,11 @@ end
 for iAx =  1:size(all_axes, 2)
     thisAx = all_axes(iAx);
     currAx = currFig_children(thisAx);
-    ax_pos = get(currAx, 'Position');
+    ax_pos(iAx,:) = get(currAx, 'Position');
+    % Get x and y limits
+        xlims_subplot(iAx, :) = currAx.XLim;
+        ylims_subplot(iAx, :) = currAx.YLim;
+        clims_subplot(iAx, :) = currAx.CLim;
 end
 prettify_axis_limits(all_axes, currFig_children, ...
     ax_pos, xlims_subplot, ylims_subplot, clims_subplot, ...
@@ -318,10 +324,7 @@ for iAx = 1:size(all_axes, 2)
             set(thisText, 'FontSize', options.GeneralFontSize, 'Color', mainColor);
         end
 
-        % Get x and y limits
-        xlims_subplot(iAx, :) = currAx.XLim;
-        ylims_subplot(iAx, :) = currAx.YLim;
-        clims_subplot(iAx, :) = currAx.CLim;
+        
 
         % adjust legend
         if ~isempty(currAx.Legend)

@@ -24,17 +24,19 @@ neuron3_response = 22 * -exp(-(time - (stimulus_onset + response_delay)) / respo
 % Plot the simulated responses
 subplot(3, 3, 1);
 plot(time, neuron1_response);
-xlim([0 1])
+title('Type 1');
 xlabel('Time');
 ylabel('Response');
 
-subplot(3, 3, 4);
+subplot(3, 3, 5);
 plot(time, neuron2_response);
+title('Type 2');
 xlabel('Time');
 ylabel('Response');
 
-subplot(3, 3, 7);
+subplot(3, 3, 9);
 plot(time, neuron3_response);
+title('Type 3');
 xlabel('Time');
 ylabel('Response');
 
@@ -65,29 +67,23 @@ colormap("jet")
 cb = colorbar;
 cb.Title.String = 'Activity';
 
-subplot(3, 3, 5);
+subplot(3, 3, 6);
 imagesc(time, [], neurons_2_matrix)
 colormap("jet")
 colorbar;
 
-subplot(3, 3, 8);
+subplot(3, 3, 10);
 imagesc(time, [], neurons_3_matrix)
 colormap("jet")
 colorbar;
 
 % plot some lines 
-average_psth1 = smoothdata(mean(neurons_1_matrix, 1),'gaussian', [0, 100]);
-average_psth2 =  smoothdata(mean(neurons_2_matrix, 1), 'gaussian',[0, 100]);
-average_psth3 =  smoothdata(mean(neurons_3_matrix, 1), 'gaussian',[0, 100]);
+average_psth1 = mean(psth1, 2);
+sem_psth1 = std(psth1, 0, 2) / sqrt(size(psth1, 2));
 
+average_psth2 = mean(psth2, 2);
+sem_psth2 = std(psth2, 0, 2) / sqrt(size(psth2, 2));
 
-subplot(3, 3, [3,6,9]); hold on;
-plot(time, average_psth2);
-plot(time, average_psth3);
-plot(time, average_psth1);
-
-
-legend('Type 1', 'Type 2', 'Type 3')
 
 
 
