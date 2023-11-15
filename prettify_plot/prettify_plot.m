@@ -68,8 +68,10 @@ function prettify_plot(varargin)
 % - TickLength: number, determines size of ticks
 % - TickWidth: number, determines size of ticks
 % - AxisBox: String. Either 'off' (no box) or 'on' (a box)
-% - AxisAspectRatio: String. Either 'equal', 'square' or 'image'
-% - AxisTightness: String. Either 'tickaligned', 'tight' or 'padded'
+% - AxisAspectRatio: String. Either 'equal', 'square', or 'image'. Set as
+%   'keep' if you don't want any changes.
+% - AxisTightness: String. Either 'tickaligned', 'tight' or 'padded'.Set as
+%   'keep' if you don't want any changes.
 % - AxisUnits - not in use yet
 % - ChangeColormaps: boolean, whether to adjust the colormaps or not
 % - DivergingColormap: String corresponding to the brewermap colormap for
@@ -116,7 +118,7 @@ options = struct('XLimits', 'keep', ... % set to 'keep' if you don't want any ch
     'AxisBox', 'off', ...
     'AxisGrid', 'off', ...
     'AxisAspectRatio', 'keep', ... % set to 'keep' if you don't want any changes
-    'AxisTightness', 'keep', ... % BUGGY set to 'keep' if you don't want any changes 
+    'AxisTightness', 'tight', ... % set to 'keep' if you don't want any changes 
     'AxisUnits', 'points', ...
     'ChangeColormaps', false, ... % set to false if you don't want any changes
     'DivergingColormap', '*RdBu', ...
