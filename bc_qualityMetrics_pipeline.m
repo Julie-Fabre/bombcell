@@ -88,9 +88,9 @@ number_of_spikes_for_this_cluster = qMetric.nSpikes(qMetric.phy_clusterID == ori
 
 
 %% example: get unit labels 
-% the output of `uunitType = bc_getQualityUnitType(param, qMetric);` gives
-% the unitType in a number format. 1 inidicates good units, 2 inidicates mua units, 3
-% indicates non-somatic units and 0 indicates noise units (see below) 
+% the output of `unitType = bc_getQualityUnitType(param, qMetric);` gives
+% the unitType in a number format. 1 indicates good units, 2 indicates mua units, 3
+% indicates non-somatic units and 0 indciates noise units (see below) 
  
 goodUnits = unitType == 1;
 muaUnits = unitType == 2;
