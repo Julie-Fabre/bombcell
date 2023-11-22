@@ -82,7 +82,6 @@ maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
     spikeTimes_samples, spikeTemplates, param.reextractRaw, savePath, param.verbose); % takes ~10' for
 % an average dataset, the first time it is run, <1min after that
 
-
 % remove any duplicate spikes
 [uniqueTemplates, ~, spikeTimes_samples, spikeTemplates, templateAmplitudes, ...
     pcFeatures, rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio, ...
@@ -177,6 +176,8 @@ for iUnit = 1:size(uniqueTemplates, 1)
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
             param.nChannelsIsoDist, param.plotDetails); %QQ
     end
+
+    %% display progress
     if ((mod(iUnit, 50) == 0) || iUnit == length(uniqueTemplates)) && param.verbose
         fprintf(['\n   Finished ', num2str(iUnit), ' / ', num2str(length(uniqueTemplates)), ' units.']);
     end
