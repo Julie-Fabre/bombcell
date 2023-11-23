@@ -40,7 +40,7 @@ if param.plotGlobal
     end
     uniqueTemplates_idx = 1:size(uniqueTemplates, 1);
     for iUnitType = 0:length(unitTypeString)-1
-        subplot(2, 2, iUnitType+1)
+        subplot(2, ceil(length(unitTypeString)/2), iUnitType+1)
         title([unitTypeString{iUnitType+1}, ' unit template waveforms']);
         hold on;
         singleU = uniqueTemplates_idx(find(unitType == iUnitType));
