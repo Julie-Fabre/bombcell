@@ -36,7 +36,7 @@ if param.plotGlobal
     if param.splitGoodAndMua_NonSomatic == 0
         unitTypeString = {'Noise', 'Good', 'MUA', 'Non-somatic'};
     else
-        unitTypeString = {'Noise', 'Somatic Good', 'Somatic MUA', 'Non-somatic MUA', 'Non-somatic Good'};
+        unitTypeString = {'Noise', 'Somatic Good', 'Somatic MUA', 'Non-somatic Good', 'Non-somatic MUA'};
     end
     uniqueTemplates_idx = 1:size(uniqueTemplates, 1);
     for iUnitType = 0:length(unitTypeString)-1
