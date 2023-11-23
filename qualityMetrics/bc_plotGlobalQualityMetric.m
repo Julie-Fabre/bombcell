@@ -32,10 +32,14 @@ if param.plotGlobal
     %% plot summary of waveforms classified as noise/mua/good
     % 1. single/multi/noise/axonal waveforms
     figure('Color', 'w');
-
-    unitTypeString = {'Noise', 'Single', 'Multi', 'Non-somatic'};
+    
+    if param.splitGoodAndMua_NonSomatic == 0
+        unitTypeString = {'Noise', 'Good', 'MUA', 'Non-somatic'};
+    else
+        unitTypeString = {'Noise', 'Somatic Good', 'Somatic MUA', 'Non-somatic MUA', 'Non-somatic Good'};
+    end
     uniqueTemplates_idx = 1:size(uniqueTemplates, 1);
-    for iUnitType = 0:3
+    for iUnitType = 0:length(unitTypeString)-1
         subplot(2, 2, iUnitType+1)
         title([unitTypeString{iUnitType+1}, ' unit template waveforms']);
         hold on;
