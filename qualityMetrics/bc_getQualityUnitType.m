@@ -12,7 +12,10 @@ function [unitType, unitType_string] = bc_getQualityUnitType(param, qMetric, sav
 %   unitType==0 defines all noise units
 %   unitType==1 defines all good units
 %   unitType==2 defines all MUA units
-%   unitType==3 defines all non-somatic units
+%   unitType==3 defines all non-somatic units. If
+%       param.splitGoodAndMua_NonSomatic is true, it specifically defines good
+%       non-somatic units
+%   unitType==4 defines all MUA non-somatic units if param.splitGoodAndMua_NonSomatic is true
 % unitType_string - nUnits x 1 string array indicating the type of each unit (good, mua, noise, non-somatic).
 
 

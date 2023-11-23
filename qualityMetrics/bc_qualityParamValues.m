@@ -99,7 +99,7 @@ param.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value
     % in a units waveform to give the minimum prominence to detect peaks using
     % matlab's findpeaks function.
 
-% recording parametrs
+% recording parameters
 param.ephys_sample_rate = 30000; % samples per second
 param.nChannels = 385; %number of recorded channels (including any sync channels)
     % recorded in the raw data. This is usually 384 or 385 for neuropixels
@@ -120,16 +120,10 @@ param.nChannelsIsoDist = 4; % number of nearby channels to use in distance metri
 
 
 %% classifying units into good/mua/noise parameters 
-param.minAmplitude = 20; % in uV
-param.maxRPVviolations = 0.1; % fraction
-param.maxPercSpikesMissing = 20; % in percentage
-param.minNumSpikes = 300; % number of spikes
+% whether to classify non-somatic units 
+param.splitGoodAndMua_NonSomatic = 0;
 
-param.maxDrift = 100;
-param.minPresenceRatio = 0.7;
-param.minSNR = 0.1;
-
-%waveform 
+% waveform 
 param.maxNPeaks = 2; % maximum number of peaks
 param.maxNTroughs = 1; % maximum number of troughs
 param.somatic = 1; % keep only somatic units, and reject non-somatic ones
@@ -139,8 +133,18 @@ param.minSpatialDecaySlope = -0.003; % in a.u./um
 param.maxWvBaselineFraction = 0.3; % maximum absolute value in waveform baseline
     % should not exceed this fraction of the waveform's abolute peak value
 
-%distance metrics
+% distance metrics
 param.isoDmin = 20; % minimum isolation distance value
 param.lratioMax = 0.1; % maximum l-ratio value
 param.ssMin = NaN; % minimum silhouette score 
+
+% other classification params
+param.minAmplitude = 20; % in uV
+param.maxRPVviolations = 0.1; % fraction
+param.maxPercSpikesMissing = 20; % in percentage
+param.minNumSpikes = 300; % number of spikes
+param.maxDrift = 100;
+param.minPresenceRatio = 0.7;
+param.minSNR = 0.1;
+
 end
