@@ -28,6 +28,8 @@ defaultValues.gain_to_uV = NaN;
 defaultValues.saveAsTSV = 0;
 defaultValues.unitType_for_phy = 0;
 
+% separate good from mua in non-somatic
+defaultValues.splitGoodAndMua_NonSomatic = 0;
 
 %% Check for missing fields and add them with default value
 [param_complete, missingFields] = bc_addMissingFieldsWithDefault(param, defaultValues);

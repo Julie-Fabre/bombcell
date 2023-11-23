@@ -17,10 +17,10 @@ function [unitType, unitType_string] = bc_getQualityUnitType(param, qMetric, sav
 
 
 %% Sanitize and check inputs 
-% sanitize parameter input
+% Sanitize parameter input
 param = bc_checkParameterFields(param);
 
-% check whether to save this classification for automated loading by phy
+% Check whether to save this classification for automated loading by phy
 if (nargin < 3 || isempty(savePath)) && param.unitType_for_phy == 1
     savePath = pwd;
     warning('no save path specified. using current working directory')
@@ -42,9 +42,6 @@ unitType = nan(length(qMetric.percentageSpikesMissing_gaussian), 1);
 unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | ...
     qMetric.spatialDecaySlope > param.minSpatialDecaySlope | qMetric.waveformDuration_peakTrough < param.minWvDuration | ...
     qMetric.waveformDuration_peakTrough > param.maxWvDuration | qMetric.waveformBaselineFlatness > param.maxWvBaselineFraction) = 0; % NOISE
-
-% Classify non-somatic units
-unitType(qMetric.isSomatic ~= param.somatic & isnan(unitType)) = 3; % NON-SOMATIC
 
 % Classify mua units
 unitType((qMetric.percentageSpikesMissing_gaussian > param.maxPercSpikesMissing | qMetric.nSpikes < param.minNumSpikes & ...
@@ -68,12 +65,25 @@ end
 % Classify good units
 unitType(isnan(unitType)) = 1; % SINGLE SEXY UNIT
 
+% Classify non-somatic units
+if param.splitGoodAndMua_NonSomatic
+    unitType(qMetric.isSomatic ~= param.somatic & unitType == 1) = 3; % GOOD NON-SOMATIC
+    unitType(qMetric.isSomatic ~= param.somatic & unitType == 2) = 4; % MUA NON-SOMATIC
+else
+    unitType(qMetric.isSomatic ~= param.somatic & ismember(unitType,[1 2])) = 3; % NON-SOMATIC
+end
+
 % Get unit type string
 unitType_string = cell(size(unitType, 1), 1);
 unitType_string(unitType == 0) = {'NOISE'};
-unitType_string(unitType == 3) = {'NON-SOMA'};
 unitType_string(unitType == 1) = {'GOOD'};
 unitType_string(unitType == 2) = {'MUA'};
+if param.splitGoodAndMua_NonSomatic
+    unitType_string(unitType == 3) = {'NON-SOMA GOOD'};
+    unitType_string(unitType == 4) = {'NON-SOMA MUA'};
+else
+    unitType_string(unitType == 3) = {'NON-SOMA'};
+end
 
 %% Save classification for phy
 % save unitType for phy if param.unitType_for_phy is equal to 1

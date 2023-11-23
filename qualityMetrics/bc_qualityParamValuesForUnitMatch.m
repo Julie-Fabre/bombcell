@@ -77,14 +77,22 @@ paramBC.nChannels = 385; %number of recorded channels (including any sync channe
 % recorded in the raw data. This is usually 384 or 385 for neuropixels
 % recordings
 paramBC.nSyncChannels = 1;
-if  ~isempty(ephysMetaDir)
+if exist('ephysMetaDir','var') && ~isempty(ephysMetaDir)
     paramBC.ephysMetaFile = [ephysMetaDir.folder, filesep, ephysMetaDir.name];
     paramBC.gain_to_uV = NaN;
 else
     paramBC.ephysMetaFile = 'NaN';
-    paramBC.gain_to_uV = gain_to_uV;
+    if exist('gain_to_uV','var')
+        paramBC.gain_to_uV = gain_to_uV;
+    else
+        paramBC.gain_to_uV = NaN;
+    end
 end
-paramBC.rawFile = rawFile;
+if exist('rawFile','var')
+    paramBC.rawFile = rawFile;
+else
+    paramBC.rawFile = 'NaN';
+end
 
 % distance metric parameters
 paramBC.computeDistanceMetrics = 0; % whether to compute distance metrics - this can be time consuming 
@@ -115,6 +123,10 @@ paramBC.maxWvBaselineFraction = 0.3;
 paramBC.isoDmin = 20; 
 paramBC.lratioMax = 0.1;
 paramBC.ssMin = NaN; 
+
+% split good and mua non-somatic
+paramBC.splitGoodAndMua_NonSomatic = 1;
+
 end
 % %bc_qualityParamValues
 % BCparam = struct;
