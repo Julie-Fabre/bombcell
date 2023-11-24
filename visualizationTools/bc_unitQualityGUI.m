@@ -23,7 +23,12 @@ iCount = 1;
 uniqueTemps = unique(ephysData.spike_templates);
 goodUnit_idx = find(unitType == 1);
 multiUnit_idx = find(unitType == 2);
-noiseUnit_idx = find(unitType == 0 | unitType == 3); % noise or non-somatic
+noiseUnit_idx = find(unitType == 0); % noise 
+if param.splitGoodAndMua_NonSomatic
+    nonSomaUnit_idx = find(unitType == 3 | unitType == 4);
+else
+    nonSomaUnit_idx = find(unitType == 3);
+end
 
 %% plot initial conditions
 iChunk = 1;
@@ -48,6 +53,10 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, 
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'n') %toggle to next  noise/non-somatic unit
             iCluster = noiseUnit_idx(find(noiseUnit_idx > iCluster, 1, 'first'));
+            updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
+                probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
+       elseif strcmpi(evnt.Key, 'a') %toggle to next  noise/non-somatic unit
+            iCluster = nonSomaUnit_idx(find(nonSomaUnit_idx > iCluster, 1, 'first'));
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'leftarrow')
@@ -293,17 +302,26 @@ function updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, i
 guiData = guidata(unitQualityGuiHandle);
 thisUnit = uniqueTemps(iCluster);
 colorsGdBad = [1, 0, 0; 0, 0.5, 0];
-
+colorsSomatic = [0.25,0.41,0.88; 0, 0.5, 0];
 %% main title
 if unitType(iCluster) == 1
     set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
         ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), single unit'], 'Color', [0, .5, 0]);
-elseif unitType(iCluster) == 0 || unitType(iCluster) == 3
+elseif unitType(iCluster) == 0 
     set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
         ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), noise/non-somatic'], 'Color', [1, 0, 0]);
 elseif unitType(iCluster) == 2
     set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
         ' (phy ID #: ' num2str(thisUnit-1)  '; qMetric row #: ' num2str(iCluster) '), multi-unit'], 'Color', [1, 0, 1]);
+elseif unitType(iCluster) == 3 && param.splitGoodAndMua_NonSomatic
+   set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
+        ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), non-somatic single unit'], 'Color', [0.25,0.41,0.88]);
+elseif unitType(iCluster) == 3
+   set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
+        ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), non-somatic unit'], 'Color', [0.25,0.41,0.88]);
+elseif unitType(iCluster) == 4
+   set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
+        ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), non-somatic multi unit'], 'Color', [ 0.54, 0, 0.54]);
 end
 
 %% plot 1: update curr unit location
@@ -359,10 +377,11 @@ tempWvTitleText = ['\\fontsize{9}Template waveform: {\\color[rgb]{%s}# detected 
     '\\color[rgb]{%s}is somatic,  \\color[rgb]{%s}spatial decay, \\color[rgb]{%s}baseline flatness, ' newline, ...
     '\\color[rgb]{%s}waveform duration}'];
 
-set(guiData.tempTitle, 'String', sprintf(tempWvTitleText, num2str(colorsGdBad(double(qMetric.nPeaks(iCluster) <= param.maxNPeaks || qMetric.nTroughs(iCluster) <= param.maxNTroughs)+1, :)), ...
-    num2str(colorsGdBad(double(qMetric.isSomatic(iCluster) == 1)+1, :)), ...
-    num2str(colorsGdBad(double(qMetric.spatialDecaySlope(iCluster) < param.minSpatialDecaySlope)+1, :)),...
-    num2str(colorsGdBad(double(qMetric.waveformBaselineFlatness(iCluster) < param.maxWvBaselineFraction)+1, :)),...
+set(guiData.tempTitle, 'String', sprintf(tempWvTitleText, ...
+    num2str(colorsGdBad(double(qMetric.nPeaks(iCluster) <= param.maxNPeaks || qMetric.nTroughs(iCluster) <= param.maxNTroughs)+1, :)), ...
+    num2str(colorsSomatic(double(qMetric.isSomatic(iCluster) == 1)+1, :)), ...
+    num2str(colorsGdBad(double(qMetric.spatialDecaySlope(iCluster) <= param.minSpatialDecaySlope)+1, :)),...
+    num2str(colorsGdBad(double(qMetric.waveformBaselineFlatness(iCluster) <= param.maxWvBaselineFraction)+1, :)),...
     num2str(colorsGdBad(double(qMetric.waveformDuration_peakTrough(iCluster) >= param.minWvDuration && ...
     qMetric.waveformDuration_peakTrough(iCluster) <= param.maxWvDuration)+1, :))));
 
@@ -393,7 +412,7 @@ if param.extractRaw
     set(guiData.rawLegend, 'String', ['Amplitude =', num2str(round(qMetric.rawAmplitude(iCluster))), 'uV', newline, ...
         'SNR =', num2str(qMetric.signalToNoiseRatio(iCluster))])
     
-    if qMetric.rawAmplitude(iCluster) > param.minAmplitude && qMetric.signalToNoiseRatio(iCluster) >= param.minSNR
+    if qMetric.rawAmplitude(iCluster) >= param.minAmplitude && qMetric.signalToNoiseRatio(iCluster) >= param.minSNR
         set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{0 0.5 0} amplitude, \color[rgb]{0 0.5 0} SNR ']);
     elseif qMetric.rawAmplitude(iCluster) > param.minAmplitude
          set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{0 0.5 0} amplitude, \color[rgb]{1 0 0} SNR ']);
@@ -506,9 +525,9 @@ set(guiData.ampliAx.YAxis(2), 'Limits', [0, 2 * ceil(max(n))])
 set(guiData.ampliLine,'XData',[qMetric.useTheseTimesStart(iCluster), qMetric.useTheseTimesStop(iCluster)],...
     'YData', [max(theseAmplis)*0.9, max(theseAmplis)*0.9]); 
 
-if qMetric.nSpikes(iCluster) > param.minNumSpikes && qMetric.presenceRatio(iCluster) >= param.minPresenceRatio
+if qMetric.nSpikes(iCluster) >= param.minNumSpikes && qMetric.presenceRatio(iCluster) >= param.minPresenceRatio
     set(guiData.ampliTitle, 'String', '\color[rgb]{0 0 0}Spikes: \color[rgb]{0 .5 0}number, \color[rgb]{0 .5 0}presence ratio');
-elseif qMetric.nSpikes(iCluster) > param.minNumSpikes
+elseif qMetric.nSpikes(iCluster) >= param.minNumSpikes
     set(guiData.ampliTitle, 'String', '\color[rgb]{0 0 0}Spikes: \color[rgb]{0 .5 0}number, \color[rgb]{1 0 1}presence ratio');
 else
     set(guiData.ampliTitle, 'String', '\color[rgb]{0 0 0}Spikes: \color[rgb]{1 0 1}number, \color[rgb]{1 0 1}presence ratio');
