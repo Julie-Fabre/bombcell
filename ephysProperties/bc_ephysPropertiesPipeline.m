@@ -1,26 +1,22 @@
-function ephysProperties = bc_ephysPropertiesPipeline_JF(animal, day, site, recording, experiment, rerun, runEP, region)
+function ephysProperties = bc_ephysPropertiesPipeline(ephysPath, savePath, rerunEP, region)
 
 %% load ephys data 
 paramEP = bc_ephysPropValues;
 
 %% compute ephys properties 
-ephysDirPath = AP_cortexlab_filenameJF(animal, day, experiment, 'ephys_dir',site, recording);
-savePath = fullfile(ephysDirPath, 'ephysProperties');
 ephysPropertiesExist = dir(fullfile(savePath, 'templates._bc_ephysProperties.parquet'));
 
-if (runEP && isempty(ephysPropertiesExist)) || rerun
+if isempty(ephysPropertiesExist) || rerunEP
 
-    ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site, recording);
-    [spikeTimes_samples, spikeTemplates, templateWaveforms_whitened,~, ~, ~, ~] = bc_loadEphysData(ephysPath);
-    winv = readNPY([ephysPath filesep 'whitening_mat_inv.npy']);
-    ephysProperties = bc_computeAllEphysProperties(spikeTimes_samples, spikeTemplates, templateWaveforms_whitened, winv, paramEP, savePath);
+    [spikeTimes_samples, spikeTemplates, templateWaveforms,~, ~, ~, ~] = bc_loadEphysData(ephysPath);
+    ephysProperties = bc_computeAllEphysProperties(spikeTimes_samples, spikeTemplates, templateWaveforms, paramEP, savePath);
 
 elseif ~isempty(ephysPropertiesExist)
     [paramEP, ephysProperties, ~] = bc_loadSavedProperties(savePath); 
 end
 
 if ~isempty(region)
-    % classify cells 
+    % classify striatal, GPe and cortical cells
 end
 
 end

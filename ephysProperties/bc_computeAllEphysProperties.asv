@@ -1,13 +1,13 @@
-function ephysProperties = bc_computeAllEphysProperties(spikeTimes_samples, spikeTemplates, templateWaveforms_whitened, winv, paramEP, savePath)
+function [ephysProperties, unitClassif] = bc_computeAllEphysProperties(spikeTimes_samples, spikeTemplates, templateWaveforms, paramEP, savePath)
 
 ephysProperties = struct;
 uniqueTemplates = unique(spikeTemplates);
 spikeTimes = spikeTimes_samples ./ paramEP.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
 %timeChunks = min(spikeTimes):param.deltaTimeChunk:max(spikeTimes);
-[maxChannels, templateWaveforms] = bc_getWaveformMaxChannelEP(templateWaveforms_whitened, winv);
+maxChannels = bc_getWaveformMaxChannelEP(templateWaveforms);
 %% loop through units and get ephys properties
-% QQ didvide in time chunks , add plotThis 
-paramEP.plotThis = 0;
+% QQ divide in time chunks , add plotThis 
+
 fprintf('\n Extracting ephys properties ... ')
 
 for iUnit = 1:length(uniqueTemplates)
@@ -16,21 +16,67 @@ for iUnit = 1:length(uniqueTemplates)
     ephysProperties.clusterID(iUnit) = thisUnit;
     theseSpikeTimes = spikeTimes(spikeTemplates == thisUnit);
 
-    %% compute ACG
+    %% ACG-based metrics  
     ephysProperties.acg(iUnit, :) = bc_computeACG(theseSpikeTimes, paramEP.ACGbinSize, paramEP.ACGduration, paramEP.plotThis);
-    
-    %% compute post spike suppression
-    ephysProperties.postSpikeSuppression(iUnit) = bc_computePSS(ephysProperties.acg(iUnit, :));
 
-    %% compute template duration
-    ephysProperties.templateDuration(iUnit) = bc_computeTemplateWaveformDuration(templateWaveforms(thisUnit, :, maxChannels(iUnit)),...
+    [ephysProperties.postSpikeSuppression_ms(iUnit), ephysProperties.tauRise_ms(iUnit), ephysProperties.tauDecay_ms(iUnit),...
+        ephysProperties.refractoryPeriod_ms(iUnit)] = bc_computeACGprop(ephysProperties.acg(iUnit, :), paramEP.ACGbinSize, paramEP.ACGduration);
+    
+    %% ISI-based metrics
+    ISIs = diff(spikeTimes);
+
+    [ephysProperties.proplongISI(iUnit), ephysProperties.coefficient_variation(iUnit),...
+         ephysProperties.coefficient_variation2(iUnit),  ephysProperties.isi_skewness(iUnit)] = bc_computeISIprop(ISIs, theseSpikeTimes);
+
+    %% Waveform-based metrics
+    bc_computeWaveformProp()
+     ephysProperties.templateDuration(iUnit) = bc_computeTemplateWaveformDuration(templateWaveforms(thisUnit, :, maxChannels(iUnit)),...
         paramEP.ephys_sample_rate);
     
-    %% compute firing rate
+    %% Burstiness metrics 
+
+
+    %% compute spike metrics
+    % firing rate
     ephysProperties.spike_rateSimple(iUnit) = bc_computeFR(theseSpikeTimes);
 
-    %% compute proportion long ISIs
-    ephysProperties.propLongISI(iUnit) = bc_computePropLongISI(theseSpikeTimes, paramEP.longISI);
+    % fano factor 
+    spikeCounts = histcounts(spikeTimes, 'BinWidth', window);
+    FanoFactor = var(spikeCounts) / mean(spikeCounts);
+
+ 
+    % Assuming 'waveform' is your waveform data vector
+% And 'time' is a corresponding time vector
+
+% Find the peak and trough
+[peakAmplitude, peakIndex] = max(waveform);
+[troughAmplitude, troughIndex] = min(waveform(peakIndex:end));
+troughIndex = troughIndex + peakIndex - 1; % Adjust index
+
+% Compute Peak-to-Trough Duration
+peakToTroughDuration = time(troughIndex) - time(peakIndex);
+
+% Compute Half-Width
+halfAmplitude = peakAmplitude / 2;
+aboveHalfIndices = find(waveform >= halfAmplitude);
+halfWidthStartIndex = aboveHalfIndices(find(aboveHalfIndices < peakIndex, 1, 'last'));
+halfWidthEndIndex = aboveHalfIndices(find(aboveHalfIndices > peakIndex, 1));
+halfWidth = time(halfWidthEndIndex) - time(halfWidthStartIndex);
+
+% Compute Rise Time
+riseTime = time(peakIndex) - time(halfWidthStartIndex);
+
+% Compute Decay Time
+decayTime = time(halfWidthEndIndex) - time(peakIndex);
+
+% Compute Rise Slope (Max Slope during the Rising Phase)
+riseSlope = max(diff(waveform(halfWidthStartIndex:peakIndex)) ./ diff(time(halfWidthStartIndex:peakIndex)));
+
+% Compute Decay Slope (Max Slope during the Falling Phase)
+decaySlope = min(diff(waveform(peakIndex:halfWidthEndIndex)) ./ diff(time(peakIndex:halfWidthEndIndex)));
+
+
+
 
     %% cv, cv2
 
