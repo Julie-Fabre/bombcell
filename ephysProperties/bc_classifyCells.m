@@ -26,7 +26,8 @@ elseif ismember(region, {'Ctx', 'Cortex', 'Cortical'}) % cortex, classification 
      unitClassif(ephysProperties.waveformDuration_peakTrough_us <= paramEP.templateDuration_Ctx_threshold) = {'Narrow-spiking'};
 
 
-elseif ismember(region, {'GPe', 'Globus Pallidus external'}) % GPe
+% elseif ismember(region, {'GPe', 'Globus Pallidus external'}) % GPe - work
+% in progress  
 end
 
 end
