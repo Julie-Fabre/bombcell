@@ -105,6 +105,10 @@ label_table = table(unitType);
 writetable(label_table,[savePath filesep 'templates._bc_unit_labels.tsv'],'FileType', 'text','Delimiter','\t');  
       
 
+%% optional: additionally compute ephys properties for each unit 
+rerunEP = 0;
+region = ''; % options include 'Striatum' and 'Cortex'
+[ephysProperties, unitClassif] = bc_ephysPropertiesPipeline(ephysKilosortPath, savePath, rerunEP, region);
 
 
 

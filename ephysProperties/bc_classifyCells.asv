@@ -1,0 +1,17 @@
+function unitClassif = bc_classifyCells(ephysProperties, paramEP)
+% classify striatal, GPe and cortical cells
+unitClassif = cell(size(ephysProperties,1),1);
+
+if ismember(region, {'CP', 'STR', 'Striatum', 'DMS', 'DLS', 'PS'}) %striatum, classification as in Peters et al., Nature, 2021
+    unitClassif() = 'MSN';
+    unitClassif() = 'FSI';
+    unitClassif() = 'TAN';
+    unitClassif() = 'UIN';
+
+    figure();
+    scatter3(ephysProperties.waveformDuration_peakTrough_us, ephysProperties.postSpikeSuppression_ms, ephysProperties.proplongISI);
+elseif ismember(region, {'Ctx', 'Cortical'}) % cortex, classification as in Peters et al., Cell Reports, 2022
+elseif ismember(region, {'GPe', 'Globus Pallidus external'}) %striatum
+end
+
+end

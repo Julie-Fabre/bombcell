@@ -16,9 +16,7 @@ elseif ~isempty(ephysPropertiesExist)
 end
 
 %% classify cells 
-if ~isempty(region) &&...
-        ismember(region, {'CP', 'STR', 'Striatum', 'DMS', 'DLS', 'PS',...
-        'Ctx', 'Cortical', 'Cortex'}) % cortex and striaum spelled every possible way 
+if ~isempty(region) && ismember(region, {'CP', 'STR', 'Striatum', 'DMS', 'DLS', 'PS','Ctx', 'Cortical','GPe', 'Globus Pallidus external'})
     unitClassif = bc_classifyCells(ephysProperties, paramEP);
     
 else

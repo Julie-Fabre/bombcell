@@ -1,84 +1,91 @@
-function ephysProperties = bc_computeAllEphysProperties(spikeTimes_samples, spikeTemplates, templateWaveforms_whitened, winv, paramEP, savePath)
+function [ephysProperties, unitClassif] = bc_computeAllEphysProperties(spikeTimes_samples, spikeTemplates, templateWaveforms,...
+     templateAmplitudes, pcFeatures, channelPositions, paramEP, savePath)
 
 ephysProperties = struct;
-uniqueTemplates = unique(spikeTemplates);
+
+% get unit max channels
+maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
+
+% extract and save or load in raw waveforms
+[rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extractRawWaveformsFast(paramEP, ...
+    spikeTimes_samples, spikeTemplates, paramEP.reextractRaw, savePath, paramEP.verbose); % takes ~10' for
+% an average dataset, the first time it is run, <1min after that
+
+% remove any duplicate spikes
+[uniqueTemplates, ~, spikeTimes_samples, spikeTemplates, ~, ~, ~, ~, ~, ...
+    ephysProperties.maxChannels] = ...
+    bc_removeDuplicateSpikes(spikeTimes_samples, spikeTemplates, templateAmplitudes, ...
+    pcFeatures, rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio, ...
+    maxChannels, paramEP.removeDuplicateSpikes, paramEP.duplicateSpikeWindow_s, ...
+    paramEP.ephys_sample_rate, paramEP.saveSpikes_withoutDuplicates, savePath, paramEP.recomputeDuplicateSpikes);
+
 spikeTimes = spikeTimes_samples ./ paramEP.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
-%timeChunks = min(spikeTimes):param.deltaTimeChunk:max(spikeTimes);
-[maxChannels, templateWaveforms] = bc_getWaveformMaxChannelEP(templateWaveforms_whitened, winv);
-%% loop through units and get ephys properties
-% QQ divide in time chunks , add plotThis 
+
+% Work in progress - divide recording into time chunks like in quality  metrics
+% spikeTimes_seconds = spikeTimes_samples ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
+% if param.computeTimeChunks
+%     timeChunks = [min(spikeTimes_seconds):param.deltaTimeChunk:max(spikeTimes_seconds), max(spikeTimes_seconds)];
+% else
+%     timeChunks = [min(spikeTimes_seconds), max(spikeTimes_seconds)];
+% end
 
 fprintf('\n Extracting ephys properties ... ')
 
 for iUnit = 1:length(uniqueTemplates)
     clearvars thisUnit theseSpikeTimes theseAmplis
+
     thisUnit = uniqueTemplates(iUnit);
-    ephysProperties.clusterID(iUnit) = thisUnit;
+    ephysProperties.phy_clusterID(iUnit) = thisUnit - 1; % this is the cluster ID as it appears in phy
+    ephysProperties.clusterID(iUnit) = thisUnit; % this is the cluster ID as it appears in phy, 1-indexed (adding 1)
     theseSpikeTimes = spikeTimes(spikeTemplates == thisUnit);
 
-    %% compute ACG
+    %% ACG-based properties  
     ephysProperties.acg(iUnit, :) = bc_computeACG(theseSpikeTimes, paramEP.ACGbinSize, paramEP.ACGduration, paramEP.plotThis);
+
+    [ephysProperties.postSpikeSuppression_ms(iUnit), ephysProperties.tauRise_ms(iUnit), ephysProperties.tauDecay_ms(iUnit),...
+        ephysProperties.refractoryPeriod_ms(iUnit)] = bc_computeACGprop(ephysProperties.acg(iUnit, :), paramEP.ACGbinSize, paramEP.ACGduration);
     
-    %% compute post spike suppression
-    ephysProperties.postSpikeSuppression(iUnit) = bc_computePSS(ephysProperties.acg(iUnit, :));
+    %% ISI-based properties
+    ISIs = diff(spikeTimes);
 
-    %% compute template duration
-    ephysProperties.templateDuration(iUnit) = bc_computeTemplateWaveformDuration(templateWaveforms(thisUnit, :, maxChannels(iUnit)),...
-        paramEP.ephys_sample_rate);
+    [ephysProperties.proplongISI(iUnit), ephysProperties.coefficient_variation(iUnit),...
+         ephysProperties.coefficient_variation2(iUnit),  ephysProperties.isi_skewness(iUnit)] = bc_computeISIprop(ISIs, theseSpikeTimes);
+
+    %% Waveform-based properties
+    % Work in progress: add option to use mean raw waveform
+    [ephysProperties.waveformDuration_peakTrough_us(iUnit), ephysProperties.halfWidth_ms(iUnit), ...
+        ephysProperties.peakTroughRatio(iUnit), ephysProperties.firstPeakTroughRatio(iUnit),...
+        ephysProperties.nPeaks(iUnit), ephysProperties.nTroughs(iUnit), ephysProperties.isSomatic(iUnit)] =...
+        bc_computeWaveformProp(templateWaveforms,thisUnit, ephysProperties.maxChannels(thisUnit),...
+        paramEP.ephys_sample_rate, channelPositions, paramEP.minThreshDetectPeaksTroughs);
+
+    %% Burstiness properties
+    % Work in progress
+
+    %% Spike properties
+    [ephysProperties.mean_firingRate(iUnit), ephysProperties.fanoFactor(iUnit),...
+        ephysProperties.max_FiringRate(iUnit), ephysProperties.min_FiringRate(iUnit)] = bc_computeSpikeProp(theseSpikeTimes);
     
-    %% compute firing rate
-    ephysProperties.spike_rateSimple(iUnit) = bc_computeFR(theseSpikeTimes);
 
-    %% compute proportion long ISIs
-    ephysProperties.propLongISI(iUnit) = bc_computePropLongISI(theseSpikeTimes, paramEP.longISI);
-
-    %% cv, cv2
-
-    %% Fano factor
-
-    %% skewISI
-
-    %% max firing rate
-
-    %% bursting things
+    %% Progress info
     if ((mod(iUnit, 100) == 0) || iUnit == length(uniqueTemplates)) && paramEP.verbose
        fprintf(['\n   Finished ', num2str(iUnit), ' / ', num2str(length(uniqueTemplates)), ' units.']);
     end
 end
 
 %% save ephys properties
+ephysProperties.maxChannels = ephysProperties.maxChannels(uniqueTemplates)';
+
 fprintf('\n Finished extracting ephys properties')
 try
     bc_saveEphysProperties(paramEP, ephysProperties, savePath);
     fprintf('\n Saved ephys properties to %s \n', savePath)
-    %% get some summary plots
-    
+
 catch
     warning('\n Warning, ephys properties not saved! \n')
 end
-%% plot
-paramEP.plotThis=0;
-if paramEP.plotThis
-    % QQ plot histograms of each metric with the cutoffs set in params
-    figure();
-    subplot(311)
-    scatter(abs(ephysProperties.templateDuration), ephysProperties.postSpikeSuppression);
-    xlabel('waveform duration (us)')
-    ylabel('post spike suppression')
-    makepretty;
-    
-    subplot(312)
-    scatter(ephysProperties.postSpikeSuppression, ephysProperties.propLongISI);
-    xlabel('post spike suppression')
-    ylabel('prop long ISI')
-    makepretty;
 
-    subplot(313)
-    scatter(abs(ephysProperties.templateDuration), ephysProperties.propLongISI);
-    xlabel('waveform duration (us)')
-    ylabel('prop long ISI')
-    makepretty;
-end
+%% get some summary plots - work in progress 
 
 
 end
