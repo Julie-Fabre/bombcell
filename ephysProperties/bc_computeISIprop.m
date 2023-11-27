@@ -43,7 +43,15 @@ for curr_bin = find(use_spiking_stat_bins)
     %isi_ratios = [isi_ratios; (2 * abs(curr_isi(2:end)-curr_isi(1:end-1))) ./ ...
     %    (curr_isi(2:end) + curr_isi(1:end-1))]; %WRONG, see Holt 1996
 end
-
+if isempty(curr_bin)
+    coefficient_variation = NaN;
+    
+    % Coefficient of Variation 2 (CV2) of ISI
+    coefficient_variation2 = NaN;
+    
+    % ISI Skewness
+    isi_skewness = NaN;
+end
 
 propLongISI = long_isi_total / ...
     (sum(use_spiking_stat_bins(:)) * spiking_stat_window);
