@@ -16,14 +16,11 @@ elseif ~isempty(ephysPropertiesExist)
 end
 
 %% classify cells 
-if ~isempty(region)
-    % classify striatal, GPe and cortical cells
-    if ismember(region, {'CP', 'STR', 'Striatum', 'DMS', 'DLS', 'PS'}) %striatum 
-    elseif ismember(region, {'CP', 'STR', 'Striatum', 'DMS', 'DLS', 'PS'}) %striatum 
-    elseif ismember(region, {'CP', 'STR', 'Striatum', 'DMS', 'DLS', 'PS'}) %striatum 
-    end
+if ~isempty(region) && ismember(region, {'CP', 'STR', 'Striatum', 'DMS', 'DLS', 'PS','Ctx', 'Cortical','GPe', 'Globus Pallidus external'})
+    unitClassif = bc_classifyCells(ephysProperties, paramEP);
+    
 else
-    unitClassif = nan(length(),1);
+    unitClassif = nan(size(ephysProperties,1),1);
 end
 
 end

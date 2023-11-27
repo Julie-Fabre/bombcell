@@ -63,8 +63,12 @@ paramEP.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value
 %paramEP.deltaTimeChunk = 360; %time in seconds 
 
 % cell classification parameters
-paramEP.propISI = 0.1;
-paramEP.templateDuration = 400;
-paramEP.pss = 40;
+% - striatum 
+paramEP.propISI_CP_threshold = 0.1;
+paramEP.templateDuration_CP_threshold = 400;
+paramEP.postSpikeSup_CP_threshold = 40;
+
+% - cortex 
+paramEP.templateDuration_Ctx_threshold = 400;
 
 end
