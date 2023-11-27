@@ -1,22 +1,25 @@
-function ephysProperties = bc_ephysPropertiesPipeline(ephysPath, savePath, rerunEP, region)
+function [ephysProperties, unitClassif] = bc_ephysPropertiesPipeline(ephysPath, savePath, rerunEP, region)
 
-%% load ephys data 
-paramEP = bc_ephysPropValues;
 
 %% compute ephys properties 
 ephysPropertiesExist = dir(fullfile(savePath, 'templates._bc_ephysProperties.parquet'));
 
 if isempty(ephysPropertiesExist) || rerunEP
-
-    [spikeTimes_samples, spikeTemplates, templateWaveforms,~, ~, ~, ~] = bc_loadEphysData(ephysPath);
-    ephysProperties = bc_computeAllEphysProperties(spikeTimes_samples, spikeTemplates, templateWaveforms, paramEP, savePath);
+    paramEP = bc_ephysPropValues;
+    [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitudes, ...
+    pcFeatures, ~, channelPositions, ~] = bc_loadEphysData(ephysPath);
+    ephysProperties = bc_computeAllEphysProperties(spikeTimes_samples, spikeTemplates, templateWaveforms,...
+        templateAmplitudes, pcFeatures, channelPositions, paramEP, savePath);
 
 elseif ~isempty(ephysPropertiesExist)
     [paramEP, ephysProperties, ~] = bc_loadSavedProperties(savePath); 
 end
 
+%% classify cells 
 if ~isempty(region)
     % classify striatal, GPe and cortical cells
+else
+    unitClassif = nan(length(),1);
 end
 
 end

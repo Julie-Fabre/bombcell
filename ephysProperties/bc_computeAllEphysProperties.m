@@ -1,101 +1,81 @@
-function ephysProperties = bc_computeAllEphysProperties(spikeTimes_samples, spikeTemplates, templateWaveforms, paramEP, savePath)
+function [ephysProperties, unitClassif] = bc_computeAllEphysProperties(spikeTimes_samples, spikeTemplates, templateWaveforms,...
+     templateAmplitudes, pcFeatures, channelPositions, paramEP, savePath)
 
 ephysProperties = struct;
-uniqueTemplates = unique(spikeTemplates);
+
+% get unit max channels
+maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
+
+% extract and save or load in raw waveforms
+[rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extractRawWaveformsFast(paramEP, ...
+    spikeTimes_samples, spikeTemplates, paramEP.reextractRaw, savePath, paramEP.verbose); % takes ~10' for
+% an average dataset, the first time it is run, <1min after that
+
+% remove any duplicate spikes
+[uniqueTemplates, ~, spikeTimes_samples, spikeTemplates, templateAmplitudes, ...
+    pcFeatures, rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio, ...
+    qMetric.maxChannels] = ...
+    bc_removeDuplicateSpikes(spikeTimes_samples, spikeTemplates, templateAmplitudes, ...
+    pcFeatures, rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio, ...
+    maxChannels, paramEP.removeDuplicateSpikes, paramEP.duplicateSpikeWindow_s, ...
+    paramEP.ephys_sample_rate, paramEP.saveSpikes_withoutDuplicates, savePath, paramEP.recomputeDuplicateSpikes);
+
 spikeTimes = spikeTimes_samples ./ paramEP.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
-%timeChunks = min(spikeTimes):param.deltaTimeChunk:max(spikeTimes);
-maxChannels = bc_getWaveformMaxChannelEP(templateWaveforms);
-%% loop through units and get ephys properties
-% QQ divide in time chunks , add plotThis 
+
+% Work in progress - divide recording into time chunks like in quality  metrics
+% spikeTimes_seconds = spikeTimes_samples ./ param.ephys_sample_rate; %convert to seconds after using sample indices to extract raw waveforms
+% if param.computeTimeChunks
+%     timeChunks = [min(spikeTimes_seconds):param.deltaTimeChunk:max(spikeTimes_seconds), max(spikeTimes_seconds)];
+% else
+%     timeChunks = [min(spikeTimes_seconds), max(spikeTimes_seconds)];
+% end
 
 fprintf('\n Extracting ephys properties ... ')
 
 for iUnit = 1:length(uniqueTemplates)
     clearvars thisUnit theseSpikeTimes theseAmplis
+
     thisUnit = uniqueTemplates(iUnit);
-    ephysProperties.clusterID(iUnit) = thisUnit;
+    ephysProperties.phy_clusterID(iUnit) = thisUnit - 1; % this is the cluster ID as it appears in phy
+    ephysProperties.clusterID(iUnit) = thisUnit; % this is the cluster ID as it appears in phy, 1-indexed (adding 1)
     theseSpikeTimes = spikeTimes(spikeTemplates == thisUnit);
 
     %% ACG-based metrics  
     ephysProperties.acg(iUnit, :) = bc_computeACG(theseSpikeTimes, paramEP.ACGbinSize, paramEP.ACGduration, paramEP.plotThis);
-    %units? -|> ms convert 
+
     [ephysProperties.postSpikeSuppression_ms(iUnit), ephysProperties.tauRise_ms(iUnit), ephysProperties.tauDecay_ms(iUnit),...
         ephysProperties.refractoryPeriod_ms(iUnit)] = bc_computeACGprop(ephysProperties.acg(iUnit, :), paramEP.ACGbinSize, paramEP.ACGduration);
     
     %% ISI-based metrics
-     ISIs = diff(spikeTimes);
+    ISIs = diff(spikeTimes);
 
-    % prop long isi 
-    bc_computePropLongISI
+    [ephysProperties.proplongISI(iUnit), ephysProperties.coefficient_variation(iUnit),...
+         ephysProperties.coefficient_variation2(iUnit),  ephysProperties.isi_skewness(iUnit)] = bc_computeISIprop(ISIs, theseSpikeTimes);
 
-    % Coefficient of Variation (CV) of ISI
-    ISI_CV = std(ISIs) / mean(ISIs);
+    %% Waveform-based metrics
+    % Work in progress: add option to use mean raw waveform
+    [ephysProperties.waveformDuration_peakTrough_ms(iUnit), ephysProperties.halfWidth_ms(iUnit), ...
+        ephysProperties.peakTroughRatio(iUnit), ephysProperties.firstPeakTroughRatio(iUnit),...
+        ephysProperties.nPeaks(iUnit), ephysProperties.nTroughs(iUnit), ephysProperties.isSomatic(iUnit)] = bc_computeWaveformProp(templateWaveforms, ...
+        thisUnit, maxChannels(thisUnit), paramEP.ephys_sample_rate, channelPositions, paramEP.minThreshDetectPeaksTroughs);
 
-    % Coefficient of Variation 2 (CV2) of ISI
-    ISI_CV2 = 2 * mean(abs(diff(ISIs))) / mean([ISIs(1:end-1); ISIs(2:end)]);
-
-    % ISI Skewness
-    ISI_Skewness = skewness(ISIs);
-
-% Fano Factor for Spike Counts
-% Assuming 'window' is the time window over which you want to compute Fano Factor
-spikeCounts = histcounts(spikeTimes, 'BinWidth', window);
-FanoFactor = var(spikeCounts) / mean(spikeCounts);
-
-
-    %% Waveform-based metrics 
-     ephysProperties.templateDuration(iUnit) = bc_computeTemplateWaveformDuration(templateWaveforms(thisUnit, :, maxChannels(iUnit)),...
-        paramEP.ephys_sample_rate);
-    
     %% Burstiness metrics 
+    % Work in progress
+
+    %% compute spike metrics
+    % firing rate
+    ephysProperties.mean_firingRate(iUnit) = bc_computeFR(theseSpikeTimes);
+
+    % get spike counts 
+    spikeCounts = histcounts(spikeTimes, 'BinWidth', window);
+    
+    % fano factor
+    FanoFactor = var(spikeCounts) / mean(spikeCounts);
+
+    % max firing rate
 
 
-    %% compute firing rate
-    ephysProperties.spike_rateSimple(iUnit) = bc_computeFR(theseSpikeTimes);
-
- 
-    % Assuming 'waveform' is your waveform data vector
-% And 'time' is a corresponding time vector
-
-% Find the peak and trough
-[peakAmplitude, peakIndex] = max(waveform);
-[troughAmplitude, troughIndex] = min(waveform(peakIndex:end));
-troughIndex = troughIndex + peakIndex - 1; % Adjust index
-
-% Compute Peak-to-Trough Duration
-peakToTroughDuration = time(troughIndex) - time(peakIndex);
-
-% Compute Half-Width
-halfAmplitude = peakAmplitude / 2;
-aboveHalfIndices = find(waveform >= halfAmplitude);
-halfWidthStartIndex = aboveHalfIndices(find(aboveHalfIndices < peakIndex, 1, 'last'));
-halfWidthEndIndex = aboveHalfIndices(find(aboveHalfIndices > peakIndex, 1));
-halfWidth = time(halfWidthEndIndex) - time(halfWidthStartIndex);
-
-% Compute Rise Time
-riseTime = time(peakIndex) - time(halfWidthStartIndex);
-
-% Compute Decay Time
-decayTime = time(halfWidthEndIndex) - time(peakIndex);
-
-% Compute Rise Slope (Max Slope during the Rising Phase)
-riseSlope = max(diff(waveform(halfWidthStartIndex:peakIndex)) ./ diff(time(halfWidthStartIndex:peakIndex)));
-
-% Compute Decay Slope (Max Slope during the Falling Phase)
-decaySlope = min(diff(waveform(peakIndex:halfWidthEndIndex)) ./ diff(time(peakIndex:halfWidthEndIndex)));
-
-
-
-
-    %% cv, cv2
-
-    %% Fano factor
-
-    %% skewISI
-
-    %% max firing rate
-
-    %% bursting things
+    %% Progress info
     if ((mod(iUnit, 100) == 0) || iUnit == length(uniqueTemplates)) && paramEP.verbose
        fprintf(['\n   Finished ', num2str(iUnit), ' / ', num2str(length(uniqueTemplates)), ' units.']);
     end
@@ -106,34 +86,12 @@ fprintf('\n Finished extracting ephys properties')
 try
     bc_saveEphysProperties(paramEP, ephysProperties, savePath);
     fprintf('\n Saved ephys properties to %s \n', savePath)
-    %% get some summary plots
-    
+
 catch
     warning('\n Warning, ephys properties not saved! \n')
 end
-%% plot
-paramEP.plotThis=0;
-if paramEP.plotThis
-    % QQ plot histograms of each metric with the cutoffs set in params
-    figure();
-    subplot(311)
-    scatter(abs(ephysProperties.templateDuration), ephysProperties.postSpikeSuppression);
-    xlabel('waveform duration (us)')
-    ylabel('post spike suppression')
-    makepretty;
-    
-    subplot(312)
-    scatter(ephysProperties.postSpikeSuppression, ephysProperties.propLongISI);
-    xlabel('post spike suppression')
-    ylabel('prop long ISI')
-    makepretty;
 
-    subplot(313)
-    scatter(abs(ephysProperties.templateDuration), ephysProperties.propLongISI);
-    xlabel('waveform duration (us)')
-    ylabel('prop long ISI')
-    makepretty;
-end
+%% get some summary plots - work in progress 
 
 
 end

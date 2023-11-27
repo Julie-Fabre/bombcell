@@ -153,8 +153,13 @@ else
     spatialDecayPoints = nan(1, 6);
 
 end
-waveformBaseline = max(abs(thisWaveform(waveformBaselineWindow(1): ...
-    waveformBaselineWindow(2)))) / max(abs(thisWaveform));
+if ~isnan(waveformBaselineWindow(1))
+    waveformBaseline = max(abs(thisWaveform(waveformBaselineWindow(1): ...
+        waveformBaselineWindow(2)))) / max(abs(thisWaveform));
+else
+    waveformBaseline=NaN;
+end
+
 
 if plotThis
 
