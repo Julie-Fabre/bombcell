@@ -74,6 +74,8 @@ for iUnit = 1:length(uniqueTemplates)
 end
 
 %% save ephys properties
+ephysProperties.maxChannels = ephysProperties.maxChannels(uniqueTemplates)';
+
 fprintf('\n Finished extracting ephys properties')
 try
     bc_saveEphysProperties(paramEP, ephysProperties, savePath);
