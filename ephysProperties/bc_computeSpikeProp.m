@@ -1,11 +1,9 @@
-function [mean_firingRate, FanoFactor, max_firingRate] = bc_computeSpikeProp(theseSpikes)
+function [mean_firingRate, fanoFactor, max_firingRate, min_firingRate] = bc_computeSpikeProp(theseSpikes)
     spiking_stat_window = max(theseSpikes) - min(theseSpikes);
     spiking_stat_bins = [min(theseSpikes), max(theseSpikes)];
 
     % Get firing rate across the session
-    bin_spikes = ...
-        histcounts(theseSpikes, ...
-        spiking_stat_bins);
+    bin_spikes = histcounts(theseSpikes, spiking_stat_bins);
 
     min_spikes = 10;
     use_spiking_stat_bins = bsxfun(@ge, bin_spikes, prctile(bin_spikes, 80, 2)) & bin_spikes > min_spikes;
@@ -14,10 +12,14 @@ function [mean_firingRate, FanoFactor, max_firingRate] = bc_computeSpikeProp(the
         (sum(use_spiking_stat_bins, 2) * spiking_stat_window);
 
     % get spike counts 
-    spikeCounts = histcounts(spikeTimes, min(spikeTimes):1:max(spikeTimes));
+    spikeCounts = histcounts(theseSpikes, min(theseSpikes):1:max(theseSpikes));
     
     % fano factor
-    FanoFactor = var(spikeCounts) / mean(spikeCounts);
+    fanoFactor = var(spikeCounts) / mean(spikeCounts);
+
+    % max and min firing rate 
+    max_firingRate = prctile(spikeCounts, 95);
+    min_firingRate = prctile(spikeCounts, 5);
 
 end
 

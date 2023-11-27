@@ -17,11 +17,10 @@ end
 
 %% classify cells 
 if ~isempty(region)
-    unitClassif = bc_classifyCells(ephysProperties, paramEP);
     % classify striatal, GPe and cortical cells
     if ismember(region, {'CP', 'STR', 'Striatum', 'DMS', 'DLS', 'PS'}) %striatum 
-    elseif ismember(region, {'Ctx', 'Cortical'}) %striatum 
-    elseif ismember(region, {'GPe', 'Globus Pallidus external'}) %striatum 
+    elseif ismember(region, {'CP', 'STR', 'Striatum', 'DMS', 'DLS', 'PS'}) %striatum 
+    elseif ismember(region, {'CP', 'STR', 'Striatum', 'DMS', 'DLS', 'PS'}) %striatum 
     end
 else
     unitClassif = nan(length(),1);

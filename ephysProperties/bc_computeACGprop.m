@@ -22,7 +22,11 @@ tauDecay_ms = tauDecay  * 1000;
 % Assuming the refractory period is the time lag at which the ACG starts to rise
 ACGlags_from0 = ACGlags(ACGlags>0);
 refractoryPeriod = ACGlags_from0(find(thisACG(ACGlags>0) > (min(thisACG) + std(thisACG)), 1));
-refractoryPeriod_ms = refractoryPeriod  *1000;
+if isempty(refractoryPeriod)
+    refractoryPeriod_ms = NaN;
+else
+    refractoryPeriod_ms = refractoryPeriod  *1000;
+end
 
 
 % figure();

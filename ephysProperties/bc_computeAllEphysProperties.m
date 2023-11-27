@@ -12,9 +12,8 @@ maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 % an average dataset, the first time it is run, <1min after that
 
 % remove any duplicate spikes
-[uniqueTemplates, ~, spikeTimes_samples, spikeTemplates, templateAmplitudes, ...
-    pcFeatures, rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio, ...
-    qMetric.maxChannels] = ...
+[uniqueTemplates, ~, spikeTimes_samples, spikeTemplates, ~, ~, ~, ~, ~, ...
+    ephysProperties.maxChannels] = ...
     bc_removeDuplicateSpikes(spikeTimes_samples, spikeTemplates, templateAmplitudes, ...
     pcFeatures, rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio, ...
     maxChannels, paramEP.removeDuplicateSpikes, paramEP.duplicateSpikeWindow_s, ...
@@ -40,40 +39,33 @@ for iUnit = 1:length(uniqueTemplates)
     ephysProperties.clusterID(iUnit) = thisUnit; % this is the cluster ID as it appears in phy, 1-indexed (adding 1)
     theseSpikeTimes = spikeTimes(spikeTemplates == thisUnit);
 
-    %% ACG-based metrics  
+    %% ACG-based properties  
     ephysProperties.acg(iUnit, :) = bc_computeACG(theseSpikeTimes, paramEP.ACGbinSize, paramEP.ACGduration, paramEP.plotThis);
 
     [ephysProperties.postSpikeSuppression_ms(iUnit), ephysProperties.tauRise_ms(iUnit), ephysProperties.tauDecay_ms(iUnit),...
         ephysProperties.refractoryPeriod_ms(iUnit)] = bc_computeACGprop(ephysProperties.acg(iUnit, :), paramEP.ACGbinSize, paramEP.ACGduration);
     
-    %% ISI-based metrics
+    %% ISI-based properties
     ISIs = diff(spikeTimes);
 
     [ephysProperties.proplongISI(iUnit), ephysProperties.coefficient_variation(iUnit),...
          ephysProperties.coefficient_variation2(iUnit),  ephysProperties.isi_skewness(iUnit)] = bc_computeISIprop(ISIs, theseSpikeTimes);
 
-    %% Waveform-based metrics
+    %% Waveform-based properties
     % Work in progress: add option to use mean raw waveform
-    [ephysProperties.waveformDuration_peakTrough_ms(iUnit), ephysProperties.halfWidth_ms(iUnit), ...
+    [ephysProperties.waveformDuration_peakTrough_us(iUnit), ephysProperties.halfWidth_ms(iUnit), ...
         ephysProperties.peakTroughRatio(iUnit), ephysProperties.firstPeakTroughRatio(iUnit),...
-        ephysProperties.nPeaks(iUnit), ephysProperties.nTroughs(iUnit), ephysProperties.isSomatic(iUnit)] = bc_computeWaveformProp(templateWaveforms, ...
-        thisUnit, maxChannels(thisUnit), paramEP.ephys_sample_rate, channelPositions, paramEP.minThreshDetectPeaksTroughs);
+        ephysProperties.nPeaks(iUnit), ephysProperties.nTroughs(iUnit), ephysProperties.isSomatic(iUnit)] =...
+        bc_computeWaveformProp(templateWaveforms,thisUnit, ephysProperties.maxChannels(thisUnit),...
+        paramEP.ephys_sample_rate, channelPositions, paramEP.minThreshDetectPeaksTroughs);
 
-    %% Burstiness metrics 
+    %% Burstiness properties
     % Work in progress
 
-    %% compute spike metrics
-    % firing rate
-    ephysProperties.mean_firingRate(iUnit) = bc_computeFR(theseSpikeTimes);
-
-    % get spike counts 
-    spikeCounts = histcounts(spikeTimes, 'BinWidth', window);
+    %% Spike properties
+    [ephysProperties.mean_firingRate(iUnit), ephysProperties.fanoFactor(iUnit),...
+        ephysProperties.max_FiringRate(iUnit), ephysProperties.min_FiringRate(iUnit)] = bc_computeSpikeProp(theseSpikeTimes);
     
-    % fano factor
-    FanoFactor = var(spikeCounts) / mean(spikeCounts);
-
-    % max firing rate
-
 
     %% Progress info
     if ((mod(iUnit, 100) == 0) || iUnit == length(uniqueTemplates)) && paramEP.verbose
