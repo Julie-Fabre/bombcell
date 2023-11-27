@@ -20,7 +20,7 @@ if ismember(region, {'CP', 'STR', 'Striatum', 'DMS', 'DLS', 'PS'}) %striatum, cl
     scatter3(ephysProperties.waveformDuration_peakTrough_us, ephysProperties.postSpikeSuppression_ms, ephysProperties.proplongISI, 4, 'filled'); hold on;
     set(gca, 'YDir', 'reverse' );
 
-elseif ismember(region, {'Ctx', 'Cortical'}) % cortex, classification as in Peters et al., Cell Reports, 2022
+elseif ismember(region, {'Ctx', 'Cortex', 'Cortical'}) % cortex, classification as in Peters et al., Cell Reports, 2022
      unitClassif(ephysProperties.waveformDuration_peakTrough_us > paramEP.templateDuration_Ctx_threshold) = {'Wide-spiking'};
 
      unitClassif(ephysProperties.waveformDuration_peakTrough_us <= paramEP.templateDuration_Ctx_threshold) = {'Narrow-spiking'};
