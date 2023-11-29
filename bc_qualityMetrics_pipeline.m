@@ -110,6 +110,7 @@ rerunEP = 0;
 region = ''; % options include 'Striatum' and 'Cortex'
 [ephysProperties, unitClassif] = bc_ephysPropertiesPipeline(ephysKilosortPath, savePath, rerunEP, region);
 
-
+% example: get good MSN units 
+goodMSNs = strcmp(unitClassif, 'MSN') & unitType == 1; 
 
 

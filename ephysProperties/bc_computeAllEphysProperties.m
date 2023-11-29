@@ -1,4 +1,4 @@
-function [ephysProperties, unitClassif] = bc_computeAllEphysProperties(spikeTimes_samples, spikeTemplates, templateWaveforms,...
+function ephysProperties = bc_computeAllEphysProperties(spikeTimes_samples, spikeTemplates, templateWaveforms,...
      templateAmplitudes, pcFeatures, channelPositions, paramEP, savePath)
 
 ephysProperties = struct;
@@ -32,7 +32,7 @@ spikeTimes = spikeTimes_samples ./ paramEP.ephys_sample_rate; %convert to second
 fprintf('\n Extracting ephys properties ... ')
 
 for iUnit = 1:length(uniqueTemplates)
-    clearvars thisUnit theseSpikeTimes theseAmplis
+    clearvars thisUnit theseSpikeTimes
 
     thisUnit = uniqueTemplates(iUnit);
     ephysProperties.phy_clusterID(iUnit) = thisUnit - 1; % this is the cluster ID as it appears in phy
