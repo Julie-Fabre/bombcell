@@ -1,5 +1,5 @@
 function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
-    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath)
+    templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath, suppressGraphing)
 % JF
 % ------
 % Inputs
@@ -27,7 +27,9 @@ function [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples
 % channelPositions: nChannels x 2 double matrix corresponding to the x and
 %   z locations of each channel on the probe, in um
 %
-% savePath: sting defining the path where to save bombcell's output
+% savePath: string defining the path where to save bombcell's output
+%
+% suppressGraphing: don't show graphs after finishing calculating quality metrics
 %
 %------
 % Outputs
@@ -196,5 +198,8 @@ qMetric = bc_saveQMetrics(param, qMetric, forGUI, savePath);
 fprintf('\n Saved quality metrics from %s to %s \n', param.rawFile, savePath)
 
 unitType = bc_getQualityUnitType(param, qMetric, savePath);
-bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
+if ~suppressGraphing
+    bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
+end
+
 end
