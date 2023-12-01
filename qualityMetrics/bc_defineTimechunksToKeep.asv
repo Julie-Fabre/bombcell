@@ -42,23 +42,23 @@ if any(percSpikesMissing < maxPercSpikesMissing) && any(fractionRPVs(:, useTauR)
     if numel(useTheseTimes_temp) > 0
         continousTimes = diff(useTheseTimes_temp);
         if any(continousTimes == 1)
-            % Identify the start and end of consecutive chunks
-            chunkStarts = [1; find(continousTimes > 1) + 1];
-            chunkEnds = [find(continousTimes > 1); length(useTheseTimes_tem)];
-        
-            % Calculate the lengths of each chunk
-            chunkLengths = chunkEnds - chunkStarts + 1;
-        
-            % Find the longest chunk
-            [longestChunkLength, idx] = max(chunkLengths);
-            longestChunkStart = useTheseTimes_temp(chunkStarts(idx));
-            longestChunkEnd = useTheseTimes_temp(chunkEnds(idx));
-            useTheseTimes = timeChunks(longestChunkStart:longestChunkEnd);
+        % Identify the start and end of consecutive chunks
+        chunkStarts = [1; find(continousTimes > 1) + 1];
+        chunkEnds = [find(continousTimes > 1); length(useTheseTimes_tem)];
+    
+        % Calculate the lengths of each chunk
+        chunkLengths = chunkEnds - chunkStarts + 1;
+    
+        % Find the longest chunk
+        [longestChunkLength, idx] = max(chunkLengths);
+        longestChunkStart = useTheseTimes_temp(chunkStarts(idx));
+        longestChunkEnd = useTheseTimes_temp(chunkEnds(idx));
+        useTheseTimes = timeChunks(longestChunkStart:longestChunkEnd);
 
         else
             useTheseTimes = timeChunks(useTheseTimes_temp(1):useTheseTimes_temp(1)+1);
         end
-    else % if there are no "good" time chunks, use all chunks for subsequent computations 
+    else
         useTheseTimes = timeChunks;
     end
 
@@ -70,10 +70,11 @@ if any(percSpikesMissing < maxPercSpikesMissing) && any(fractionRPVs(:, useTauR)
     theseSpikeTimes = theseSpikeTimes(theseSpikeTimes <= useTheseTimes(end) & ...
         theseSpikeTimes >= useTheseTimes(1));
 
+    %QQ change non continous
+
     useThisTimeStart = useTheseTimes(1);
     useThisTimeStop = useTheseTimes(end);
-
-else  % if there are no "good" time chunks, use all chunks for subsequent computations 
+else %otherwise, keep all chunks to compute quality metrics on, uni will defined as below percSpikesMissing and Fp criteria thresholds later
     useThisTimeStart = 0;
     useThisTimeStop = timeChunks(end);
 end
