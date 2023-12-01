@@ -24,7 +24,11 @@ gain_to_uV = 0.195; % use this if you are not using spikeGLX or openEphys to rec
     % empty(e.g. ephysMetaDir = '')
 
 %% check MATLAB version 
-oldMATLAB = isMATLABReleaseOlderThan("R2019a");
+if exist('isMATLABReleaseOlderThan', 'file') == 0 %% function introduced in MATLAB 2020b.
+    oldMATLAB = true;
+else
+    oldMATLAB = isMATLABReleaseOlderThan("R2019a");
+end
 if oldMATLAB
     error('This MATLAB version is older than 2019a - download a more recent version before continuing')
 end
@@ -105,11 +109,12 @@ label_table = table(unitType);
 writetable(label_table,[savePath filesep 'templates._bc_unit_labels.tsv'],'FileType', 'text','Delimiter','\t');  
       
 
-%% optional: additionally compute ephys properties for each unit 
+%% optional: additionally compute ephys properties for each unit and classify cell types 
 rerunEP = 0;
 region = ''; % options include 'Striatum' and 'Cortex'
 [ephysProperties, unitClassif] = bc_ephysPropertiesPipeline(ephysKilosortPath, savePath, rerunEP, region);
 
-
+% example: get good MSN units 
+goodMSNs = strcmp(unitClassif, 'MSN') & unitType == 1; 
 
 
