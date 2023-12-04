@@ -99,21 +99,21 @@ peakLoc = peakLocs(PKS == max(PKS)); %QQ could change to better:
     % by looking for location where the data is most tightly distributed
     
     % check if this is the correct peak 
-maxPK = max(PKS);
-if peakLoc < troughLoc
-    if ~isempty(find(peakLocs>troughLocs))
-        possible_realPeak = PKS(find(peakLocs>troughLocs));
-    else
-        [possible_realPeak, possible_peakLoc] = max(thisWaveform(troughLoc:end));
+    maxPK = max(PKS);
+    if peakLoc < troughLoc
+        if ~isempty(find(peakLocs>troughLocs))
+            possible_realPeak = PKS(find(peakLocs>troughLocs));
+        else
+            [possible_realPeak, possible_peakLoc] = max(thisWaveform(troughLoc:end));
+        end
+        if maxPK < (possible_realPeak * 1.1) %QQ hardcoded for now 
+             if isempty(find(peakLocs>troughLocs))
+                PKS = [PKS, possible_realPeak];
+                peakLocs = [peakLocs, possible_peakLoc + troughLoc - 1];
+             end
+             peakLoc = peakLocs(PKS == possible_realPeak);
+        end
     end
-    if maxPK < (possible_realPeak * 1.1) %QQ hardcoded for now 
-         if isempty(find(peakLocs>troughLocs))
-            PKS = [PKS, possible_realPeak];
-            peakLocs = [peakLocs, possible_peakLoc + troughLoc - 1];
-         end
-         peakLoc = peakLocs(PKS == possible_realPeak);
-    end
-end
 if numel(peakLoc) > 1
     peakLoc = peakLoc(1);
 end
