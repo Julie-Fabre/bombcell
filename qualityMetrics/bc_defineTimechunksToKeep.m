@@ -44,7 +44,7 @@ if any(percSpikesMissing < maxPercSpikesMissing) && any(fractionRPVs(:, useTauR)
         if any(continousTimes == 1)
             % Identify the start and end of consecutive chunks
             chunkStarts = [1; find(continousTimes > 1) + 1];
-            chunkEnds = [find(continousTimes > 1); length(useTheseTimes_tem)];
+            chunkEnds = [find(continousTimes > 1); length(useTheseTimes_temp)];
         
             % Calculate the lengths of each chunk
             chunkLengths = chunkEnds - chunkStarts + 1;
