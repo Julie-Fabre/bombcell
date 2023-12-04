@@ -31,8 +31,10 @@ if ~LegendReplace
     end
 
     % Sort the labels based on their x-positions
-    [~, order] = sort(cellfun(@(x) find(strcmp(labels, x)), labels));
-    legend(ax, handles(order));
+    labels_empty = cellfun(@isempty, labels);
+    [~, order] = sort(cellfun(@(x) find(strcmp(labels(~labels_empty), x)), labels(~labels_empty)));
+    nonEmptyHandles = handles(~labels_empty);
+    legend(ax, nonEmptyHandles (order));
 
 else
     % Define wdt and hgt

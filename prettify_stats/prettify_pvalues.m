@@ -23,9 +23,9 @@ addParameter(p, 'TextRotation', 0, @isnumeric);
 addParameter(p, 'TextFontSize', 10, @isnumeric);
 addParameter(p, 'LineColor', 'k');
 addParameter(p, 'LineWidth', 1.5, @isnumeric);
-addParameter(p, 'LineMargin', 0.0025, @isnumeric);
+addParameter(p, 'LineMargin', 0.05, @isnumeric);
 addParameter(p, 'TickLength', 0.01, @isnumeric);
-addParameter(p, 'TextMargin', 0.01, @isnumeric);
+addParameter(p, 'TextMargin', 0.1, @isnumeric);
 % Plot type paramaters 
 % addParameter(p, 'AxisForPvalues', 'Y'); % Y axis by default. Change to X
 % or Z if necessary %QQ to add 
@@ -101,8 +101,8 @@ for i = 1:length(pvals_sorted)
 
     % Draw line for each p-value comparison
     line(ax, [x1(i), x2(i)], [y_line, y_line], 'Color', params.LineColor, 'LineWidth', params.LineWidth);
-    line(ax, [x1(i), x1(i)], [y_line + 0.015, y_line - tickLength], 'Color', params.LineColor, 'LineWidth', params.LineWidth);
-    line(ax, [x2(i), x2(i)], [y_line + 0.015, y_line - tickLength], 'Color', params.LineColor, 'LineWidth', params.LineWidth);
+    line(ax, [x1(i), x1(i)], [y_line , y_line - tickLength], 'Color', params.LineColor, 'LineWidth', params.LineWidth);
+    line(ax, [x2(i), x2(i)], [y_line , y_line - tickLength], 'Color', params.LineColor, 'LineWidth', params.LineWidth);
 
     % Format p-value text
     if pvals_sorted(i) >= params.NaNCutoff || isnan(pvals_sorted(i)) % plot non significant values as n.s.
