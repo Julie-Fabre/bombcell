@@ -43,8 +43,6 @@ Uses the matrices from:
 #### To do list 
 - [ ] Perceptually-uniform, colorblind friendly colormaps.
 - [ ] Prettify colorbars and labels
-- [ ] Add pvalue bars above plots 
 - [ ] wrap titles/labels 
-- [ ] bar plots, violin plots 
 - [ ] shaded, shaded gradual 
 
