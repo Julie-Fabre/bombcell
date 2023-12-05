@@ -158,7 +158,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
         forGUI.spatialDecayPoints(iUnit, :), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), ... .
         forGUI.tempWv(iUnit, :)] = bc_waveformShape(templateWaveforms, thisUnit, qMetric.maxChannels(thisUnit), ...
         param.ephys_sample_rate, channelPositions, param.maxWvBaselineFraction, waveformBaselineWindow, ...
-        param.minThreshDetectPeaksTroughs, param.plotDetails); %do we need tempWv ?
+        param.minThreshDetectPeaksTroughs, param.firstPeakRatio, param.plotDetails); %do we need tempWv ?
 
     %% amplitude
     if param.extractRaw

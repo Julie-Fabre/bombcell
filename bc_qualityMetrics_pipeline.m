@@ -24,7 +24,7 @@ gain_to_uV = 0.195; % use this if you are not using spikeGLX or openEphys to rec
     % empty(e.g. ephysMetaDir = '')
 
 %% check MATLAB version 
-if exist('isMATLABReleaseOlderThan', 'file') == 0 %% function introduced in MATLAB 2020b.
+if exist('isMATLABReleaseOlderThan', 'file') == 0 % function introduced in MATLAB 2020b.
     oldMATLAB = true;
 else
     oldMATLAB = isMATLABReleaseOlderThan("R2019a");
@@ -68,6 +68,9 @@ bc_loadMetricsForGUI;
 % n : go to next noise unit
 % up/down arrow: toggle between time chunks in the raw data
 % u: brings up a input dialog to enter the unit you want to go to
+
+% currently this GUI works best with a screen in portrait mode - we are
+% working to get it to handle screens in landscape mode better. 
 unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, ...
     param, probeLocation, unitType, loadRawTraces);
 
