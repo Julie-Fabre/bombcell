@@ -1,87 +1,98 @@
-%% uglyPlot
+% Create a 3x4 subplot
+figure;
 
-% Define x values
-x = linspace(0, 2*pi, 1000);
+% Parameters for simulation
+time = linspace(0, 2, 2000);  % Time vector
+stimulus_onset = 0.5;  % Time of stimulus onset
+stimulus_duration = 0.2;  % Duration of the stimulus
+response_delay = 0.3;  % Response delay after stimulus onset
+response_duration = 0.25;  % Duration of the response
+noise_amplitude = 0.5;  % Amplitude of noise
 
-% Define y values for various functions
-y1 = sin(x);
-y2 = cos(x);
-y3 = tan(x);
-y4 = log(x + 1); % Adding 1 to avoid negative values and log(0)
-y_cot = cot(x); % Cotangent values
+% Simulate stimulus
+stimulus = zeros(size(time));
+stimulus((time >= stimulus_onset) & (time < stimulus_onset + stimulus_duration)) = 1;
 
-% Create a new figure
-figure(2); clf;
+% Simulate neurons
+neuron1_response = 12 * exp(-(time - (stimulus_onset + response_delay)) / response_duration) .* (time >= (stimulus_onset + response_delay)) +...
+     noise_amplitude * randn(size(time));
+neuron2_response = 0.5 * exp(-(time - (stimulus_onset + response_delay)) / response_duration) .* (time >= (stimulus_onset + response_delay)) +...
+    + noise_amplitude * randn(size(time));
+neuron3_response = 22 * -exp(-(time - (stimulus_onset + response_delay)) / response_duration) .* (time >= (stimulus_onset + response_delay))+...
+    noise_amplitude * randn(size(time));
+
+% Plot the simulated responses
+subplot(3, 3, 1);
+plot(time, neuron1_response);
+xlim([0 1])
+xlabel('Time');
+ylabel('Response');
+
+subplot(3, 3, 4);
+plot(time, neuron2_response);
+xlabel('Time');
+ylabel('Response');
+
+subplot(3, 3, 7);
+plot(time, neuron3_response);
+xlabel('Time');
+ylabel('Response');
+
+% simulate PSTH 
+% Define a function to generate neuron responses
+generate_neuron_response = @(amplitude) amplitude * exp(-(time - (stimulus_onset + response_delay)) / response_duration) .* ...
+    (time >= (stimulus_onset + response_delay)) + amplitude * randn(size(time));
+
+noise_amplitude = 0.1; 
+% Use arrayfun to generate responses for all neurons
+neurons1_amplitudes = [-2:0.5:12];
+neurons_1 = arrayfun(generate_neuron_response, neurons1_amplitudes, 'UniformOutput', false);
+neurons_1_matrix = cell2mat(neurons_1');
+
+neurons2_amplitudes = [-0.5:0.01:0.5];
+neurons_2 = arrayfun(generate_neuron_response, neurons2_amplitudes, 'UniformOutput', false);
+neurons_2_matrix = cell2mat(neurons_2');
+
+neurons3_amplitudes = [-22:1:1];
+neurons_3 = arrayfun(generate_neuron_response, neurons3_amplitudes, 'UniformOutput', false);
+neurons_3_matrix = cell2mat(neurons_3');
 
 
-%% line plots 
-% First subplot: sine curve
-subplot(2, 3, 1);
-plot(x, y1, 'r'); 
-hold on; % Keep the current plot and add new plots to it
-plot(x, 0.5*ones(size(x)), 'k--'); % Dashed line at y = 0.5
-title('Sine Curve');
-xlabel('x');
-ylabel('sin(x)');
-legend('sin(x)', 'y = 0.5');
+% plot PSTHs
+subplot(3, 3, 2);
+imagesc(time, [], neurons_1_matrix)
+colormap("jet")
+cb = colorbar;
+cb.Title.String = 'Activity';
 
-% Second subplot: cosine curve
-subplot(2, 3, 4);
-plot(x, y2, 'b'); 
-hold on;
-% Sample points
-x_points = [pi/4, pi/2, 3*pi/4];
-y_points = cos(x_points);
-plot(x_points, y_points, 'ro'); % red circles
-title('Cosine Curve');
-xlabel('x');
-ylabel('cos(x)');
+subplot(3, 3, 5);
+imagesc(time, [], neurons_2_matrix)
+colormap("jet")
+colorbar;
 
-% scatter plots
+subplot(3, 3, 8);
+imagesc(time, [], neurons_3_matrix)
+colormap("jet")
+colorbar;
 
-numDots = 20;
-subplot(2, 3, 2);
-x = rand(numDots, 1); % Random numbers between 0 and 1 for the x-axis
-y = rand(numDots, 1); % Random numbers between 0 and 1 for the y-axis
-scatter(x, y);
-xlabel('X-axis');
-ylabel('Y-axis');
-title('Scatter Plot of Random Dots');
+% plot some lines 
+average_psth1 = smoothdata(mean(neurons_1_matrix, 1),'gaussian', [0, 100]);
+average_psth2 =  smoothdata(mean(neurons_2_matrix, 1), 'gaussian',[0, 100]);
+average_psth3 =  smoothdata(mean(neurons_3_matrix, 1), 'gaussian',[0, 100]);
+
+
+subplot(3, 3, [3,6,9]); hold on;
+plot(time, average_psth2);
+plot(time, average_psth3);
+plot(time, average_psth1);
+
+
+legend('Type 1', 'Type 2', 'Type 3')
 
 
 
-numDots = 25;
-subplot(2, 3, 5);
-x = rand(numDots, 1); % Random numbers between 0 and 1 for the x-axis
-y = rand(numDots, 1); % Random numbers between 0 and 1 for the y-axis
-scatter(x, y);
-xlabel('X-axis');
-ylabel('Y-axis');
-title('Scatter Plot of Random Dots');
 
-%% images 
-time = linspace(0, 24, 100); % Time from 0 to 24 hours
-activity = cumsum(randn(15, 100)); % Random walk for activity
-subplot(2, 3, 3);
-uglyColors = [1 0 1; 0 1 0; 0 0 1; 1 1 0; 1 0.5 0.2];
-colormap(uglyColors);
-imagesc(time, [], activity);
-ylabel('Activity');
-xlabel('Time (ms)');
-c = colorbar;
-c.Title.String = 'Zscore';
 
-% Activity plot 
-time = linspace(0, 24, 100); % Time from 0 to 24 hours
-activity = cumsum(randn(15, 100)).*2; % Random walk for activity
-subplot(2, 3, 6);
-uglyColors = [1 0 1; 0 1 0; 0 0 1; 1 1 0; 1 0.5 0.2];
-colormap(uglyColors);
-% Plot the activity data
-imagesc(time, [], activity);
-ylabel('Activity');
-xlabel('Time (ms)');
-c2 = colorbar;
-c2.Title.String = 'Zscore';
 
-prettify_plot;
+% Adjust the layout of the subplots
+sgtitle('Demo');

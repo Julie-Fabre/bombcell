@@ -1,8 +1,8 @@
-%QQ nee to find axes / colorbar pairs, and adjust colormap there. 
+%QQ nee to find axes / colorbar pairs, and adjust colormap there.
 
 %'YTickLabel'
 
-function prettify_colorbar(colorbars, ChangeColormaps, DivergingColormap,...
+function prettify_colorbar(colorbars, colorsToReplace, mainColor, ChangeColormaps, DivergingColormap, ...
     SequentialColormap)
 colorbarProperties = struct;
 
@@ -10,11 +10,14 @@ colorbarProperties = struct;
 for iColorBar = 1:length(colorbars)
     currColorbar = colorbars(iColorBar);
 
-    % check/change colormap 
+    %text color
+    colorbarProperties(iColorBar).Color = mainColor;
+
+    % check/change colormap
     currColorbar.Limits = colorbars(iColorBar).Limits;
     if ChangeColormaps && currColorbar.Limits(1) < 0 && currColorbar.Limits(2) > 0 % equalize, and use a diverging colormap
         colormap(currColorbar.Parent, brewermap(100, DivergingColormap))
-    elseif ChangeColormaps %use a sequential colormap 
+    elseif ChangeColormaps %use a sequential colormap
         colormap(currColorbar.Parent, brewermap(100, SequentialColormap))
     end
     colorbarProperties(iColorBar).Limits = currColorbar.Limits;
@@ -42,7 +45,7 @@ for iColorBar = 1:length(colorbars)
     %currColorbar.Units = 'Points';
     %colorbarProperties(iColorBar).Parent.Position
     %currColorbar.Position = [colorbarProperties(iColorBar).Position_ori(1)+35, colorbarProperties(iColorBar).Position_ori(2:4)]; % QQ hardcoded
-    currColorbar.Label.String = colorbarProperties(iColorBar).Label;%QQ error - this doesn't work with XLabel. 
+    currColorbar.Label.String = colorbarProperties(iColorBar).Label; %QQ error - this doesn't work with XLabel.
     currColorbar.Label.Rotation = 270; % Rotate the label to be horizontal
     currColorbar.Label.Position = [3, 0.5, 0]; % You might need to adjust these values
 
@@ -55,7 +58,7 @@ for iColorBar = 1:length(colorbars)
     %    0, [0.5 - 0.01, colorbarProperties(iColorBar).Limits(1) - 1]})
     currColorbar.Ticks = [currColorbar.Limits(1), currColorbar.Limits(2)];
     currColorbar.TickLabels = {num2str(currColorbar.Limits(1)), num2str(currColorbar.Limits(2))};
+    currColorbar.Color = colorbarProperties(iColorBar).Color;
 
 
 end
-
