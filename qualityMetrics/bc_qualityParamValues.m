@@ -98,6 +98,8 @@ param.waveformBaselineWindowStop = 30; % in samples
 param.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value 
     % in a units waveform to give the minimum prominence to detect peaks using
     % matlab's findpeaks function.
+param.firstPeakRatio = 1.1; % if units have an initial peak before the trough,
+    % it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit. 
 
 % recording parameters
 param.ephys_sample_rate = 30000; % samples per second

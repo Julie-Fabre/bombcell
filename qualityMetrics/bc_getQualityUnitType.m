@@ -47,22 +47,22 @@ unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs
     qMetric.waveformDuration_peakTrough > param.maxWvDuration | qMetric.waveformBaselineFlatness > param.maxWvBaselineFraction) = 0; % NOISE
 
 % Classify mua units
-unitType((qMetric.percentageSpikesMissing_gaussian > param.maxPercSpikesMissing | qMetric.nSpikes < param.minNumSpikes & ...
-    qMetric.fractionRPVs_estimatedTauR > param.maxRPVviolations | ...
-    qMetric.presenceRatio < param.minPresenceRatio) & isnan(unitType)) = 2; % MUA
+unitType((qMetric.percentageSpikesMissing_gaussian > param.maxPercSpikesMissing | qMetric.nSpikes < param.minNumSpikes | ...
+    qMetric.fractionRPVs_estimatedTauR > param.maxRPVviolations | qMetric.presenceRatio < param.minPresenceRatio) & ...
+    isnan(unitType)) = 2; % MUA
 
 if param.computeDistanceMetrics && ~isnan(param.isoDmin)
-    unitType((qMetric.isoD < param.isoDmin | ...
-        qMetric.Lratio > param.lratioMax) & isnan(unitType)) = 2; 
+    unitType((qMetric.isoD < param.isoDmin | qMetric.Lratio > param.lratioMax) & ...
+        isnan(unitType)) = 2; % MUA
 end
 
 if param.extractRaw
-  unitType((qMetric.rawAmplitude < param.minAmplitude | qMetric.signalToNoiseRatio < param.minSNR) &...
-      isnan(unitType)) = 2; 
+  unitType((qMetric.rawAmplitude < param.minAmplitude | qMetric.signalToNoiseRatio < param.minSNR) & ...
+      isnan(unitType)) = 2; % MUA
 end
 
 if param.computeDrift
-     unitType(qMetric.maxDriftEstimate > param.maxDrift & isnan(unitType)) = 2; 
+     unitType(qMetric.maxDriftEstimate > param.maxDrift & isnan(unitType)) = 2; % MUA
 end
 
 % Classify good units

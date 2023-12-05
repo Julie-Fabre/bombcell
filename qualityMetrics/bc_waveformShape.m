@@ -1,8 +1,7 @@
 function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_peakTrough, ...
-    spatialDecayPoints, spatialDecaySlope, ...
-    waveformBaseline, thisWaveform] = bc_waveformShape(templateWaveforms, ...
+    spatialDecayPoints, spatialDecaySlope, waveformBaseline, thisWaveform] = bc_waveformShape(templateWaveforms, ...
     thisUnit, maxChannel, ephys_sample_rate, channelPositions, baselineThresh, ...
-    waveformBaselineWindow, minThreshDetectPeaksTroughs, plotThis)
+    waveformBaselineWindow, minThreshDetectPeaksTroughs, firstPeakRatio, plotThis)
 % JF
 % Get the number of troughs and peaks for each waveform,
 % determine whether waveform is likely axonal/dendritic (biggest peak before
@@ -27,6 +26,8 @@ function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_pe
 %   units are classified as noise, only needed if plotThis is set to true
 % waveformBaselineWindow: QQ describe
 % minThreshDetectPeaksTroughs:  QQ describe
+% firstPeakRatio: 1 x 1 double. if units have an initial peak before the trough,
+%   it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit. 
 % plotThis: boolean, whether to plot waveform and detected peaks or not
 % ------
 % Outputs
@@ -101,13 +102,13 @@ peakLoc = peakLocs(PKS == max(PKS)); %QQ could change to better:
 % check if this is the correct peak
 maxPK = max(PKS);
 if peakLoc < troughLoc
-    if ~isempty(find(peakLocs > troughLocs))
+    if sum(any(peakLocs) > troughLocs) > 0
         possible_realPeak = PKS(peakLocs > troughLocs);
     else
         [possible_realPeak, possible_peakLoc] = max(thisWaveform(troughLoc:end));
     end
-    if maxPK < (possible_realPeak * 1.1) %QQ hardcoded for now
-        if isempty(find(peakLocs > troughLocs))
+    if maxPK < (possible_realPeak * firstPeakRatio) 
+        if sum(any(peakLocs) > troughLocs) == 0
             PKS = [PKS, possible_realPeak];
             peakLocs = [peakLocs, possible_peakLoc + troughLoc - 1];
         end
