@@ -69,7 +69,7 @@ if removeDuplicateSpikes_flag
     spikeTimes_samples = spikeTimes_samples(~duplicateSpikes_idx);
     spikeTemplates = spikeTemplates(~duplicateSpikes_idx);
     templateAmplitudes = templateAmplitudes(~duplicateSpikes_idx);
-    if ~isempty(pcFeatures) || ~isnan(pcFeatures) 
+    if ~isempty(pcFeatures) || any(~isnan(pcFeatures))
         pcFeatures = pcFeatures(~duplicateSpikes_idx, :, :);
     end
     if ~isempty(rawWaveformsFull)
