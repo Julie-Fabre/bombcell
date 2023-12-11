@@ -71,6 +71,7 @@ if removeDuplicateSpikes_flag
     templateAmplitudes = templateAmplitudes(~duplicateSpikes_idx);
     
     if ~isempty(pcFeatures) && any(~isnan(pcFeatures), 'all')
+
         pcFeatures = pcFeatures(~duplicateSpikes_idx, :, :);
     end
 
