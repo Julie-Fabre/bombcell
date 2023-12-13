@@ -28,7 +28,7 @@ end
 
 % Process qMetric if it's a structure and required field is not computed
 if isstruct(qMetric) % if saving failed, qMetric is a structure and the fractionRPVs_estimatedTauR field we need below is not computed yet
-    if ~isfield('fractionRPVs_estimatedTauR', qMetric)
+    if ~isfield(qMetric, 'fractionRPVs_estimatedTauR')
         qMetric.fractionRPVs_estimatedTauR = arrayfun(@(x) qMetric.fractionRPVs(x, qMetric.RPV_tauR_estimate(x)), 1:size(qMetric.fractionRPVs, 1));
         qMetric = rmfield(qMetric, 'fractionRPVs');
     end
