@@ -24,7 +24,11 @@ gain_to_uV = 0.195; % use this if you are not using spikeGLX or openEphys to rec
     % empty(e.g. ephysMetaDir = '')
 
 %% check MATLAB version 
-oldMATLAB = isMATLABReleaseOlderThan("R2019a");
+if exist('isMATLABReleaseOlderThan', 'file') == 0 % function introduced in MATLAB 2020b.
+    oldMATLAB = true;
+else
+    oldMATLAB = isMATLABReleaseOlderThan("R2019a");
+end
 if oldMATLAB
     error('This MATLAB version is older than 2019a - download a more recent version before continuing')
 end
@@ -39,7 +43,6 @@ rawFile = bc_manageDataCompression(ephysRawDir, decompressDataLocal);
 %% which quality metric parameters to extract and thresholds 
 param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV); %for unitmatch, run this:
 % param = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV)
-
 
 %% compute quality metrics 
 rerun = 0;
@@ -65,6 +68,9 @@ bc_loadMetricsForGUI;
 % n : go to next noise unit
 % up/down arrow: toggle between time chunks in the raw data
 % u: brings up a input dialog to enter the unit you want to go to
+
+% currently this GUI works best with a screen in portrait mode - we are
+% working to get it to handle screens in landscape mode better. 
 unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, ...
     param, probeLocation, unitType, loadRawTraces);
 
@@ -105,7 +111,12 @@ label_table = table(unitType);
 writetable(label_table,[savePath filesep 'templates._bc_unit_labels.tsv'],'FileType', 'text','Delimiter','\t');  
       
 
+%% optional: additionally compute ephys properties for each unit and classify cell types 
+rerunEP = 0;
+region = ''; % options include 'Striatum' and 'Cortex'
+[ephysProperties, unitClassif] = bc_ephysPropertiesPipeline(ephysKilosortPath, savePath, rerunEP, region);
 
-
+% example: get good MSN units 
+goodMSNs = strcmp(unitClassif, 'MSN') & unitType == 1; 
 
 

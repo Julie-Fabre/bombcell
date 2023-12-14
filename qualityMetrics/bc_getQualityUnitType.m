@@ -12,7 +12,10 @@ function [unitType, unitType_string] = bc_getQualityUnitType(param, qMetric, sav
 %   unitType==0 defines all noise units
 %   unitType==1 defines all good units
 %   unitType==2 defines all MUA units
-%   unitType==3 defines all non-somatic units
+%   unitType==3 defines all non-somatic units. If
+%       param.splitGoodAndMua_NonSomatic is true, it specifically defines good
+%       non-somatic units
+%   unitType==4 defines all MUA non-somatic units if param.splitGoodAndMua_NonSomatic is true
 % unitType_string - nUnits x 1 string array indicating the type of each unit (good, mua, noise, non-somatic).
 
 
@@ -44,22 +47,22 @@ unitType(qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs
     qMetric.waveformDuration_peakTrough > param.maxWvDuration | qMetric.waveformBaselineFlatness > param.maxWvBaselineFraction) = 0; % NOISE
 
 % Classify mua units
-unitType((qMetric.percentageSpikesMissing_gaussian > param.maxPercSpikesMissing | qMetric.nSpikes < param.minNumSpikes & ...
-    qMetric.fractionRPVs_estimatedTauR > param.maxRPVviolations | ...
-    qMetric.presenceRatio < param.minPresenceRatio) & isnan(unitType)) = 2; % MUA
+unitType((qMetric.percentageSpikesMissing_gaussian > param.maxPercSpikesMissing | qMetric.nSpikes < param.minNumSpikes | ...
+    qMetric.fractionRPVs_estimatedTauR > param.maxRPVviolations | qMetric.presenceRatio < param.minPresenceRatio) & ...
+    isnan(unitType)) = 2; % MUA
 
 if param.computeDistanceMetrics && ~isnan(param.isoDmin)
-    unitType((qMetric.isoD < param.isoDmin | ...
-        qMetric.Lratio > param.lratioMax) & isnan(unitType)) = 2; 
+    unitType((qMetric.isoD < param.isoDmin | qMetric.Lratio > param.lratioMax) & ...
+        isnan(unitType)) = 2; % MUA
 end
 
 if param.extractRaw
-  unitType((qMetric.rawAmplitude < param.minAmplitude | qMetric.signalToNoiseRatio < param.minSNR) &...
-      isnan(unitType)) = 2; 
+  unitType((qMetric.rawAmplitude < param.minAmplitude | qMetric.signalToNoiseRatio < param.minSNR) & ...
+      isnan(unitType)) = 2; % MUA
 end
 
 if param.computeDrift
-     unitType(qMetric.maxDriftEstimate > param.maxDrift & isnan(unitType)) = 2; 
+     unitType(qMetric.maxDriftEstimate > param.maxDrift & isnan(unitType)) = 2; % MUA
 end
 
 % Classify good units

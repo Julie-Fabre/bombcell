@@ -1,8 +1,7 @@
 function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_peakTrough, ...
-    spatialDecayPoints, spatialDecaySlope, ...
-    waveformBaseline, thisWaveform] = bc_waveformShape(templateWaveforms, ...
+    spatialDecayPoints, spatialDecaySlope, waveformBaseline, thisWaveform] = bc_waveformShape(templateWaveforms, ...
     thisUnit, maxChannel, ephys_sample_rate, channelPositions, baselineThresh, ...
-    waveformBaselineWindow, minThreshDetectPeaksTroughs, plotThis)
+    waveformBaselineWindow, minThreshDetectPeaksTroughs, firstPeakRatio, plotThis)
 % JF
 % Get the number of troughs and peaks for each waveform,
 % determine whether waveform is likely axonal/dendritic (biggest peak before
@@ -27,6 +26,8 @@ function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_pe
 %   units are classified as noise, only needed if plotThis is set to true
 % waveformBaselineWindow: QQ describe
 % minThreshDetectPeaksTroughs:  QQ describe
+% firstPeakRatio: 1 x 1 double. if units have an initial peak before the trough,
+%   it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit. 
 % plotThis: boolean, whether to plot waveform and detected peaks or not
 % ------
 % Outputs
@@ -49,77 +50,106 @@ function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_pe
 %
 % Centroid-based 'real' unit location calculation: Enny van Beest
 
-thisWaveform = templateWaveforms(thisUnit, :, maxChannel);
-minProminence = minThreshDetectPeaksTroughs * max(abs(squeeze(thisWaveform))); % minimum threshold to detcet peaks/troughs
 
-[PKS, peakLocs, ~] = findpeaks(squeeze(thisWaveform), 'MinPeakProminence', minProminence); % get peaks
+% (find peaks and troughs using MATLAB's built-in function)
+thisWaveform = templateWaveforms(thisUnit, :, maxChannel);
+minProminence = minThreshDetectPeaksTroughs * max(abs(squeeze(thisWaveform))); % minimum threshold to detect peaks/troughs
+
+[PKS, peakLocs] = findpeaks(squeeze(thisWaveform), 'MinPeakProminence', minProminence); % get peaks
 
 [TRS, troughLocs] = findpeaks(squeeze(thisWaveform)*-1, 'MinPeakProminence', minProminence); % get troughs
 
-if isempty(TRS) % if there is no detected trough, just take minimum value as trough
+% (check and sanitize the trough output)
+% if there is no detected trough, just take minimum value as trough
+if isempty(TRS) %
     TRS = min(squeeze(thisWaveform));
     nTroughs = numel(TRS);
-    LOCST_all = find(squeeze(thisWaveform) == TRS);
     if numel(TRS) > 1 % if more than one trough, take the first (usually the correct one) %QQ should change to better:
         % by looking for location where the data is most tightly distributed
         TRS = TRS(1);
     end
-
     troughLocs = find(squeeze(thisWaveform) == TRS);
 else
     nTroughs = numel(TRS);
 end
-if isempty(PKS) % if there is no detected peak, just take maximum value as peak
+
+% (check and sanitize the peak output)
+% if there is no detected peak, just take maximum value as peak
+if isempty(PKS)
     PKS = max(squeeze(thisWaveform));
     nPeaks = numel(PKS);
-    LOCS_all = find(squeeze(thisWaveform) == PKS);
     if numel(PKS) > 1 % if more than one peak, take the first (usually the correct one) %QQ should change to better:
         % by looking for location where the data is most tightly distributed
         PKS = PKS(1);
-        %peakWidths = peakWidths(1);
     end
     peakLocs = find(squeeze(thisWaveform) == PKS);
-
 else
     nPeaks = numel(PKS);
 end
 
 
-
-peakLoc = peakLocs(PKS == max(PKS)); %QQ could change to better:
-% by looking for location where the data is most tightly distributed
-if numel(peakLoc) > 1
-    peakLoc = peakLoc(1);
-end
+% (get the peak and trough locations)
 troughLoc = troughLocs(TRS == max(TRS)); %QQ could change to better:
 % by looking for location where the data is most tightly distributed
 if numel(troughLoc) > 1
     troughLoc = troughLoc(1);
 end
 
+
+peakLoc = peakLocs(PKS == max(PKS)); %QQ could change to better:
+% by looking for location where the data is most tightly distributed
+
+% check if this is the correct peak
+maxPK = max(PKS);
+if peakLoc < troughLoc
+    if sum(any(peakLocs) > troughLocs) > 0
+        possible_realPeak = PKS(peakLocs > troughLocs);
+    else
+        [possible_realPeak, possible_peakLoc] = max(thisWaveform(troughLoc:end));
+    end
+    if maxPK < (possible_realPeak * firstPeakRatio) 
+        if sum(any(peakLocs) > troughLocs) == 0
+            PKS = [PKS, possible_realPeak];
+            peakLocs = [peakLocs, possible_peakLoc + troughLoc - 1];
+        end
+        peakLoc = peakLocs(PKS == possible_realPeak);
+    end
+end
+if numel(peakLoc) > 1
+    peakLoc = peakLoc(1);
+end
+
+% (assess whether waveform comes from a non-somatic unit or not)
+% if maximum peak is after trough and maximum absolute peak value is smaller than trough
+if peakLoc > troughLoc && max(TRS) > max(PKS)
+    isSomatic = 1; % is a somatic spike
+else
+    isSomatic = 0;
+end
+
+% (get waveform peak to trough duration)
+% first assess which peak loc to use
 max_waveform_abs_value = max(abs(thisWaveform));
 max_waveform_location = abs(thisWaveform) == max_waveform_abs_value;
 max_waveform_value = thisWaveform(max_waveform_location);
 if max_waveform_value(end) > 0
     peakLoc_forDuration = peakLoc;
-    [~,troughLoc_forDuration] = min(thisWaveform(peakLoc_forDuration:end)); % to calculate waveform duration
-    troughLoc_forDuration = troughLoc_forDuration + peakLoc_forDuration -1;
+    [~, troughLoc_forDuration] = min(thisWaveform(peakLoc_forDuration:end)); % to calculate waveform duration
+    troughLoc_forDuration = troughLoc_forDuration + peakLoc_forDuration - 1;
 else
     troughLoc_forDuration = troughLoc;
-    [~,peakLoc_forDuration] = max(thisWaveform(troughLoc_forDuration:end)); % to calculate waveform duration
-    peakLoc_forDuration = peakLoc_forDuration + troughLoc_forDuration -1;
+    [~, peakLoc_forDuration] = max(thisWaveform(troughLoc_forDuration:end)); % to calculate waveform duration
+    peakLoc_forDuration = peakLoc_forDuration + troughLoc_forDuration - 1;
 end
-if peakLoc > troughLoc && max(TRS) > max(PKS) % if maximum peak is after trough and maximum absolute peak value is smaller than trough
-    isSomatic = 1; % is a somatic spike
-else
-    isSomatic = 0;
-end
+
+% waveform duration in microseconds
 if ~isempty(troughLoc) && ~isempty(peakLoc_forDuration)
     waveformDuration_peakTrough = 1e6 * abs(troughLoc_forDuration-peakLoc_forDuration) / ephys_sample_rate; %in us
 else
     waveformDuration_peakTrough = NaN;
 end
 
+% (get waveform spatial decay accross channels)
 channels_withSameX = find(channelPositions(:, 1) <= channelPositions(maxChannel, 1)+33 & ...
     channelPositions(:, 1) >= channelPositions(maxChannel, 1)-33); % for 4 shank probes
 if numel(channels_withSameX) >= 5
@@ -135,17 +165,13 @@ if numel(channels_withSameX) >= 5
     % waveform?
     spatialDecayPoints = max(abs(squeeze(templateWaveforms(thisUnit, :, channels_forSpatialDecayFit))));
     estimatedUnitXY = channelPositions(maxChannel, :);
-    %estimatedUnitXY = nansum(spatialDecayPoints'.*channelPositions(channels_forSpatialDecayFit, :), 1) ./ nansum(spatialDecayPoints);
     relativePositionsXY = channelPositions(channels_forSpatialDecayFit, :) - estimatedUnitXY;
     channelPositions_relative = sqrt(nansum(relativePositionsXY.^2, 2));
-    %[~, sortedChanPosIdx] = sort(sptialDecayPpint);
-
 
     [~, sortexChanPosIdx] = sort(channelPositions_relative);
     spatialDecayPoints_norm = spatialDecayPoints(sortexChanPosIdx);
     spatialDecayFit = polyfit(channelPositions_relative(sortexChanPosIdx), spatialDecayPoints_norm', 1); % fit first order polynomial to data. first output is slope of polynomial, second is a constant
     spatialDecaySlope = spatialDecayFit(1);
-    % r_squared = corrcoef(channelPositions_relative(sortexChanPosIdx),
 else
     warning('No other good channels with same x location')
     spatialDecayFit = NaN;
@@ -153,9 +179,16 @@ else
     spatialDecayPoints = nan(1, 6);
 
 end
-waveformBaseline = max(abs(thisWaveform(waveformBaselineWindow(1): ...
-    waveformBaselineWindow(2)))) / max(abs(thisWaveform));
 
+% (get waveform baseline fraction)
+if ~isnan(waveformBaselineWindow(1))
+    waveformBaseline = max(abs(thisWaveform(waveformBaselineWindow(1): ...
+        waveformBaselineWindow(2)))) / max(abs(thisWaveform));
+else
+    waveformBaseline = NaN;
+end
+
+% (plot waveform)
 if plotThis
 
     colorMtx = bc_colors(8);
@@ -186,7 +219,7 @@ if plotThis
     max_value = max(max(abs(squeeze(templateWaveforms(thisUnit, :, chansToPlot))))) * 5;
     for iChanToPlot = 1:min(20, size(chansToPlot, 1))
 
-        if maxChan == chansToPlot(iChanToPlot)% max channel
+        if maxChan == chansToPlot(iChanToPlot) % max channel
             % plot waveform line
             p1 = plot((wvTime + (channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
                 -squeeze(templateWaveforms(thisUnit, :, chansToPlot(iChanToPlot)))'+ ...
@@ -214,7 +247,7 @@ if plotThis
                 [-baselineThresh * -max(abs(thisWaveform))' + ...
                 (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value), -baselineThresh * -max(abs(thisWaveform))' + ...
                 (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value)], 'Color', colorMtx(4, :, :));
-            
+
             % plot waveform duration
             pT_locs = [troughLoc_forDuration, peakLoc_forDuration];
             dur = plot([(wvTime(min(pT_locs)) ...
