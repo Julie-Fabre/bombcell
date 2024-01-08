@@ -77,7 +77,7 @@ param.tauR_valuesMin = 2/1000; % refractory period time (s), usually 0.0020.
 param.tauR_valuesStep = 0.5/1000; % refractory period time (s) steps. Only 
     % used if param.tauR_valuesMin is different from param.tauR_valuesMax
 param.tauR_valuesMax = 2/1000; % refractory period time (s), usually 0.0020
-param.tauC = 0.1/1000; % censored period time (s)
+param.tauC = 0.1/1000; % censored period time (s) - this is to prevent duplicate spikes 
 
 % percentage spikes missing parameters 
 param.computeTimeChunks = 1; % compute fraction refractory period violations 

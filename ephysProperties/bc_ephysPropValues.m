@@ -42,6 +42,7 @@ paramEP.probeType = 1; % if you are using spikeGLX and your meta file does
     % type, or if you are using open ephys, this paramater wil be ignored.
 paramEP.detrendWaveforms = 0;
 paramEP.reextractRaw = 0; % re extract raw waveforms or not 
+paramEP.nChannels = 385;
 
 % ephys properties
 paramEP.ephys_sample_rate = 30000;
