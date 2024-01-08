@@ -11,10 +11,10 @@ ephysPropertiesExist = dir(fullfile(savePath, 'templates._bc_ephysProperties.par
 if (runEP && isempty(ephysPropertiesExist)) || rerun
 
     ephysPath = AP_cortexlab_filenameJF(animal,day,experiment,'ephys',site, recording);
-    [spikeTimes_samples, spikeTemplates, templateWaveforms_whitened,~, ~, ~, ~] = bc_loadEphysData(ephysPath);
+    [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitudes, pcFeatures, ~, channelPositions] = bc_loadEphysData(ephysPath);
     winv = readNPY([ephysPath filesep 'whitening_mat_inv.npy']);
-    ephysProperties = bc_computeAllEphysProperties(spikeTimes_samples, spikeTemplates, templateWaveforms_whitened, winv, paramEP, savePath);
-
+    ephysProperties = bc_computeAllEphysProperties(spikeTimes_samples, spikeTemplates, templateWaveforms,...
+     templateAmplitudes, pcFeatures, channelPositions, paramEP, savePath);
 elseif ~isempty(ephysPropertiesExist)
     [paramEP, ephysProperties, ~] = bc_loadSavedProperties(savePath); 
 end
