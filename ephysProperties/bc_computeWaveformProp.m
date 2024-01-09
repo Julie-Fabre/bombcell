@@ -13,17 +13,22 @@ waveformBaselineWindow = NaN;
     thisUnit, maxChannel, ephys_sample_rate, channelPositions, baselineThresh, ...
     waveformBaselineWindow, minThreshDetectPeaksTroughs, firstPeakRatio, plotThis);
 
+if ~isnan(nPeaks) && ~isnan(nTroughs)
+
 % time 
 wvTime = 1e3 * ((0:size(thisWaveform, 2) - 1) / ephys_sample_rate);
 
 % Compute Half-Width
+
 troughAmplitude = thisWaveform(troughLocs(1));
 halfAmplitude = troughAmplitude / 2;
 aboveHalfIndices = find(thisWaveform >= halfAmplitude);
 halfWidthStartIndex = aboveHalfIndices(find(aboveHalfIndices < peakLocs(end), 1, 'last'));
 halfWidthEndIndex = aboveHalfIndices(find(aboveHalfIndices > peakLocs(end), 1));
 halfWidth = wvTime(halfWidthEndIndex) - wvTime(halfWidthStartIndex);
-
+if isempty(halfWidth)
+    halfWidth = NaN;
+end
 % peak to trough ratio
 peakAmplitude = thisWaveform(peakLocs(end));
 peakTroughRatio = abs(peakAmplitude/troughAmplitude);
@@ -43,4 +48,9 @@ firstPeakTroughRatio = abs(firstPeakAmplitude/troughAmplitude);
 % 
 % % Compute Decay Slope (Max Slope during the Falling Phase)
 % decaySlope = min(diff(thisWaveform(peakIndex:halfWidthEndIndex)) ./ diff(time(peakIndex:halfWidthEndIndex)));
+else
+    halfWidth = NaN;
+    peakTroughRatio = NaN;
+    firstPeakTroughRatio = NaN;
+end
 end
