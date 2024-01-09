@@ -12,10 +12,17 @@ function [mean_firingRate, fanoFactor, max_firingRate, min_firingRate] = bc_comp
         (sum(use_spiking_stat_bins, 2) * spiking_stat_window);
 
     % get spike counts 
-    spikeCounts = histcounts(theseSpikes, min(theseSpikes):1:max(theseSpikes));
-    
-    % fano factor
+    if length(theseSpikes) > 1
+     spikeCounts = histcounts(theseSpikes, min(theseSpikes):1:max(theseSpikes));
+     % fano factor
     fanoFactor = var(spikeCounts) / mean(spikeCounts);
+    else
+        spikeCounts = 1;
+        fanoFactor = NaN;
+    end
+
+    
+    
 
     % max and min firing rate 
     max_firingRate = prctile(spikeCounts, 95);
