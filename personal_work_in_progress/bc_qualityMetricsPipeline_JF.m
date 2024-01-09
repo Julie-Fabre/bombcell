@@ -31,6 +31,9 @@ else
 end
 %% run qmetrics 
 param = bc_qualityParamValues_JF(ephysMetaDir, rawFile, '', ''); 
+if ~decompress
+    param.extractRaw = 0;
+end
 %param.computeDistanceMetrics = 1;
 
 %% compute quality metrics 

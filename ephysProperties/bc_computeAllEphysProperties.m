@@ -57,8 +57,9 @@ for iUnit = 1:length(uniqueTemplates)
         ephysProperties.peakTroughRatio(iUnit), ephysProperties.firstPeakTroughRatio(iUnit),...
         ephysProperties.nPeaks(iUnit), ephysProperties.nTroughs(iUnit), ephysProperties.isSomatic(iUnit)] =...
         bc_computeWaveformProp(templateWaveforms,thisUnit, ephysProperties.maxChannels(thisUnit),...
-        paramEP.ephys_sample_rate, channelPositions, paramEP.minThreshDetectPeaksTroughs);
+        paramEP.ephys_sample_rate, channelPositions,  paramEP.minThreshDetectPeaksTroughs, paramEP.maxWvBaselineFraction);
 
+   
     %% Burstiness properties
     % Work in progress
 

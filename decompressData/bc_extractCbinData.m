@@ -118,6 +118,7 @@ fN = dir(fileName);
 if isfolder(saveFileFolder)
     if onlySaveSyncChannel
         decompDataFile = [saveFileFolder, filesep, fN.name(1:end-14), '_bc_decompressed_sync_channel', fN.name(end-13:end-8),'.mat'];
+        decompDataFile2 = [saveFileFolder, filesep, 'sync.mat'];
     
     else
         decompDataFile = [saveFileFolder, filesep, fN.name(1:end-14), '_bc_decompressed', fN.name(end-13:end-8),'.ap.bin'];
@@ -197,6 +198,7 @@ else
     end
     if onlySaveSyncChannel
         save(decompDataFile, 'syncdata')
+        save(decompDataFile2, 'syncdata')
     end
 
 end

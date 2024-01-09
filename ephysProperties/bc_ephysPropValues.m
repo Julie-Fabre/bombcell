@@ -1,4 +1,4 @@
-function paramEP = bc_ephysPropValues
+function paramEP = bc_ephysPropValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV)
 % 
 % JF, Load a parameter structure defining extraction and
 % classification parameters
@@ -16,6 +16,21 @@ function paramEP = bc_ephysPropValues
 paramEP = struct; 
 paramEP.plotThis = 0;
 paramEP.verbose = 1;
+
+% recording parameters
+paramEP.ephys_sample_rate = 30000; % samples per second
+paramEP.nChannels = 385; %number of recorded channels (including any sync channels)
+    % recorded in the raw data. This is usually 384 or 385 for neuropixels
+    % recordings
+paramEP.nSyncChannels = 1;
+if  ~isempty(ephysMetaDir)
+    paramEP.ephysMetaFile = [ephysMetaDir.folder, filesep, ephysMetaDir.name];
+    paramEP.gain_to_uV = NaN;
+else
+    paramEP.ephysMetaFile = 'NaN';
+    paramEP.gain_to_uV = gain_to_uV;
+end
+paramEP.rawFile = rawFile;
 
 % duplicate spikes parameters 
 paramEP.removeDuplicateSpikes = 1;
@@ -58,6 +73,8 @@ paramEP.longISI = 2;
 paramEP.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value 
     % in a units waveform to give the minimum prominence to detect peaks using
     % matlab's findpeaks function.
+paramEP.maxWvBaselineFraction = 0.3; % maximum absolute value in waveform baseline
+    % should not exceed this fraction of the waveform's abolute peak value
 
 % QQ set this the same as qmetrics (load useChunks Start and stop)
 %paramEP.computeTimeChunks = 1; % compute ephysProperties for different time chunks 
