@@ -53,7 +53,11 @@ if removeDuplicateSpikes_flag
         end
         % save data if required
         if saveSpikes_withoutDuplicates_flag
-            writeNPY(duplicateSpikes_idx, [savePath, filesep, 'spikes._bc_duplicateSpikes.npy'])
+            try
+                writeNPY(duplicateSpikes_idx, [savePath, filesep, 'spikes._bc_duplicateSpikes.npy'])
+            catch
+                warning('unable to save duplicate spikes')
+            end
         end
 
     else

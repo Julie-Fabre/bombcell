@@ -13,6 +13,20 @@ function paramEP = bc_ephysPropValues(ephysMetaDir, rawFile, ephysKilosortPath, 
 %   classification parameters
 % 
 
+if nargin < 1
+    ephysMetaDir = '';
+end
+if nargin < 2
+    rawFile = 'NaN';
+end
+if nargin < 3
+    ephysKilosortPath = '';
+end
+
+if nargin < 4
+    gain_to_uV = NaN;
+end
+
 paramEP = struct; 
 paramEP.plotThis = 0;
 paramEP.verbose = 1;
@@ -48,7 +62,7 @@ paramEP.saveMultipleRaw = 0; % If you wish to save the nRawSpikesToExtract as we
     % to track chronic cells over days after this
 paramEP.decompressData = 0; % whether to decompress .cbin ephys data 
 paramEP.spikeWidth = 82; % width in samples 
-paramEP.extractRaw = 1; %whether to extract raw waveforms or not 
+paramEP.extractRaw = 0; %whether to extract raw waveforms or not 
 paramEP.probeType = 1; % if you are using spikeGLX and your meta file does 
     % not contain information about your probe type for some reason
     % specify it here: '1' for 1.0 (3Bs) and '2' for 2.0 (single or 4-shanks)

@@ -48,18 +48,17 @@ for iUnit = 1:length(uniqueTemplates)
     %% ISI-based properties
     ISIs = diff(spikeTimes);
 
-    [ephysProperties.proplongISI(iUnit), ephysProperties.coefficient_variation(iUnit),...
+    [ephysProperties.propLongISI(iUnit), ephysProperties.coefficient_variation(iUnit),...
          ephysProperties.coefficient_variation2(iUnit),  ephysProperties.isi_skewness(iUnit)] = bc_computeISIprop(ISIs, theseSpikeTimes);
 
     %% Waveform-based properties
-    % Work in progress: add option to use mean raw waveform
+    % Work in progress: add option to use mean raw waveform 
     [ephysProperties.waveformDuration_peakTrough_us(iUnit), ephysProperties.halfWidth_ms(iUnit), ...
         ephysProperties.peakTroughRatio(iUnit), ephysProperties.firstPeakTroughRatio(iUnit),...
         ephysProperties.nPeaks(iUnit), ephysProperties.nTroughs(iUnit), ephysProperties.isSomatic(iUnit)] =...
         bc_computeWaveformProp(templateWaveforms,thisUnit, ephysProperties.maxChannels(thisUnit),...
         paramEP.ephys_sample_rate, channelPositions,  paramEP.minThreshDetectPeaksTroughs, paramEP.maxWvBaselineFraction);
 
-   
     %% Burstiness properties
     % Work in progress
 
