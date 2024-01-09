@@ -176,6 +176,7 @@ else
         % get maximum value %QQ could we do value at detected trough is peak
         % waveform?
         spatialDecayPoints = max(abs(squeeze(templateWaveforms(thisUnit, :, channels_forSpatialDecayFit))));
+       
         estimatedUnitXY = channelPositions(maxChannel, :);
         relativePositionsXY = channelPositions(channels_forSpatialDecayFit, :) - estimatedUnitXY;
         channelPositions_relative = sqrt(nansum(relativePositionsXY.^2, 2));
@@ -184,6 +185,9 @@ else
         spatialDecayPoints_norm = spatialDecayPoints(sortexChanPosIdx);
         spatialDecayFit = polyfit(channelPositions_relative(sortexChanPosIdx), spatialDecayPoints_norm', 1); % fit first order polynomial to data. first output is slope of polynomial, second is a constant
         spatialDecaySlope = spatialDecayFit(1);
+        if length(spatialDecayPoints) < 6
+            spatialDecayPoints = [spatialDecayPoints, nan(6-length(spatialDecayPoints),1)];
+        end
     else
         warning('No other good channels with same x location')
         spatialDecayFit = NaN;

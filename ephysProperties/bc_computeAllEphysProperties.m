@@ -30,7 +30,6 @@ spikeTimes = spikeTimes_samples ./ paramEP.ephys_sample_rate; %convert to second
 % end
 
 fprintf('\n Extracting ephys properties ... ')
-
 for iUnit = 1:length(uniqueTemplates)
     clearvars thisUnit theseSpikeTimes
 
@@ -80,7 +79,6 @@ fprintf('\n Finished extracting ephys properties')
 try
     bc_saveEphysProperties(paramEP, ephysProperties, savePath);
     fprintf('\n Saved ephys properties to %s \n', savePath)
-
 catch
     warning('\n Warning, ephys properties not saved! \n')
 end
