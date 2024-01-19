@@ -32,7 +32,6 @@ else % load in unit match data
     ephysData.template_amplitudes = sp{countid}.tempScalingAmps(idx);
     ephysData.channel_positions = channelpostmp;
 end
-ephysData.spike_times = ephysData.spike_times_samples ./ ephysData.ephys_sample_rate;
 
 ephysData.waveform_t = 1e3 * ((0:size(ephysData.templates, 2) - 1) / ephysData.ephys_sample_rate);
 ephysParams = struct;
@@ -50,6 +49,9 @@ rawWaveforms.peakChan = readNPY([fullfile(savePath, 'templates._bc_rawWaveformPe
     [], rawWaveforms.average, rawWaveforms.peakChan,[],...
     qMetric.maxChannels, param.removeDuplicateSpikes, param.duplicateSpikeWindow_s, ...
     param.ephys_sample_rate, param.saveSpikes_withoutDuplicates, savePath, param.recomputeDuplicateSpikes);
+
+% convert spike times from samples to seconds 
+ephysData.spike_times = ephysData.spike_times_samples ./ ephysData.ephys_sample_rate;
 
 % load other gui stuffs 
 if ~exist('forGUI', 'var') || ~isempty(dir([savePath, filesep, 'templates.qualityMetricDetailsforGUI.mat']))
