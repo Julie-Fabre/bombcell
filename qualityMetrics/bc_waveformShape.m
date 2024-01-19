@@ -186,7 +186,11 @@ else
         spatialDecayFit = polyfit(channelPositions_relative(sortexChanPosIdx), spatialDecayPoints_norm', 1); % fit first order polynomial to data. first output is slope of polynomial, second is a constant
         spatialDecaySlope = spatialDecayFit(1);
         if length(spatialDecayPoints) < 6
-            spatialDecayPoints = [spatialDecayPoints, nan(6-length(spatialDecayPoints),1)];
+                if length(spatialDecayPoints) > 1
+                    spatialDecayPoints = [spatialDecayPoints, nan(6-length(spatialDecayPoints),1)];
+                else
+                    spatialDecayPoints = [spatialDecayPoints; nan(6-length(spatialDecayPoints),1)];
+                end
         end
     else
         warning('No other good channels with same x location')

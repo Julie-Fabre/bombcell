@@ -11,11 +11,13 @@ function [mean_firingRate, fanoFactor, max_firingRate, min_firingRate] = bc_comp
     mean_firingRate = sum(bin_spikes.*use_spiking_stat_bins, 2) ./ ...
         (sum(use_spiking_stat_bins, 2) * spiking_stat_window);
 
-    % get spike counts 
-    if length(theseSpikes) > 1
-     spikeCounts = histcounts(theseSpikes, min(theseSpikes):1:max(theseSpikes));
-     % fano factor
-    fanoFactor = var(spikeCounts) / mean(spikeCounts);
+    
+    if length(theseSpikes) > 1 && max(diff(theseSpikes)) > 1
+        % get spike counts 
+        spikeCounts = histcounts(theseSpikes, min(theseSpikes):1:max(theseSpikes));
+        
+        % fano factor
+        fanoFactor = var(spikeCounts) / mean(spikeCounts);
     else
         spikeCounts = 1;
         fanoFactor = NaN;
