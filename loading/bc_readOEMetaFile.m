@@ -16,9 +16,12 @@ function scalingFactor = bc_readOEMetaFile(metaFile)
 % - OE docs ref: https://open-ephys.atlassian.net/wiki/spaces/OEW/pages/166789121/Flat+binary+format
 % - sanity check: AP raw numbers are quantized by 12, which *0.195 = 2.34. (Same for the LFP, quantized by 24).
 %
-filetext = fileread(metaFile);
-expr = '"bit_volts": '; % this is actually the scaling factor
-[~, endIndex] = regexp(filetext, expr);
 
-scalingFactor = str2num(filetext(endIndex(1)+1:endIndex(1)+8));
+%filetext = fileread(metaFile);
+%expr = '"bit_volts": '; % this is actually the scaling factor
+%[~, endIndex] = regexp(filetext, expr);
+
+%scalingFactor = str2num(filetext(endIndex(1)+1:endIndex(1)+8));
+
+scalingFactor = 0.1949999928474426; %hard-coded for now because this a property of how the data is saved, and not of probe type ect. (e.g. see https://groups.google.com/g/open-ephys/c/9CKgVPoEF7M?pli=1)
 end
