@@ -7,22 +7,22 @@ function prettify_plot(varargin)
 %       If a string, either:
 %           - 'keep': don't change any of the xlimits
 %           - 'same': set all xlimits to the same values
-%           - 'row': set all xlimits to the same values for each subplot row
-%           - 'col': set all xlimits to the same values for each subplot col
+%           - 'rows': set all xlimits to the same values for each subplot row
+%           - 'cols': set all xlimits to the same values for each subplot col
 %       If a number, 1 * 2 double setting the minimum and maximum values
 % - YLimits: string or number.
 %       If a string, either:
 %           - 'keep': don't change any of the ylimits
 %           - 'same': set all ylimits to the same values
-%           - 'row': set all ylimits to the same values for each subplot row
-%           - 'col': set all ylimits to the same values for each subplot col
+%           - 'rows': set all ylimits to the same values for each subplot row
+%           - 'cols': set all ylimits to the same values for each subplot col
 %       If a number, 1 * 2 double setting the minimum and maximum values
 % - CLimits, string or number.
 %       If a string, either:
 %           - 'keep': don't change any of the xlimits
 %           - 'same': set all xlimits to the same values
-%           - 'row': set all xlimits to the same values for each subplot row
-%           - 'col': set all xlimits to the same values for each subplot col
+%           - 'rows': set all xlimits to the same values for each subplot row
+%           - 'cols': set all xlimits to the same values for each subplot col
 %       If a number, 1 * 2 double setting the minimum and maximum values
 % - LimitsRound % Number of decimals to keep when rounding. set to NaN if you don't want any changes
 % - SymmetricalCLimits: boolean. Whether to make CLimits symmetrical around 0
@@ -230,10 +230,10 @@ for iAx = 1:size(all_axes, 2)
         set(currAx, 'LineWidth', options.TickWidth); % Make tick marks and axis lines thicker.
 
         %set(currAx, 'Grid', options.AxisGrid)
-        if strcmp(options.AxisAspectRatio, 'keep') == 0
+        if strcmp(options.AxisAspectRatio, 'keep') == 0 && sum(strcmp(options.XLimits, {'rows', 'cols' 'all'})) == 0 && sum(strcmp(options.YLimits, {'rows', 'cols' 'all'})) == 0
             axis(currAx, options.AxisAspectRatio)
         end
-        if strcmp(options.AxisTightness, 'keep') == 0
+        if strcmp(options.AxisTightness, 'keep') == 0 && sum(strcmp(options.XLimits, {'rows', 'cols' 'all'})) == 0 && sum(strcmp(options.YLimits, {'rows', 'cols' 'all'})) == 0
             axis(currAx, options.AxisTightness)
         end
 

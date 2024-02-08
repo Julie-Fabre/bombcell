@@ -9,7 +9,7 @@ if ~isnan(LimitsRound) % round up all limits to the nearest LimitsRound decimal 
 end
 
 % homogenize x, y, and climits across rows/columns of plots.
-%if ismember(XLimits, {'all', 'row', 'col'}) || ismember(YLimits, {'all', 'row', 'col'}) || ismember(CLimits, {'all', 'row', 'col'})
+if ismember(XLimits, {'all', 'rows', 'cols'}) || ismember(YLimits, {'all', 'rows', 'cols'}) || ismember(CLimits, {'all', 'rows', 'cols'})
     % get rows and cols
     col_subplots = unique(ax_pos(:, 1));
     row_subplots = unique(ax_pos(:, 2));
@@ -32,9 +32,10 @@ end
         thisAx = all_axes(iAx);
         currAx = currFig_children(thisAx);
         if ~isempty(currAx) %(currAx, limits, limitRows, limitCols, axPos, limitIdx_row, limitIdx_col, limitType)
-            setNewXYLimits(currAx, xlims_subplot, row_xlims, col_xlims, ax_pos, row_subplots,...
+            setNewXYLimits(currAx, xlims_subplot, row_xlims, col_xlims, ax_pos, row_subplots, ...
                 col_subplots, XLimits, 'Xlim', iAx) %set x limits
-            setNewXYLimits(currAx, ylims_subplot, row_ylims, col_ylims, ax_pos, row_subplots,...
+            
+            setNewXYLimits(currAx, ylims_subplot, row_ylims, col_ylims, ax_pos, row_subplots, ...
                 col_subplots, YLimits, 'Ylim', iAx) %set y limits
 
 
@@ -45,7 +46,7 @@ end
             elseif ismember(CLimits, {'rows'})
                 theseCLims = row_clims{ax_pos(iAx, 2) == row_subplots};
             else
-                theseCLims = clims_subplot(iAx,:);
+                theseCLims = clims_subplot(iAx, :);
             end
             setNewCLimits(currAx, theseCLims, SymmetricalCLimits)
         end
@@ -54,14 +55,14 @@ end
     end
 
 
-% elseif SymmetricalCLimits
-%     for iAx = 1:size(all_axes, 2)
-%         thisAx = all_axes(iAx);
-%         currAx = currFig_children(thisAx);
-%         theseCLims = currAx.CLim;
-%         setNewCLimits(currAx, theseCLims, SymmetricalCLimits)
-%     end
-% end
+elseif SymmetricalCLimits
+    for iAx = 1:size(all_axes, 2)
+        thisAx = all_axes(iAx);
+        currAx = currFig_children(thisAx);
+        theseCLims = currAx.CLim;
+        setNewCLimits(currAx, theseCLims, SymmetricalCLimits)
+    end
+end
 
 
     function setNewXYLimits(currAx, limits, limitRows, limitCols, axPos, limitIdx_row, limitIdx_col, limitType, textLim, iAx)
