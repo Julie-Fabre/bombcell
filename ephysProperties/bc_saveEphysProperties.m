@@ -21,6 +21,9 @@ if ~exist(savePath, 'dir')
 end
 
 % save parameters
+if isempty(paramEP.gain_to_uV)
+        paramEP.gain_to_uV = 'NaN';
+end
 parquetwrite([fullfile(savePath, '_bc_parameters._bc_ephysProperties.parquet')], struct2table(paramEP))
 
 % save acg
