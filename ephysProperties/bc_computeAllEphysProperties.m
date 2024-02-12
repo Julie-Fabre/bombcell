@@ -77,7 +77,7 @@ ephysProperties.maxChannels = ephysProperties.maxChannels(uniqueTemplates)';
 
 fprintf('\n Finished extracting ephys properties')
 try
-    bc_saveEphysProperties(paramEP, ephysProperties, savePath);
+    ephysProperties = bc_saveEphysProperties(paramEP, ephysProperties, savePath);
     fprintf('\n Saved ephys properties to %s \n', savePath)
 catch
     warning('\n Warning, ephys properties not saved! \n')
