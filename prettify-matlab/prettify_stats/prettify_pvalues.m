@@ -23,9 +23,9 @@ addParameter(p, 'TextRotation', 0, @isnumeric);
 addParameter(p, 'TextFontSize', 10, @isnumeric);
 addParameter(p, 'LineColor', 'k');
 addParameter(p, 'LineWidth', 1.5, @isnumeric);
-addParameter(p, 'LineMargin', 0.05, @isnumeric);
+addParameter(p, 'LineMargin', 0.001, @isnumeric);
 addParameter(p, 'TickLength', 0.01, @isnumeric);
-addParameter(p, 'TextMargin', 0.1, @isnumeric);
+addParameter(p, 'TextMargin', 0.02, @isnumeric);
 % Plot type paramaters 
 % addParameter(p, 'AxisForPvalues', 'Y'); % Y axis by default. Change to X
 % or Z if necessary %QQ to add 
