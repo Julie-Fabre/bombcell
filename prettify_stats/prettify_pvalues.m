@@ -25,7 +25,7 @@ addParameter(p, 'LineColor', 'k');
 addParameter(p, 'LineWidth', 1.5, @isnumeric);
 addParameter(p, 'LineMargin', 0.001, @isnumeric);
 addParameter(p, 'TickLength', 0.01, @isnumeric);
-addParameter(p, 'TextMargin', 0.02, @isnumeric);
+addParameter(p, 'TextMargin', 0.05, @isnumeric);
 % Plot type paramaters 
 % addParameter(p, 'AxisForPvalues', 'Y'); % Y axis by default. Change to X
 % or Z if necessary %QQ to add 

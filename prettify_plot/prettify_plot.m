@@ -176,7 +176,7 @@ currFig = gcf;
 set(currFig, 'color', options.FigureColor);
 
 % update font
-fontname(options.Font)
+fontname(currFig, options.Font)
 
 % get axes children
 currFig_children = currFig.Children;
@@ -230,10 +230,12 @@ for iAx = 1:size(all_axes, 2)
         set(currAx, 'LineWidth', options.TickWidth); % Make tick marks and axis lines thicker.
 
         %set(currAx, 'Grid', options.AxisGrid)
-        if strcmp(options.AxisAspectRatio, 'keep') == 0 && sum(strcmp(options.XLimits, {'rows', 'cols' 'all'})) == 0 && sum(strcmp(options.YLimits, {'rows', 'cols' 'all'})) == 0
+        if strcmp(options.AxisAspectRatio, 'keep') == 0 && ...
+                ((sum(strcmp(options.XLimits, {'rows', 'cols' 'all'})) == 0 && sum(strcmp(options.YLimits, {'rows', 'cols' 'all'})) == 0) && ~isnumeric(options.XLimits))
             axis(currAx, options.AxisAspectRatio)
         end
-        if strcmp(options.AxisTightness, 'keep') == 0 && sum(strcmp(options.XLimits, {'rows', 'cols' 'all'})) == 0 && sum(strcmp(options.YLimits, {'rows', 'cols' 'all'})) == 0
+        if strcmp(options.AxisTightness, 'keep') == 0 &&...
+                ((sum(strcmp(options.XLimits, {'rows', 'cols' 'all'})) == 0 && sum(strcmp(options.YLimits, {'rows', 'cols' 'all'})) == 0) && ~isnumeric(options.XLimits))
             axis(currAx, options.AxisTightness)
         end
 
