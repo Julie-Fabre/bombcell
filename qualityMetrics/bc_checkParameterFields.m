@@ -24,7 +24,7 @@ defaultValues.saveSpikes_withoutDuplicates = 1;
 defaultValues.recomputeDuplicateSpikes = 0;
 
 % raw waveforms 
-defaultValues.detrendWaveforms = 0;
+defaultValues.detrendWaveform = 0;
 defaultValues.extractRaw = 1;
 
 % amplitude 

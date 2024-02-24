@@ -173,11 +173,12 @@ if param.plotGlobal
 
         subplot(4, 5, 10)
         hold on;
-        histogram(qMetric.spatialDecaySlope, 'FaceColor', colorMtx(10, 1:3), 'FaceAlpha', colorMtx(10, 4), 'BinEdges', [min(qMetric.spatialDecaySlope):(max(qMetric.spatialDecaySlope) - min(qMetric.spatialDecaySlope))./10:max(qMetric.spatialDecaySlope)]);
+        histogram(qMetric.spatialDecaySlope, 'FaceColor', colorMtx(10, 1:3), 'FaceAlpha', colorMtx(10, 4), 'BinEdges',...
+            [min(qMetric.spatialDecaySlope):(max(qMetric.spatialDecaySlope) - min(qMetric.spatialDecaySlope))./10:max(qMetric.spatialDecaySlope)]);
         yLim = ylim;
         line([param.minSpatialDecaySlope, param.minSpatialDecaySlope], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         xLim = xlim;
-        rectangle('Position', [xLim(1), yLim(1), abs(param.minSpatialDecaySlope) - xLim(1), yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
+        rectangle('Position', [xLim(1), yLim(1), abs(param.minSpatialDecaySlope - xLim(1)), yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
 
         ylabel('unit count')
         xlabel(['spatial decay', newline, 'slope'])
