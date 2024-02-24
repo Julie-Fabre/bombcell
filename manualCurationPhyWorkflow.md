@@ -46,14 +46,14 @@ If NO, label as MUA (Alt+M) and move to next cluster.
 
 ## Workflow flowchart
 
-<img src="https://github.com/Julie-Fabre/bombcell/images/phyWorkflow.png" width=80% height=80%>
+<img src="./images/phyWorkflow.png" width=80% height=80%>
 
 ## Examples
 
 #### Good waveforms
 
-<img src="https://github.com/Julie-Fabre/bombcell/images/goodWaveforms.png" width=80% height=80%>
+<img src="./images/goodWaveforms.png" width=80% height=80%>
 
 #### Bad waveforms
 
-<img src="https://github.com/Julie-Fabre/bombcell/images/badWaveforms.png" width=80% height=80%>
+<img src="./images/badWaveforms.png" width=80% height=80%>
