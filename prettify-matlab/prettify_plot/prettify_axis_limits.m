@@ -9,7 +9,16 @@ if ~isnan(LimitsRound) % round up all limits to the nearest LimitsRound decimal 
 end
 
 % homogenize x, y, and climits across rows/columns of plots.
-if ismember(XLimits, {'all', 'rows', 'cols'}) || ismember(YLimits, {'all', 'rows', 'cols'}) || ismember(CLimits, {'all', 'rows', 'cols'})
+
+if isnumeric(XLimits) && isnumeric(YLimits)
+    for iAx = 1:size(all_axes, 2)
+        thisAx = all_axes(iAx);
+        currAx = currFig_children(thisAx);
+        set(currAx, 'XLim', [XLimits(1), XLimits(2)]);
+        set(currAx, 'YLim', [YLimits(1), YLimits(2)]);
+    end
+
+elseif ismember(XLimits, {'all', 'rows', 'cols'}) || ismember(YLimits, {'all', 'rows', 'cols'}) || ismember(CLimits, {'all', 'rows', 'cols'})
     % get rows and cols
     col_subplots = unique(ax_pos(:, 1));
     row_subplots = unique(ax_pos(:, 2));

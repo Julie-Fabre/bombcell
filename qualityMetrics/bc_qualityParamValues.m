@@ -62,7 +62,6 @@ param.probeType = 1; % if you are using spikeGLX and your meta file does
     % For additional probe types, make a pull request with more
     % information.  If your spikeGLX meta file contains information about your probe
     % type, or if you are using open ephys, this paramater wil be ignored.
-param.detrendWaveforms = 0;
 
 % signal to noise ratio
 param.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times
@@ -89,7 +88,7 @@ param.presenceRatioBinSize = 60; % in seconds
 
 % drift estimate
 param.driftBinSize = 60; % in seconds
-param.computeDrift = 0; % whether to compute each units drift. this is a 
+param.computeDrift = 1; % whether to compute each units drift. this is a 
     % critically slow step that takes around 2seconds per unit 
 
 % waveform parameters
@@ -117,7 +116,7 @@ end
 param.rawFile = rawFile;
 
 % distance metric parameters
-param.computeDistanceMetrics = 0; % whether to compute distance metrics - this can be time consuming 
+param.computeDistanceMetrics = 1; % whether to compute distance metrics - this can be time consuming 
 param.nChannelsIsoDist = 4; % number of nearby channels to use in distance metric computation 
 
 

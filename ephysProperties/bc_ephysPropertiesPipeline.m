@@ -20,7 +20,7 @@ end
 if ~isempty(region) &&...
         ismember(region, {'CP', 'STR', 'Striatum', 'DMS', 'DLS', 'PS',...
         'Ctx', 'Cortical', 'Cortex'}) % cortex and striaum spelled every possible way 
-    unitClassif = bc_classifyCells(ephysProperties, paramEP);
+    unitClassif = bc_classifyCells(ephysProperties, paramEP, region);
     
 else
     unitClassif = nan(size(ephysProperties,1),1);

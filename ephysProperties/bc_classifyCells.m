@@ -1,4 +1,4 @@
-function unitClassif = bc_classifyCells(ephysProperties, paramEP)
+function unitClassif = bc_classifyCells(ephysProperties, paramEP, region)
 % classify striatal, GPe and cortical cells
 unitClassif = cell(size(ephysProperties,1),1);
 
