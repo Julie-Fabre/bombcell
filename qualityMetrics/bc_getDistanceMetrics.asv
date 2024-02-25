@@ -61,6 +61,7 @@ for iOtherUnit = 1:numel(uC)
             end
         end
         if any(ismember(theseChannels(:), theseOtherChans))
+            %keyboard;
             nCount = nCount + sum(theseOtherSpikes);
             %if ~isempty(theseOtherFeaturesSingle(iOtherUnit).THIS)
             [r, ~, ~] = ind2sub(size(theseOtherFeaturesInd), find(theseOtherFeaturesInd == double(thisOtherUnit)));
@@ -77,7 +78,7 @@ for iOtherUnit = 1:numel(uC)
     end
 end
 
-if nCount > numberSpikes && numberSpikes > nChansToUse * nPCs %isolation distance not defined
+if nCount > numberSpikes && numberSpikes > nChansToUse * nPCs 
     %isolation distance
     halfWayPoint = size(theseFeatures, 1);
 
@@ -99,7 +100,7 @@ if nCount > numberSpikes && numberSpikes > nChansToUse * nPCs %isolation distanc
     silhouetteScore = (nanmean(mahalDclosest) - nanmean(mahalDself)) / max([mahalDclosest; mahalDself]);
 
 
-elseif ~isempty(theseOtherFeatures) && numberSpikes > nChansToUse * nPCs
+elseif ~isempty(theseOtherFeatures) && numberSpikes > nChansToUse * nPCs %isolation distance not defined
     %isolation distance
     halfWayPoint = NaN;
     isoD = NaN;
@@ -139,7 +140,10 @@ end
 if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
     Yplot = reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse);
     Xplot = theseFeatures;
-    d2_mahal = mahal(Yplot, Xplot);
+    d2_mahal = mahal(Yplot, Xplot).^2;
+
+    mahal_noise = mahal(Xplot,Xplot).^2;
+    mahal_unit = mahal(Yplot,Yplot).^2;
 
     if plotThis
 
@@ -178,14 +182,38 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
         figure(); 
         subplot(3,1,1)
         hold on;
-        histogram(Xplot(:), 'BinWidth', 0.5, 'FaceColor', 'blue', 'EdgeColor', 'none', 'Normalization', 'count');
-        histogram(Yplot(:), 'BinWidth', 0.5, 'FaceColor', 'red', 'EdgeColor', 'none', 'Normalization', 'count');
+        
+        % Adjusting histograms to be outlines with a larger bin size for smoothing
+        histogram(mahal_noise, 'BinWidth', 2, 'FaceColor', 'none', 'EdgeColor', 'blue', 'DisplayStyle', 'stairs', 'LineWidth', 2);
+        histogram(mahal_unit, 'BinWidth', 2, 'FaceColor', 'none', 'EdgeColor', 'red', 'DisplayStyle', 'stairs', 'LineWidth', 2);
         
         legend('Noise (other units)', 'This unit');
-        xlabel('Squared mahalanobnis distance');
+        xlabel('Squared Mahalanobis distance');
         ylabel('Count');
         
         hold off;
+
+        subplot(3,1,2)
+        [Fx, Xx] = ecdf(mahal_noise);
+        [Fy, Xy] = ecdf(mahal_unit);
+        
+        % Plot cumulative distributions
+        plot(Xx, Fx, 'b', 'LineWidth', 2); % Xplot in blue
+        plot(Xy, Fy, 'r', 'LineWidth', 2); % Yplot in red
+        
+        % Find intersection
+        [~, intersectIdx] = min(abs(Fx - Fy)); % Simple approach, might need refinement
+        xIntersection = Xx(intersectIdx);
+        yIntersection = Fx(intersectIdx);
+        
+        % Plot intersection
+        plot(xIntersection, yIntersection, 'ko', 'MarkerFaceColor', 'k'); % Intersection point
+        plot([xIntersection, xIntersection], [0, yIntersection], 'k--'); % Dashed line
+
+legend('Xplot CDF', 'Yplot CDF', 'Intersection');
+xlabel('Value');
+ylabel('Cumulative Probability');
+title('Cumulative Distributions of Xplot and Yplot');
 
 
         % Add legends and other global annotations outside the loop, if they apply globally

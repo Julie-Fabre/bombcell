@@ -88,7 +88,7 @@ param.presenceRatioBinSize = 60; % in seconds
 
 % drift estimate
 param.driftBinSize = 60; % in seconds
-param.computeDrift = 1; % whether to compute each units drift. this is a 
+param.computeDrift = 0; % whether to compute each units drift. this is a 
     % critically slow step that takes around 2seconds per unit 
 
 % waveform parameters
@@ -116,7 +116,7 @@ end
 param.rawFile = rawFile;
 
 % distance metric parameters
-param.computeDistanceMetrics = 1; % whether to compute distance metrics - this can be time consuming 
+param.computeDistanceMetrics = 0; % whether to compute distance metrics - this can be time consuming 
 param.nChannelsIsoDist = 4; % number of nearby channels to use in distance metric computation 
 
 
