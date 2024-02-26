@@ -171,10 +171,12 @@ for iUnit = 1:size(uniqueTemplates, 1)
 
     %% distance metrics
     if param.computeDistanceMetrics
+        %param.plotDetails = 1;
         [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit), ...
             forGUI.d2_mahal{iUnit}, forGUI.mahalobnis_Xplot{iUnit}, forGUI.mahalobnis_Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
             param.nChannelsIsoDist, param.plotDetails); %QQ
+        %param.plotDetails = 0;
     end
 
     %% display progress
