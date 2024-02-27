@@ -67,7 +67,7 @@ for iOtherUnit = 1:numel(uC)
             [r, ~, ~] = ind2sub(size(theseOtherFeaturesInd), find(theseOtherFeaturesInd == double(thisOtherUnit)));
             %find(theseOtherFeaturesInd==double(thisOtherUnit))
             if size(theseFeatures, 1) > size(theseFeatures, 2) && size(r, 1) > size(theseFeatures, 2)
-                theseMahalD(iOtherUnit) = nanmean(mahal(reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse), theseFeatures).^2);
+                theseMahalD(iOtherUnit) = nanmean(mahal(reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse), theseFeatures));
                 thesU(iOtherUnit) = double(thisOtherUnit);
             else
                 theseMahalD(iOtherUnit) = NaN;
@@ -84,7 +84,7 @@ if nCount > numberSpikes && numberSpikes > nChansToUse * nPCs
 
     %l-ratio
     theseOtherFeatures = reshape(theseOtherFeatures, size(theseOtherFeatures, 1), []);
-    mahalD = mahal(theseOtherFeatures, theseFeatures).^2; %squared mahal. distance
+    mahalD = mahal(theseOtherFeatures, theseFeatures); %squared mahal. distance
     mahalD = sort(mahalD);
     isoD = mahalD(halfWayPoint);
     L = sum(1-chi2cdf(mahalD, nPCs*nChansToUse)); % assumes a chi square distribution - QQ add test for multivariate data
@@ -92,11 +92,11 @@ if nCount > numberSpikes && numberSpikes > nChansToUse * nPCs
 
     %silhouette score
     closestCluster = thesU(find(theseMahalD == min(theseMahalD)));
-    mahalDself = mahal(theseFeatures, theseFeatures).^2; %squared mahal. distance
+    mahalDself = mahal(theseFeatures, theseFeatures); %squared mahal. distance
     [r, ~, ~] = ind2sub(size(theseOtherFeaturesInd), find(theseOtherFeaturesInd == double(closestCluster)));
     % find(theseOtherFeaturesInd==double(thisOtherUnit))
 
-    mahalDclosest = mahal(reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse), theseFeatures).^2; %squared mahal. distance
+    mahalDclosest = mahal(reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse), theseFeatures); %squared mahal. distance
     silhouetteScore = (nanmean(mahalDclosest) - nanmean(mahalDself)) / max([mahalDclosest; mahalDself]);
 
 
@@ -107,14 +107,14 @@ elseif ~isempty(theseOtherFeatures) && numberSpikes > nChansToUse * nPCs %isolat
 
     %l-ratio
     theseOtherFeatures = reshape(theseOtherFeatures, size(theseOtherFeatures, 1), []);
-    mahalD = mahal(theseOtherFeatures, theseFeatures).^2; %squared mahal. distance
+    mahalD = mahal(theseOtherFeatures, theseFeatures); %squared mahal. distance
     mahalD = sort(mahalD);
     L = sum(1-chi2cdf(mahalD, nPCs*nChansToUse)); % assumes a chi square distribution - QQ add test for multivariate data
     Lratio = L / numberSpikes;
 
     %silhouette score
     closestCluster = thesU(find(theseMahalD == min(theseMahalD)));
-    mahalDself = mahal(theseFeatures, theseFeatures).^2; %squared mahal. distance
+    mahalDself = mahal(theseFeatures, theseFeatures); %squared mahal. distance
     [r, ~, ~] = ind2sub(size(theseOtherFeaturesInd), find(theseOtherFeaturesInd == double(closestCluster)));
     % find(theseOtherFeaturesInd==double(thisOtherUnit))
 
@@ -140,10 +140,10 @@ end
 if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
     Yplot = reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse);
     Xplot = theseFeatures;
-    d2_mahal = mahal(Yplot, Xplot).^2;
+    d2_mahal = mahal(Yplot, Xplot);
 
-    mahal_noise = mahal(Xplot,Xplot).^2;
-    mahal_unit = mahal(Yplot,Yplot).^2;
+    mahal_noise = mahal(Xplot,Xplot);
+    mahal_unit = mahal(Yplot,Yplot);
 
     if plotThis
 
