@@ -146,7 +146,7 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
         ylabel('Probability');
         legend({'Current Unit', 'Other Spikes'}, 'Location', 'Best');
         
-        subplot(1, 3, 3)% 1 - cdf(chi ) .^2 
+        subplot(1, 3, 2)% 1 - cdf(chi ) .^2 
         % Generate a range of Mahalanobis distance values for plotting
         x_values = linspace(0, max([mahalD; mahalDself]), 1000);
         degrees_of_freedom = nPCs * nChansToUse;
@@ -163,7 +163,7 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
         legend('1 - CDF(\chi^2)', 'Location', 'best');
         
 
-        subplot(1, 3, 2)%cumulative distributions
+        subplot(1, 3, 3)%cumulative distributions
         nSpikesInUnit = size(theseFeatures,1);
  
         sOther = sort(mahalD);
@@ -212,14 +212,14 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
         % plot(ellipseSelf(:,1), ellipseSelf(:,2), 'LineWidth', 2, 'Color', 'blue');
         % plot(ellipseOther(:,1), ellipseOther(:,2), 'LineWidth', 2, 'Color', 'red');
 
-
-        hb = colorbar;
-        hb.Color =  [0.7, 0.7, 0.7];
-        ylabel(hb, 'Squared mahalanobis Distance')
-        legend( 'Current unit', 'Other spikes (closest unit)');
-        xlabel('Squared mahalanobnis distance');
-        %title(['Sihouette score = ' num2str(silhouetteScore)])
-        ylabel('Count');
+        % 
+        % hb = colorbar;
+        % hb.Color =  [0.7, 0.7, 0.7];
+        % ylabel(hb, 'Squared mahalanobis Distance')
+        % legend( 'Current unit', 'Other spikes (closest unit)');
+        % xlabel('Squared mahalanobnis distance');
+        % %title(['Sihouette score = ' num2str(silhouetteScore)])
+        % ylabel('Count');
 
 
 
