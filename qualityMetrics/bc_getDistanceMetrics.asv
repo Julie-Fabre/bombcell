@@ -1,4 +1,4 @@
-function [isolationDist, Lratio, silhouetteScore, mahalD, theseFeatures, otherFeatures_linear] = bc_getDistanceMetrics(pc_features, ...
+function [isolationDist, Lratio, silhouetteScore, d2_mahal, theseFeatures, otherFeatures_linear] = bc_getDistanceMetrics(pc_features, ...
     pc_feature_ind, thisUnit, numberSpikes, spikesIdx, allSpikesIdx, nChansToUse, plotThis)
 % JF, Get distance metrics
 % ------
@@ -173,20 +173,20 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
         cumulativeOther = cumsum(ones(size(sOther)));
         
         % Plot cumulative distributions
-        plot( sSelf,cumulativeSelf, 'LineWidth', 2, 'DisplayName', 'Cluster Spikes');
+        plot( cumulativeSelf,sSelf, 'LineWidth', 2, 'DisplayName', 'Cluster Spikes');
         hold on;
-        plot( sOther,cumulativeOther, '--', 'LineWidth', 2, 'DisplayName', 'Noise Spikes');
+        plot( cumulativeOther,sOther, '--', 'LineWidth', 2, 'DisplayName', 'Noise Spikes');
         set(gca, 'XScale', 'log')
         
         % Calculate and plot the isolation distance
         if length(sOther) >= nSpikesInUnit
-            plot(  [isolationDist isolationDist],[1, nSpikesInUnit],'k:', 'LineWidth', 2, 'DisplayName', 'Isolation Distance');
+            plot(  [min([sSelf;sOther]) max([sSelf;sOther])],[nSpikesInUnit, nSpikesInUnit],'k:', 'LineWidth', 2, 'DisplayName', 'Isolation Distance');
         end
         
         xlim([0, max([sSelf; sOther])*1.1]);
         xlabel('Squared mahalanobis distance');
         ylabel('Cumulative Count');
-        title(['Isolation distance = ', num2str(isolationDist)]);
+        title(['Isolation distance = ', num2str(isolationDistance)]);
         legend('Location', 'best');
         hold off;
         
