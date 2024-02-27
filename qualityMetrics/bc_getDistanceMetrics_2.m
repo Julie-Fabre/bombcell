@@ -1,4 +1,4 @@
-function [isolationDist, Lratio, silhouetteScore, mahalD, theseFeatures, otherFeatures_linear] = bc_getDistanceMetrics(pc_features, ...
+function [isoD, Lratio, silhouetteScore, d2_mahal, theseFeatures, otherFeatures_linear] = bc_getDistanceMetrics(pc_features, ...
     pc_feature_ind, thisUnit, numberSpikes, spikesIdx, allSpikesIdx, nChansToUse, plotThis)
 % JF, Get distance metrics
 % ------
@@ -38,7 +38,6 @@ theseFeatures = reshape(pc_features(spikesIdx, :, 1:nChansToUse), numberSpikes, 
 % Precompute unique identifiers and allocate space for outputs
 uniqueIDs = unique(pc_feature_ind(:, 1));
 mahalanobisDistances = nan(numel(uniqueIDs), 1);
-otherUnits_double = nan(numel(uniqueIDs), 1);
 otherFeaturesInd = zeros(0, size(pc_features, 2), nChansToUse);
 otherFeatures = zeros(0, size(pc_features, 2), nChansToUse);
 nCount = 1; % initialize counter
@@ -71,60 +70,56 @@ for iID = 1:numel(uniqueIDs)
     if any(ismember(theseChannels(:), currentChannels))
         [rowIndices, ~, ~] = find(otherFeaturesInd == currentID);
         if size(theseFeatures, 1) > size(theseFeatures, 2) && numel(rowIndices) > size(theseFeatures, 2)
-            otherFeatures_reshaped = reshape(otherFeatures(rowIndices, :, :), numel(rowIndices), nPCs*nChansToUse);
-            mahalanobisDistances(iID) = nanmean(mahal(otherFeatures_reshaped, theseFeatures));
-            otherUnits_double(iID) = double(currentID);
+            otherFeatures = reshape(otherFeatures(rowIndices, :, :), numel(rowIndices), nPCs*nChansToUse);
+            mahalanobisDistances(iID) = nanmean(mahal(otherFeatures, theseFeatures));
         else
             mahalanobisDistances(iID) = NaN;
-            otherUnits_double(iID) = double(currentID);
         end
     end
 end
 
 % Predefine outputs to handle cases where conditions are not met
 halfWayPoint = NaN;
-isolationDist = NaN;
+isoD = NaN;
 L = NaN;
 Lratio = NaN;
 silhouetteScore = NaN;
 
 % Reshape features for mahalanobis distance calculation if there are other features
-if ~isempty(otherFeatures) && numberSpikes > nChansToUse * nPCs
-    otherFeatures = reshape(otherFeatures, size(otherFeatures, 1), []);
-    mahalD = sort(mahal(otherFeatures, theseFeatures)); % Sorted squared Mahalanobis distances
+if ~isempty(theseOtherFeatures) && numberSpikes > nChansToUse * nPCs
+    theseOtherFeatures = reshape(theseOtherFeatures, size(theseOtherFeatures, 1), []);
+    mahalD = sort(mahal(theseOtherFeatures, theseFeatures)); % Sorted squared Mahalanobis distances
 
     % Calculate L-ratio
     L = sum(1-chi2cdf(mahalD, nPCs*nChansToUse)); % Assuming chi-square distribution
     Lratio = L / numberSpikes;
 
     % Find the closest cluster for silhouette score calculation
-    closestCluster = otherUnits_double(find(mahalanobisDistances == min(mahalanobisDistances), 1, 'first'));
+    closestCluster = thesU(find(theseMahalD == min(theseMahalD), 1, 'first'));
     mahalDself = mahal(theseFeatures, theseFeatures); % Self Mahalanobis distances
 
     % Find indices of features closest to the cluster
-    [r, ~, ~] = ind2sub(size(otherFeaturesInd), find(otherFeaturesInd == double(closestCluster)));
-    % mahalDclosest = mahal(reshape(otherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse), theseFeatures);
+    [r, ~, ~] = ind2sub(size(theseOtherFeaturesInd), find(theseOtherFeaturesInd == double(closestCluster)));
+    mahalDclosest = mahal(reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse), theseFeatures);
 
     if nCount > numberSpikes && numberSpikes > nChansToUse * nPCs
         % Calculate isolation distance if applicable
-        isolationDist = mahalD(numberSpikes);
+        isoD = mahalD(ceil(size(theseFeatures, 1)/2));
 
         % Calculate silhouette score differently based on condition
-        % silhouetteScore = (nanmean(mahalDclosest) - nanmean(mahalDself)) / max([mahalDclosest; mahalDself]);
+        silhouetteScore = (nanmean(mahalDclosest) - nanmean(mahalDself)) / max([mahalDclosest; mahalDself]);
     else
         % Alternate silhouette score calculation when isolation distance is not defined
-        % silhouetteScore = (nanmean(mahalDself) - nanmean(mahalDclosest)) / max(mahalDclosest);
+        silhouetteScore = (nanmean(mahalDself) - nanmean(mahalDclosest)) / max(mahalDclosest);
     end
 end
 
 
 if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
-    otherFeatures_linear = reshape(otherFeatures(:, :, :), size(otherFeatures, 1), nPCs*nChansToUse);
-    %bestOtherFeatures_linear = reshape(otherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse);
-    
+    otherFeatures_linear = reshape(theseOtherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse);
+
     % Calculate Mahalanobis distance for other spikes to the current unit features
-    %d2_mahal = mahal(otherFeatures_linear);
-   % d2_mahal_best = mahal(bestOtherFeatures_linear, theseFeatures);
+    d2_mahal = mahal(otherFeatures_linear, theseFeatures);
 
     % Calculate Mahalanobis distance for the current unit relative to itself (for comparison)
     d2_mahal_self = mahal(theseFeatures, theseFeatures);
@@ -133,95 +128,30 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
     if plotThis
 
         figure();
-        subplot(1, 3, 1) % histograms
+        subplot(3, 1, 1) % histograms
         hold on;
        
         % Histogram for distances of the current unit
-        histogram(mahalDself, 'BinWidth', 1, 'Normalization', 'probability', 'DisplayStyle', 'stairs', 'LineWidth', 2);
+        histogram(d2_mahal_self, 'BinWidth', 1, 'Normalization', 'probability', 'DisplayStyle', 'stairs', 'LineWidth', 2);
         % Histogram for distances of other spikes
-        histogram(mahalD, 'BinWidth', 1, 'Normalization', 'probability', 'DisplayStyle', 'stairs', 'LineWidth', 2, 'EdgeColor', 'r');
+        histogram(d2_mahal, 'BinWidth', 1, 'Normalization', 'probability', 'DisplayStyle', 'stairs', 'LineWidth', 2, 'EdgeColor', 'r');
         
         title('Normalized Mahalanobis Distances');
         xlabel('Squared mahalanobis distance');
         ylabel('Probability');
         legend({'Current Unit', 'Other Spikes'}, 'Location', 'Best');
-        
-        subplot(1, 3, 2)% 1 - cdf(chi ) .^2 
-        % Generate a range of Mahalanobis distance values for plotting
-        x_values = linspace(0, max([mahalD; mahalDself]), 1000);
-        degrees_of_freedom = nPCs * nChansToUse;
-        
-        % Calculate the CDF of the chi-square distribution
-        chi_square_cdf = chi2cdf(x_values, degrees_of_freedom);
-        
-        % Calculate 1 - CDF for the chi-square distribution
-        one_minus_cdf = 1 - chi_square_cdf;
-        plot(x_values, one_minus_cdf, 'LineWidth', 2);
-        title(['L-ratio = ' num2str(Lratio)]);
-        xlabel('Squared mahalanobis distance');
-        ylabel('1 - CDF');
-        legend('1 - CDF(\chi^2)', 'Location', 'best');
-        
 
-        subplot(1, 3, 3)%cumulative distributions
-        nSpikesInUnit = size(theseFeatures,1);
- 
-        sOther = sort(mahalD);
-        sSelf = sort(mahalDself);
-                % Calculate cumulative counts
-        cumulativeSelf = (1:nSpikesInUnit)';
-        cumulativeOther = cumsum(ones(size(sOther)));
+        subplot(3, 1, 2) % cumulative distributions
         
-        % Plot cumulative distributions
-        plot( sSelf,cumulativeSelf, 'LineWidth', 2, 'DisplayName', 'Cluster Spikes');
-        hold on;
-        plot( sOther,cumulativeOther, '--', 'LineWidth', 2, 'DisplayName', 'Noise Spikes');
-        set(gca, 'XScale', 'log')
         
-        % Calculate and plot the isolation distance
-        if length(sOther) >= nSpikesInUnit
-            plot(  [isolationDist isolationDist],[1, nSpikesInUnit],'k:', 'LineWidth', 2, 'DisplayName', 'Isolation Distance');
-        end
         
-        xlim([0, max([sSelf; sOther])*1.1]);
-        xlabel('Squared mahalanobis distance');
-        ylabel('Cumulative Count');
-        title(['Isolation distance = ', num2str(isolationDist)]);
-        legend('Location', 'best');
-        hold off;
-        
-
-        %subplot(2, 2, 4)% plot ordered distances 
-        %hold on;
-        %scatter(theseFeatures(:, 1), theseFeatures(:, 2), 10, d2_mahal, 'o', 'filled') % Scatter plot with points of size 10
-        %scatter(bestOtherFeatures_linear(:, 1), bestOtherFeatures_linear(:, 2), 10, [0.7, 0.7, 0.7],'x')
-        % % Calculate covariance and mean for the current unit (self)
-        % covSelf = cov(theseFeatures(:,1:2));
-        % meanSelf = mean(theseFeatures(:,1:2));
-        
-        % % Calculate covariance and mean for the closest other units
-        % covOther = cov(bestOtherFeatures_linear(:,1:2));
-        % meanOther = mean(bestOtherFeatures_linear(:,1:2));
-        % 
-        % % Calculate ellipses
-        % theta = linspace(0, 2*pi, 100);
-        % ellipseSelf = (chol(covSelf)' * [cos(theta); sin(theta)])' + meanSelf;
-        % ellipseOther = (chol(covOther)' * [cos(theta); sin(theta)])' + meanOther;
-        % 
-        % % Draw ellipses
-        % plot(ellipseSelf(:,1), ellipseSelf(:,2), 'LineWidth', 2, 'Color', 'blue');
-        % plot(ellipseOther(:,1), ellipseOther(:,2), 'LineWidth', 2, 'Color', 'red');
-
-        % 
-        % hb = colorbar;
-        % hb.Color =  [0.7, 0.7, 0.7];
-        % ylabel(hb, 'Squared mahalanobis Distance')
-        % legend( 'Current unit', 'Other spikes (closest unit)');
-        % xlabel('Squared mahalanobnis distance');
-        % %title(['Sihouette score = ' num2str(silhouetteScore)])
-        % ylabel('Count');
+        subplot(3, 1, 3)% 1 - cdf(chi ) .^2 
 
 
+
+        % Add legends and other global annotations outside the loop, if they apply globally
+        legend({'this cluster''s spikes', 'nearby clusters'' spikes', ['isolation distance = ', num2str(isoD)], ...
+            ['silhouette score = ', num2str(silhouetteScore)], ['l-ratio = ', num2str(Lratio)]}, 'Location', 'bestoutside', 'TextColor', [0.7, 0.7, 0.7]);
 
         % Apply plot beautification if available
         if exist('prettify_plot', 'file')

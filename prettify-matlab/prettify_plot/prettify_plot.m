@@ -267,8 +267,10 @@ for iAx = 1:size(all_axes, 2)
             % if any lines/points become the same as background, change
             % these.
 
-            if ismember(thisLine.Color, colorsToReplace, 'rows')
-               thisLine.Color = mainColor;
+            if ~strcmp(thisLine.Color, 'none')
+                if ismember(thisLine.Color, colorsToReplace, 'rows') 
+                    thisLine.Color = mainColor;
+                end
             end
             % adjust markersize
             if sum(get(thisLine, 'Marker') == 'none') < 4
@@ -292,13 +294,14 @@ for iAx = 1:size(all_axes, 2)
                     thisPoint.CData = mainColor;
                 end
             else
-
+            if size(thisPoint.CData,2) == 3
                 if ismember(thisPoint.CData, colorsToReplace, 'rows')
                     points_sub = ismember(thisPoint.CData == [0, 0, 0; 1, 1, 1], 'rows');
                     if any(points_sub)
                         set(thisPoint, 'MarkerEdgeColor', mainColor)
                     end
                 end
+            end
                 
             end
             % adjust markersize

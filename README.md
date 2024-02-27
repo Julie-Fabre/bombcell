@@ -47,7 +47,6 @@ To begin using Bombcell:
 
 In addition we would like to acknowledge:
 - to compute fast ACGs, we use a function (`CCGHeart.c`) part of the [FMAToolbox](https://fmatoolbox.sourceforge.net/), and it is already included in bombcell.
-- the functions to compute distance metrics and signal-to-noise ratio are based on functions in [sortingQuality](https://github.com/cortex-lab/sortingQuality)
 - [prettify-matlab](https://github.com/Julie-Fabre/prettify_matlab) is packaged in bombcell as a subtree, to make plots pretty.
   
 ### 🤗 Support and citing

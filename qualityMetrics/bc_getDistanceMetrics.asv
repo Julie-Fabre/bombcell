@@ -1,4 +1,4 @@
-function [isolationDist, Lratio, silhouetteScore, mahalD, theseFeatures, otherFeatures_linear] = bc_getDistanceMetrics(pc_features, ...
+function [isolationDist, Lratio, silhouetteScore, d2_mahal, theseFeatures, otherFeatures_linear] = bc_getDistanceMetrics(pc_features, ...
     pc_feature_ind, thisUnit, numberSpikes, spikesIdx, allSpikesIdx, nChansToUse, plotThis)
 % JF, Get distance metrics
 % ------
@@ -146,7 +146,7 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
         ylabel('Probability');
         legend({'Current Unit', 'Other Spikes'}, 'Location', 'Best');
         
-        subplot(1, 3, 2)% 1 - cdf(chi ) .^2 
+        subplot(1, 3, 3)% 1 - cdf(chi ) .^2 
         % Generate a range of Mahalanobis distance values for plotting
         x_values = linspace(0, max([mahalD; mahalDself]), 1000);
         degrees_of_freedom = nPCs * nChansToUse;
@@ -163,7 +163,7 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
         legend('1 - CDF(\chi^2)', 'Location', 'best');
         
 
-        subplot(1, 3, 3)%cumulative distributions
+        subplot(1, 3, 2)%cumulative distributions
         nSpikesInUnit = size(theseFeatures,1);
  
         sOther = sort(mahalD);
@@ -173,20 +173,20 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
         cumulativeOther = cumsum(ones(size(sOther)));
         
         % Plot cumulative distributions
-        plot( sSelf,cumulativeSelf, 'LineWidth', 2, 'DisplayName', 'Cluster Spikes');
+        plot( cumulativeSelf,sSelf, 'LineWidth', 2, 'DisplayName', 'Cluster Spikes');
         hold on;
-        plot( sOther,cumulativeOther, '--', 'LineWidth', 2, 'DisplayName', 'Noise Spikes');
+        plot( cumulativeOther,sOther, '--', 'LineWidth', 2, 'DisplayName', 'Noise Spikes');
         set(gca, 'XScale', 'log')
         
         % Calculate and plot the isolation distance
         if length(sOther) >= nSpikesInUnit
-            plot(  [isolationDist isolationDist],[1, nSpikesInUnit],'k:', 'LineWidth', 2, 'DisplayName', 'Isolation Distance');
+            plot(  [min([sSelf;sOther]) max([sSelf;sOther])],[nSpikesInUnit, nSpikesInUnit],'k:', 'LineWidth', 2, 'DisplayName', 'Isolation Distance');
         end
         
         xlim([0, max([sSelf; sOther])*1.1]);
         xlabel('Squared mahalanobis distance');
         ylabel('Cumulative Count');
-        title(['Isolation distance = ', num2str(isolationDist)]);
+        title(['Isolation distance = ', num2str(isolationDistance)]);
         legend('Location', 'best');
         hold off;
         
@@ -212,14 +212,14 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
         % plot(ellipseSelf(:,1), ellipseSelf(:,2), 'LineWidth', 2, 'Color', 'blue');
         % plot(ellipseOther(:,1), ellipseOther(:,2), 'LineWidth', 2, 'Color', 'red');
 
-        % 
-        % hb = colorbar;
-        % hb.Color =  [0.7, 0.7, 0.7];
-        % ylabel(hb, 'Squared mahalanobis Distance')
-        % legend( 'Current unit', 'Other spikes (closest unit)');
-        % xlabel('Squared mahalanobnis distance');
-        % %title(['Sihouette score = ' num2str(silhouetteScore)])
-        % ylabel('Count');
+
+        hb = colorbar;
+        hb.Color =  [0.7, 0.7, 0.7];
+        ylabel(hb, 'Squared mahalanobis Distance')
+        legend( 'Current unit', 'Other spikes (closest unit)');
+        xlabel('Squared mahalanobnis distance');
+        %title(['Sihouette score = ' num2str(silhouetteScore)])
+        ylabel('Count');
 
 
 
