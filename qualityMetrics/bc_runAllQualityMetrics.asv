@@ -142,10 +142,8 @@ for iUnit = 56:105%size(uniqueTemplates, 1)
         tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails, qMetric.RPV_tauR_estimate(iUnit));
 
     %% presence ratio (potential false negatives)
-    param.plotDetails = 1;
     [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
         qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param.plotDetails);
-    param.plotDetails = 0;
 
     %% maximum cumulative drift estimate
     [qMetric.maxDriftEstimate(iUnit), qMetric.cumDriftEstimate(iUnit)] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...

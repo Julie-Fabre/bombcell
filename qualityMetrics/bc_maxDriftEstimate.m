@@ -1,5 +1,5 @@
 function [maxDrift_estimate, cumulativeDrift_estimate] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, spikeTemplates, ...
-    spikeTimes, channelPositions_z, thisUnit, driftBinSize, computeDrift, plotThis)
+    spikeTimes, channelPositions_z, thisUnit, driftBinSize, computeDrift, plotDetails)
 % JF, Estimate the maximum drift for a particular unit
 % ------
 % Inputs
