@@ -102,7 +102,7 @@ end
 %% loop through units and get quality metrics
 fprintf('\n Extracting quality metrics from %s ... \n', param.rawFile)
 
-for iUnit = 1:10%size(uniqueTemplates, 1)
+for iUnit = 56:105%size(uniqueTemplates, 1)
 
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
     % get this unit's attributes
@@ -113,6 +113,7 @@ for iUnit = 1:10%size(uniqueTemplates, 1)
     theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
 
+    
     %% percentage spikes missing (false negatives)
     [percentageSpikesMissing_gaussian, percentageSpikesMissing_symmetric, ksTest_pValue, ~, ~, ~] = ...
         bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails);
@@ -141,8 +142,10 @@ for iUnit = 1:10%size(uniqueTemplates, 1)
         tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails, qMetric.RPV_tauR_estimate(iUnit));
 
     %% presence ratio (potential false negatives)
+    param.plotDetails = 1;
     [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
         qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param.plotDetails);
+    param.plotDetails = 0;
 
     %% maximum cumulative drift estimate
     [qMetric.maxDriftEstimate(iUnit), qMetric.cumDriftEstimate(iUnit)] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...
@@ -159,7 +162,7 @@ for iUnit = 1:10%size(uniqueTemplates, 1)
         forGUI.tempWv(iUnit, :)] = bc_waveformShape(templateWaveforms, thisUnit, qMetric.maxChannels(thisUnit), ...
         param.ephys_sample_rate, channelPositions, param.maxWvBaselineFraction, waveformBaselineWindow, ...
         param.minThreshDetectPeaksTroughs, param.firstPeakRatio, param.plotDetails); %do we need tempWv ?
-
+    
     %% amplitude
     if param.extractRaw
         qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit, rawWaveformsPeakChan(iUnit), :), ...
@@ -170,14 +173,11 @@ for iUnit = 1:10%size(uniqueTemplates, 1)
     end
 
     %% distance metrics
-    param.computeDistanceMetrics = 1;
     if param.computeDistanceMetrics
-        param.plotDetails = 1;
         [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit), ...
             forGUI.d2_mahal{iUnit}, forGUI.mahalobnis_Xplot{iUnit}, forGUI.mahalobnis_Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
-            param.nChannelsIsoDist, param.plotDetails); %QQ
-        param.plotDetails = 0;
+            param.nChannelsIsoDist, param.plotDetails); 
     end
 
     %% display progress

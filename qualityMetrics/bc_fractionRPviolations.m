@@ -109,7 +109,7 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
 
         end
 
-        set(gca, 'XScale', 'log')
+        %set(gca, 'XScale', 'log')
     end
 
 end
@@ -127,7 +127,7 @@ if plotThis
     xlabel('time (s)')
     ylabel(['amplitude scaling', newline, 'factor'])
     if exist('prettify_plot', 'file')
-        prettify_plot('FigureColor', 'w', 'TickLength', 0.01)
+        prettify_plot('FigureColor', 'w')
     else
         warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
         makepretty('none')

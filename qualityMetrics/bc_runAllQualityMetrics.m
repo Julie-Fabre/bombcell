@@ -102,7 +102,7 @@ end
 %% loop through units and get quality metrics
 fprintf('\n Extracting quality metrics from %s ... \n', param.rawFile)
 
-for iUnit = 1:size(uniqueTemplates, 1)
+for iUnit = 41:80%size(uniqueTemplates, 1)
 
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
     % get this unit's attributes
@@ -113,6 +113,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
     theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
 
+    
     %% percentage spikes missing (false negatives)
     [percentageSpikesMissing_gaussian, percentageSpikesMissing_symmetric, ksTest_pValue, ~, ~, ~] = ...
         bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails);
@@ -130,6 +131,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
         param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect
 
     %% re-compute percentage spikes missing and fraction contamination on timechunks
+    param.plotDetails = 1;
     thisUnits_timesToUse = [qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)];
 
     [qMetric.percentageSpikesMissing_gaussian(iUnit), qMetric.percentageSpikesMissing_symmetric(iUnit), ...
@@ -139,6 +141,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
 
     [qMetric.fractionRPVs(iUnit, :), ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
         tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails, qMetric.RPV_tauR_estimate(iUnit));
+    param.plotDetails = 0;
 
     %% presence ratio (potential false negatives)
     [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
@@ -159,7 +162,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
         forGUI.tempWv(iUnit, :)] = bc_waveformShape(templateWaveforms, thisUnit, qMetric.maxChannels(thisUnit), ...
         param.ephys_sample_rate, channelPositions, param.maxWvBaselineFraction, waveformBaselineWindow, ...
         param.minThreshDetectPeaksTroughs, param.firstPeakRatio, param.plotDetails); %do we need tempWv ?
-
+    
     %% amplitude
     if param.extractRaw
         qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit, rawWaveformsPeakChan(iUnit), :), ...
@@ -174,7 +177,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
         [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit), ...
             forGUI.d2_mahal{iUnit}, forGUI.mahalobnis_Xplot{iUnit}, forGUI.mahalobnis_Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
-            param.nChannelsIsoDist, param.plotDetails); %QQ
+            param.nChannelsIsoDist, param.plotDetails); 
     end
 
     %% display progress

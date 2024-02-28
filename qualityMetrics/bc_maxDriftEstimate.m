@@ -51,6 +51,15 @@ if computeDrift
     maxDrift_estimate = max(median_spikeDepth) - min(median_spikeDepth);
     median_spikeDepth(isnan(median_spikeDepth)) = []; % remove times with no spikes
     cumulativeDrift_estimate = sum(abs(diff(median_spikeDepth)));
+
+    if plotDetails
+        figure(); 
+        plot(timeBins, median_spikeDepth)
+        xlabel('time (s)')
+        ylabel('estimated spike depth (um)')
+        title(['cumulative drift = ', num2str(cumulativeDrift_estimate) 'um', newline, 'maximum drift/bin = ', num2str(maxDrift_estimate) 'um'])
+
+    end
 else
     maxDrift_estimate = NaN;
     cumulativeDrift_estimate = NaN;
