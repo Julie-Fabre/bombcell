@@ -146,8 +146,10 @@ for iUnit = 56:105%size(uniqueTemplates, 1)
         qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param.plotDetails);
 
     %% maximum cumulative drift estimate
+    param.plotDetails = 1;
     [qMetric.maxDriftEstimate(iUnit), qMetric.cumDriftEstimate(iUnit)] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...
         theseSpikeTimes, channelPositions(:, 2), thisUnit, param.driftBinSize, param.computeDrift, param.plotDetails);
+    param.plotDetails = 0;
 
     %% number spikes
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
