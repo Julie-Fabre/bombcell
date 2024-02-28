@@ -102,7 +102,7 @@ end
 %% loop through units and get quality metrics
 fprintf('\n Extracting quality metrics from %s ... \n', param.rawFile)
 
-for iUnit = 41:80%size(uniqueTemplates, 1)
+for iUnit = 1:size(uniqueTemplates, 1)
 
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
     % get this unit's attributes
@@ -131,7 +131,6 @@ for iUnit = 41:80%size(uniqueTemplates, 1)
         param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect
 
     %% re-compute percentage spikes missing and fraction contamination on timechunks
-    param.plotDetails = 1;
     thisUnits_timesToUse = [qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)];
 
     [qMetric.percentageSpikesMissing_gaussian(iUnit), qMetric.percentageSpikesMissing_symmetric(iUnit), ...
@@ -141,7 +140,6 @@ for iUnit = 41:80%size(uniqueTemplates, 1)
 
     [qMetric.fractionRPVs(iUnit, :), ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
         tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails, qMetric.RPV_tauR_estimate(iUnit));
-    param.plotDetails = 0;
 
     %% presence ratio (potential false negatives)
     [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
