@@ -47,10 +47,9 @@ if computeDrift
 
     %% estimate cumulative drift
     timeBins = min(spikeTimes):driftBinSize:max(spikeTimes);
-    median_spikeDepth = arrayfun(@(x) nanmedian(spikeDepths_inChannels(spikeTimes >= x & spikeTimes < x+1)), timeBins); % median
-    maxDrift_estimate = max(median_spikeDepth) - min(median_spikeDepth);
-    median_spikeDepth(isnan(median_spikeDepth)) = []; % remove times with no spikes
-    cumulativeDrift_estimate = sum(abs(diff(median_spikeDepth)));
+    median_spikeDepth = arrayfun(@(x) median(spikeDepths_inChannels(spikeTimes >= x & spikeTimes < x+1)), timeBins); % median
+    maxDrift_estimate = nanmax(median_spikeDepth) - nanmin(median_spikeDepth);
+    cumulativeDrift_estimate = sum(abs(diff(median_spikeDepth(isnan(median_spikeDepth)))));
 
     if plotDetails
         figure(); 
