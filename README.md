@@ -16,7 +16,7 @@ Documentation and guides to using and troubleshooting bombcell can be found on t
 ### 🔍️ How bombcell works
 
 Below is a flowchart of how bombcell evaluates and classifies each unit:
-<img align="center" src="./images/bombcell_flowchart.svg" width=100% height=100%>
+<img align="center" src="./images/bombcell_flowchart_full.svg" width=100% height=100%>
 
 ### 🏁 Quick start guide
 
