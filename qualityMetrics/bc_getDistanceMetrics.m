@@ -82,11 +82,11 @@ for iID = 1:numel(uniqueIDs)
 end
 
 % Predefine outputs to handle cases where conditions are not met
-halfWayPoint = NaN;
 isolationDist = NaN;
-L = NaN;
 Lratio = NaN;
 silhouetteScore = NaN;
+mahalD = NaN; 
+otherFeatures_linear = NaN;
 
 % Reshape features for mahalanobis distance calculation if there are other features
 if ~isempty(otherFeatures) && numberSpikes > nChansToUse * nPCs
@@ -133,7 +133,7 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
     if plotThis
 
         figure();
-        subplot(1, 3, 1) % histograms
+        subplot(1, 2, 1) % histograms
         hold on;
        
         % Histogram for distances of the current unit
@@ -141,29 +141,30 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
         % Histogram for distances of other spikes
         histogram(mahalD, 'BinWidth', 1, 'Normalization', 'probability', 'DisplayStyle', 'stairs', 'LineWidth', 2, 'EdgeColor', 'r');
         
-        title('Normalized Mahalanobis Distances');
-        xlabel('Squared mahalanobis distance');
-        ylabel('Probability');
-        legend({'Current Unit', 'Other Spikes'}, 'Location', 'Best');
-        
-        subplot(1, 3, 2)% 1 - cdf(chi ) .^2 
-        % Generate a range of Mahalanobis distance values for plotting
-        x_values = linspace(0, max([mahalD; mahalDself]), 1000);
-        degrees_of_freedom = nPCs * nChansToUse;
-        
-        % Calculate the CDF of the chi-square distribution
-        chi_square_cdf = chi2cdf(x_values, degrees_of_freedom);
-        
-        % Calculate 1 - CDF for the chi-square distribution
-        one_minus_cdf = 1 - chi_square_cdf;
-        plot(x_values, one_minus_cdf, 'LineWidth', 2);
         title(['L-ratio = ' num2str(Lratio)]);
         xlabel('Squared mahalanobis distance');
-        ylabel('1 - CDF');
-        legend('1 - CDF(\chi^2)', 'Location', 'best');
+        ylabel('Probability');
+        set(gca, 'XScale', 'log')
+        legend({'Current Unit', 'Other Spikes'}, 'Location', 'Best');
+        
+        % subplot(1, 3, 2)% 1 - cdf(chi ) .^2 
+        % degrees_of_freedom = nPCs * nChansToUse;
+        % 
+        % % Calculate the CDF of the chi-square distribution
+        % chi_square_cdf = chi2cdf(mahalD, degrees_of_freedom);
+        % 
+        % % Calculate 1 - CDF for the chi-square distribution
+        % one_minus_cdf = 1 - chi_square_cdf;
+        % plot(mahalD, one_minus_cdf, 'LineWidth', 2);
+        % title(['L-ratio = ' num2str(Lratio)]);
+        % xlabel('Squared mahalanobis distance');
+        % ylabel('1 - CDF');
+        % sub = num2str(degrees_of_freedom);
+        % legendText = ['1 - CDF($\chi_{' sub '}^2$)'];
+        % legend(legendText, 'Location', 'best', 'Interpreter', 'latex');
         
 
-        subplot(1, 3, 3)%cumulative distributions
+        subplot(1, 2, 2)%cumulative distributions
         nSpikesInUnit = size(theseFeatures,1);
  
         sOther = sort(mahalD);
@@ -177,6 +178,7 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
         hold on;
         plot( sOther,cumulativeOther, '--', 'LineWidth', 2, 'DisplayName', 'Noise Spikes');
         set(gca, 'XScale', 'log')
+        set(gca, 'YScale', 'log')
         
         % Calculate and plot the isolation distance
         if length(sOther) >= nSpikesInUnit
@@ -230,7 +232,6 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
             warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty');
         end
 
-
         % uncomment below to additionnally plot all PCs against each other
         %figure();
         % % Calculate the number of subplots needed
@@ -266,9 +267,5 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
         % 
 
     end
-else
-    d2_mahal = NaN;
-    otherFeatures_linear = NaN;
-    theseFeatures = NaN;
 end
 end

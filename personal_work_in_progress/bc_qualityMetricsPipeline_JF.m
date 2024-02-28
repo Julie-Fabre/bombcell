@@ -22,7 +22,7 @@ savePath = fullfile(ephysDirPath, 'qMetrics');
 saveFileFolder = fullfile(extraHDPath, animal, day, ['site', num2str(site)]);
 
 %% decompress data 
-decompress = 0;%QQ
+decompress = 1;%QQ
 if decompress
     rawFile = bc_manageDataCompression(ephysap_path, saveFileFolder);
 else
@@ -34,7 +34,7 @@ param = bc_qualityParamValues_JF(ephysMetaDir, rawFile, '', '');
 if ~decompress
     param.extractRaw = 0;
 end
-%param.computeDistanceMetrics = 1;
+param.computeDistanceMetrics = 1;
 
 %% compute quality metrics 
 ephysDirPath = cl_cortexlab_filename(animal, day, experiment, 'ephys_dir',site, recording);

@@ -162,43 +162,10 @@ else
     end
 
     % (get waveform spatial decay accross channels)
-    channels_withSameX = find(channelPositions(:, 1) <= channelPositions(maxChannel, 1)+33 & ...
-        channelPositions(:, 1) >= channelPositions(maxChannel, 1)-33); % for 4 shank probes
-    if numel(channels_withSameX) >= 5
-        if find(channels_withSameX == maxChannel) > 5
-            channels_forSpatialDecayFit = channels_withSameX( ...
-                find(channels_withSameX == maxChannel):-1:find(channels_withSameX == maxChannel)-5);
-        else
-            channels_forSpatialDecayFit = channels_withSameX( ...
-                find(channels_withSameX == maxChannel):1:min(find(channels_withSameX == maxChannel)+5, size(channels_withSameX, 1)));
-        end
+    linearFit =1;
+    [spatialDecaySlope, spatialDecayFit, spatialDecayPoints, spatialDecayPoints_loc, estimatedUnitXY] = ...
+    bc_getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit);
 
-        % get maximum value %QQ could we do value at detected trough is peak
-        % waveform?
-        spatialDecayPoints = max(abs(squeeze(templateWaveforms(thisUnit, :, channels_forSpatialDecayFit))));
-       
-        estimatedUnitXY = channelPositions(maxChannel, :);
-        relativePositionsXY = channelPositions(channels_forSpatialDecayFit, :) - estimatedUnitXY;
-        channelPositions_relative = sqrt(nansum(relativePositionsXY.^2, 2));
-
-        [~, sortexChanPosIdx] = sort(channelPositions_relative);
-        spatialDecayPoints_norm = spatialDecayPoints(sortexChanPosIdx);
-        spatialDecayFit = polyfit(channelPositions_relative(sortexChanPosIdx), spatialDecayPoints_norm', 1); % fit first order polynomial to data. first output is slope of polynomial, second is a constant
-        spatialDecaySlope = spatialDecayFit(1);
-        if length(spatialDecayPoints) < 6
-                if length(spatialDecayPoints) > 1
-                    spatialDecayPoints = [spatialDecayPoints, nan(6-length(spatialDecayPoints),1)];
-                else
-                    spatialDecayPoints = [spatialDecayPoints; nan(6-length(spatialDecayPoints),1)];
-                end
-        end
-    else
-        warning('No other good channels with same x location')
-        spatialDecayFit = NaN;
-        spatialDecaySlope = NaN;
-        spatialDecayPoints = nan(1, 6);
-
-    end
 
     % (get waveform baseline fraction)
     if ~isnan(waveformBaselineWindow(1))
@@ -217,9 +184,9 @@ else
         figure();
 
         subplot(4, 2, 7:8)
-        pt1 = scatter(channelPositions_relative(sortexChanPosIdx), spatialDecayPoints_norm, [], colorMtx(1, :, :), 'filled');
+        pt1 = scatter(spatialDecayPoints_loc, spatialDecayPoints, [], colorMtx(1, :, :), 'filled');
         hold on;
-        lf = plot(channelPositions_relative(sortexChanPosIdx), channelPositions_relative(sortexChanPosIdx)*spatialDecayFit(1)+spatialDecayFit(2), '-', 'Color', colorMtx(2, :, :));
+        lf = plot(spatialDecayPoints_loc, spatialDecayPoints_loc*spatialDecayFit(1)+spatialDecayFit(2), '-', 'Color', colorMtx(2, :, :));
 
         ylabel('trough size (a.u.)')
         xlabel('distance from peak channel (um)')
