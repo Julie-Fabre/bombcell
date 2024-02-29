@@ -35,7 +35,7 @@ if ~decompress
     param.extractRaw = 0;
 end
 param.computeDistanceMetrics = 1;
-
+param.computeDrift = 1;
 %% compute quality metrics 
 ephysDirPath = cl_cortexlab_filename(animal, day, experiment, 'ephys_dir',site, recording);
 savePath = fullfile(ephysDirPath, 'qMetrics');

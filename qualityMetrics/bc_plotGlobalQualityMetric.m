@@ -106,19 +106,20 @@ if param.plotGlobal
         ylabel('unit count')
         xlabel(['refractory period', newline, 'violations (%)'])
 
-
-        subplot(4, 5, 5)
-        hold on;
-        tauR_values = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
-        histogram(tauR_values(qMetric.RPV_tauR_estimate), 'FaceColor', colorMtx(5, 1:3), 'FaceAlpha', colorMtx(5, 4), 'BinEdges', ...
-            [param.tauR_valuesMin - 1 / 1000:param.tauR_valuesStep:param.tauR_valuesMax + 1 / 1000]);
-        set(gca, 'yscale', 'log')
-        yLim = ylim;
-        ylabel('unit count')
-        if length(tauR_values) == 1
-            xlabel('estimated refractory period (s)')
-        else
-            xlabel(['estimated', newline, 'refractory period (s)'])
+        if param.tauR_valuesMin ~= param.tauR_valuesMax
+            subplot(4, 5, 5)
+            hold on;
+            tauR_values = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
+            histogram(tauR_values(qMetric.RPV_tauR_estimate), 'FaceColor', colorMtx(5, 1:3), 'FaceAlpha', colorMtx(5, 4), 'BinEdges', ...
+                [param.tauR_valuesMin - 1 / 1000:param.tauR_valuesStep:param.tauR_valuesMax + 1 / 1000]);
+            set(gca, 'yscale', 'log')
+            yLim = ylim;
+            ylabel('unit count')
+            if length(tauR_values) == 1
+                xlabel('estimated refractory period (s)')
+            else
+                xlabel(['estimated', newline, 'refractory period (s)'])
+            end
         end
 
         subplot(4, 5, 6)
@@ -148,12 +149,14 @@ if param.plotGlobal
         subplot(4, 5, 8)
         hold on;
         set(gca, 'xscale', 'log')
-        histogram(qMetric.nSpikes, 'FaceColor', colorMtx(8, 1:3), 'FaceAlpha', colorMtx(8, 4), 'BinEdges', [0:100:max(qMetric.nSpikes)]);
+        minVal = min(qMetric.nSpikes); % Minimum 
+        maxVal = max(qMetric.nSpikes); % Maximum value
+        binEdges = logspace(log10(minVal), log10(maxVal), 20);
+        histogram(qMetric.nSpikes, 'FaceColor', colorMtx(8, 1:3), 'FaceAlpha', colorMtx(8, 4), 'BinEdges', binEdges);
         yLim = ylim;
         line([param.minNumSpikes, param.minNumSpikes], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         xLim = xlim;
         rectangle('Position', [param.minNumSpikes, yLim(1), xLim(2) - param.minNumSpikes, yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
-
         ylabel('unit count')
         xlabel('# spikes')
 
@@ -162,7 +165,11 @@ if param.plotGlobal
             subplot(4, 5, 9)
             hold on;
             set(gca, 'xscale', 'log')
-            histogram(qMetric.rawAmplitude, 'FaceColor', colorMtx(9, 1:3), 'FaceAlpha', colorMtx(9, 4), 'BinEdges', [0:10:max(qMetric.rawAmplitude)]);
+            minVal = min(qMetric.rawAmplitude(qMetric.rawAmplitude>0)); % Minimum 
+            maxVal = max(qMetric.rawAmplitude); % Maximum value
+            binEdges = logspace(log10(minVal), log10(maxVal), 20);
+
+            histogram(qMetric.rawAmplitude, 'FaceColor', colorMtx(9, 1:3), 'FaceAlpha', colorMtx(9, 4), 'BinEdges', binEdges);
             yLim = ylim;
             line([param.minAmplitude, param.minAmplitude], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
             xLim = xlim;
@@ -188,6 +195,7 @@ if param.plotGlobal
         histogram(qMetric.waveformDuration_peakTrough, 'FaceColor', colorMtx(11, 1:3), 'FaceAlpha', colorMtx(11, 4), 'BinEdges', ...
             [0:40:max(qMetric.waveformDuration_peakTrough)]);
         yLim = ylim;
+        xLim = xlim;
         line([param.minWvDuration + 0.5, param.minWvDuration + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         line([param.maxWvDuration + 0.5, param.maxWvDuration + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         rectangle('Position', [param.minWvDuration, yLim(1), param.maxWvDuration - param.minWvDuration, yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
@@ -223,8 +231,11 @@ if param.plotGlobal
             subplot(4, 5, 14) % signal to noise ratio
             hold on;
             set(gca, 'xscale', 'log')
-            histogram(qMetric.signalToNoiseRatio, 'FaceColor', colorMtx(14, 1:3), 'FaceAlpha', colorMtx(14, 4)); %, 'BinEdges')%, ...
-            %         [0:20:max(qMetric.signalToNoiseRatio(~isinf(qMetric.signalToNoiseRatio)))]);
+            minVal = min(qMetric.signalToNoiseRatio(qMetric.signalToNoiseRatio>0)); % Minimum 
+            maxVal = max(qMetric.signalToNoiseRatio); % Maximum value
+            binEdges = logspace(log10(minVal), log10(maxVal), 20);
+
+            histogram(qMetric.signalToNoiseRatio, 'FaceColor', colorMtx(14, 1:3), 'FaceAlpha', colorMtx(14, 4), 'BinEdges', binEdges);
             yLim = ylim;
             line([param.minSNR, param.minSNR], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
             xLim = xlim;
@@ -240,9 +251,9 @@ if param.plotGlobal
             histogram(qMetric.maxDriftEstimate, 'FaceColor', colorMtx(15, 1:3), 'FaceAlpha', colorMtx(15, 4), 'BinEdges', ...
                 [0:5:max(qMetric.maxDriftEstimate)]);
             yLim = ylim;
-            %line([param.plotDetails, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+            line([param.maxDrift , param.maxDrift ], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
             xLim = xlim;
-            %rectangle('Position',[xLim(1), yLim(1), param.maxWvBaselineFraction-xLim(1), yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
+            rectangle('Position',[xLim(1), yLim(1), param.maxDrift-xLim(1), yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
 
             ylabel('unit count')
             xlabel('max drift estimate')
@@ -264,18 +275,29 @@ if param.plotGlobal
             hold on;
             histogram(qMetric.isoD, 'FaceColor', colorMtx(1, 1:3), 'FaceAlpha', colorMtx(1, 4), 'BinEdges', [0:10:max(qMetric.isoD)]);
             yLim = ylim;
+            xLim = xlim;
             line([param.isoDmin + 0.5, param.isoDmin + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+            rectangle('Position', [param.isoDmin, yLim(1), xLim(2) - param.isoDmin, yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
+
             ylabel('unit count')
             xlabel('isolation distance')
 
 
             subplot(4, 5, 19)
             hold on;
-            histogram(qMetric.Lratio, 'FaceColor', colorMtx(1, 1:3), 'FaceAlpha', colorMtx(1, 4), 'BinEdges', [0:10:max(qMetric.Lratio)]);
+            set(gca, 'xscale', 'log')
+            minVal = min(qMetric.Lratio(qMetric.Lratio>0)); % Minimum 
+            maxVal = max(qMetric.Lratio); % Maximum value
+            binEdges = logspace(log10(minVal), log10(maxVal), 20);
+
+            histogram(qMetric.Lratio, 'FaceColor', colorMtx(1, 1:3), 'FaceAlpha', colorMtx(1, 4), 'BinEdges', binEdges);
             yLim = ylim;
+            xLim = xlim;
             line([param.lratioMax + 0.5, param.lratioMax + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
             ylabel('unit count')
             xlabel('l-ratio')
+            rectangle('Position',[xLim(1), yLim(1), param.lratioMax-xLim(1), yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
+
 
 
         end

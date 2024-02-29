@@ -1,4 +1,4 @@
-function [isolationDist, Lratio, silhouetteScore, mahalD, theseFeatures, otherFeatures_linear] = bc_getDistanceMetrics(pc_features, ...
+function [isolationDist, Lratio, silhouetteScore, histogram_mahalUnit_counts, histogram_mahalUnit_edges, histogram_mahalNoise_counts, histogram_mahalNoise_edges] = bc_getDistanceMetrics(pc_features, ...
     pc_feature_ind, thisUnit, numberSpikes, spikesIdx, allSpikesIdx, nChansToUse, plotThis)
 % JF, Get distance metrics
 % ------
@@ -87,6 +87,10 @@ Lratio = NaN;
 silhouetteScore = NaN;
 mahalD = NaN; 
 otherFeatures_linear = NaN;
+histogram_mahalUnit_counts = NaN;
+histogram_mahalUnit_edges = NaN;
+histogram_mahalNoise_counts = NaN;
+histogram_mahalNoise_edges = NaN;
 
 % Reshape features for mahalanobis distance calculation if there are other features
 if ~isempty(otherFeatures) && numberSpikes > nChansToUse * nPCs
@@ -128,7 +132,9 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
 
     % Calculate Mahalanobis distance for the current unit relative to itself (for comparison)
     d2_mahal_self = mahal(theseFeatures, theseFeatures);
-
+    
+    [histogram_mahalUnit_counts, histogram_mahalUnit_edges] = histcounts(mahalDself,1:1:200);
+    [histogram_mahalNoise_counts, histogram_mahalNoise_edges] = histcounts(mahalD,1:1:200);
 
     if plotThis
 
