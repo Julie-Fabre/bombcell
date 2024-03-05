@@ -12,22 +12,9 @@ function bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, t
 if param.plotGlobal
 
     %% plot summary of unit categorization
-    figHandle = 1;
-
-    qMetricNames{1} = {'# peaks', '#troughs', 'waveform baseline', 'spatial decay slope', 'waveform duration', 'non-somatic'};
-    if param.computeDistanceMetrics && ~isnan(param.isoDmin)
-        qMetricNames{2} = {'refractory period violations', 'undetected spikes', '# spikes', 'waveform amplitude', ...
-            'presence ratio', 'max drift', 'isolation distance', 'l-ratio'};
-    else
-        qMetricNames{2} = {'refractory period violations', 'undetected spikes', '# spikes', 'waveform amplitude', ...
-            'presence ratio', 'max drift'};
-    end
-    %     % euler diagram - previous method, now replaced by upset plot below
-
-    %     bc_plotEulerDiagram(qMetric, param, qMetricNames, figHandle)
-
-    % upSet plot
-%    bc_upSetPlot(qMetric, param, qMetricNames, figHandle)
+    
+    % upSet plots (3 or 4) : Noise, Non-axonal, MUA, (Non-axonal MUA)
+    bc_upSetPlot_wrapper(qMetric, param, unitType)
 
     %% plot summary of waveforms classified as noise/mua/good
     % 1. single/multi/noise/axonal waveforms

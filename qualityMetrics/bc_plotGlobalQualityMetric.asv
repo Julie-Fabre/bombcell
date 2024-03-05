@@ -12,22 +12,9 @@ function bc_plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, t
 if param.plotGlobal
 
     %% plot summary of unit categorization
-    figHandle = 1;
-
-    qMetricNames{1} = {'# peaks', '#troughs', 'waveform baseline', 'spatial decay slope', 'waveform duration', 'non-somatic'};
-    if param.computeDistanceMetrics && ~isnan(param.isoDmin)
-        qMetricNames{2} = {'refractory period violations', 'undetected spikes', '# spikes', 'waveform amplitude', ...
-            'presence ratio', 'max drift', 'isolation distance', 'l-ratio'};
-    else
-        qMetricNames{2} = {'refractory period violations', 'undetected spikes', '# spikes', 'waveform amplitude', ...
-            'presence ratio', 'max drift'};
-    end
-    %     % euler diagram - previous method, now replaced by upset plot below
-
-    %     bc_plotEulerDiagram(qMetric, param, qMetricNames, figHandle)
-
-    % upSet plot
-    % bc_upSetPlot(qMetric, param, qMetricNames, figHandle)
+    
+    % upSet plots (3 or 4) : Noise, Non-axonal, MUA, (Non-axonal MUA)
+    bc_upSetPlot_wrapper(qMetric, param, unitType)
 
     %% plot summary of waveforms classified as noise/mua/good
     % 1. single/multi/noise/axonal waveforms
@@ -165,7 +152,7 @@ if param.plotGlobal
             subplot(4, 5, 9)
             hold on;
             set(gca, 'xscale', 'log')
-            minVal = min(qMetric.rawAmplitude); % Minimum 
+            minVal = min(qMetric.rawAmplitude(qMetric.rawAmplitude>0)); % Minimum 
             maxVal = max(qMetric.rawAmplitude); % Maximum value
             binEdges = logspace(log10(minVal), log10(maxVal), 20);
 
@@ -195,6 +182,7 @@ if param.plotGlobal
         histogram(qMetric.waveformDuration_peakTrough, 'FaceColor', colorMtx(11, 1:3), 'FaceAlpha', colorMtx(11, 4), 'BinEdges', ...
             [0:40:max(qMetric.waveformDuration_peakTrough)]);
         yLim = ylim;
+        xLim = xlim;
         line([param.minWvDuration + 0.5, param.minWvDuration + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         line([param.maxWvDuration + 0.5, param.maxWvDuration + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
         rectangle('Position', [param.minWvDuration, yLim(1), param.maxWvDuration - param.minWvDuration, yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
@@ -230,7 +218,7 @@ if param.plotGlobal
             subplot(4, 5, 14) % signal to noise ratio
             hold on;
             set(gca, 'xscale', 'log')
-            minVal = min(qMetric.signalToNoiseRatio); % Minimum 
+            minVal = min(qMetric.signalToNoiseRatio(qMetric.signalToNoiseRatio>0)); % Minimum 
             maxVal = max(qMetric.signalToNoiseRatio); % Maximum value
             binEdges = logspace(log10(minVal), log10(maxVal), 20);
 
@@ -291,6 +279,7 @@ if param.plotGlobal
 
             histogram(qMetric.Lratio, 'FaceColor', colorMtx(1, 1:3), 'FaceAlpha', colorMtx(1, 4), 'BinEdges', binEdges);
             yLim = ylim;
+            xLim = xlim;
             line([param.lratioMax + 0.5, param.lratioMax + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
             ylabel('unit count')
             xlabel('l-ratio')
