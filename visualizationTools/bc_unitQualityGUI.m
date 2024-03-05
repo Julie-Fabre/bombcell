@@ -169,23 +169,23 @@ isiTitle = title('');
 isiLegend = legend(isiBar, {''});
 
 %% initialize isoDistance
-if param.computeDistanceMetrics
-    if plotRaw
-        subplot(6, 13, 36:39)
-    else
-        subplot(6, 13, 41:46)
-    end
-    hold on;
-    currIsoD = scatter(NaN, NaN, 10, '.b'); % Scatter plot with points of size 10
-    rpvIsoD = scatter(NaN, NaN, 10, '.m'); % Scatter plot with points of size 10
-    otherIsoD = scatter(NaN, NaN, 10, NaN, 'o', 'filled');
-
-    colormap(brewermap([], '*YlOrRd'))
-    hb = colorbar;
-    ylabel(hb, 'Mahalanobis Distance')
-    legend('this cluster', 'rpv spikes', 'other clusters');
-    isoDTitle = title('');
-end
+% if param.computeDistanceMetrics %temporarily disabled this plot - better plot coming soon! 
+%     if plotRaw
+%         subplot(6, 13, 36:39)
+%     else
+%         subplot(6, 13, 41:46)
+%     end
+%     hold on;
+%     currIsoD = scatter(NaN, NaN, 10, '.b'); % Scatter plot with points of size 10
+%     rpvIsoD = scatter(NaN, NaN, 10, '.m'); % Scatter plot with points of size 10
+%     otherIsoD = scatter(NaN, NaN, 10, NaN, 'o', 'filled');
+% 
+%     colormap(brewermap([], '*YlOrRd'))
+%     hb = colorbar;
+%     ylabel(hb, 'Mahalanobis Distance')
+%     legend('this cluster', 'rpv spikes', 'other clusters');
+%     isoDTitle = title('');
+% end
 
 %% initialize raw data
 if plotRaw
@@ -264,12 +264,12 @@ guiData.isiRefLine = isiRefLine;
 guiData.isiTitle = isiTitle;
 guiData.isiLegend = isiLegend;
 % isoD
-if param.computeDistanceMetrics
-    guiData.currIsoD = currIsoD;
-    guiData.otherIsoD = otherIsoD;
-    guiData.isoDTitle = isoDTitle;
-    guiData.rpvIsoD = rpvIsoD;
-end
+% if param.computeDistanceMetrics
+%     guiData.currIsoD = currIsoD;
+%     guiData.otherIsoD = otherIsoD;
+%     guiData.isoDTitle = isoDTitle;
+%     guiData.rpvIsoD = rpvIsoD;
+% end
 % raw data
 if plotRaw
     guiData.rawPlotH = rawPlotH;
@@ -464,11 +464,11 @@ end
 set(guiData.isiLegend, 'String', [num2str(qMetric.fractionRPVs_estimatedTauR(iCluster)*100), ' % r.p.v.'])
 
 %% 6. plot isolation distance
-if param.computeDistanceMetrics
-    set(guiData.currIsoD, 'XData', forGUI.Xplot{iCluster}(:, 1), 'YData', forGUI.Xplot{iCluster}(:, 2))
-    set(guiData.rpvIsoD, 'XData', forGUI.Xplot{iCluster}(theseOffendingSpikes, 1), 'YData', forGUI.Xplot{iCluster}(theseOffendingSpikes, 2))
-    set(guiData.otherIsoD, 'XData', forGUI.Yplot{iCluster}(:, 1), 'YData', forGUI.Yplot{iCluster}(:, 2), 'CData', forGUI.d2_mahal{iCluster})
-end
+% if param.computeDistanceMetrics
+%     set(guiData.currIsoD, 'XData', forGUI.Xplot{iCluster}(:, 1), 'YData', forGUI.Xplot{iCluster}(:, 2))
+%     set(guiData.rpvIsoD, 'XData', forGUI.Xplot{iCluster}(theseOffendingSpikes, 1), 'YData', forGUI.Xplot{iCluster}(theseOffendingSpikes, 2))
+%     set(guiData.otherIsoD, 'XData', forGUI.Yplot{iCluster}(:, 1), 'YData', forGUI.Yplot{iCluster}(:, 2), 'CData', forGUI.d2_mahal{iCluster})
+% end
 
 %% 7. (optional) plot raster
 
