@@ -27,7 +27,7 @@ if param.plotGlobal
     %     bc_plotEulerDiagram(qMetric, param, qMetricNames, figHandle)
 
     % upSet plot
-    % bc_upSetPlot(qMetric, param, qMetricNames, figHandle)
+%    bc_upSetPlot(qMetric, param, qMetricNames, figHandle)
 
     %% plot summary of waveforms classified as noise/mua/good
     % 1. single/multi/noise/axonal waveforms
