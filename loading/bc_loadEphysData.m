@@ -29,7 +29,7 @@ function [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitu
 
 
 
-spike_templates_0idx = readNPY([ephys_path filesep 'spike_templates.npy']);
+spike_templates_0idx = readNPY([ephys_path filesep 'spike_clusters.npy']); % templates=clusters <KS4, templates~=clusters KS4
 spikeTemplates = spike_templates_0idx + 1;
 if exist(fullfile(ephys_path,'spike_times_corrected.npy')) % When running pyKS stitched you need the 'aligned / corrected' spike times
     spikeTimes_samples = double(readNPY([ephys_path filesep  'spike_times_corrected.npy']));
@@ -38,7 +38,7 @@ else
     spikeTimes_samples = double(readNPY([ephys_path filesep  'spike_times.npy']));
     spikeTimes_datasets = ones(size(spikeTimes_samples));
 end
-templateAmplitudes = readNPY([ephys_path filesep 'amplitudes.npy']);
+templateAmplitudes = double(readNPY([ephys_path filesep 'amplitudes.npy'])); % ensure double (KS4 saves as single)
 
 templateWaveforms = readNPY([ephys_path filesep 'templates.npy']);
 try %not computed in early kilosort3 version
