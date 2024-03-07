@@ -28,7 +28,7 @@ function [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitu
 %
 
 % load spike templates (= waveforms)
-if exist(fullfile([ephys_path filesep 'spike_templates.npy'])
+if exist(fullfile([ephys_path filesep 'spike_templates.npy']))
   spike_templates_0idx = readNPY([ephys_path filesep 'spike_templates.npy']);
 else % in KS4, "spike_templates" is called "spike_clusters"
   spike_templates_0idx = readNPY([ephys_path filesep 'spike_clusters.npy']); % templates=clusters <KS4, templates~=clusters KS4
@@ -53,10 +53,10 @@ for t = 1:size(templateWaveforms,1)
     templateWaveforms(t,:,:) = squeeze(templateWaveforms_whitened(t,:,:))*winv;
 end
 
-if exist(fullfile([ephys_path filesep  'pc_features.npy'])
+if exist(fullfile([ephys_path filesep  'pc_features.npy']))
     pcFeatures = readNPY([ephys_path filesep  'pc_features.npy']);
     pcFeatureIdx = readNPY([ephys_path filesep  'pc_feature_ind.npy']) + 1;
-catch  % not computed in early kilosort3 version - the distance and drift metrics (which are based on the PCs) will not be calculated 
+else  % not computed in early kilosort3 version - the distance and drift metrics (which are based on the PCs) will not be calculated 
     pcFeatures = NaN;
     pcFeatureIdx = NaN;
 end 
