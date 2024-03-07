@@ -1,4 +1,4 @@
-function maxChannels = bc_getWaveformMaxChannelEP(templateWaveforms)
+function maxChannels = bc_getWaveformMaxChannel(templateWaveforms)
 % JF, Get the max channel for all templates (channel with largest amplitude)
 % ------
 % Inputs
@@ -13,4 +13,5 @@ function maxChannels = bc_getWaveformMaxChannelEP(templateWaveforms)
 
  
 [~, maxChannels] = max(max(abs(templateWaveforms), [], 2), [], 3);
+[~, maxChannels] = max(max(templateWaveforms,[],2)-min(templateWaveforms,[],2),[],3);
 end

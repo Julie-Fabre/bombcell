@@ -27,10 +27,15 @@ function [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitu
 %   kilosort (some are dropped during the spike sorting process)
 %
 
-
-
-spike_templates_0idx = readNPY([ephys_path filesep 'spike_clusters.npy']); % templates=clusters <KS4, templates~=clusters KS4
+% load spike templates (= waveforms)
+if exist(fullfile([ephys_path filesep 'spike_templates.npy'])
+  spike_templates_0idx = readNPY([ephys_path filesep 'spike_templates.npy']);
+else % in KS4, "spike_templates" is called "spike_clusters"
+  spike_templates_0idx = readNPY([ephys_path filesep 'spike_clusters.npy']); % templates=clusters <KS4, templates~=clusters KS4
+end
 spikeTemplates = spike_templates_0idx + 1;
+
+% load spike times 
 if exist(fullfile(ephys_path,'spike_times_corrected.npy')) % When running pyKS stitched you need the 'aligned / corrected' spike times
     spikeTimes_samples = double(readNPY([ephys_path filesep  'spike_times_corrected.npy']));
     spikeTimes_datasets = double(readNPY([ephys_path filesep  'spike_datasets.npy'])) + 1; %  which dataset? (zero-indexed so +1)
@@ -40,11 +45,18 @@ else
 end
 templateAmplitudes = double(readNPY([ephys_path filesep 'amplitudes.npy'])); % ensure double (KS4 saves as single)
 
-templateWaveforms = readNPY([ephys_path filesep 'templates.npy']);
-try %not computed in early kilosort3 version
+% Load and unwhiten templates
+templateWaveforms_whitened = readNPY([ephys_path filesep 'templates.npy']);
+winv = readNPY([ephys_path filesep 'whitening_mat_inv.npy']);
+templateWaveforms = zeros(size(templateWaveforms_whitened));
+for t = 1:size(templateWaveforms,1)
+    templateWaveforms(t,:,:) = squeeze(templateWaveforms_whitened(t,:,:))*winv;
+end
+
+if exist(fullfile([ephys_path filesep  'pc_features.npy'])
     pcFeatures = readNPY([ephys_path filesep  'pc_features.npy']);
     pcFeatureIdx = readNPY([ephys_path filesep  'pc_feature_ind.npy']) + 1;
-catch
+catch  % not computed in early kilosort3 version - the distance and drift metrics (which are based on the PCs) will not be calculated 
     pcFeatures = NaN;
     pcFeatureIdx = NaN;
 end 
@@ -53,7 +65,7 @@ goodChannels = readNPY([ephys_path filesep  'channel_map.npy']) + 1;
 
 
 %% Only use data set of interest - for unit match
-if nargin>2  %- for unit match
+if nargin > 2  %- for unit match
    
     spikeTimes_samples = spikeTimes_samples(spikeTimes_datasets == datasetidx);
     spikeTemplates = spikeTemplates(spikeTimes_datasets == datasetidx);

@@ -27,6 +27,10 @@ allColors =[255,255,255;...%1 white
             255,223,77]./255;%16 daffodil yellow
 if nColors ==2 
     colorMtx = allColors([10, 13],:,:);
+elseif nColors ==3 
+    colorMtx = allColors([10, 13, 15],:,:);
+elseif nColors ==4
+    colorMtx = allColors([10, 13, 15, 7],:,:);
 elseif nColors < 13
     colorMtx = allColors(15-nColors:15,:,:); % exclude daffodil yellow, white and black 
 elseif nColors == 14 

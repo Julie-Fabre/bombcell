@@ -18,9 +18,9 @@ function presenceRatio = bc_presenceRatio(theseSpikeTimes, theseAmplis, presence
 % Outputs
 % ------
 % presenceRatio : fraction of bins (of bin size presenceRatioBinSize) that
-%   contain at least one spike 
+%   contain at least 5% of the largest spike count per bin
 %
-% Note that cells can have low scores in this metric if they have selective
+% Note that cells can have low scores in this metric if they have highly selective
 %   firing patterns. 
 % ------
 % Reference 
@@ -32,7 +32,7 @@ function presenceRatio = bc_presenceRatio(theseSpikeTimes, theseAmplis, presence
 presenceRatio_bins = startTime:presenceRatioBinSize:stopTime;
 % count number of spikes in each chunk 
 spikesPerBin = arrayfun(@(x) sum(theseSpikeTimes>=presenceRatio_bins(x) & theseSpikeTimes<presenceRatio_bins(x+1)),1:length(presenceRatio_bins)-1);
-fullBins = spikesPerBin>0;
+fullBins = spikesPerBin >= 0.05*prctile(spikesPerBin, 90);
 presenceRatio = sum(fullBins)/length(spikesPerBin);
 
 if plotThis 
@@ -46,8 +46,14 @@ if plotThis
     
     xlabel('time (s)')
     ylabel(['amplitude scaling' newline 'factor'])
-    makepretty('none')
+    title(['Presence ratio = ' num2str(presenceRatio)])
 
+    if exist('prettify_plot', 'file')
+        prettify_plot('FigureColor','w')
+    else
+        warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
+        makepretty('none')
+    end
 end
 
 

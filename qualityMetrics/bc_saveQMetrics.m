@@ -21,6 +21,13 @@ end
 
 % save parameters
 if ~istable(param)
+    if isempty(param.ephysKilosortPath)
+        param.ephysKilosortPath = 'NaN';
+    end
+
+    if isempty(param.gain_to_uV)
+        param.gain_to_uV = 'NaN';
+    end
     parquetwrite([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')], struct2table(param))
 end
 % save quality metrics
@@ -50,5 +57,27 @@ parquetwrite([fullfile(savePath, 'templates._bc_qMetrics.parquet')], qMetricTabl
 % overwrite qMetric with the table, to be consistent with it for next steps
 % of the pipeline
 qMetric = qMetricTable;
+
+% optionally, also save output as a .tsv file
+if isfield(param,'saveAsTSV') % ensure back-compatibility if users have a previous version of param
+    fieldsToSave = {'percentageSpikesMissing_gaussian', ...
+        'presenceRatio', 'maxDriftEstimate', 'nPeaks', 'nTroughs', 'isSomatic','waveformDuration_peakTrough', 'spatialDecaySlope','waveformBaselineFlatness',...
+        'signalToNoiseRatio','fractionRPVs_estimatedTauR' };
+    fieldsRename = {'percentageSpikesMissing_gaussian', 'presence_ratio', 'max_drift', 'n_peaks', 'n_troughs', ...
+        'is_somatic','waveform_dur', 'spatial_decay_slope','wv_baseline_flatness',...
+        'SNR','frac_RPVs' };
+    if param.saveAsTSV == 1 
+        cluster_id_vector = qMetric.clusterID - 1; % from bombcell to phy nomenclature 
+        if isfield(param,'ephysKilosortPath') && strcmp(param.ephysKilosortPath, 'NaN') && ~isempty(param.ephysKilosortPath) == 0
+            saveTSV_path = param.ephysKilosortPath;
+        else
+            saveTSV_path = savePath;
+        end
+        for fid = 1:length(fieldsToSave)
+            cluster_table = table(cluster_id_vector, qMetric.(fieldsToSave{fid}), 'VariableNames', {'cluster_id', fieldsRename{fid}});
+            writetable(cluster_table,[saveTSV_path filesep 'cluster_' fieldsRename{fid} '.tsv'],'FileType', 'text','Delimiter','\t');  
+        end
+    end
+end
 
 end
