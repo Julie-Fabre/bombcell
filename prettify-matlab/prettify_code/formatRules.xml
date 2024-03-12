@@ -1,0 +1,30 @@
+<!-- Code formating rules, modify to your liking ! -->
+
+<rules>
+    <indent>
+        <spaceCount>4</spaceCount> <!-- indent by this many spaces -->
+        <increaseIndentation>if,else,elseif,for,while,switch,case,try,function,parfor,properties,classdef,methods,
+            arguments,events</increaseIndentation> <!-- indent code after these keywords -->
+        <decreaseIndentation>end,otherwise,catch,elseif,case,switch,else</decreaseIndentation> <!-- decrease indentation for code at and after these keywords -->
+        <singleIncreaseIndentation>...</singleIncreaseIndentation> <!-- indent code after this string, for one line only -->
+    </indent>
+    <spacing>
+        <aroundOperators>true</aroundOperators> <!-- add spacing around matlab operators (e.g. +, - *, &, &&, ==, ect.) -->
+        <afterCommentOperator>true</afterCommentOperator> <!-- add spacing after the matlab comment operators (%, %%) -->
+        <afterComma>true</afterComma> <!-- add spacing after commas -->
+    </spacing>
+    <blankLines>
+        <addBlankLines>false</addBlankLines><!-- add blank lines after "afterKeywords" and before "beforeKeywords" or not -->
+        <afterKeywords>for,if,elseif,else,parfor,while,catch,error,assert,warning,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise,break,keyboard</afterKeywords> <!-- if addBlankLines is true, add blank line after these keywords -->
+        <beforeKeywords>for,if,elseif,else,parfor,while,catch,error,assert,warning,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise,break,keyboard</beforeKeywords> <!--  if addBlankLines is true, dd blank line before these keywords -->
+        <singleBlankLines>true</singleBlankLines> <!-- remove any duplicate blank lines -->
+    </blankLines>
+    <singleLines><!-- add newlines lines after or before these keywords -->
+        <newLineBefore>for,if,elseif,else,parfor,while,catch,error,assert,warning,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,otherwise,break,keyboard</newLineBefore>
+        <newLineAfter>end,break,keyboard</newLineAfter>
+    </singleLines>
+    <lineEndings><!-- currently dsiabled- work in progress --> 
+        <noPunctuationEnding>for,if,elseif,else,parfor,while,switch,case,try,function,parfor,properties,classdef,methods,arguments,events,end,break,keyboard</noPunctuationEnding>
+        <semicolonEnding>true</semicolonEnding>
+    </lineEndings>
+</rules>

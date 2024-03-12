@@ -1,5 +1,5 @@
 function [maxDrift_estimate, cumulativeDrift_estimate] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, spikeTemplates, ...
-    spikeTimes, channelPositions_z, thisUnit, driftBinSize, computeDrift, plotThis)
+    spikeTimes, channelPositions_z, thisUnit, driftBinSize, computeDrift, plotDetails)
 % JF, Estimate the maximum drift for a particular unit
 % ------
 % Inputs
@@ -47,10 +47,18 @@ if computeDrift
 
     %% estimate cumulative drift
     timeBins = min(spikeTimes):driftBinSize:max(spikeTimes);
-    median_spikeDepth = arrayfun(@(x) nanmedian(spikeDepths_inChannels(spikeTimes >= x & spikeTimes < x+1)), timeBins); % median
-    maxDrift_estimate = max(median_spikeDepth) - min(median_spikeDepth);
-    median_spikeDepth(isnan(median_spikeDepth)) = []; % remove times with no spikes
-    cumulativeDrift_estimate = sum(abs(diff(median_spikeDepth)));
+    median_spikeDepth = arrayfun(@(x) median(spikeDepths_inChannels(spikeTimes >= x & spikeTimes < x+1)), timeBins); % median
+    maxDrift_estimate = nanmax(median_spikeDepth) - nanmin(median_spikeDepth);
+    cumulativeDrift_estimate = sum(abs(diff(median_spikeDepth(~isnan(median_spikeDepth)))));
+
+    if plotDetails
+        figure(); 
+        plot(timeBins, median_spikeDepth)
+        xlabel('time (s)')
+        ylabel('estimated spike depth (um)')
+        title(['cumulative drift = ', num2str(cumulativeDrift_estimate) 'um', newline, 'maximum drift/bin = ', num2str(maxDrift_estimate) 'um'])
+
+    end
 else
     maxDrift_estimate = NaN;
     cumulativeDrift_estimate = NaN;

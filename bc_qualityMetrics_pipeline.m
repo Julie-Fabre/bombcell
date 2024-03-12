@@ -14,12 +14,24 @@
 
 
 %% set paths - EDIT THESE 
-ephysKilosortPath = '/home/netshare/zinu/CB016/2021-10-07/ephys/CB016_2021-10-07_NatImages_g0/CB016_2021-10-07_NatImages_g0/pyKS/output/';% path to your kilosort output files 
-ephysRawDir = dir('/home/netshare/zinu/CB016/2021-10-07/ephys/CB016_2021-10-07_NatImages_g0/CB016_2021-10-07_NatImages_g0/*.*bin'); % path to yourraw .bin or .dat data
-ephysMetaDir = dir('/home/netshare/zinu/CB016/2021-10-07/ephys/CB016_2021-10-07_NatImages_g0/CB016_2021-10-07_NatImages_g0/*.*meta'); % path to your .meta or .oebin meta file
-saveLocation = '/media/julie/ExtraHD/CB016'; % where you want to save the quality metrics 
-savePath = fullfile(saveLocation, 'qMetrics'); 
+% '/home/netshare/zaru/JF093/2023-03-06/ephys/kilosort2/site1
+ephysKilosortPath = '/home/netshare/zaru/JF093/2023-03-06/ephys/kilosort2/site1';% path to your kilosort output files 
+ephysRawDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*bin'); % path to your raw .bin or .dat data
+ephysMetaDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*meta'); % path to your .meta or .oebin meta file
+savePath = '/media/julie/ExtraHD/JF093/2023-03-06/ephys/site1/qMetrics'; % where you want to save the quality metrics 
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
+gain_to_uV = 0.195; % use this if you are not using spikeGLX or openEphys to record your data. You then must leave the ephysMetaDir 
+    % empty(e.g. ephysMetaDir = '')
+
+%% check MATLAB version 
+if exist('isMATLABReleaseOlderThan', 'file') == 0 % function introduced in MATLAB 2020b.
+    oldMATLAB = true;
+else
+    oldMATLAB = isMATLABReleaseOlderThan("R2019a");
+end
+if oldMATLAB
+    error('This MATLAB version is older than 2019a - download a more recent version before continuing')
+end
 
 %% load data 
 [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitudes, pcFeatures, ...
@@ -29,8 +41,8 @@ decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save r
 rawFile = bc_manageDataCompression(ephysRawDir, decompressDataLocal);
 
 %% which quality metric parameters to extract and thresholds 
-param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath); 
-% param = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile) % Run this if you want to use UnitMatch after
+param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV); %for unitmatch, run this:
+% param = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV)
 
 %% compute quality metrics 
 rerun = 0;
@@ -38,10 +50,10 @@ qMetricsExist = ~isempty(dir(fullfile(savePath, 'qMetric*.mat'))) || ~isempty(di
 
 if qMetricsExist == 0 || rerun
     [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
-        templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
+        templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath);
 else
     [param, qMetric] = bc_loadSavedMetrics(savePath); 
-    unitType = bc_getQualityUnitType(param, qMetric);
+    unitType = bc_getQualityUnitType(param, qMetric, savePath);
 end
 
 %% view units + quality metrics in GUI 
@@ -56,6 +68,9 @@ bc_loadMetricsForGUI;
 % n : go to next noise unit
 % up/down arrow: toggle between time chunks in the raw data
 % u: brings up a input dialog to enter the unit you want to go to
+
+% currently this GUI works best with a screen in portrait mode - we are
+% working to get it to handle screens in landscape mode better. 
 unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, ...
     param, probeLocation, unitType, loadRawTraces);
 
@@ -79,9 +94,9 @@ number_of_spikes_for_this_cluster = qMetric.nSpikes(qMetric.phy_clusterID == ori
 
 
 %% example: get unit labels 
-% the output of `uunitType = bc_getQualityUnitType(param, qMetric);` gives
-% the unitType in a number format. 1 inidicates good units, 2 inidicates mua units, 3
-% indicates non-somatic units and 0 indicates noise units (see below) 
+% the output of `unitType = bc_getQualityUnitType(param, qMetric);` gives
+% the unitType in a number format. 1 indicates good units, 2 indicates mua units, 3
+% indicates non-somatic units and 0 indciates noise units (see below) 
  
 goodUnits = unitType == 1;
 muaUnits = unitType == 2;
@@ -94,5 +109,14 @@ all_good_units_number_of_spikes = qMetric.nSpikes(goodUnits);
 % (for use with another language: output a .tsv file of labels. You can then simply load this) 
 label_table = table(unitType);
 writetable(label_table,[savePath filesep 'templates._bc_unit_labels.tsv'],'FileType', 'text','Delimiter','\t');  
-       
+      
+
+%% optional: additionally compute ephys properties for each unit and classify cell types 
+rerunEP = 0;
+region = ''; % options include 'Striatum' and 'Cortex'
+[ephysProperties, unitClassif] = bc_ephysPropertiesPipeline(ephysKilosortPath, savePath, rerunEP, region);
+
+% example: get good MSN units 
+goodMSNs = strcmp(unitClassif, 'MSN') & unitType == 1; 
+
 
