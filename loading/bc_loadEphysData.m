@@ -43,7 +43,9 @@ else
     spikeTimes_samples = double(readNPY([ephys_path filesep  'spike_times.npy']));
     spikeTimes_datasets = ones(size(spikeTimes_samples));
 end
+
 templateAmplitudes = double(readNPY([ephys_path filesep 'amplitudes.npy'])); % ensure double (KS4 saves as single)
+
 
 % Load and unwhiten templates
 templateWaveforms_whitened = readNPY([ephys_path filesep 'templates.npy']);
