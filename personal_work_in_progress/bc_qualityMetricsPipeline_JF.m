@@ -1,4 +1,4 @@
-function [unitType, qMetric] = bc_qualityMetricsPipeline_JF(animal, day, site, recording, experiment_num, protocol, rerunQM, plotGUI, runQM)
+function [unitType, qMetric, param] = bc_qualityMetricsPipeline_JF(animal, day, site, recording, experiment_num, protocol, rerunQM, plotGUI, runQM)
 
 %% load data 
 % bc_qualityMetricsPipeline_JF('JF093','2023-03-06',1,[],1,[],1,1,1)
@@ -22,7 +22,7 @@ savePath = fullfile(ephysDirPath, 'qMetrics');
 saveFileFolder = fullfile(extraHDPath, animal, day, ['site', num2str(site)]);
 
 %% decompress data 
-decompress = 1;%QQ
+decompress = 0;%QQ
 if decompress
     rawFile = bc_manageDataCompression(ephysap_path, saveFileFolder);
 else
@@ -34,8 +34,10 @@ param = bc_qualityParamValues_JF(ephysMetaDir, rawFile, '', '');
 if ~decompress
     param.extractRaw = 0;
 end
-param.reextractRaw =1;%temp. 
-
+%param.reextractRaw =1;%temp. 
+param.computeDistanceMetrics=0;
+param.computeDrift=0;
+param.extractRaw=0;
 %% compute quality metrics 
 ephysDirPath = cl_cortexlab_filename(animal, day, experiment, 'ephys_dir',site, recording);
 savePath = fullfile(ephysDirPath, 'qMetrics');
