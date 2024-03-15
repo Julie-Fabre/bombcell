@@ -42,7 +42,14 @@ else
     nChannels = param.nChannels; % (385)
     nSpikesToExtract = param.nRawSpikesToExtract;
     spikeWidth = param.spikeWidth;
-    halfWidth = spikeWidth / 2;
+    switch spikeWidth
+        case 82
+            % spikeWidth = 82: kilosort <4, baseline = 1:41
+            halfWidth = spikeWidth/2;
+        case 61
+            % spikeWidth = 61: kilosort 4, baseline = 1:20
+            halfWidth = 20; 
+    end
     dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
     clustInds = unique(spikeTemplates);
     nClust = numel(clustInds);
@@ -51,6 +58,8 @@ else
     if param.saveMultipleRaw && ~isfolder(fullfile(savePath,'RawWaveforms'))
         mkdir(fullfile(savePath,'RawWaveforms'))
     end
+
+    % Kilosort 4: number of "baseline samples" needs to be defined
 
     fprintf('\n Extracting raw waveforms from %s ...', param.rawFile)
     % Get binary file name
@@ -83,9 +92,9 @@ else
         for iSpike = 1:nSpkLocal
             thisSpikeIdx = rawWaveforms(iCluster).spkIndsub(iSpike);
                 
-            if ((thisSpikeIdx - halfWidth) * nChannels) * dataTypeNBytes > halfWidth &&...
-                    (thisSpikeIdx + halfWidth) * nChannels * dataTypeNBytes < rawFileInfo.bytes % check that it's not out of bounds
-                % extract spike
+            if ((thisSpikeIdx - spikeWidth) * nChannels) * dataTypeNBytes > spikeWidth &&...
+                    (thisSpikeIdx + spikeWidth) * nChannels * dataTypeNBytes < rawFileInfo.bytes % check that it's not out of bounds
+
                 bytei = ((thisSpikeIdx - halfWidth) * nChannels) * dataTypeNBytes;
                 fseek(fid, bytei, 'bof');
                 data0 = fread(fid, nChannels*spikeWidth, 'int16=>int16'); % read individual waveform from binary file

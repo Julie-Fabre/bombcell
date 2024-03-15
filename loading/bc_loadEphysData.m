@@ -27,9 +27,15 @@ function [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitu
 %   kilosort (some are dropped during the spike sorting process)
 %
 
-spike_templates_0idx = readNPY([ephys_path filesep 'spike_templates.npy']);
+% load spike templates (= waveforms)
+if exist(fullfile([ephys_path filesep 'spike_templates.npy']))
+  spike_templates_0idx = readNPY([ephys_path filesep 'spike_templates.npy']);
+else % in KS4, "spike_templates" is called "spike_clusters"
+  spike_templates_0idx = readNPY([ephys_path filesep 'spike_clusters.npy']); % templates=clusters <KS4, templates~=clusters KS4
+end
 spikeTemplates = spike_templates_0idx + 1;
 
+% load spike times 
 if exist(fullfile(ephys_path,'spike_times_corrected.npy')) % When running pyKS stitched you need the 'aligned / corrected' spike times
     spikeTimes_samples = double(readNPY([ephys_path filesep  'spike_times_corrected.npy']));
     spikeTimes_datasets = double(readNPY([ephys_path filesep  'spike_datasets.npy'])) + 1; %  which dataset? (zero-indexed so +1)
@@ -38,7 +44,8 @@ else
     spikeTimes_datasets = ones(size(spikeTimes_samples));
 end
 
-templateAmplitudes = readNPY([ephys_path filesep 'amplitudes.npy']);
+templateAmplitudes = double(readNPY([ephys_path filesep 'amplitudes.npy'])); % ensure double (KS4 saves as single)
+
 
 % Load and unwhiten templates
 templateWaveforms_whitened = readNPY([ephys_path filesep 'templates.npy']);
@@ -48,10 +55,10 @@ for t = 1:size(templateWaveforms,1)
     templateWaveforms(t,:,:) = squeeze(templateWaveforms_whitened(t,:,:))*winv;
 end
 
-try %not computed in early kilosort3 version
+if exist(fullfile([ephys_path filesep  'pc_features.npy']))
     pcFeatures = readNPY([ephys_path filesep  'pc_features.npy']);
     pcFeatureIdx = readNPY([ephys_path filesep  'pc_feature_ind.npy']) + 1;
-catch
+else  % not computed in early kilosort3 version - the distance and drift metrics (which are based on the PCs) will not be calculated 
     pcFeatures = NaN;
     pcFeatureIdx = NaN;
 end 
