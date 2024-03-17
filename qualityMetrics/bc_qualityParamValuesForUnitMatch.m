@@ -9,6 +9,7 @@ paramBC.plotDetails = 0; % generates a lot of plots,
 paramBC.plotGlobal = 1; % plot summary of quality metrics 
 paramBC.verbose = 1; % update user on progress
 paramBC.reextractRaw = 1; % re extract raw waveforms or not - safer this way..
+paramBC.extractRaw = 1; %whether to extract raw waveforms or not 
 
 % saving parameters 
 paramBC.saveAsTSV = 1; % additionally save outputs in .tsv file - this is 
@@ -32,7 +33,6 @@ paramBC.saveMultipleRaw = 1; % If you wish to save the nRawSpikesToExtract as we
 % to track chronic cells over days after this
 paramBC.decompressData = 1; % whether to decompress .cbin ephys data 
 paramBC.spikeWidth = 82; % width in samples 
-paramBC.extractRaw = 1; %whether to extract raw waveforms or not 
 paramBC.probeType = 1; % if you are using spikeGLX and your meta file does 
     % not contain information about your probe type for some reason
     % specify it here: '1' for 1.0 (3Bs) and '2' for 2.0 (single or 4-shanks)
