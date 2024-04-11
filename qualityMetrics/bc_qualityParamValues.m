@@ -105,8 +105,8 @@ param.computeDrift = 0; % whether to compute each units drift. this is a
 
 % waveform parameters
 if kilosortVersion == 4
-    param.waveformBaselineWindowStart = 0;
-    param.waveformBaselineWindowStop = 10; % in samples 
+    param.waveformBaselineWindowStart = 1;
+    param.waveformBaselineWindowStop = 11; % in samples 
 else
     param.waveformBaselineWindowStart = 20;
     param.waveformBaselineWindowStop = 30; % in samples 
