@@ -1,4 +1,4 @@
-function param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV)
+function param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV, kilosortVersion)
 % JF, Load a parameter structure defining extraction and
 % classification parameters
 % ------
@@ -15,7 +15,9 @@ function param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath,
 % classification parameters (see bc_qualityParamValues for required fields
 % and suggested starting values)
 % 
-
+if nargin < 5 
+    kilosortVersion = 2;
+end
 param = struct; %initialize structure 
 
 %% calculating quality metrics parameters 
@@ -54,7 +56,11 @@ param.saveMultipleRaw = 0; % If you wish to save the nRawSpikesToExtract as well
     % currently needed if you want to run unit match https://github.com/EnnyvanBeest/UnitMatch
     % to track chronic cells over days after this
 param.decompressData = 0; % whether to decompress .cbin ephys data 
-param.spikeWidth = 82; % width in samples 
+if kilosortVersion == 4
+    param.spikeWidth = 61; % width in samples 
+else
+    param.spikeWidth = 82; % width in samples 
+end
 param.extractRaw = 1; %whether to extract raw waveforms or not 
 param.probeType = 1; % if you are using spikeGLX and your meta file does 
     % not contain information about your probe type for some reason
@@ -64,9 +70,15 @@ param.probeType = 1; % if you are using spikeGLX and your meta file does
     % type, or if you are using open ephys, this paramater wil be ignored.
 
 % signal to noise ratio
-param.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times
-    % extracted to computer the mean raw waveform - this needs to be before the
-    % waveform starts 
+if kilosortVersion == 4
+    param.waveformBaselineNoiseWindow = 10; %time in samples at beginning of times
+        % extracted to computer the mean raw waveform - this needs to be before the
+        % waveform starts 
+else
+    param.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times
+        % extracted to computer the mean raw waveform - this needs to be before the
+        % waveform starts 
+end
 
 % refractory period parameters
 param.tauR_valuesMin = 2/1000; % refractory period time (s), usually 0.0020. 
@@ -92,8 +104,13 @@ param.computeDrift = 0; % whether to compute each units drift. this is a
     % critically slow step that takes around 2seconds per unit 
 
 % waveform parameters
-param.waveformBaselineWindowStart = 20;
-param.waveformBaselineWindowStop = 30; % in samples 
+if kilosortVersion == 4
+    param.waveformBaselineWindowStart = 0;
+    param.waveformBaselineWindowStop = 10; % in samples 
+else
+    param.waveformBaselineWindowStart = 20;
+    param.waveformBaselineWindowStop = 30; % in samples 
+end
 param.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value 
     % in a units waveform to give the minimum prominence to detect peaks using
     % matlab's findpeaks function.
