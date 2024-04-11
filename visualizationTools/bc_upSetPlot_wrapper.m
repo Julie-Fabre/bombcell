@@ -10,15 +10,20 @@ function bc_upSetPlot_wrapper(qMetric, param,  unitType)
 % written by Zhaoxu Liu / slandarer
 
 %% Noise UpSet plot
-figHandle_noise = figure('Name','Noise vs neuronal units', 'Color', 'w');
-UpSet_data_noise = [isnan(qMetric.nPeaks) | qMetric.nPeaks > param.maxNPeaks, ...
-    isnan(qMetric.nTroughs) | qMetric.nTroughs > param.maxNTroughs, ...
-    qMetric.spatialDecaySlope > param.minSpatialDecaySlope, ...
-    qMetric.waveformDuration_peakTrough < param.minWvDuration | qMetric.waveformDuration_peakTrough > param.maxWvDuration, ...
-    qMetric.waveformBaselineFlatness > param.maxWvBaselineFraction];
-UpSet_labels_noise = {'waveform peak #', 'waveform trough #', 'waveform spatial decay', 'waveform duration', 'waveform baseline flatness'};
+if sum(ismember(unitType, 0))>0
 
-bc_upSetPlot(UpSet_data_noise, UpSet_labels_noise, figHandle_noise);
+    figHandle_noise = figure('Name','Noise vs neuronal units', 'Color', 'w');
+    UpSet_data_noise = [isnan(qMetric.nPeaks) | qMetric.nPeaks > param.maxNPeaks, ...
+        isnan(qMetric.nTroughs) | qMetric.nTroughs > param.maxNTroughs, ...
+        qMetric.spatialDecaySlope > param.minSpatialDecaySlope, ...
+        qMetric.waveformDuration_peakTrough < param.minWvDuration | qMetric.waveformDuration_peakTrough > param.maxWvDuration, ...
+        qMetric.waveformBaselineFlatness > param.maxWvBaselineFraction];
+    UpSet_labels_noise = {'waveform peak #', 'waveform trough #', 'waveform spatial decay', 'waveform duration', 'waveform baseline flatness'};
+    
+    bc_upSetPlot(UpSet_data_noise, UpSet_labels_noise, figHandle_noise);
+else
+    disp('No noise or non-somatic units with current param settings - consider changing your param values')
+end
 
 % %% Non-somatic UpSet plot - coming soon
 % figHandle_nonSoma = figure('Name','Non-somatic vs somatic units', 'Color', 'w');
@@ -29,37 +34,41 @@ bc_upSetPlot(UpSet_data_noise, UpSet_labels_noise, figHandle_noise);
 % bc_upSetPlot(UpSet_data_nonSoma, UpSet_labels_nonSoma, figHandle_nonSoma);
 
 %% MUA UpSet plot
-figHandle_mua = figure('Name','Multi vs single units', 'Color', 'w');
-
-UpSet_data_mua = [qMetric.percentageSpikesMissing_gaussian > param.maxPercSpikesMissing, ...
-    qMetric.nSpikes < param.minNumSpikes, ...
-    qMetric.fractionRPVs_estimatedTauR > param.maxRPVviolations, ...
-    qMetric.presenceRatio < param.minPresenceRatio];
-UpSet_labels_mua = {'% missing spikes', '# spikes', 'fraction RPVs', 'presence ratio'};
-
-if param.computeDistanceMetrics && ~isnan(param.isoDmin)
-    UpSet_data_mua = [UpSet_data_mua, ...
-        qMetric.isoD < param.isoDmin,...
-        qMetric.Lratio > param.lratioMax];
-    UpSet_labels_mua{end+1} = 'isolation dist.';
-    UpSet_labels_mua{end+1} = 'l-ratio';
-
+if sum(ismember(unitType, [1,2]))>0
+    figHandle_mua = figure('Name','Multi vs single units', 'Color', 'w');
+    
+    UpSet_data_mua = [qMetric.percentageSpikesMissing_gaussian > param.maxPercSpikesMissing, ...
+        qMetric.nSpikes < param.minNumSpikes, ...
+        qMetric.fractionRPVs_estimatedTauR > param.maxRPVviolations, ...
+        qMetric.presenceRatio < param.minPresenceRatio];
+    UpSet_labels_mua = {'% missing spikes', '# spikes', 'fraction RPVs', 'presence ratio'};
+    
+    if param.computeDistanceMetrics && ~isnan(param.isoDmin)
+        UpSet_data_mua = [UpSet_data_mua, ...
+            qMetric.isoD < param.isoDmin,...
+            qMetric.Lratio > param.lratioMax];
+        UpSet_labels_mua{end+1} = 'isolation dist.';
+        UpSet_labels_mua{end+1} = 'l-ratio';
+    
+    end
+    if param.extractRaw
+         UpSet_data_mua = [UpSet_data_mua, ...
+            qMetric.rawAmplitude < param.minAmplitude ,...
+            qMetric.signalToNoiseRatio < param.minSNR];
+        UpSet_labels_mua{end+1} = 'amplitude';
+        UpSet_labels_mua{end+1} = 'SNR';
+    end
+    if param.computeDrift
+          UpSet_data_mua = [UpSet_data_mua, ...
+            qMetric.maxDriftEstimate > param.maxDrift];
+        UpSet_labels_mua{end+1} = 'max drift';
+    end
+    
+    UpSet_data_mua = UpSet_data_mua(ismember(unitType, [1,2]) , :); %Keep only MUA and single units - remove noise and non-somatic 
+    bc_upSetPlot(UpSet_data_mua, UpSet_labels_mua, figHandle_mua);
+else
+    disp('No MUA or good units with current param settings - consider changing your param values')
 end
-if param.extractRaw
-     UpSet_data_mua = [UpSet_data_mua, ...
-        qMetric.rawAmplitude < param.minAmplitude ,...
-        qMetric.signalToNoiseRatio < param.minSNR];
-    UpSet_labels_mua{end+1} = 'amplitude';
-    UpSet_labels_mua{end+1} = 'SNR';
-end
-if param.computeDrift
-      UpSet_data_mua = [UpSet_data_mua, ...
-        qMetric.maxDriftEstimate > param.maxDrift];
-    UpSet_labels_mua{end+1} = 'max drift';
-end
-
-UpSet_data_mua = UpSet_data_mua(ismember(unitType, [1,2]) , :); %Keep only MUA and single units - remove noise and non-somatic 
-bc_upSetPlot(UpSet_data_mua, UpSet_labels_mua, figHandle_mua);
 
 %% Non-somatic MUA UpSet plot
 if param.splitGoodAndMua_NonSomatic

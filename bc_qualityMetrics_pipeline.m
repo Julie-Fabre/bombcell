@@ -22,6 +22,7 @@ savePath = '/media/julie/ExtraHD/JF093/2023-03-06/ephys/site1/qMetrics'; % where
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
 gain_to_uV = 0.195; % use this if you are not using spikeGLX or openEphys to record your data. You then must leave the ephysMetaDir 
     % empty(e.g. ephysMetaDir = '')
+kilosortVersion = 2;% if using kilosort4, you need to change this value. Otherwise it does not matter. 
 
 %% check MATLAB version 
 if exist('isMATLABReleaseOlderThan', 'file') == 0 % function introduced in MATLAB 2020b.
@@ -41,7 +42,7 @@ end
 rawFile = bc_manageDataCompression(ephysRawDir, decompressDataLocal);
 
 %% which quality metric parameters to extract and thresholds 
-param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV); %for unitmatch, run this:
+param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV, kilosortVersion); %for unitmatch, run this:
 % param = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV)
 
 %% compute quality metrics 
