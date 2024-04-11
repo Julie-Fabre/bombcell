@@ -80,8 +80,8 @@ for iTimeChunk = 1:numel(timeChunks) - 1
         ampliBin_gaussian = bins(1:end-1) + bin_steps / 2;
         next_low_bin = ampliBin_gaussian(1) - bin_steps;
         add_points = 0:bin_steps:next_low_bin; % add points so amplitude values starts at 0
-        ampliBin_gaussian = [add_points, ampliBin_gaussian];
-        spikeCountsPerAmpliBin_gaussian = [zeros(size(add_points, 2), 1)', spikeCountsPerAmpliBin];
+        ampliBin_gaussian = double([add_points, ampliBin_gaussian]);
+        spikeCountsPerAmpliBin_gaussian = double([zeros(size(add_points, 2), 1)', spikeCountsPerAmpliBin]);
 
         p0 = [max(spikeCountsPerAmpliBin_gaussian), mode_seed, 2 * nanstd(theseAmplitudes), prctile(theseAmplitudes, 1)]; % seed
 
@@ -92,7 +92,7 @@ for iTimeChunk = 1:numel(timeChunks) - 1
         %'MaxFunctionEvaluations', 5000);%'MaxFunctionEvaluations', 10000, 'MaxIterations', 1000);
         lb = [];
         ub = [];
-        fitOutput = lsqcurvefit(f, p0, ampliBin_gaussian, spikeCountsPerAmpliBin_gaussian, lb, ub, options); %QQ need to look into local minimum error that sometimes happens
+        fitOutput = lsqcurvefit(f, p0, double(ampliBin_gaussian), spikeCountsPerAmpliBin_gaussian, lb, ub, options); %QQ need to look into local minimum error that sometimes happens
 
         %norm area calculated by fit parameters
 

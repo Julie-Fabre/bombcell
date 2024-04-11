@@ -74,6 +74,7 @@ forGUI = struct;
 % check parameter values
 param = bc_checkParameterFields(param);
 
+templateWaveforms = double(templateWaveforms); % Just in case (KS 4 is single)
 % get unit max channels
 maxChannels = bc_getWaveformMaxChannel(templateWaveforms);
 
@@ -111,7 +112,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
     qMetric.clusterID(iUnit) = thisUnit; % this is the cluster ID as it appears in phy, 1-indexed (adding 1)
 
     theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
-    theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
+    theseAmplis = double(templateAmplitudes(spikeTemplates == thisUnit));
 
     
     %% percentage spikes missing (false negatives)
@@ -153,7 +154,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
 
     %% waveform
-    waveformBaselineWindow = [param.waveformBaselineWindowStart, param.waveformBaselineWindowStop];
+    waveformBaselineWindow = int16([param.waveformBaselineWindowStart, param.waveformBaselineWindowStop]);
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), forGUI.peakLocs{iUnit}, ...
         forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), ...
         forGUI.spatialDecayPoints(iUnit, :), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), ... .
