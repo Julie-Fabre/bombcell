@@ -1,5 +1,9 @@
-function paramBC = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV)
+function paramBC = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV, kilosortVersion)
 paramBC = struct;
+
+if nargin < 5 
+    kilosortVersion = 4; 
+end
 
 %% calculating quality metrics parameters 
 % plotting parameters 
@@ -8,7 +12,8 @@ paramBC.plotDetails = 0; % generates a lot of plots,
 % to debug, or to get nice plots for a presentation
 paramBC.plotGlobal = 1; % plot summary of quality metrics 
 paramBC.verbose = 1; % update user on progress
-paramBC.reextractRaw = 1; % re extract raw waveforms or not - safer this way..
+paramBC.reextractRaw = 0; % re extract raw waveforms or not - safer this way..
+paramBC.extractRaw = 1; %whether to extract raw waveforms or not 
 
 % saving parameters 
 paramBC.saveAsTSV = 1; % additionally save outputs in .tsv file - this is 
@@ -22,6 +27,12 @@ else
 end
 paramBC.saveMatFileForGUI = 1; % save certain outputs at .mat file - useful for GUI
 
+% duplicate spikes parameters 
+paramBC.removeDuplicateSpikes = 1;
+paramBC.duplicateSpikeWindow_s = 0.00001; % in seconds 
+paramBC.saveSpikes_withoutDuplicates = 1;
+paramBC.recomputeDuplicateSpikes = 0;
+
 % amplitude parameters
 paramBC.detrendWaveform = 0; % If this is set to 1, each raw extracted spike is
     % detrended (we remove the best straight-fit line from the spike)
@@ -31,8 +42,11 @@ paramBC.saveMultipleRaw = 1; % If you wish to save the nRawSpikesToExtract as we
 % currently needed if you want to run unit match https://github.com/EnnyvanBeest/UnitMatch
 % to track chronic cells over days after this
 paramBC.decompressData = 1; % whether to decompress .cbin ephys data 
-paramBC.spikeWidth = 82; % width in samples 
-paramBC.extractRaw = 1; %whether to extract raw waveforms or not 
+if kilosortVersion == 4
+    paramBC.spikeWidth = 61; % width in samples 
+else
+    paramBC.spikeWidth = 82; % width in samples 
+end
 paramBC.probeType = 1; % if you are using spikeGLX and your meta file does 
     % not contain information about your probe type for some reason
     % specify it here: '1' for 1.0 (3Bs) and '2' for 2.0 (single or 4-shanks)
@@ -41,9 +55,15 @@ paramBC.probeType = 1; % if you are using spikeGLX and your meta file does
     % type, or if you are using open ephys, this paramater wil be ignored.
 
 % signal to noise ratio
-paramBC.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times
-% extracted to computer the mean raw waveform - this needs to be before the
-% waveform starts 
+if kilosortVersion == 4
+    paramBC.waveformBaselineNoiseWindow = 10; %time in samples at beginning of times
+        % extracted to computer the mean raw waveform - this needs to be before the
+        % waveform starts 
+else
+    paramBC.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times
+        % extracted to computer the mean raw waveform - this needs to be before the
+        % waveform starts 
+end
 
 % refractory period parameters
 paramBC.tauR_valuesMin = 0.5/1000; % refractory period time (s), usually 0.0020
@@ -65,11 +85,18 @@ paramBC.computeDrift = 0; % whether to compute each units drift. this is a
 % critically slow step that takes around 2seconds per unit 
 
 % waveform parameters
-paramBC.waveformBaselineWindowStart = 20;
-paramBC.waveformBaselineWindowStop = 30; % in samples 
+if kilosortVersion == 4
+    paramBC.waveformBaselineWindowStart = 1;
+    paramBC.waveformBaselineWindowStop = 10; % in samples 
+else
+    paramBC.waveformBaselineWindowStart = 20;
+    paramBC.waveformBaselineWindowStop = 30; % in samples 
+end
 paramBC.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value 
 % in a units waveform to give the minimum prominence to detect peaks using
 % matlab's findpeaks function.
+paramBC.firstPeakRatio = 1.1; % if units have an initial peak before the trough,
+
 
 % recording parametrs
 paramBC.ephys_sample_rate = 30000; % samples per second

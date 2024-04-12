@@ -25,12 +25,21 @@ if exist('spikeTimes_samples','var')
     ephysData.channel_positions = channelPositions;
 
 else % load in unit match data 
-    ephysData.spike_times_samples = sp{countid}.st(idx)*sp{countid}.sample_rate;
-    ephysData.ephys_sample_rate = sp{countid}.sample_rate;
-    ephysData.spike_templates = sp{countid}.spikeTemplates(idx)+1;
-    ephysData.templates = sp{countid}.temps;
-    ephysData.template_amplitudes = sp{countid}.tempScalingAmps(idx);
-    ephysData.channel_positions = channelpostmp;
+        if iscell(sp)
+        ephysData.spike_times_samples = sp{countid}.st(idx)*sp{countid}.sample_rate;
+        ephysData.ephys_sample_rate = sp{countid}.sample_rate;
+        ephysData.spike_templates = sp{countid}.spikeTemplates(idx)+1;
+        ephysData.templates = sp{countid}.temps;
+        ephysData.template_amplitudes = sp{countid}.tempScalingAmps(idx);
+        ephysData.channel_positions = channelpostmp;
+    else
+        ephysData.spike_times_samples = sp.st(idx)*sp.sample_rate;
+        ephysData.ephys_sample_rate = sp.sample_rate;
+        ephysData.spike_templates = sp.spikeTemplates(idx)+1;
+        ephysData.templates = sp.temps;
+        ephysData.template_amplitudes = sp.tempScalingAmps(idx);
+        ephysData.channel_positions = channelpostmp;
+    end
 end
 
 ephysData.waveform_t = 1e3 * ((0:size(ephysData.templates, 2) - 1) / ephysData.ephys_sample_rate);
