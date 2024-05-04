@@ -174,7 +174,11 @@ currFig = gcf;
 set(currFig, 'color', options.FigureColor);
 
 % update font
+try
 fontname(currFig, options.Font)
+catch
+     % matlab version < 2022 , this function doesn't exist
+end
 
 % get axes children
 currFig_children = currFig.Children;
