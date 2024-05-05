@@ -9,45 +9,73 @@ if ~isnan(LimitsRound) % round up all limits to the nearest LimitsRound decimal 
 end
 
 % homogenize x, y, and climits across rows/columns of plots.
+col_subplots = unique(ax_pos(:, 1));
+row_subplots = unique(ax_pos(:, 2));
 
-if isnumeric(XLimits) && isnumeric(YLimits)
+% Set Xlimits
+if isnumeric(XLimits)
     for iAx = 1:size(all_axes, 2)
         thisAx = all_axes(iAx);
         currAx = currFig_children(thisAx);
         set(currAx, 'XLim', [XLimits(1), XLimits(2)]);
-        set(currAx, 'YLim', [YLimits(1), YLimits(2)]);
     end
-
-elseif ismember(XLimits, {'all', 'rows', 'cols'}) || ismember(YLimits, {'all', 'rows', 'cols'}) || ismember(CLimits, {'all', 'rows', 'cols'})
-    % get rows and cols
-    col_subplots = unique(ax_pos(:, 1));
-    row_subplots = unique(ax_pos(:, 2));
-
+elseif ismember(XLimits, {'all', 'rows', 'cols'})
     col_xlims = arrayfun(@(x) [min(min(xlims_subplot(ax_pos(:, 1) == col_subplots(x), :))), ...
         max(max(xlims_subplot(ax_pos(:, 1) == col_subplots(x), :)))], 1:size(col_subplots, 1), 'UniformOutput', false);
     row_xlims = arrayfun(@(x) [min(min(xlims_subplot(ax_pos(:, 2) == row_subplots(x), :))), ...
         max(max(xlims_subplot(ax_pos(:, 2) == row_subplots(x), :)))], 1:size(row_subplots, 1), 'UniformOutput', false);
-    col_ylims = arrayfun(@(x) [min(min(ylims_subplot(ax_pos(:, 1) == col_subplots(x), :))), ...
-        max(max(ylims_subplot(ax_pos(:, 1) == col_subplots(x), :)))], 1:size(col_subplots, 1), 'UniformOutput', false);
-    row_ylims = arrayfun(@(x) [min(min(ylims_subplot(ax_pos(:, 2) == row_subplots(x), :))), ...
-        max(max(ylims_subplot(ax_pos(:, 2) == row_subplots(x), :)))], 1:size(row_subplots, 1), 'UniformOutput', false);
-    col_clims = arrayfun(@(x) [min(min(clims_subplot(ax_pos(:, 1) == col_subplots(x), :))), ...
-        max(max(clims_subplot(ax_pos(:, 1) == col_subplots(x), :)))], 1:size(col_subplots, 1), 'UniformOutput', false);
-    row_clims = arrayfun(@(x) [min(min(clims_subplot(ax_pos(:, 2) == row_subplots(x), :))), ...
-        max(max(clims_subplot(ax_pos(:, 2) == row_subplots(x), :)))], 1:size(row_subplots, 1), 'UniformOutput', false);
-
-
     for iAx = 1:size(all_axes, 2)
         thisAx = all_axes(iAx);
         currAx = currFig_children(thisAx);
         if ~isempty(currAx) %(currAx, limits, limitRows, limitCols, axPos, limitIdx_row, limitIdx_col, limitType)
             setNewXYLimits(currAx, xlims_subplot, row_xlims, col_xlims, ax_pos, row_subplots, ...
                 col_subplots, XLimits, 'Xlim', iAx) %set x limits
-            
+        end
+
+    end
+end
+
+% Set Ylimits
+if isnumeric(YLimits)
+    for iAx = 1:size(all_axes, 2)
+        thisAx = all_axes(iAx);
+        currAx = currFig_children(thisAx);
+        set(currAx, 'YLim', [YLimits(1), YLimits(2)]);
+    end
+elseif ismember(YLimits, {'all', 'rows', 'cols'})
+    col_ylims = arrayfun(@(x) [min(min(ylims_subplot(ax_pos(:, 1) == col_subplots(x), :))), ...
+        max(max(ylims_subplot(ax_pos(:, 1) == col_subplots(x), :)))], 1:size(col_subplots, 1), 'UniformOutput', false);
+    row_ylims = arrayfun(@(x) [min(min(ylims_subplot(ax_pos(:, 2) == row_subplots(x), :))), ...
+        max(max(ylims_subplot(ax_pos(:, 2) == row_subplots(x), :)))], 1:size(row_subplots, 1), 'UniformOutput', false);
+    for iAx = 1:size(all_axes, 2)
+        thisAx = all_axes(iAx);
+        currAx = currFig_children(thisAx);
+        if ~isempty(currAx) %(currAx, limits, limitRows, limitCols, axPos, limitIdx_row, limitIdx_col, limitType)
             setNewXYLimits(currAx, ylims_subplot, row_ylims, col_ylims, ax_pos, row_subplots, ...
                 col_subplots, YLimits, 'Ylim', iAx) %set y limits
+        end
+    end
+end
 
-
+% Set Climits
+if isnumeric(CLimits)
+    for iAx = 1:size(all_axes, 2)
+        thisAx = all_axes(iAx);
+        currAx = currFig_children(thisAx);
+        set(currAx, 'CLim', [CLimits(1), CLimits(2)]);
+    end
+elseif ismember(CLimits, {'all', 'rows', 'cols'})
+    % get rows and cols
+    col_subplots = unique(ax_pos(:, 1));
+    row_subplots = unique(ax_pos(:, 2));
+    col_clims = arrayfun(@(x) [min(min(clims_subplot(ax_pos(:, 1) == col_subplots(x), :))), ...
+        max(max(clims_subplot(ax_pos(:, 1) == col_subplots(x), :)))], 1:size(col_subplots, 1), 'UniformOutput', false);
+    row_clims = arrayfun(@(x) [min(min(clims_subplot(ax_pos(:, 2) == row_subplots(x), :))), ...
+        max(max(clims_subplot(ax_pos(:, 2) == row_subplots(x), :)))], 1:size(row_subplots, 1), 'UniformOutput', false);
+    for iAx = 1:size(all_axes, 2)
+        thisAx = all_axes(iAx);
+        currAx = currFig_children(thisAx);
+        if ~isempty(currAx) %(currAx, limits, limitRows, limitCols, axPos, limitIdx_row, limitIdx_col, limitType)
             if ismember(CLimits, {'all'})
                 theseCLims = clims_subplot;
             elseif ismember(CLimits, {'cols'})
@@ -59,8 +87,6 @@ elseif ismember(XLimits, {'all', 'rows', 'cols'}) || ismember(YLimits, {'all', '
             end
             setNewCLimits(currAx, theseCLims, SymmetricalCLimits)
         end
-
-
     end
 
 

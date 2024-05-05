@@ -113,7 +113,7 @@ options = struct('XLimits', 'keep', ... % set to 'keep' if you don't want any ch
     'PointSize', 8, ...
     'LineThickness', 2, ...
     'AxisTicks', 'out', ...
-    'TickLength', 0.035, ...
+    'TickLength', [0.0125, 0.031], ...
     'TickWidth', 1.3, ...
     'AxisBox', 'off', ...
     'AxisGrid', 'off', ...
@@ -140,9 +140,6 @@ for iPair = reshape(varargin, 2, []) % pair is {propName;propValue}
     inputName = iPair{1};
 
     if any(strcmp(inputName, optionNames))
-        % overwrite options. If you want you can test for the right class here
-        % Also, if you find out that there is an option you keep getting wrong,
-        % you can use "if strcmp(inpName,'problemOption'),testMore,end"-statements
         options.(inputName) = iPair{2};
     else
         error('%s is not a recognized parameter name', inputName)
@@ -169,6 +166,7 @@ if ~strcmp(options.FigureColor, 'none')
         end
     end
 end
+
 % Get handles for current figure and axis
 currFig = gcf; 
 
@@ -176,7 +174,11 @@ currFig = gcf;
 set(currFig, 'color', options.FigureColor);
 
 % update font
+try
 fontname(currFig, options.Font)
+catch
+     % matlab version < 2022 , this function doesn't exist
+end
 
 % get axes children
 currFig_children = currFig.Children;
@@ -226,7 +228,7 @@ for iAx = 1:size(all_axes, 2)
         % Set grid/box/tick options
         set(currAx, 'TickDir', options.AxisTicks)
         set(currAx, 'Box', options.AxisBox)
-        set(currAx, 'TickLength', [options.TickLength, options.TickLength]); % Make tick marks longer.
+        set(currAx, 'TickLength', options.TickLength); % Make tick marks longer.
         set(currAx, 'LineWidth', options.TickWidth); % Make tick marks and axis lines thicker.
 
         %set(currAx, 'Grid', options.AxisGrid)
@@ -278,9 +280,9 @@ for iAx = 1:size(all_axes, 2)
                 set(thisLine, 'MarkerFaceColor', thisLine.Color);
             end
             % adjust line thickness
-            if strcmp('-', get(thisLine, 'LineStyle'))
+            %if strcmp('-', get(thisLine, 'LineStyle'))
                 set(thisLine, 'LineWidth', options.LineThickness);
-            end
+            %end
         end
 
         % Adjust properties of dots children within the plot

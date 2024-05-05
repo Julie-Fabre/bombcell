@@ -87,7 +87,7 @@ paramBC.computeDrift = 0; % whether to compute each units drift. this is a
 % waveform parameters
 if kilosortVersion == 4
     paramBC.waveformBaselineWindowStart = 1;
-    paramBC.waveformBaselineWindowStop = 10; % in samples 
+    paramBC.waveformBaselineWindowStop = 11; % in samples 
 else
     paramBC.waveformBaselineWindowStart = 20;
     paramBC.waveformBaselineWindowStop = 30; % in samples 

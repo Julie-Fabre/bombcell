@@ -43,7 +43,7 @@ if nargin < 4 || isempty(labelY)
     end
 end
 if nargin < 5 || isempty(position)
-    position = 'bottomLeft';
+    position = 'topLeft';
 end
 
 if nargin < 8 || isempty(scaleLineWidth)
