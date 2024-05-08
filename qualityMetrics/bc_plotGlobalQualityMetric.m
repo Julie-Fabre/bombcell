@@ -33,7 +33,11 @@ if param.plotGlobal
         singleU = uniqueTemplates_idx(find(unitType == iUnitType));
         set(gca, 'XColor', 'w', 'YColor', 'w')
         singleUnitLines = arrayfun(@(x) plot(squeeze(templateWaveforms(singleU(x), :)), 'linewidth', 1, 'Color', [0, 0, 0, 0.2]), 1:size(singleU, 2));
-        xlim([21, 82])
+        if param.spikeWidth==61 %Kilosort 4
+            xlim([1 61])
+        else
+            xlim([21, 82])
+        end
     end
 
     %% plot distributions of unit quality metric values for each quality metric
