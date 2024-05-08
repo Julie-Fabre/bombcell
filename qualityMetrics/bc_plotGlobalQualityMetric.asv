@@ -256,7 +256,7 @@ if param.plotGlobal
             minVal = min(qMetric.Lratio(qMetric.Lratio>0)); % Minimum 
             maxVal = max(qMetric.Lratio); % Maximum value
             binEdges = logspace(log10(minVal), log10(maxVal), 20);
-            rectangle('Position',[binEdges(1), 0, param.lratioMax-binEdges(1)+1, 1], 'FaceColor',[0, .5, 0, 0.2])
+            rectangle('Position',[xLim(1), yLim(1), param.lratioMax-xLim(1), yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2])
             histogram(qMetric.Lratio, 'FaceColor', colorMtx(1, 1:3), 'FaceAlpha', colorMtx(1, 4), 'BinEdges', binEdges, 'Normalization', 'probability');
             yLim = ylim;
             line([param.lratioMax + 0.5, param.lratioMax + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
