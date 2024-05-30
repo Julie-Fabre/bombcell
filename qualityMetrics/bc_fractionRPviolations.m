@@ -78,7 +78,7 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
         subplot(2, length(timeChunks)-1, (length(timeChunks) - 1)+iTimeChunk)
         theseISI = diff(theseSpikeTimes(theseSpikeTimes >= timeChunks(iTimeChunk) & theseSpikeTimes < timeChunks(iTimeChunk+1)));
         theseisiclean = theseISI(theseISI >= tauC); % removed duplicate spikes
-        [isiProba, edgesISI] = histcounts(theseisiclean*1000, [0:0.5:50]);
+        [isiProba, edgesISI] = histcounts(theseisiclean*1000, [0:0.5:10]);
         bar(edgesISI(1:end-1)+mean(diff(edgesISI)), isiProba, 'FaceColor', [0, 0.35, 0.71], ...
             'EdgeColor', [0, 0.35, 0.71]); %Check FR
         if iTimeChunk == 1
