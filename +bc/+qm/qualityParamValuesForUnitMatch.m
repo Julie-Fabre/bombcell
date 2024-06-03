@@ -62,14 +62,14 @@ else
         % waveform starts 
 end
 
-% refractory period parameters
-paramBC.tauR_valuesMin = 0.5/1000; % refractory period time (s), usually 0.0020
+% refractory period parameters - change closer together
+paramBC.tauR_valuesMin = 2/1000; % refractory period time (s), usually 0.0020 change
 paramBC.tauR_valuesStep = 0.5./1000; % refractory period time (s), usually 0.0020
-paramBC.tauR_valuesMax = 10./1000; % refractory period time (s), usually 0.0020
+paramBC.tauR_valuesMax = 2./1000; % refractory period time (s), usually 0.0020
 paramBC.tauC = 0.1/1000; % censored period time (s)
 
 % percentage spikes missing parameters 
-paramBC.computeTimeChunks = 1; % compute fraction refractory period violations 
+paramBC.computeTimeChunks = 0; % compute fraction refractory period violations 
 % and percent sp[ikes missing for different time chunks 
 paramBC.deltaTimeChunk = 360; %time in seconds 
 
@@ -130,8 +130,8 @@ paramBC.maxPercSpikesMissing = 20; % Percentage
 paramBC.minNumSpikes = 300;
 
 paramBC.minSignalToNoiseRatio = 0.9;
-paramBC.maxDrift = 500;
-paramBC.minPresenceRatio = 0.2;
+paramBC.maxDrift = 100;
+paramBC.minPresenceRatio = 0.7;
 paramBC.minSNR = 0.1;
 
 %waveform 
