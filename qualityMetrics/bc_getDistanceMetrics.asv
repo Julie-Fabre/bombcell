@@ -86,7 +86,7 @@ isolationDist = NaN;
 Lratio = NaN;
 silhouetteScore = NaN;
 mahalD = NaN; 
-otherFeatures_linear = NaN;%only used if param.plotDetails is true and last part is un-commented
+otherFeatures_linear = NaN;
 histogram_mahalUnit_counts = NaN;
 histogram_mahalUnit_edges = NaN;
 histogram_mahalNoise_counts = NaN;
@@ -108,6 +108,7 @@ if ~isempty(otherFeatures) && numberSpikes > nChansToUse * nPCs
     % Find indices of features closest to the cluster - this only used for
     % plotting purposes, if param.plotDetails is true.
     [r, ~, ~] = ind2sub(size(otherFeaturesInd), find(otherFeaturesInd == double(closestCluster)));
+    % mahalDclosest = mahal(reshape(otherFeatures(r, :, :), size(r, 1), nPCs*nChansToUse), theseFeatures);
 
     if nCount > numberSpikes && numberSpikes > nChansToUse * nPCs
         % Calculate isolation distance if applicable
@@ -148,6 +149,7 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
         set(gca, 'XScale', 'log')
         legend({'this unit''s spikes', 'Other Spikes'}, 'Location', 'Best');
         
+        
 
         subplot(1, 2, 2)%cumulative distributions
         nSpikesInUnit = size(theseFeatures,1);
@@ -176,6 +178,39 @@ if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
         title(['Isolation distance = ', num2str(isolationDist)]);
         legend('Location', 'best');
         hold off;
+        
+
+        %subplot(2, 2, 4)% plot ordered distances 
+        %hold on;
+        %scatter(theseFeatures(:, 1), theseFeatures(:, 2), 10, d2_mahal, 'o', 'filled') % Scatter plot with points of size 10
+        %scatter(bestOtherFeatures_linear(:, 1), bestOtherFeatures_linear(:, 2), 10, [0.7, 0.7, 0.7],'x')
+        % % Calculate covariance and mean for the current unit (self)
+        % covSelf = cov(theseFeatures(:,1:2));
+        % meanSelf = mean(theseFeatures(:,1:2));
+        
+        % % Calculate covariance and mean for the closest other units
+        % covOther = cov(bestOtherFeatures_linear(:,1:2));
+        % meanOther = mean(bestOtherFeatures_linear(:,1:2));
+        % 
+        % % Calculate ellipses
+        % theta = linspace(0, 2*pi, 100);
+        % ellipseSelf = (chol(covSelf)' * [cos(theta); sin(theta)])' + meanSelf;
+        % ellipseOther = (chol(covOther)' * [cos(theta); sin(theta)])' + meanOther;
+        % 
+        % % Draw ellipses
+        % plot(ellipseSelf(:,1), ellipseSelf(:,2), 'LineWidth', 2, 'Color', 'blue');
+        % plot(ellipseOther(:,1), ellipseOther(:,2), 'LineWidth', 2, 'Color', 'red');
+
+        % 
+        % hb = colorbar;
+        % hb.Color =  [0.7, 0.7, 0.7];
+        % ylabel(hb, 'Squared mahalanobis Distance')
+        % legend( 'Current unit', 'Other spikes (closest unit)');
+        % xlabel('Squared mahalanobnis distance');
+        % %title(['Sihouette score = ' num2str(silhouetteScore)])
+        % ylabel('Count');
+
+
 
         % Apply plot beautification if available
         if exist('prettify_plot', 'file')
