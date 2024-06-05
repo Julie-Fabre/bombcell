@@ -24,6 +24,8 @@ gain_to_uV = NaN;%0.195; % use this if you are not using spikeGLX or openEphys t
     % empty(e.g. ephysMetaDir = '')
 kilosortVersion = 4;% if using kilosort4, you need to change this value. Otherwise it does not matter. 
 
+bc_updateSpatialDecaySlope(ephysKilosortPath, savePath)
+
 %% check MATLAB version 
 if exist('isMATLABReleaseOlderThan', 'file') == 0 % function introduced in MATLAB 2020b.
     oldMATLAB = true;
