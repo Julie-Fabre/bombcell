@@ -15,14 +15,14 @@
 
 %% set paths - EDIT THESE 
 % '/home/netshare/zaru/JF093/2023-03-06/ephys/kilosort2/site1
-ephysKilosortPath = '/home/netshare/zaru/JF093/2023-03-06/ephys/kilosort2/site1';% path to your kilosort output files 
-ephysRawDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*bin'); % path to your raw .bin or .dat data
-ephysMetaDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*meta'); % path to your .meta or .oebin meta file
-savePath = '/media/julie/ExtraHD/JF093/2023-03-06/ephys/site1/qMetrics'; % where you want to save the quality metrics 
+ephysKilosortPath = '/home/netshare/zaru/AV043/2024-02-01/ephys/AV043_2024-02-01_1_ActivePassive_g0/AV043_2024-02-01_1_ActivePassive_g0_imec1/kilosort4/';% path to your kilosort output files 
+ephysRawDir = dir('/home/netshare/zaru/AV043/2024-02-01/ephys/AV043_2024-02-01_1_ActivePassive_g0/AV043_2024-02-01_1_ActivePassive_g0_imec1/*ap*.*bin'); % path to your raw .bin or .dat data
+ephysMetaDir = dir('/home/netshare/zaru/AV043/2024-02-01/ephys/AV043_2024-02-01_1_ActivePassive_g0/AV043_2024-02-01_1_ActivePassive_g0_imec1/*ap*.*meta'); % path to your .meta or .oebin meta file
+savePath = '/home/netshare/zaru/AV043/2024-02-01/ephys/AV043_2024-02-01_1_ActivePassive_g0/AV043_2024-02-01_1_ActivePassive_g0_imec1/kilosort4/qMetrics_testJF'; % where you want to save the quality metrics 
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
-gain_to_uV = 0.195; % use this if you are not using spikeGLX or openEphys to record your data. You then must leave the ephysMetaDir 
+gain_to_uV = NaN;%0.195; % use this if you are not using spikeGLX or openEphys to record your data. You then must leave the ephysMetaDir 
     % empty(e.g. ephysMetaDir = '')
-kilosortVersion = 2;% if using kilosort4, you need to change this value. Otherwise it does not matter. 
+kilosortVersion = 4;% if using kilosort4, you need to change this value. Otherwise it does not matter. 
 
 %% check MATLAB version 
 if exist('isMATLABReleaseOlderThan', 'file') == 0 % function introduced in MATLAB 2020b.
