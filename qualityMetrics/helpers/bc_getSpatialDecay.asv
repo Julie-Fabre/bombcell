@@ -1,9 +1,5 @@
 function [spatialDecaySlope, spatialDecayFit, spatialDecayPoints, spatialDecayPoints_loc, estimatedUnitXY] = ...
-    bc_getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit, normalizePoints)
-
-if nargin < 6 || isempty(normalizePoints)
-    normalizePoints = 0;
-end
+    bc_getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit)
 
     if linearFit % linear of fit of first 6 channels (at same X position). 
         % In real, good units, these points decrease linearly sharply (and, in further away channels they then decrease exponentially). 
@@ -32,10 +28,7 @@ end
             spatialDecayPoints_loc = channelPositions_relative(sortexChanPosIdx);
 
             % normalize spatial decay points 
-            if normalizePoints
-                spatialDecayPoints_norm = spatialDecayPoints_norm ./ max(spatialDecayPoints_norm);
-            end
-
+            spatialDecayPoints_norm = spatialDecayPoints_norm ./ max(spatialDecayPoints_norm);
             % linear fit
             spatialDecayFit = polyfit(spatialDecayPoints_loc, spatialDecayPoints_norm', 1); % fit first order polynomial to data. first output is slope of polynomial, second is a constant
             spatialDecaySlope = spatialDecayFit(1);

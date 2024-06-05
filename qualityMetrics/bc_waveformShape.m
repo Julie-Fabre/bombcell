@@ -1,7 +1,7 @@
 function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_peakTrough, ...
     spatialDecayPoints, spatialDecaySlope, waveformBaseline, thisWaveform] = bc_waveformShape(templateWaveforms, ...
     thisUnit, maxChannel, ephys_sample_rate, channelPositions, baselineThresh, ...
-    waveformBaselineWindow, minThreshDetectPeaksTroughs, firstPeakRatio, plotThis)
+    waveformBaselineWindow, minThreshDetectPeaksTroughs, firstPeakRatio, normalizeSpDecay, plotThis)
 % JF
 % Get the number of troughs and peaks for each waveform,
 % determine whether waveform is likely axonal/dendritic (biggest peak before
@@ -164,7 +164,7 @@ else
     % (get waveform spatial decay accross channels)
     linearFit =1;
     [spatialDecaySlope, spatialDecayFit, spatialDecayPoints, spatialDecayPoints_loc, estimatedUnitXY] = ...
-    bc_getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit);
+    bc_getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit, normalizeSpDecay);
 
 
     % (get waveform baseline fraction)
