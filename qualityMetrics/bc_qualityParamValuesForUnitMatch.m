@@ -1,6 +1,7 @@
 function paramBC = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV, kilosortVersion)
 paramBC = struct;
 
+
 if nargin < 5 
     kilosortVersion = 4; 
 end
@@ -65,14 +66,14 @@ else
         % waveform starts 
 end
 
-% refractory period parameters
-paramBC.tauR_valuesMin = 0.5/1000; % refractory period time (s), usually 0.0020
+% refractory period parameters - change closer together
+paramBC.tauR_valuesMin = 2/1000; % refractory period time (s), usually 0.0020 change
 paramBC.tauR_valuesStep = 0.5./1000; % refractory period time (s), usually 0.0020
-paramBC.tauR_valuesMax = 10./1000; % refractory period time (s), usually 0.0020
+paramBC.tauR_valuesMax = 2./1000; % refractory period time (s), usually 0.0020
 paramBC.tauC = 0.1/1000; % censored period time (s)
 
 % percentage spikes missing parameters 
-paramBC.computeTimeChunks = 1; % compute fraction refractory period violations 
+paramBC.computeTimeChunks = 0; % compute fraction refractory period violations 
 % and percent sp[ikes missing for different time chunks 
 paramBC.deltaTimeChunk = 360; %time in seconds 
 
@@ -93,6 +94,8 @@ else
     paramBC.waveformBaselineWindowStop = 30; % in samples 
 end
 paramBC.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value 
+paramBC.firstPeakRatio = 1.1; % if units have an initial peak before the trough,
+
 % in a units waveform to give the minimum prominence to detect peaks using
 % matlab's findpeaks function.
 paramBC.firstPeakRatio = 1.1; % if units have an initial peak before the trough,
@@ -133,8 +136,8 @@ paramBC.maxPercSpikesMissing = 20; % Percentage
 paramBC.minNumSpikes = 300;
 
 paramBC.minSignalToNoiseRatio = 0.9;
-paramBC.maxDrift = 500;
-paramBC.minPresenceRatio = 0.2;
+paramBC.maxDrift = 100;
+paramBC.minPresenceRatio = 0.7;
 paramBC.minSNR = 0.1;
 
 %waveform 
@@ -194,7 +197,7 @@ end
 % BCparam.deltaTimeChunk = 1200; %time in seconds 
 % 
 % % presence ratio
-% param.presenceRatioBinSize = 60; % in seconds
+% paramBC.presenceRatioBinSize = 60; % in seconds
 % 
 % % minimum number of spikes for a unit to be 'good'
 % BCparam.minNumSpikes = 300;
