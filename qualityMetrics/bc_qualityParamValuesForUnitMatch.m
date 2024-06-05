@@ -95,11 +95,11 @@ else
 end
 paramBC.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value 
 paramBC.firstPeakRatio = 1.1; % if units have an initial peak before the trough,
-
 % in a units waveform to give the minimum prominence to detect peaks using
 % matlab's findpeaks function.
-paramBC.firstPeakRatio = 1.1; % if units have an initial peak before the trough,
-
+paramBC.normalizeSpDecay = 1; % whether to normalize spatial decay points relative to 
+% maximum - this makes the spatrial decay slop calculation more invariant to the 
+% spike-sorting algorithm used
 
 % recording parametrs
 paramBC.ephys_sample_rate = 30000; % samples per second
@@ -146,7 +146,7 @@ paramBC.maxNTroughs = 1;
 paramBC.somatic = 1; 
 paramBC.minWvDuration = 100; % in us
 paramBC.maxWvDuration = 800; % in us
-paramBC.minSpatialDecaySlope = -0.003;
+paramBC.minSpatialDecaySlope = -0.005;
 paramBC.maxWvBaselineFraction = 0.3;
 
 %distance metrics
