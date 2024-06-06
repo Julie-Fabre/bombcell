@@ -14,7 +14,7 @@ for iUnit = 1:size(uniqueTemplates,1)
 
     thisUnit = uniqueTemplates(iUnit);
 
-    qMetric.spatialDecaySlope(iUnit) = qMetric.spatialDecaySlope(iUnit)./max(max(templateWaveforms(thisUnit, :,:)));
+    qMetric.spatialDecaySlope(iUnit) = qMetric.spatialDecaySlope(iUnit)./max(max(abs(templateWaveforms(thisUnit, :,:))));
 end
 
 % save new metrics 
