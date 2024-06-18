@@ -1,6 +1,6 @@
 function [waveformDuration_peakTrough, halfWidth, peakTroughRatio, firstPeakTroughRatio,...
     nPeaks, nTroughs, isSomatic] = bc_computeWaveformProp(templateWaveforms, ...
-    thisUnit, maxChannel, ephys_sample_rate, channelPositions, minThreshDetectPeaksTroughs, firstPeakRatio)
+    thisUnit, maxChannel, ephys_sample_rate, channelPositions, minThreshDetectPeaksTroughs, firstPeakRatio, normalizeSpDecay)
 
 % all waveform metrics based on template and not mean raw waveform for now 
 
@@ -11,7 +11,7 @@ waveformBaselineWindow = NaN;
 [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_peakTrough, ...
     ~, ~, ~, thisWaveform] = bc_waveformShape(templateWaveforms, ...
     thisUnit, maxChannel, ephys_sample_rate, channelPositions, baselineThresh, ...
-    waveformBaselineWindow, minThreshDetectPeaksTroughs, firstPeakRatio, plotThis);
+    waveformBaselineWindow, minThreshDetectPeaksTroughs, firstPeakRatio, normalizeSpDecay, plotThis);
 
 if ~isnan(nPeaks) && ~isnan(nTroughs)
 

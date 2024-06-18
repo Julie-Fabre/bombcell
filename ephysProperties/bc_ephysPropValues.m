@@ -89,7 +89,7 @@ paramEP.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value
     % matlab's findpeaks function.
 paramEP.maxWvBaselineFraction = 0.3; % maximum absolute value in waveform baseline
     % should not exceed this fraction of the waveform's abolute peak value
-
+paramEP.normalizeSpDecay = 1;
 % QQ set this the same as qmetrics (load useChunks Start and stop)
 %paramEP.computeTimeChunks = 1; % compute ephysProperties for different time chunks 
 %paramEP.deltaTimeChunk = 360; %time in seconds 
