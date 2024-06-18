@@ -384,7 +384,7 @@ for iChanToPlot = 1:min(20, size(chansToPlot, 1))
         
     end
 end
-ylim(guiData.tempYLim, [min(min(vals,[],2)).*0.95, max(max(vals,[],2))]) % space for legend
+ylim(guiData.tempYLim, [min(min(vals,[],2)).*0.8, max(max(vals,[],2))]) % space for legend
 tempWvTitleText = ['\\fontsize{9}Template waveform: {\\color[rgb]{%s}# detected peaks/troughs, ', newline, ...
     '\\color[rgb]{%s}is somatic,  \\color[rgb]{%s}spatial decay, \\color[rgb]{%s}baseline flatness, ' newline, ...
     '\\color[rgb]{%s}waveform duration}'];
@@ -411,23 +411,21 @@ if param.extractRaw
     chanDistances = ((ephysData.channel_positions(:, 1) - maxXC).^2 ...
         +(ephysData.channel_positions(:, 2) - maxYC).^2).^0.5;
     chansToPlot = find(chanDistances < 100);
-    vals =[];
+
     for iChanToPlot = 1:min(20, size(chansToPlot, 1))
         if maxChan == chansToPlot(iChanToPlot)
-            vals(iChanToPlot,:) = -squeeze(rawWaveforms.average(iCluster, chansToPlot(iChanToPlot), :))'+ ...
-                (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) * 10);
             set(guiData.maxRawWaveformLines, 'XData', (ephysData.waveform_t + ...
                 (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
-                'YData', vals(iChanToPlot,:));
+                'YData', -squeeze(rawWaveforms.average(iCluster, chansToPlot(iChanToPlot), :))'+ ...
+                (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) * 10));
             set(guiData.rawWaveformLines(iChanToPlot), 'XData', nan(82, 1), ...
                 'YData', nan(82, 1));
     
         else
-             vals(iChanToPlot,:) = -squeeze(rawWaveforms.average(iCluster, chansToPlot(iChanToPlot), :))'+ ...
-                (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) * 10);
             set(guiData.rawWaveformLines(iChanToPlot), 'XData', (ephysData.waveform_t + ...
                 (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
-                'YData', vals(iChanToPlot,:));
+                'YData', -squeeze(rawWaveforms.average(iCluster, chansToPlot(iChanToPlot), :))'+ ...
+                (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) * 10));
         end
     end
     set(guiData.rawLegend, 'String', ['Amplitude =', num2str(round(qMetric.rawAmplitude(iCluster))), 'uV', newline, ...
@@ -441,8 +439,9 @@ if param.extractRaw
         set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{1 0 0} amplitude, \color[rgb]{1 0 0} SNR ']);
     
     end
-    ylim(guiData.rawWaveformYLim, [min(min(vals,[],2)).*0.95, max(max(vals,[],2))]) % space for legend
+    ylim(guiData.tempYLim, [min(min(vals,[],2)).*0.8, max(max(vals,[],2))]) % space for legend
 
+    ylim(guiData.rawWaveformYLim, [guiData.rawWaveformYLim.YLim(1)*0.99, guiData.rawWaveformYLim.YLim(2)])
 
 end
 
