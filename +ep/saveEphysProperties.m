@@ -24,7 +24,10 @@ end
 if isempty(paramEP.gain_to_uV)
         paramEP.gain_to_uV = 'NaN';
 end
-parquetwrite([fullfile(savePath, '_bc_parameters._bc_ephysProperties.parquet')], struct2table(paramEP))
+if ~istable(paramEP)
+    paramEP = struct2table(paramEP);
+end
+parquetwrite([fullfile(savePath, '_bc_parameters._bc_ephysProperties.parquet')], paramEP)
 
 % save acg
 parquetwrite([fullfile(savePath, 'templates._bc_acg.parquet')], array2table(ephysProperties.acg))
