@@ -2,7 +2,7 @@
 [![License](https://img.shields.io/badge/license-GPLv3-yellow)](https://github.com/Julie-Fabre/bombcell/blob/master/LICENSE)
 [![View bombcell on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://uk.mathworks.com/matlabcentral/fileexchange/136619-bombcell)
 
-# 💣 Bombcell: find bombshell cells! 💣 <img src="./images/bombcell_logo_crop_small_flame.png" width="25%" title="bombcell" alt="bombcell" align="right" vspace = "20">
+# 💣 Bombcell: find bombshell cells! 💣 <img src="./docs/images/bombcell_logo_crop_small_flame.png" width="25%" title="bombcell" alt="bombcell" align="right" vspace = "20">
 
 Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem, evaluating the quality of recorded units and extracting essential electrophysiological properties. Bombcell can replace manual curation or can be used as a tool to aid manual curation. See [this talk](https://www.youtube.com/watch?v=8Gauba3KzvM&list=PLfhWmWntvjl7kljKozClpjS29DoY8V5pB&index=12) at the annual Neuropixels course about quality control.
 
@@ -16,7 +16,7 @@ Documentation and guides to using and troubleshooting bombcell can be found on t
 ### 🔍️ How bombcell works
 
 Below is a flowchart of how bombcell evaluates and classifies each unit:
-<img align="center" src="./images/bombcell_flowchart_full.svg" width=100% height=100%>
+<img align="center" src="./docs/images/bombcell_flowchart_full.svg" width=100% height=100%>
 
 ### 🏁 Quick start guide
 
@@ -24,7 +24,7 @@ Below is a flowchart of how bombcell evaluates and classifies each unit:
 
 Bombcell extracts relevant quality metrics to categorize units into four categories: single somatic units, multi-units, noise units and non-somatic units.
 
-Take a look at [`bc_qualityMetrics_pipeline`](https://github.com/Julie-Fabre/bombcell/blob/master/bc_qualityMetrics_pipeline.m) to see an example workflow.
+Take a look at [`qualityMetrics_pipeline`](https://github.com/Julie-Fabre/bombcell/blob/master/qualityMetrics_pipeline.m) to see an example workflow.
 
 #### Installation
 
