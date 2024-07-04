@@ -1,5 +1,5 @@
 function ACG = computeACG(theseSpikeTimes, ACGbinSize, ACGduration, plotThis)
-[acg, ~] = CCGBz([double(theseSpikeTimes); double(theseSpikeTimes)], [ones(size(theseSpikeTimes, 1), 1); ...
+[acg, ~] = ep.helpers.CCGBz([double(theseSpikeTimes); double(theseSpikeTimes)], [ones(size(theseSpikeTimes, 1), 1); ...
         ones(size(theseSpikeTimes, 1), 1) * 2], 'binSize', ACGbinSize, 'duration', ACGduration, 'norm', 'rate'); %function
 ACG= acg(:, 1, 1);
 

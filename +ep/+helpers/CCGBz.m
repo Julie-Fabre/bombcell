@@ -139,7 +139,7 @@ end
 nEvents = length(times);
 % 
 
-counts = double(CCGHeart(times,uint32(groups),binSize_Fs,uint32(halfBins)));
+counts = double(ep.helpers.CCGHeart(times,uint32(groups),binSize_Fs,uint32(halfBins)));
 % -----------------------------------
 % 
 % Reshape the results
