@@ -36,6 +36,7 @@ To begin using Bombcell:
 
 - [npy-matlab](https://github.com/kwikteam/npy-matlab), to load .npy data in.
 - If you have z-lib compressed ephys data, compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp), you will need the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat). More information about compressing ephys data [here](https://www.biorxiv.org/content/biorxiv/early/2023/05/24/2023.05.22.541700.full.pdf?%3Fcollection=).
+- [prettify-matlab](https://github.com/Julie-Fabre/prettify_matlab), to make plots pretty.
 - MATLAB toolboxes:
     - Signal Processing Toolbox
     - Image Processing Toolbox
@@ -44,7 +45,6 @@ To begin using Bombcell:
 
 In addition we would like to acknowledge:
 - to compute fast ACGs, we use a function (`CCGHeart.c`) part of the [FMAToolbox](https://fmatoolbox.sourceforge.net/), and it is already included in bombcell.
-- [prettify-matlab](https://github.com/Julie-Fabre/prettify_matlab) is packaged in bombcell as a subtree, to make plots pretty.
 
 ### 🤗 Support and citing
 
