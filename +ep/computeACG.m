@@ -9,7 +9,7 @@ if plotThis
     %set(gca, 'XScale', 'log')
     xlabel('time (s)')
     ylabel('spike rate')
-    makepretty;
+    prettify_plot();
 
 end
 end

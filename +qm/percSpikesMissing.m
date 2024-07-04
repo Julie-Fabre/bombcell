@@ -96,7 +96,7 @@ for iTimeChunk = 1:numel(timeChunks) - 1
 
         %norm area calculated by fit parameters
 
-        gaussianFit_cutoff = JF_gaussian_cut(ampliBin_gaussian, fitOutput(1), fitOutput(2), fitOutput(3), fitOutput(4));
+        gaussianFit_cutoff = qm.helpers.gaussian_cut(ampliBin_gaussian, fitOutput(1), fitOutput(2), fitOutput(3), fitOutput(4));
         %    n_fit_no_cut = JF_gaussian_cut(bin_centers, fitOutput(1), fitOutput(2), fitOutput(3), 0);
         norm_area_ndtr = normcdf((fitOutput(2) - fitOutput(4))/fitOutput(3)); %ndtr((popt[1] - min_amplitude) /popt[2])
         percentMissing_gaussian(iTimeChunk) = 100 * (1 - norm_area_ndtr);
@@ -136,7 +136,7 @@ for iTimeChunk = 1:numel(timeChunks) - 1
 
 
 end
-
+warning on;
 if plotThis 
     if exist('prettify_plot', 'file')
         prettify_plot('FigureColor', 'w', 'XLimits', 'keep', 'YLimits', 'all')
@@ -160,7 +160,6 @@ if plotThis
         prettify_plot('FigureColor', 'w', 'XLimits', 'keep', 'YLimits', 'keep')
     else
         warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
-        makepretty('none')
     end
 
 end
@@ -168,5 +167,5 @@ end
         F = x(1) * exp(-(bin_centers - x(2)).^2/(2 * x(3).^2));
         F(bin_centers < x(4)) = 0;
     end
-warning on;
+
 end

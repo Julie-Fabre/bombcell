@@ -10,7 +10,7 @@ xlabel('time (s)','Color','w', 'fontsize', 14)
 
 set(gca,'XColor','w');
 set(gca,'YColor','w');
-%makepretty;
+
 set(gca, 'Color','k')
 YLIMS = ylim;
 subplot(1,5,5)
@@ -26,6 +26,6 @@ set(gca, 'Color','k')
 set(gca,'XColor','w');
 set(gca,'YColor','w');
 box off;
-%makepretty;
+
 set(gca, 'Color','k')
 ylim([YLIMS(1), YLIMS(2)])

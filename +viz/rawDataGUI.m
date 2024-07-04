@@ -77,7 +77,7 @@ hold on;
 title('Raw unwhitened data')
 set(rawPlotH, 'XColor', plotColor, 'YColor', plotColor)
 rawPlotLines = arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', lineColor), 1:max_n_channels_plot);
-allUnitColors = distinguishable_colors(100, plotColor);
+allUnitColors = viz.colors(100, plotColor);
 for iUnit = 1:100 %max 30 units in 20 channels?
     if exist("rawSpikeLines", 'var')
         rawSpikeLines = [rawSpikeLines, arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', allUnitColors(iUnit,:)), 1:max_n_channels_plot)];
