@@ -1,11 +1,11 @@
 function updateSpatialDecaySlope(kilosortSavePath, qMetricSavePath)
 
 % load in quality metrics 
-[~, qMetric] = loadSavedMetrics(qMetricSavePath); 
+[~, qMetric] = load.loadSavedMetrics(qMetricSavePath); 
 
 % load in relevant kilosort files 
 [~, spikeTemplates, templateWaveforms, ~, ~, ...
-    ~, ~] = loadEphysData(kilosortSavePath);
+    ~, ~] = load.loadEphysData(kilosortSavePath);
 
 uniqueTemplates = unique(spikeTemplates);
 
@@ -14,9 +14,10 @@ for iUnit = 1:size(uniqueTemplates,1)
 
     thisUnit = uniqueTemplates(iUnit);
 
-    qMetric.spatialDecaySlope(iUnit) = qMetric.spatialDecaySlope(iUnit)./max(max(templateWaveforms(thisUnit, :,:)));
+    qMetric.spatialDecaySlope(iUnit) = qMetric.spatialDecaySlope(iUnit)./max(max(abs(templateWaveforms(thisUnit, :,:))));
 end
 
 % save new metrics 
 parquetwrite([fullfile(qMetricSavePath, 'templates._bc_qMetrics.parquet')], qMetric)
 end
+
