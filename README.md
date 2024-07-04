@@ -6,9 +6,6 @@
 
 Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem, evaluating the quality of recorded units and extracting essential electrophysiological properties. Bombcell can replace manual curation or can be used as a tool to aid manual curation. See [this talk](https://www.youtube.com/watch?v=8Gauba3KzvM&list=PLfhWmWntvjl7kljKozClpjS29DoY8V5pB&index=12) at the annual Neuropixels course about quality control.
 
-Bombcell is specifically tailored for units recorded with Neuropixels probes (3A, 1.0, and 2.0) using SpikeGLX or OpenEphys and spike-sorted with Kilosort. If you want to use bombcell in conjunction with another spike sorting algorithm, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues), or create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request). You can email [us: juliemfabre[at]gmail[dot]com](mailto:juliemfabre@gmail.com), but github issues are preferred. [Watch this repository](https://github.com/Julie-Fabre/bombcell/assets/29582008/3c16f6cb-e203-4655-9b80-946d59877480) (click on the top right watch button, and select custom and then tick boxes of events you want to be notified of. We suggest ticking the "releases" box) for updates on bombcell.
-
-
 ### 📔 Bombcell wiki
 
 Documentation and guides to using and troubleshooting bombcell can be found on the dedicated [wiki](https://github.com/Julie-Fabre/bombcell/wiki).
@@ -63,4 +60,4 @@ Bombcell is under the open-source [copyleft](https://www.gnu.org/licenses/copyle
 
 ### 📬 Contact us
 
-If you run into any issues or if you have any suggestions, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues) or create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request). You can email [us: juliemfabre[at]gmail[dot]com](mailto:juliemfabre@gmail.com), but github issues are preferred.
+If you run into any issues or if you have any suggestions, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues) or create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request). You can email [us: juliemfabre[at]gmail[dot]com](mailto:juliemfabre@gmail.com), but github issues are preferred.  You can also use the [Neuropixels slack workgroup](https://join.slack.com/t/neuropixelsgroup/shared_invite/zt-2h3sp1nfr-JZrpKWxeVptI0EPbHAoxKA).
