@@ -135,7 +135,7 @@ paramBC.maxRPVviolations = 0.1; % fraction
 paramBC.maxPercSpikesMissing = 20; % Percentage
 paramBC.minNumSpikes = 300;
 
-paramBC.minSignalToNoiseRatio = 0.9;
+paramBC.minSignalToNoiseRatio = 0.9; % JF: this should be removed unless you guys use it - bombcell does not. 
 paramBC.maxDrift = 100;
 paramBC.minPresenceRatio = 0.7;
 paramBC.minSNR = 0.1;
