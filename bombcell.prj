@@ -1,0 +1,197 @@
+<deployment-project plugin="plugin.toolbox" plugin-version="1.0">
+  <configuration build-checksum="1810006082" file="/home/julie/Dropbox/MATLAB/onPaths/bombcell/bombcell.prj" location="/home/julie/Dropbox/MATLAB/onPaths/bombcell" name="bombcell" target="target.toolbox" target-name="Package Toolbox">
+    <param.appname>bombcell</param.appname>
+    <param.authnamewatermark>Julie Fabre</param.authnamewatermark>
+    <param.email>julie.mfabre@gmail.com</param.email>
+    <param.company />
+    <param.summary />
+    <param.description>Automated manual curation and cell classification of spike-sorted electrophysiology data in MATLAB. Fine-tuned for kilosorted Neuropixels data</param.description>
+    <param.screenshot>${PROJECT_ROOT}/docs/images/bombcell_logo_crop_small_flame.png</param.screenshot>
+    <param.version>1.6</param.version>
+    <param.output>${PROJECT_ROOT}/bombcell.mltbx</param.output>
+    <param.products.name />
+    <param.products.id />
+    <param.products.version />
+    <param.platforms />
+    <param.guid>71c1373f-cddd-448e-a534-c88747087a5c</param.guid>
+    <param.exclude.filters>% List files contained in your toolbox folder that you would like to exclude
+% from packaging.  Excludes should be listed relative to the toolbox folder.
+% Some examples of how to specify excludes are provided below:
+%
+% A single file in the toolbox folder:
+% .svn
+%
+% A single file in a subfolder of the toolbox folder:
+% example/.svn
+%
+% All files in a subfolder of the toolbox folder:
+% example/*
+%
+% All files of a certain name in all subfolders of the toolbox folder:
+% **/.svn
+%
+% All files matching a pattern in all subfolders of the toolbox folder:
+% **/*.bak
+%
+.git/*</param.exclude.filters>
+    <param.exclude.pcodedmfiles>true</param.exclude.pcodedmfiles>
+    <param.examples>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;examples&gt;
+   &lt;exampleCategory name="demos"&gt;
+      &lt;example name="demo_bombcell" type="html"&gt;
+         &lt;file type="source"&gt;/demos/html/demo_bombcell.html&lt;/file&gt;
+         &lt;file type="main"&gt;/demos/demo_bombcell.mlx&lt;/file&gt;
+         &lt;file type="thumbnail"/&gt;
+      &lt;/example&gt;
+   &lt;/exampleCategory&gt;
+&lt;/examples&gt;</param.examples>
+    <param.demosxml />
+    <param.apps />
+    <param.registered.apps />
+    <param.docs />
+    <param.getting.started.guide />
+    <param.matlabpath.excludes>
+      <item>/.git</item>
+      <item>/phyPlugins</item>
+    </param.matlabpath.excludes>
+    <param.javaclasspath.excludes />
+    <param.exported.on.package>false</param.exported.on.package>
+    <param.required.addons />
+    <param.matlab.project.id />
+    <param.matlab.project.name />
+    <param.release.start>R2019a</param.release.start>
+    <param.release.end>latest</param.release.end>
+    <param.release.current.only>false</param.release.current.only>
+    <param.compatiblity.windows>true</param.compatiblity.windows>
+    <param.compatiblity.macos>true</param.compatiblity.macos>
+    <param.compatiblity.linux>true</param.compatiblity.linux>
+    <param.compatiblity.matlabonline>true</param.compatiblity.matlabonline>
+    <param.installation.map>+bombcell/getInstallationLocation.mlx</param.installation.map>
+    <param.additional.sw.names>
+      <item>npy-matlab</item>
+      <item>prettify_matlab</item>
+      <item>Brewermap</item>
+      <item>rgb</item>
+    </param.additional.sw.names>
+    <param.additional.sw.licenses>
+      <item>https://github.com/kwikteam/npy-matlab</item>
+      <item>https://github.com/Julie-Fabre/prettify_matlab</item>
+      <item>https://github.com/DrosteEffect/BrewerMap</item>
+      <item>https://uk.mathworks.com/matlabcentral/fileexchange/1805-rgb-m</item>
+    </param.additional.sw.licenses>
+    <param.additional.sw.win.url>
+      <item>https://github.com/kwikteam/npy-matlab</item>
+      <item>https://github.com/Julie-Fabre/prettify_matlab</item>
+      <item>https://github.com/DrosteEffect/BrewerMap</item>
+      <item>https://uk.mathworks.com/matlabcentral/fileexchange/1805-rgb-m</item>
+    </param.additional.sw.win.url>
+    <param.additional.sw.mac.url>
+      <item>https://github.com/kwikteam/npy-matlab</item>
+      <item>https://github.com/Julie-Fabre/prettify_matlab</item>
+      <item>https://github.com/DrosteEffect/BrewerMap</item>
+      <item>https://uk.mathworks.com/matlabcentral/fileexchange/1805-rgb-m</item>
+    </param.additional.sw.mac.url>
+    <param.additional.sw.linux.url>
+      <item>https://github.com/kwikteam/npy-matlab</item>
+      <item>https://github.com/Julie-Fabre/prettify_matlab</item>
+      <item>https://github.com/DrosteEffect/BrewerMap</item>
+      <item>https://uk.mathworks.com/matlabcentral/fileexchange/1805-rgb-m</item>
+    </param.additional.sw.linux.url>
+    <unset>
+      <param.authnamewatermark />
+      <param.email />
+      <param.company />
+      <param.summary />
+      <param.output />
+      <param.products.name />
+      <param.products.id />
+      <param.products.version />
+      <param.platforms />
+      <param.exclude.pcodedmfiles />
+      <param.demosxml />
+      <param.apps />
+      <param.registered.apps />
+      <param.docs />
+      <param.getting.started.guide />
+      <param.javaclasspath.excludes />
+      <param.exported.on.package />
+      <param.required.addons />
+      <param.matlab.project.id />
+      <param.matlab.project.name />
+      <param.release.current.only />
+      <param.compatiblity.windows />
+      <param.compatiblity.macos />
+      <param.compatiblity.linux />
+      <param.compatiblity.matlabonline />
+    </unset>
+    <fileset.rootdir>
+      <file>${PROJECT_ROOT}</file>
+    </fileset.rootdir>
+    <fileset.rootfiles>
+      <file>${PROJECT_ROOT}/+bc</file>
+      <file>${PROJECT_ROOT}/+bombcell</file>
+      <file>${PROJECT_ROOT}/.git</file>
+      <file>${PROJECT_ROOT}/.gitattributes</file>
+      <file>${PROJECT_ROOT}/.gitignore</file>
+      <file>${PROJECT_ROOT}/LICENSE</file>
+      <file>${PROJECT_ROOT}/README.md</file>
+      <file>${PROJECT_ROOT}/demos</file>
+      <file>${PROJECT_ROOT}/demos.xml</file>
+      <file>${PROJECT_ROOT}/docs</file>
+      <file>${PROJECT_ROOT}/pipelines</file>
+      <file>${PROJECT_ROOT}/resources</file>
+    </fileset.rootfiles>
+    <fileset.depfun.included />
+    <fileset.depfun.excluded>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/JF_Scripts_CortexLab/utilities/BrewerMap/brewermap.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/UnitMatch/MATLAB/DataPreparation/constructNPYheader.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/UnitMatch/MATLAB/DataPreparation/readNPY.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/UnitMatch/MATLAB/DataPreparation/readNPYheader.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/UnitMatch/MATLAB/DataPreparation/writeNPY.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/UnitMatch/MATLAB/DataPreparation/zmat_Toolbox/private/zipmat.mexa64</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/UnitMatch/MATLAB/DataPreparation/zmat_Toolbox/zmat.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/UnitMatch/MATLAB/Dependencies/HelperFunctions/isdscalar.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/UnitMatch/MATLAB/Dependencies/HelperFunctions/isdvector.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/UnitMatch/MATLAB/Dependencies/Plotting/makepretty.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/UnitMatch/MATLAB/Dependencies/Plotting/rgb.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/UnitMatch/MATLAB/Dependencies/Plotting/vennEulerDiagram.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/prettify_matlab/prettify_colors/prettify_rgb.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/prettify_matlab/prettify_plot/prettify_axis_limits.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/prettify_matlab/prettify_plot/prettify_colorbar.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/prettify_matlab/prettify_plot/prettify_legend.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/prettify_matlab/prettify_plot/prettify_plot.m</file>
+      <file>/home/julie/Dropbox/MATLAB/onPaths/prettify_matlab/prettify_plot/prettify_roundUpNatural.m</file>
+    </fileset.depfun.excluded>
+    <fileset.package />
+    <build-deliverables>
+      <file location="${PROJECT_ROOT}" name="bombcell.mltbx" optional="false">/home/julie/Dropbox/MATLAB/onPaths/bombcell/bombcell.mltbx</file>
+    </build-deliverables>
+    <workflow />
+    <matlab>
+      <root>/usr/local/MATLAB/R2023a</root>
+      <toolboxes>
+        <toolbox name="neuralnetwork" />
+      </toolboxes>
+      <toolbox>
+        <neuralnetwork>
+          <enabled>true</enabled>
+        </neuralnetwork>
+      </toolbox>
+    </matlab>
+    <platform>
+      <unix>true</unix>
+      <mac>false</mac>
+      <windows>false</windows>
+      <win2k>false</win2k>
+      <winxp>false</winxp>
+      <vista>false</vista>
+      <linux>true</linux>
+      <solaris>false</solaris>
+      <osver>5.15.0-113-generic</osver>
+      <os32>false</os32>
+      <os64>true</os64>
+      <arch>glnxa64</arch>
+      <matlab>true</matlab>
+    </platform>
+  </configuration>
+</deployment-project>
