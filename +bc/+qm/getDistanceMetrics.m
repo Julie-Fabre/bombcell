@@ -36,7 +36,7 @@ theseChannels = pc_feature_ind(thisUnit, 1:nChansToUse);
 theseFeatures = reshape(pc_features(spikesIdx, :, 1:nChansToUse), numberSpikes, []);
 
 % Precompute unique identifiers and allocate space for outputs
-uniqueIDs = unique(allSpikesIdx);
+uniqueIDs = unique(allSpikesIdx(allSpikesIdx>0));
 mahalanobisDistances = nan(numel(uniqueIDs), 1);
 otherUnits_double = nan(numel(uniqueIDs), 1);
 otherFeaturesInd = zeros(0, size(pc_features, 2), nChansToUse);

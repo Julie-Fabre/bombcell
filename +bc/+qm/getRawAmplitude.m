@@ -23,18 +23,18 @@ end
 
 % get scaling factor 
 if strcmp(metaFile, 'NaN') == 0
-if contains(metaFile, 'oebin')
-    % open ephys format
-    scalingFactor = load.readOEMetaFile(metaFile);
-else
-    % spikeGLX format
-    [scalingFactor, ~, ~] = load.readSpikeGLXMetaFile(metaFile, probeType);
-end
+    if contains(metaFile, 'oebin')
+        % open ephys format
+        scalingFactor = bc.load.readOEMetaFile(metaFile);
+    else
+        % spikeGLX format
+        [scalingFactor, ~, ~] = bc.load.readSpikeGLXMetaFile(metaFile, probeType);
+    end
 else
     scalingFactor = gain_to_uV;
 end
-
-% scale waveforms to get amplitude in microVolts 
-rawWaveforms = rawWaveforms .* scalingFactor;
-rawAmplitude = abs(max(rawWaveforms)) + abs(min(rawWaveforms));
+    
+    % scale waveforms to get amplitude in microVolts 
+    rawWaveforms = rawWaveforms .* scalingFactor;
+    rawAmplitude = abs(max(rawWaveforms)) + abs(min(rawWaveforms));
 end
