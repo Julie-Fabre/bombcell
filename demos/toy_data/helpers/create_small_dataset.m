@@ -3,7 +3,7 @@
 dataPath = '/media/julie/Expansion/Toy_dataset/site1/';
 savePath = '//home/julie/Dropbox/MATLAB/onPaths/bombcell/demos/toy_data/';
 
-unitsToKeep = [1:25]; % a good sample of good, bad and noisy units. 
+unitsToKeep = [1:15]; % a good sample of good, bad and noisy units. 
 unitsToKeep_zeroIdx = unitsToKeep - 1;
 
 % load data
