@@ -21,7 +21,7 @@ Below is a flowchart of how bombcell evaluates and classifies each unit:
 
 Bombcell extracts relevant quality metrics to categorize units into four categories: single somatic units, multi-units, noise units and non-somatic units.
 
-Take a look at [`bombcell_pipeline`](https://github.com/Julie-Fabre/bombcell/main/bc/pipelines/bombcell_pipeline.m) to see an example workflow and play around with our small toy dataset. You can also use the MATLAB live script [`demo_bombcell`](https://github.com/Julie-Fabre/bombcell/main/bc/demos/demo_bombcell.mlx) 
+Take a look at [`bombcell_pipeline`](https://github.com/Julie-Fabre/bombcell/main/+bc/pipelines/bombcell_pipeline.m) to see an example workflow and play around with our small toy dataset. You can also use the MATLAB live script [`demo_bombcell`](https://github.com/Julie-Fabre/bombcell/main/bc/demos/demo_bombcell.mlx) 
 
 #### Installation
 
@@ -30,7 +30,7 @@ Bombcell requires MATLAB>=2019a.
 To begin using Bombcell:
 - [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) the [repository](https://github.com/Julie-Fabre/bombcell/bombcell) and the [dependencies](#Dependencies).
 - add bombcell's and the dependancies' folders to [MATLAB's path](https://uk.mathworks.com/help/matlab/ref/pathtool.html).
-- in addition, if you want to compute ephys properties, change your working directory to `bombcell\ephysProperties\helpers` in matlab and run `mex -O CCGHeart.c` to able to compute fast ACGs, using part of the [FMAToolbox](https://fmatoolbox.sourceforge.net/).
+- in addition, if you want to compute ephys properties, change your working directory to `bombcell\+bc\+ep\+helpers` in matlab and run `mex -O CCGHeart.c` to able to compute fast ACGs, using part of the [FMAToolbox](https://fmatoolbox.sourceforge.net/).
 
 #### Dependencies
 
