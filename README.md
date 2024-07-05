@@ -21,7 +21,9 @@ Below is a flowchart of how bombcell evaluates and classifies each unit:
 
 Bombcell extracts relevant quality metrics to categorize units into four categories: single somatic units, multi-units, noise units and non-somatic units.
 
-Take a look at [`qualityMetrics_pipeline`](https://github.com/Julie-Fabre/bombcell/blob/master/qualityMetrics_pipeline.m) to see an example workflow.
+Take a look at [`qualityMetrics_pipeline`](https://github.com/Julie-Fabre/bombcell/blob/master/qualityMetrics_pipeline.m) to see an example workflow or 
+[have a play around with the provided toy dataset online](https://matlab.mathworks.com/open/github/v1?repo=Julie-Fabre/bombcell&file=demos/demo_bombcell.mlx
+).
 
 #### Installation
 
