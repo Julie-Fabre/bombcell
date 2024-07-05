@@ -13,12 +13,13 @@
 % of the distributions of quality metrics for each unit) and GUI. 
 
 
-%% set paths - EDIT THESE 
-% '/home/netshare/zaru/JF093/2023-03-06/ephys/kilosort2/site1
-ephysKilosortPath = '/home/netshare/zaru/JF093/2023-03-06/ephys/kilosort2/site1';'/home/netshare/zaru/AV043/2024-02-01/ephys/AV043_2024-02-01_1_ActivePassive_g0/AV043_2024-02-01_1_ActivePassive_g0_imec1/kilosort4/';% path to your kilosort output files 
-ephysRawDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*bin'); % path to your raw .bin or .dat data
-ephysMetaDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*meta'); % path to your .meta or .oebin meta file
-savePath = '/home/netshare/zaru/JF093/2023-03-06/ephys/kilosort2/site1/qMetrics'; % where you want to save the quality metrics 
+%% set paths - EDIT THESE. Currently contains links to small toy dataset. 
+currentPath = [fileparts(matlab.desktop.editor.getActiveFilename), filesep, '..'];
+ephysKilosortPath = [currentPath, filesep, 'demos', filesep, 'toy_data'];% path to your kilosort output files 
+ephysRawDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*bin');%"NaN"; % dir() path to your raw .bin or .dat data. currently NaN because storing raw data on github is cumbersome.
+% for testing: dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*bin') 
+ephysMetaDir = dir([currentPath, filesep, 'demos', filesep, 'toy_data', filesep '*ap*.*meta']); % dir() path to your .meta or .oebin meta file
+savePath = '/media/julie/ExtraHD/toy_data_qMetrics'; % where you want to save the quality metrics 
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
 gain_to_uV = NaN;%0.195; % use this if you are not using spikeGLX or openEphys to record your data. You then must leave the ephysMetaDir 
     % empty(e.g. ephysMetaDir = '')
@@ -36,13 +37,13 @@ end
 
 %% load data 
 [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitudes, pcFeatures, ...
-    pcFeatureIdx, channelPositions] = load.loadEphysData(ephysKilosortPath);
+    pcFeatureIdx, channelPositions] = bc.load.loadEphysData(ephysKilosortPath);
 
 %% detect whether data is compressed, decompress locally if necessary
-rawFile = dcomp.manageDataCompression(ephysRawDir, decompressDataLocal);
+rawFile = bc.dcomp.manageDataCompression(ephysRawDir, decompressDataLocal);
 
 %% which quality metric parameters to extract and thresholds 
-param = qm.qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV, kilosortVersion); %for unitmatch, run this:
+param = bc.qm.qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV, kilosortVersion); %for unitmatch, run this:
 % param = qualityParamValuesForUnitMatch(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV)
 
 %% compute quality metrics 
@@ -50,17 +51,17 @@ rerun = 0;
 qMetricsExist = ~isempty(dir(fullfile(savePath, 'qMetric*.mat'))) || ~isempty(dir(fullfile(savePath, 'templates._bc_qMetrics.parquet')));
 
 if qMetricsExist == 0 || rerun
-    [qMetric, unitType] = qm.runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
+    [qMetric, unitType] = bc.qm.runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
         templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath);
 else
     [param, qMetric] = load.loadSavedMetrics(savePath); 
-    unitType = qm.getQualityUnitType(param, qMetric, savePath);
+    unitType = bc.qm.getQualityUnitType(param, qMetric, savePath);
 end
 
 %% view units + quality metrics in GUI 
 % load data for GUI
 loadRawTraces = 0; % default: don't load in raw data (this makes the GUI significantly faster)
-load.loadMetricsForGUI;
+bc.load.loadMetricsForGUI;
 
 % GUI guide: 
 % left/right arrow: toggle between units 
@@ -72,7 +73,7 @@ load.loadMetricsForGUI;
 
 % currently this GUI works best with a screen in portrait mode - we are
 % working to get it to handle screens in landscape mode better. 
-unitQualityGuiHandle = viz.unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, ...
+unitQualityGuiHandle = bc.viz.unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, ...
     param, probeLocation, unitType, loadRawTraces);
 
 
@@ -114,8 +115,8 @@ writetable(label_table,[savePath filesep 'templates._bc_unit_labels.tsv'],'FileT
 
 %% optional: additionally compute ephys properties for each unit and classify cell types 
 rerunEP = 0;
-region = ''; % options include 'Striatum' and 'Cortex'
-[ephysProperties, unitClassif] = ep.runAllEphysProperties(ephysKilosortPath, savePath, rerunEP, region);
+region = 'Cortex'; % options include 'Striatum' and 'Cortex'
+[ephysProperties, unitClassif] = bc.ep.runAllEphysProperties(ephysKilosortPath, savePath, rerunEP, region);
 
 % example: get good MSN units 
 goodMSNs = strcmp(unitClassif, 'MSN') & unitType == 1; 
