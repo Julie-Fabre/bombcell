@@ -47,7 +47,7 @@ param = bc.qm.qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_
 % param = qualityParamValuesForUnitMatch(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV)
 
 %% compute quality metrics 
-rerun = 0;
+rerun = 0; %whether to re-run (and save) quality metrics if they are already present
 qMetricsExist = ~isempty(dir(fullfile(savePath, 'qMetric*.mat'))) || ~isempty(dir(fullfile(savePath, 'templates._bc_qMetrics.parquet')));
 
 if qMetricsExist == 0 || rerun
@@ -114,7 +114,7 @@ writetable(label_table,[savePath filesep 'templates._bc_unit_labels.tsv'],'FileT
       
 
 %% optional: additionally compute ephys properties for each unit and classify cell types 
-rerunEP = 0;
+rerunEP = 0; %whether to re-run (and save) ephys properties if they are already present
 region = 'Cortex'; % options include 'Striatum' and 'Cortex'
 [ephysProperties, unitClassif] = bc.ep.runAllEphysProperties(ephysKilosortPath, savePath, rerunEP, region);
 
