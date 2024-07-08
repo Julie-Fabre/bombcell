@@ -68,7 +68,7 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, 
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'leftarrow')
             iCluster = iCluster - 1;
-            if iCluster < 1
+            if size(uniqueTemps,1) < iCluster
                 disp('Done cycling through units.')
                 iCluster = iCluster + 1;
             else
