@@ -35,16 +35,7 @@
 %
 .git/*</param.exclude.filters>
     <param.exclude.pcodedmfiles>true</param.exclude.pcodedmfiles>
-    <param.examples>&lt;?xml version="1.0" encoding="utf-8"?&gt;
-&lt;examples&gt;
-   &lt;exampleCategory name="demos"&gt;
-      &lt;example name="demo_bombcell" type="html"&gt;
-         &lt;file type="source"&gt;/demos/html/demo_bombcell.html&lt;/file&gt;
-         &lt;file type="main"&gt;/demos/demo_bombcell.mlx&lt;/file&gt;
-         &lt;file type="thumbnail"/&gt;
-      &lt;/example&gt;
-   &lt;/exampleCategory&gt;
-&lt;/examples&gt;</param.examples>
+    <param.examples />
     <param.demosxml />
     <param.apps />
     <param.registered.apps />
@@ -108,6 +99,7 @@
       <param.products.version />
       <param.platforms />
       <param.exclude.pcodedmfiles />
+      <param.examples />
       <param.demosxml />
       <param.apps />
       <param.registered.apps />
@@ -136,13 +128,14 @@
       <file>${PROJECT_ROOT}/LICENSE</file>
       <file>${PROJECT_ROOT}/README.md</file>
       <file>${PROJECT_ROOT}/demos</file>
-      <file>${PROJECT_ROOT}/demos.xml</file>
       <file>${PROJECT_ROOT}/docs</file>
+      <file>${PROJECT_ROOT}/gettingStarted.mlx</file>
       <file>${PROJECT_ROOT}/pipelines</file>
+      <file>${PROJECT_ROOT}/release</file>
       <file>${PROJECT_ROOT}/resources</file>
+      <file>${PROJECT_ROOT}/toy_data</file>
     </fileset.rootfiles>
-    <fileset.depfun.included />
-    <fileset.depfun.excluded>
+    <fileset.depfun.included>
       <file>/home/julie/Dropbox/MATLAB/onPaths/JF_Scripts_CortexLab/utilities/BrewerMap/brewermap.m</file>
       <file>/home/julie/Dropbox/MATLAB/onPaths/UnitMatch/MATLAB/DataPreparation/constructNPYheader.m</file>
       <file>/home/julie/Dropbox/MATLAB/onPaths/UnitMatch/MATLAB/DataPreparation/readNPY.m</file>
@@ -161,7 +154,8 @@
       <file>/home/julie/Dropbox/MATLAB/onPaths/prettify_matlab/prettify_plot/prettify_legend.m</file>
       <file>/home/julie/Dropbox/MATLAB/onPaths/prettify_matlab/prettify_plot/prettify_plot.m</file>
       <file>/home/julie/Dropbox/MATLAB/onPaths/prettify_matlab/prettify_plot/prettify_roundUpNatural.m</file>
-    </fileset.depfun.excluded>
+    </fileset.depfun.included>
+    <fileset.depfun.excluded />
     <fileset.package />
     <build-deliverables>
       <file location="${PROJECT_ROOT}" name="bombcell.mltbx" optional="false">/home/julie/Dropbox/MATLAB/onPaths/bombcell/bombcell.mltbx</file>
