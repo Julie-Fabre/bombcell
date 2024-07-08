@@ -15,7 +15,7 @@
 
 %% set paths - EDIT THESE. Currently contains links to small toy dataset. 
 currentPath = [fileparts(matlab.desktop.editor.getActiveFilename), filesep, '..'];
-ephysKilosortPath = [currentPath, filesep, 'demos', filesep, 'toy_data'];% path to your kilosort output files 
+ephysKilosortPath = [currentPath, filesep, 'toy_data'];% path to your kilosort output files 
 ephysRawDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*bin');%"NaN"; % dir() path to your raw .bin or .dat data. currently NaN because storing raw data on github is cumbersome.
 % for testing: dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*bin') 
 ephysMetaDir = dir([currentPath, filesep, 'demos', filesep, 'toy_data', filesep '*ap*.*meta']); % dir() path to your .meta or .oebin meta file
@@ -54,7 +54,7 @@ if qMetricsExist == 0 || rerun
     [qMetric, unitType] = bc.qm.runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
         templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath);
 else
-    [param, qMetric] = load.loadSavedMetrics(savePath); 
+    [param, qMetric] = bc.load.loadSavedMetrics(savePath); 
     unitType = bc.qm.getQualityUnitType(param, qMetric, savePath);
 end
 
