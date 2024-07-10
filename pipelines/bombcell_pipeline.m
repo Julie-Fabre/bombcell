@@ -16,7 +16,7 @@
 %% set paths - EDIT THESE. Currently contains links to small toy dataset. 
 currentPath = [fileparts(matlab.desktop.editor.getActiveFilename), filesep, '..'];
 ephysKilosortPath = [currentPath, filesep, 'toy_data'];% path to your kilosort output files 
-ephysRawDir = dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*bin');%"NaN"; % dir() path to your raw .bin or .dat data. currently NaN because storing raw data on github is cumbersome.
+ephysRawDir = "NaN"; % dir() path to your raw .bin or .dat data. currently NaN because storing raw data on github is cumbersome.
 % for testing: dir('/home/netshare/zaru/JF093/2023-03-06/ephys/site1/*ap*.*bin') 
 ephysMetaDir = dir([currentPath, filesep, 'demos', filesep, 'toy_data', filesep '*ap*.*meta']); % dir() path to your .meta or .oebin meta file
 savePath = '/media/julie/ExtraHD/toy_data_qMetrics'; % where you want to save the quality metrics 
