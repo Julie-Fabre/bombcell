@@ -31,6 +31,7 @@ function [fractionRPVs, nRPVs, overestimateBool] = fractionRPviolations(theseSpi
 % r = 2*(tauR - tauC) * N^2 * (1-Fp) * Fp / T , solve for Fp , fraction
 % refractory period violatons. 2 factor because rogue spikes can occur before or
 % after true spike
+% edit: need to use equation from: Llobet et al 2023
 
 % initialize variables
 fractionRPVs = nan(length(timeChunks)-1, length(tauR));
@@ -60,13 +61,13 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
             overestimateBool(iTimeChunk, iTauR_value) = 0;
             if ~isreal(fractionRPVs(iTimeChunk, iTauR_value)) % function returns imaginary number if r is too high: overestimate number.
                 overestimateBool(iTimeChunk, iTauR_value) = 1;
-                if nRPVs < N_chunk %to not get a negative wierd number or a 0 denominator
-                    fractionRPVs(iTimeChunk, iTauR_value) = nRPVs / (2 * (tauR(iTauR_value) - tauC) * (N_chunk - nRPVs));
+                if nRPVs < N_chunk % to not get a negative wierd number or a 0 denominator
+                    fractionRPVs(iTimeChunk, iTauR_value) = nRPVs / (N_chunk - nRPVs);
                 else
                     fractionRPVs(iTimeChunk, iTauR_value) = 1;
                 end
             end
-            if fractionRPVs(iTimeChunk, iTauR_value) > 1 %it is nonsense to have a rate >1, the assumptions are failing here
+            if fractionRPVs(iTimeChunk, iTauR_value) > 1 % it is nonsense to have a rate >1, the assumptions are failing here
                 fractionRPVs(iTimeChunk, iTauR_value) = 1;
             end
         end
