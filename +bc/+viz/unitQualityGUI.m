@@ -460,7 +460,13 @@ if param.extractRaw
         set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{1 0 0} amplitude, \color[rgb]{1 0 0} SNR ']);
     
     end
-    ylim(guiData.rawWaveformYLim, [min(min(vals,[],2)).*0.95, max(max(vals,[],2))]) % space for legend
+    if ~isempty(vals)
+        if vals > 0 
+            ylim(guiData.rawWaveformYLim, [min(min(vals,[],2)).*0.95, max(max(vals,[],2))]) % space for legend
+        elseif vals < 0
+            ylim(guiData.rawWaveformYLim, [max(max(vals,[],2)).*0.95, min(min(vals,[],2))]) % space for legend
+        end
+    end
 
 
 end
