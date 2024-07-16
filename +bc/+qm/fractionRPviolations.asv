@@ -26,13 +26,13 @@ function [RPVrate, nRPVs, overestimateBool] = fractionRPviolations(theseSpikeTim
 % ------
 % Reference
 % ------
-% Llobet V et al., biorXiv 2023.
-% previous: Hill, Daniel N., Samar B. Mehta, and David Kleinfeld.
+% previrous: Hill, Daniel N., Samar B. Mehta, and David Kleinfeld.
 % "Quality metrics to accompany spike sorting of extracellular signals."
 % Journal of Neuroscience 31.24 (2011): 8699-8705:
 % r = 2*(tauR - tauC) * N^2 * (1-Fp) * Fp / T , solve for Fp , fraction
 % refractory period violatons. 2 factor because rogue spikes can occur before or
 % after true spike
+% edit: need to use equation from: Llobet et al 2023
 
 % initialize variables
 RPVrate = ones(length(timeChunks)-1, length(tauR));
@@ -59,18 +59,21 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
 
     % total times at which refractory period violations can occur
     for iTauR_value = 1:length(tauR)
-        numViolations = sum(isisChunk <= tauR(iTauR_value) & isisChunk > tauC); % number of observed violations
+    numViolations = sum(isisChunk <= tauR(iTauR_value) & isisChunk > tauC); % number of observed violations
+    
+    % Calculate the value under the square root
+    underRoot = 1 - numViolations*durationChunk/(N_chunk^2*(tauR(iTauR_value)-tauC));
+    
+    % Check if the value is non-negative
+    if underRoot >= 0
+        RPVrate(iTimeChunk, iTauR_value) = 1 - sqrt(underRoot);
+    else
+        % Handle the case where the value is negative
+        RPVrate(iTimeChunk, iTauR_value) = 1;  % set to 1
+    end
+    
+    
 
-        % Calculate the value under the square root
-        underRoot = 1 - numViolations * durationChunk / (N_chunk^2 * (tauR(iTauR_value) - tauC));
-
-        % Check if the value is non-negative
-        if underRoot >= 0
-            RPVrate(iTimeChunk, iTauR_value) = 1 - sqrt(underRoot);
-        else
-            % Handle the case where the value is negative
-            RPVrate(iTimeChunk, iTauR_value) = 1; % set to 1
-        end
 
 
         % below is previous calculation. changed on 16/07/2024

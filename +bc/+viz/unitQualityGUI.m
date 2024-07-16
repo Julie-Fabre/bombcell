@@ -425,7 +425,8 @@ set(guiData.tempLegend, 'String', {['is somatic =', num2str(qMetric.isSomatic(iC
 %% plot 3: plot unit mean raw waveform (and individual traces)
 if param.extractRaw
     maxChanRaw = rawWaveforms.peakChan(iCluster);
-    chansToPlotRaw = chansToPlot + diff([maxChanRaw, maxChan]);
+    %chansToPlotRaw = chansToPlot;
+    chansToPlotRaw = chansToPlot + diff([maxChan, maxChanRaw]);
     chansToPlotRaw(chansToPlotRaw<1)=[];
     vals =[];
     scalingFactor = range(-squeeze(rawWaveforms.average(iCluster, maxChanRaw, :))'+ ...
@@ -461,9 +462,9 @@ if param.extractRaw
     
     end
     if ~isempty(vals)
-        if vals > 0 
+        if any(vals > 0 )
             ylim(guiData.rawWaveformYLim, [min(min(vals,[],2)).*0.95, max(max(vals,[],2))]) % space for legend
-        elseif vals < 0
+        else
             ylim(guiData.rawWaveformYLim, [max(max(vals,[],2)).*0.95, min(min(vals,[],2))]) % space for legend
         end
     end

@@ -68,7 +68,7 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, 
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
         elseif strcmpi(evnt.Key, 'leftarrow')
             iCluster = iCluster - 1;
-            if size(uniqueTemps,1) < iCluster
+            if iCluster < 1
                 disp('Done cycling through units.')
                 iCluster = iCluster + 1;
             else
@@ -425,7 +425,8 @@ set(guiData.tempLegend, 'String', {['is somatic =', num2str(qMetric.isSomatic(iC
 %% plot 3: plot unit mean raw waveform (and individual traces)
 if param.extractRaw
     maxChanRaw = rawWaveforms.peakChan(iCluster);
-    chansToPlotRaw = chansToPlot + diff([maxChanRaw, maxChan]);
+    chansToPlotRaw = chansToPlot;
+   % chansToPlotRaw = chansToPlot + diff([maxChanRaw, maxChan]);
     chansToPlotRaw(chansToPlotRaw<1)=[];
     vals =[];
     scalingFactor = range(-squeeze(rawWaveforms.average(iCluster, maxChanRaw, :))'+ ...
@@ -460,7 +461,13 @@ if param.extractRaw
         set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{1 0 0} amplitude, \color[rgb]{1 0 0} SNR ']);
     
     end
-    ylim(guiData.rawWaveformYLim, [min(min(vals,[],2)).*0.95, max(max(vals,[],2))]) % space for legend
+    if ~isempty(vals)
+        if any(vals) > 0 
+            ylim(guiData.rawWaveformYLim, [min(min(vals,[],2)).*0.95, max(max(vals,[],2))]) % space for legend
+        elseif vals < 0
+            ylim(guiData.rawWaveformYLim, [max(max(vals,[],2)).*0.95, min(min(vals,[],2))]) % space for legend
+        end
+    end
 
 
 end
