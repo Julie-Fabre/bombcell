@@ -131,8 +131,8 @@ hold on;
 max_n_channels_plot = 20;
 templateWaveformLines = arrayfun(@(x) plot(nan(82, 1), nan(82, 1), 'linewidth', 2, 'color', 'k'), 1:max_n_channels_plot);
 maxTemplateWaveformLines = arrayfun(@(x) plot(nan(82, 1), nan(82, 1), 'linewidth', 2, 'color', 'b'), 1);
-peaks = scatter(nan(10, 1), nan(10, 1), [], rgb('Orange'), 'v', 'filled');
-troughs = scatter(nan(10, 1), nan(10, 1), [], rgb('Gold'), 'v', 'filled');
+peaks = scatter(nan(10, 1), nan(10, 1), [], prettify_rgb('Orange'), 'v', 'filled');
+troughs = scatter(nan(10, 1), nan(10, 1), [], prettify_rgb('Gold'), 'v', 'filled');
 xlabel('Position+Time');
 ylabel('Position');
 set(gca, 'YDir', 'reverse')
@@ -242,7 +242,7 @@ ampliFitAx = subplot(6, 13, 78);
 hold on;
 ampliBins = barh(NaN, NaN, 'blue');
 ampliBins.FaceAlpha = 0.5;
-ampliFit = plot(NaN, NaN, 'Color', rgb('Orange'), 'LineWidth', 4);
+ampliFit = plot(NaN, NaN, 'Color', prettify_rgb('Orange'), 'LineWidth', 4);
 ampliFitTitle = title('');
 ampliFitLegend = legend(ampliFit, {''}, 'Location', 'South');
 
