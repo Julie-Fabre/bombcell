@@ -86,7 +86,6 @@ isolationDist = NaN;
 Lratio = NaN;
 silhouetteScore = NaN;
 mahalD = NaN; 
-otherFeatures_linear = NaN;%only used if param.plotDetails is true and last part is un-commented
 histogram_mahalUnit_counts = NaN;
 histogram_mahalUnit_edges = NaN;
 histogram_mahalNoise_counts = NaN;
@@ -101,13 +100,6 @@ if ~isempty(otherFeatures) && numberSpikes > nChansToUse * nPCs
     L = sum(1-chi2cdf(mahalD, nPCs*nChansToUse)); % Assuming chi-square distribution
     Lratio = L / numberSpikes;
 
-    % Find the closest cluster for silhouette score calculation
-    closestCluster = otherUnits_double(find(mahalanobisDistances == min(mahalanobisDistances), 1, 'first'));
-    mahalDself = mahal(theseFeatures, theseFeatures); % Self Mahalanobis distances
-
-    % Find indices of features closest to the cluster - this only used for
-    % plotting purposes, if param.plotDetails is true.
-    [r, ~, ~] = ind2sub(size(otherFeaturesInd), find(otherFeaturesInd == double(closestCluster)));
 
     if nCount > numberSpikes && numberSpikes > nChansToUse * nPCs
         % Calculate isolation distance if applicable
@@ -122,12 +114,15 @@ if ~isempty(otherFeatures) && numberSpikes > nChansToUse * nPCs
 end
 
 
-if numberSpikes > nChansToUse * nPCs && exist('r', 'var')
-    otherFeatures_linear = reshape(otherFeatures(:, :, :), size(otherFeatures, 1), nPCs*nChansToUse);
+if numberSpikes > nChansToUse * nPCs 
+    mahalDself = mahal(theseFeatures, theseFeatures); % Self Mahalanobis distances
 
-    % Calculate Mahalanobis distance for the current unit relative to itself (for comparison)
-    d2_mahal_self = mahal(theseFeatures, theseFeatures);
-    
+    % Find the closest cluster for silhouette score calculation
+    %closestCluster = otherUnits_double(find(mahalanobisDistances == min(mahalanobisDistances), 1, 'first'));
+        % Find indices of features closest to the cluster - this only used for
+    % plotting purposes, if param.plotDetails is true.
+    %[r, ~, ~] = ind2sub(size(otherFeaturesInd), find(otherFeaturesInd == double(closestCluster)));
+  
     [histogram_mahalUnit_counts, histogram_mahalUnit_edges] = histcounts(mahalDself,1:1:200);
     [histogram_mahalNoise_counts, histogram_mahalNoise_edges] = histcounts(mahalD,1:1:200);
 

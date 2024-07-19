@@ -32,52 +32,46 @@ function [theseSpikeTimes, theseAmplis, theseSpikeTemplates, useThisTimeStart, u
 %   estimated percent spikes missing
 % useTauR: estimated refractory period for the current unit
 
-% Calculate the sum of refractory period violations across all time chunks
+% use biggest tauR value that gives smallest contamination
 sumRPV = sum(fractionRPVs, 1);
-
-% Find the largest tauR value that gives the smallest contamination
 useTauR = find(sumRPV == min(sumRPV), 1, 'last');
 
-% Identify time chunks that meet the criteria for low missing spikes and RPVs
-useTheseTimes_temp = find(percSpikesMissing < maxPercSpikesMissing & fractionRPVs(:, useTauR) < maxfractionRPVs);
+useTheseTimes_temp = find(percSpikesMissing < maxPercSpikesMissing & fractionRPVs(:, useTauR) < maxfractionRPVs); % are there any good time chunks
 
-if numel(useTheseTimes_temp) > 0 % Case where there are good time chunks
+if numel(useTheseTimes_temp) > 0 % case where there are good time chunks 
     continousTimes = diff(useTheseTimes_temp);
-    
     if any(continousTimes == 1)
         % Identify the start and end of consecutive chunks
         chunkStarts = [1; find(continousTimes > 1) + 1];
         chunkEnds = [find(continousTimes > 1); length(useTheseTimes_temp)];
-        
+
         % Calculate the lengths of each chunk
         chunkLengths = chunkEnds - chunkStarts + 1;
-        
+
         % Find the longest chunk
         [longestChunkLength, idx] = max(chunkLengths);
         longestChunkStart = useTheseTimes_temp(chunkStarts(idx));
         longestChunkEnd = useTheseTimes_temp(chunkEnds(idx));
-        
-        % Select the time range for the longest chunk
         useTheseTimes = timeChunks(longestChunkStart:longestChunkEnd);
-    else 
-        % No continuous time chunks: arbitrarily, just use the first one
+
+    else
         useTheseTimes = timeChunks(useTheseTimes_temp(1):useTheseTimes_temp(1)+1);
     end
-    
-    % Index spikes, templates and amplitudes for chosen time chunk
+
+
     theseSpikeTemplates(theseSpikeTimes > useTheseTimes(end) | ...
         theseSpikeTimes < useTheseTimes(1)) = 0;
     theseAmplis = theseAmplis(theseSpikeTimes <= useTheseTimes(end) & ...
         theseSpikeTimes >= useTheseTimes(1));
     theseSpikeTimes = theseSpikeTimes(theseSpikeTimes <= useTheseTimes(end) & ...
         theseSpikeTimes >= useTheseTimes(1));
-    
-    % Set the start and stop times for the selected chunk
+
     useThisTimeStart = useTheseTimes(1);
     useThisTimeStop = useTheseTimes(end);
-else 
-    % If there are no "good" time chunks, use all chunks for subsequent computations
+
+else % if there are no "good" time chunks, use all chunks for subsequent computations
     useThisTimeStart = 0;
     useThisTimeStop = timeChunks(end);
 end
+
 end
