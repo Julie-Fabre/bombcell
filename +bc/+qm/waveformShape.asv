@@ -112,13 +112,13 @@ else
     % try and enforce peak should be after trough (this is usually the
     % correct peak to choose for a given waveform) 
     if peakLoc < troughLoc
-        if any(peakLocs > troughLocs)
+        if sum(any(peakLocs) > troughLocs) > 0
             possible_realPeak = PKS(peakLocs > troughLocs);
         else
             [possible_realPeak, possible_peakLoc] = max(thisWaveform(troughLoc:end));
         end
         if maxPK < (possible_realPeak * firstPeakRatio)
-            if any(peakLocs > troughLocs)
+            if sum(any(peakLocs) > troughLocs) == 0
                 PKS = [PKS, possible_realPeak];
                 peakLocs = [peakLocs, possible_peakLoc + troughLoc - 1];
             end
