@@ -37,8 +37,6 @@ theseFeatures = reshape(pc_features(spikesIdx, :, 1:nChansToUse), numberSpikes, 
 
 % Precompute unique identifiers and allocate space for outputs
 uniqueIDs = unique(allSpikesIdx(allSpikesIdx>0));
-mahalanobisDistances = nan(numel(uniqueIDs), 1);
-otherUnits_double = nan(numel(uniqueIDs), 1);
 otherFeaturesInd = zeros(0, size(pc_features, 2), nChansToUse);
 otherFeatures = zeros(0, size(pc_features, 2), nChansToUse);
 nCount = 1; % initialize counter
@@ -67,18 +65,6 @@ for iID = 1:numel(uniqueIDs)
         end
     end
 
-    % Calculate Mahalanobis distance if applicable
-    if any(ismember(theseChannels(:), currentChannels))
-        [rowIndices, ~, ~] = find(otherFeaturesInd == currentID);
-        if size(theseFeatures, 1) > size(theseFeatures, 2) && numel(rowIndices) > size(theseFeatures, 2)
-            otherFeatures_reshaped = reshape(otherFeatures(rowIndices, :, :), numel(rowIndices), nPCs*nChansToUse);
-            mahalanobisDistances(iID) = nanmean(mahal(otherFeatures_reshaped, theseFeatures));
-            otherUnits_double(iID) = double(currentID);
-        else
-            mahalanobisDistances(iID) = NaN;
-            otherUnits_double(iID) = double(currentID);
-        end
-    end
 end
 
 % Predefine outputs to handle cases where conditions are not met
@@ -116,12 +102,6 @@ end
 
 if numberSpikes > nChansToUse * nPCs 
     mahalDself = mahal(theseFeatures, theseFeatures); % Self Mahalanobis distances
-
-    % Find the closest cluster for silhouette score calculation
-    %closestCluster = otherUnits_double(find(mahalanobisDistances == min(mahalanobisDistances), 1, 'first'));
-        % Find indices of features closest to the cluster - this only used for
-    % plotting purposes, if param.plotDetails is true.
-    %[r, ~, ~] = ind2sub(size(otherFeaturesInd), find(otherFeaturesInd == double(closestCluster)));
   
     [histogram_mahalUnit_counts, histogram_mahalUnit_edges] = histcounts(mahalDself,1:1:200);
     [histogram_mahalNoise_counts, histogram_mahalNoise_edges] = histcounts(mahalD,1:1:200);
