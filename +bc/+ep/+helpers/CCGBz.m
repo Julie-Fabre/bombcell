@@ -74,12 +74,12 @@ end
 %if ~isdvector(times),
 %	error('Parameter ''times'' is not a real-valued vector (type ''help <a href="matlab:help CCG">CCG</a>'' for details).');
 %end
-if ~isdscalar(groups) && ~isdvector(groups),
-	error('Parameter ''groups'' is not a real-valued scalar or vector (type ''help <a href="matlab:help CCG">CCG</a>'' for details).');
-end
-if ~isdscalar(groups) && length(times) ~= length(groups),
-	error('Parameters ''times'' and ''groups'' have different lengths (type ''help <a href="matlab:help CCG">CCG</a>'' for details).');
-end
+% if ~isdscalar(groups) && ~isdvector(groups),
+% 	error('Parameter ''groups'' is not a real-valued scalar or vector (type ''help <a href="matlab:help CCG">CCG</a>'' for details).');
+% end
+% if ~isdscalar(groups) && length(times) ~= length(groups),
+% 	error('Parameters ''times'' and ''groups'' have different lengths (type ''help <a href="matlab:help CCG">CCG</a>'' for details).');
+% end
 groups = groups(:);
 times = times(:);
 
@@ -96,15 +96,15 @@ for i = 1:2:length(varargin),
 	%		end
 		case 'duration',
 			duration = varargin{i+1};
-			if ~isdscalar(duration,'>0'),
-				error('Incorrect value for property ''duration'' (type ''help <a href="matlab:help CCG">CCG</a>'' for details).');
-            end
+			% if ~isdscalar(duration,'>0'),
+			% 	error('Incorrect value for property ''duration'' (type ''help <a href="matlab:help CCG">CCG</a>'' for details).');
+            % end
             
             case 'Fs',
 			Fs = varargin{i+1};
-			if ~isdscalar(Fs,'>0'),
-				error('Incorrect value for property ''Fs'' (type ''help <a href="matlab:help CCG">CCG</a>'' for details).');
-            end
+			% if ~isdscalar(Fs,'>0'),
+			% 	error('Incorrect value for property ''Fs'' (type ''help <a href="matlab:help CCG">CCG</a>'' for details).');
+            % end
         case 'norm'
             normtype = varargin{i+1};
      
