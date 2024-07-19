@@ -1,60 +1,64 @@
 function [spatialDecaySlope, spatialDecayFit, spatialDecayPoints, spatialDecayPoints_loc, estimatedUnitXY] = ...
     getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit, normalizePoints)
 
+% Set default values and validate inputs
 if nargin < 6 || isempty(normalizePoints)
-    normalizePoints = 0;
+    normalizePoints = false;
 end
 
-    if linearFit % linear of fit of first 6 channels (at same X position). 
-        % In real, good units, these points decrease linearly sharply (and, in further away channels they then decrease exponentially). 
-        % In noise artefacts they are mostly flat. 
-        channels_withSameX = find(channelPositions(:, 1) <= channelPositions(maxChannel, 1)+33 & ...
-            channelPositions(:, 1) >= channelPositions(maxChannel, 1)-33); % for 4 shank probes
-        if numel(channels_withSameX) >= 5
-            if find(channels_withSameX == maxChannel) > 5
-                channels_forSpatialDecayFit = channels_withSameX( ...
-                    find(channels_withSameX == maxChannel):-1:find(channels_withSameX == maxChannel)-5);
-            else
-                channels_forSpatialDecayFit = channels_withSameX( ...
-                    find(channels_withSameX == maxChannel):1:min(find(channels_withSameX == maxChannel)+5, size(channels_withSameX, 1)));
-            end
-    
-            % get maximum value %QQ could we do value at detected trough is peak
-            % waveform?
-            spatialDecayPoints = max(abs(squeeze(templateWaveforms(thisUnit, :, channels_forSpatialDecayFit))));
-           
-            estimatedUnitXY = channelPositions(maxChannel, :);
-            relativePositionsXY = channelPositions(channels_forSpatialDecayFit, :) - estimatedUnitXY;
-            channelPositions_relative = sqrt(nansum(relativePositionsXY.^2, 2));
-    
-            [~, sortexChanPosIdx] = sort(channelPositions_relative);
-            spatialDecayPoints_norm = spatialDecayPoints(sortexChanPosIdx);
-            spatialDecayPoints_loc = channelPositions_relative(sortexChanPosIdx);
+if ~linearFit
+    error('Non-linear fit is not yet implemented.');
+end
 
-            % normalize spatial decay points 
-            if normalizePoints
-                spatialDecayPoints_norm = spatialDecayPoints_norm ./ max(spatialDecayPoints_norm);
-            end
+% Constants
+CHANNEL_TOLERANCE = 33; % need to make more restricive. for most geometries, this includes all the channels. 
+MIN_CHANNELS_FOR_FIT = 5;
+NUM_CHANNELS_FOR_FIT = 6;
 
-            % linear fit
-            spatialDecayFit = polyfit(spatialDecayPoints_loc, spatialDecayPoints_norm', 1); % fit first order polynomial to data. first output is slope of polynomial, second is a constant
-            spatialDecaySlope = spatialDecayFit(1);
-            if length(spatialDecayPoints) < 6
-                    if length(spatialDecayPoints) > 1
-                        spatialDecayPoints = [spatialDecayPoints_norm, nan(21-length(spatialDecayPoints_norm),1)];
-                    else
-                        spatialDecayPoints = [spatialDecayPoints_norm; nan(21-length(spatialDecayPoints_norm),1)];
-                    end
-            end
-        else
-            warning('No other good channels with same x location')
-            spatialDecayFit = NaN;
-            spatialDecaySlope = NaN;
-            spatialDecayPoints = nan(1, 6);
-    
-        end
-    else % not yet implemented. exponential fit? 
-      
+% Initialize output variables
+spatialDecaySlope = NaN;
+spatialDecayFit = NaN;
+spatialDecayPoints = nan(1, NUM_CHANNELS_FOR_FIT);
+spatialDecayPoints_loc = [];
+estimatedUnitXY = channelPositions(maxChannel, :);
 
-    end
+% Find channels with similar X position
+channels_withSameX = find(abs(channelPositions(:, 1) - channelPositions(maxChannel, 1)) <= CHANNEL_TOLERANCE);
+
+if numel(channels_withSameX) < MIN_CHANNELS_FOR_FIT
+    warning('Insufficient channels with similar X position for fitting.');
+    return;
+end
+
+% Select channels for spatial decay fit
+maxChannelIndex = find(channels_withSameX == maxChannel);
+if maxChannelIndex > NUM_CHANNELS_FOR_FIT
+    channels_forSpatialDecayFit = channels_withSameX(maxChannelIndex:-1:maxChannelIndex-NUM_CHANNELS_FOR_FIT+1);
+else
+    channels_forSpatialDecayFit = channels_withSameX(maxChannelIndex:min(maxChannelIndex+NUM_CHANNELS_FOR_FIT-1, numel(channels_withSameX)));
+end
+
+% Calculate spatial decay points
+spatialDecayPoints = max(abs(squeeze(templateWaveforms(thisUnit, :, channels_forSpatialDecayFit))));
+
+% Calculate relative positions
+relativePositionsXY = channelPositions(channels_forSpatialDecayFit, :) - estimatedUnitXY;
+channelPositions_relative = sqrt(sum(relativePositionsXY.^2, 2));
+[spatialDecayPoints_loc, sortIdx] = sort(channelPositions_relative);
+spatialDecayPoints = spatialDecayPoints(sortIdx);
+
+% Normalize spatial decay points if requested
+if normalizePoints
+    spatialDecayPoints = spatialDecayPoints / max(spatialDecayPoints);
+end
+
+% Perform linear fit
+spatialDecayFit = polyfit(spatialDecayPoints_loc, spatialDecayPoints, 1);
+spatialDecaySlope = spatialDecayFit(1);
+
+% Pad spatialDecayPoints with NaNs if necessary
+if length(spatialDecayPoints) < NUM_CHANNELS_FOR_FIT
+    spatialDecayPoints = [spatialDecayPoints, nan(1, NUM_CHANNELS_FOR_FIT - length(spatialDecayPoints))];
+end
+
 end

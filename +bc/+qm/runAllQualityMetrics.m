@@ -176,6 +176,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
             forGUI.unit_mahal_counts{iUnit}, forGUI.unit_mahal_edges{iUnit}, forGUI.noise_mahal_counts{iUnit}, forGUI.unit_mahal_edges{iUnit}] = bc.qm.getDistanceMetrics(pcFeatures, ...
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
             param.nChannelsIsoDist, param.plotDetails); 
+
     end
 
     %% display progress

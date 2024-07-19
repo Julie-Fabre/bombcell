@@ -177,9 +177,6 @@ for iUnit = 1:size(uniqueTemplates, 1)
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
             param.nChannelsIsoDist, param.plotDetails); 
 
-resultsDirectory = '/home/julie/Dropbox/MATLAB/onPaths/bombcell/toy_data';
-       [clusterIDs, unitQuality, contaminationRate] = sqKilosort.maskedClusterQuality(resultsDirectory);
-
     end
 
     %% display progress
