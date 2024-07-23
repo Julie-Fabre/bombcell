@@ -118,7 +118,7 @@ else
             [possible_realPeak, possible_peakLoc] = max(thisWaveform(troughLoc:end));
         end
         if maxPK < (possible_realPeak * firstPeakRatio)
-            if any(peakLocs > troughLocs)
+            if any(possible_peakLoc + troughLoc - 1> troughLocs)
                 PKS = [PKS, possible_realPeak];
                 peakLocs = [peakLocs, possible_peakLoc + troughLoc - 1];
             end
