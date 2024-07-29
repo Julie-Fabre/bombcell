@@ -114,6 +114,7 @@ else
     if peakLoc < troughLoc
         if any(peakLocs > troughLocs)
             possible_realPeak = PKS(peakLocs > troughLocs);
+            possible_peakLoc = peakLocs(peakLocs > troughLoc);
         else
             [possible_realPeak, possible_peakLoc] = max(thisWaveform(troughLoc:end));
         end
