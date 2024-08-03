@@ -118,8 +118,6 @@ end
 param.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value 
     % in a units waveform to give the minimum prominence to detect peaks using
     % matlab's findpeaks function.
-param.firstPeakRatio = 1.1; % if units have an initial peak before the trough,
-    % it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit. 
 param.normalizeSpDecay = 1; % whether to normalize spatial decay points relative to 
 % maximum - this makes the spatrial decay slop calculation more invariant to the 
 % spike-sorting algorithm used
@@ -157,6 +155,8 @@ param.maxWvDuration = 1000; % in us
 param.minSpatialDecaySlope = -0.005; % in a.u./um
 param.maxWvBaselineFraction = 0.3; % maximum absolute value in waveform baseline
     % should not exceed this fraction of the waveform's abolute peak value
+param.firstPeakRatio = 1.5; % if units have an initial peak before the trough,
+    % it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit. 
 
 % distance metrics
 param.isoDmin = 20; % minimum isolation distance value
@@ -170,6 +170,6 @@ param.maxPercSpikesMissing = 20; % in percentage
 param.minNumSpikes = 300; % number of spikes
 param.maxDrift = 100;
 param.minPresenceRatio = 0.7;
-param.minSNR = 0.1;
+param.minSNR = 1;
 
 end

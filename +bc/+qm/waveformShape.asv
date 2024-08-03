@@ -130,11 +130,11 @@ else
     max_waveform_location = abs(thisWaveform) == max_waveform_abs_value;
     max_waveform_value = thisWaveform(max_waveform_location);
     if max_waveform_value(end) > 0
-        peakLoc_forDuration = peakLocs(PKS == max(PKS));
+        peakLoc_forDuration = peakLoc;
         [~, troughLoc_forDuration] = min(thisWaveform(peakLoc_forDuration:end)); % to calculate waveform duration
         troughLoc_forDuration = troughLoc_forDuration + peakLoc_forDuration - 1;
     else
-        troughLoc_forDuration = troughLoc(TRS == max(TRS));
+        troughLoc_forDuration = troughLoc;
         [~, peakLoc_forDuration] = max(thisWaveform(troughLoc_forDuration:end)); % to calculate waveform duration
         peakLoc_forDuration = peakLoc_forDuration + troughLoc_forDuration - 1;
     end
