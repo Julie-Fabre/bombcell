@@ -46,6 +46,11 @@ rawFile = bc.dcomp.manageDataCompression(ephysRawDir, decompressDataLocal);
 param = bc.qm.qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV, kilosortVersion); %for unitmatch, run this:
 % param = qualityParamValuesForUnitMatch(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV)
 
+% payparticular attention to param.nChannels
+% param.nChannels must correspond to the total number of channels in your raw data, including any sync channels. For Neuropixels probes, this value should typically be either 384 or 385 channels. param.nSyncChannels must correspond to the number of sync channels you recorded. This value is typically 1 or 0.
+param.nChannels = 385;
+param.nSyncChannels = 1;
+
 %% compute quality metrics 
 rerun = 0; %whether to re-run (and save) quality metrics if they are already present
 qMetricsExist = ~isempty(dir(fullfile(savePath, 'qMetric*.mat'))) || ~isempty(dir(fullfile(savePath, 'templates._bc_qMetrics.parquet')));
