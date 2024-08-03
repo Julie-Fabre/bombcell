@@ -184,7 +184,10 @@ if ~isempty(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'))
     average_baseline_idx_cat = readNPY(fullfile(savePath, 'templates._bc_baselineNoiseAmplitudeIndex.npy'));
 
     signalToNoiseRatio = cell2mat(arrayfun(@(X) max(abs(squeeze(rawWaveformsFull(X,rawWaveformsPeakChan(X),:)))) ./...
-        var(average_baseline_cat(average_baseline_idx_cat==X)),1:nClust,'Uni',0))';
+        mad(average_baseline_cat(average_baseline_idx_cat==X)),1:nClust,'Uni',0))';
+
+    %signalToNoiseRatio = cell2mat(arrayfun(@(X) max(abs(squeeze(rawWaveformsFull(X,rawWaveformsPeakChan(X),:)))) ./...
+    %    var(average_baseline_cat(average_baseline_idx_cat==X)),1:nClust,'Uni',0))';
 
     %signalToNoiseRatio = cell2mat(arrayfun(@(X) max(abs(squeeze(rawWaveformsFull(X,rawWaveformsPeakChan(X),:))),[],'omitnan') ./...
     %    var(average_baseline_cat(average_baseline_idx_cat==X)),1:nClust,'Uni',0), 'omitnan')';
