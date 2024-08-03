@@ -6,6 +6,8 @@
 
 Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem, evaluating the quality of recorded units and extracting essential electrophysiological properties. Bombcell can replace manual curation or can be used as a tool to aid manual curation. See [this talk](https://www.youtube.com/watch?v=8Gauba3KzvM&list=PLfhWmWntvjl7kljKozClpjS29DoY8V5pB&index=12) at the annual Neuropixels course about quality control.
 
+Please star the project to support us, using the top-right "⭐ Star" button.
+
 ### 📔 Bombcell wiki
 
 Documentation and guides to using and troubleshooting bombcell can be found on the dedicated [wiki](https://github.com/Julie-Fabre/bombcell/wiki).
@@ -52,8 +54,6 @@ If you find Bombcell useful in your work, we kindly request that you cite:
 
 > Julie M.J. Fabre, Enny H. van Beest, Andrew J. Peters, Matteo Carandini, & Kenneth D. Harris. (2023). Bombcell: automated curation and cell classification of spike-sorted electrophysiology data. Zenodo. https://doi.org/10.5281/zenodo.8172821
 
-🌟 You can additionally star this repository using the top-right ⭐ button to help it gain more visibility.
-
 ### :page_facing_up: License
 
 Bombcell is under the open-source [copyleft](https://www.gnu.org/licenses/copyleft.en.html) [GNU General Public License 3](https://www.gnu.org/licenses/gpl-3.0.html). You can run, study, share, and modify the software under the condition that you keep and do not modify the license.
@@ -61,3 +61,4 @@ Bombcell is under the open-source [copyleft](https://www.gnu.org/licenses/copyle
 ### 📬 Contact us
 
 If you run into any issues or if you have any suggestions, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues) or create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request). You can email [us: juliemfabre[at]gmail[dot]com](mailto:juliemfabre@gmail.com), but github issues are preferred.  You can also use the [Neuropixels slack workgroup](https://join.slack.com/t/neuropixelsgroup/shared_invite/zt-2h3sp1nfr-JZrpKWxeVptI0EPbHAoxKA).
+Please star the project to support us, using the top-right "⭐ Star" button.
