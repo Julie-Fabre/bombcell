@@ -162,7 +162,7 @@ else
     end
 
     % get number of peaks and troughs
-    nPeaks = numel(PKS) - (usedMaxBefore + usedMaxAfter);% drop any of the peaks not detected with findpeaks()
+    nPeaks = numel(PKS);% drop any of the peaks not detected with findpeaks()
     nTroughs = numel(TRS);
 
     % (get waveform peak to trough duration)
