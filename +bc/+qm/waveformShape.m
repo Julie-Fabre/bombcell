@@ -134,7 +134,7 @@ else
         [~, troughLoc_forDuration] = min(thisWaveform(peakLoc_forDuration:end)); % to calculate waveform duration
         troughLoc_forDuration = troughLoc_forDuration + peakLoc_forDuration - 1;
     else
-        troughLoc_forDuration = troughLoc(TRS == max(TRS));
+        troughLoc_forDuration = troughLocs(TRS == max(TRS));
         [~, peakLoc_forDuration] = max(thisWaveform(troughLoc_forDuration:end)); % to calculate waveform duration
         peakLoc_forDuration = peakLoc_forDuration + troughLoc_forDuration - 1;
     end
