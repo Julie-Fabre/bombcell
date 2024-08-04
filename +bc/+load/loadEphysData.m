@@ -49,10 +49,10 @@ templateAmplitudes = double(readNPY([ephys_path filesep 'amplitudes.npy'])); % e
 
 % Load and unwhiten templates
 templateWaveforms_whitened = readNPY([ephys_path filesep 'templates.npy']);
-winv = readNPY([ephys_path filesep 'whitening_mat_inv.npy']);
+%winv = readNPY([ephys_path filesep 'whitening_mat_inv.npy']);
 templateWaveforms = zeros(size(templateWaveforms_whitened));
 for t = 1:size(templateWaveforms,1)
-    templateWaveforms(t,:,:) = squeeze(templateWaveforms_whitened(t,:,:))*winv;
+    templateWaveforms(t,:,:) = squeeze(templateWaveforms_whitened(t,:,:));%*winv;
 end
 
 if exist(fullfile([ephys_path filesep  'pc_features.npy']))
@@ -63,7 +63,7 @@ else  % not computed in early kilosort3 version - the distance and drift metrics
     pcFeatureIdx = NaN;
 end 
 channelPositions = readNPY([ephys_path filesep  'channel_positions.npy']) ; 
-goodChannels = readNPY([ephys_path filesep  'channel_map.npy']) + 1;
+%goodChannels = readNPY([ephys_path filesep  'channel_map.npy']) + 1;
 
 
 %% Only use data set of interest - for unit match

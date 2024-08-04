@@ -142,8 +142,17 @@ else
     peakLoc_after = peakLocs_after(mainPeakIdx_after);
 
     % Combine peak information
-    PKS = [PKS_before, PKS_after];
-    peakLocs = [peakLocs_before, peakLocs_after];
+    if usedMaxBefore == 1 
+        PKS =  PKS_after;
+        peakLocs = peakLocs_after;
+    elseif usedMaxAfter == 1
+        PKS = PKS_before;
+        peakLocs = peakLocs_before;
+    else
+        PKS = [PKS_before, PKS_after];
+        peakLocs = [peakLocs_before, peakLocs_after];
+    end
+    
 
     % Determine if the unit is somatic or non-somatic
     if (mainPeak_before * firstPeakRatio > mainPeak_after) || max(TRS) < max(PKS)
@@ -153,7 +162,7 @@ else
     end
 
     % get number of peaks and troughs
-    nPeaks = numel(PKS) - (usedMaxBefore + usedMaxAfter);% drop any of the peaks not detected with findpeaks()
+    nPeaks = numel(PKS);% drop any of the peaks not detected with findpeaks()
     nTroughs = numel(TRS);
 
     % (get waveform peak to trough duration)
