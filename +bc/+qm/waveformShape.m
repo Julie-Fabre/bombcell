@@ -90,18 +90,50 @@ else
     troughLoc = troughLocs(mainTroughIdx);
 
     % Find peaks before and after the trough
-    [PKS_before, peakLocs_before] = findpeaks(squeeze(thisWaveform(1:troughLoc)), 'MinPeakProminence', minProminence);
-    [PKS_after, peakLocs_after] = findpeaks(squeeze(thisWaveform(troughLoc:end)), 'MinPeakProminence', minProminence);
-    peakLocs_after = peakLocs_after + troughLoc - 1;
-
+    if troughLoc > 3 % need at least 3 samples 
+        [PKS_before, peakLocs_before] = findpeaks(squeeze(thisWaveform(1:troughLoc)), 'MinPeakProminence', minProminence);
+    else
+        PKS_before = '';
+    end
+    if size(thisWaveform,2) - troughLoc > 3
+        [PKS_after, peakLocs_after] = findpeaks(squeeze(thisWaveform(troughLoc:end)), 'MinPeakProminence', minProminence);
+        peakLocs_after = peakLocs_after + troughLoc - 1;
+    else
+        PKS_after = '';
+    end
+    
     % If no peaks detected, find the maximum values
     if isempty(PKS_before)
         [PKS_before, peakLocs_before] = max(squeeze(thisWaveform(1:troughLoc)));
+        if numel(PKS_before) > 0 % more than 1, just take first
+            PKS_before = PKS_before(1);
+            peakLocs_before = peakLocs_before(1);
+        end
+        usedMaxBefore = 1;
+    else
+        usedMaxBefore = 0;
     end
     if isempty(PKS_after)
         [PKS_after, temp_loc] = max(squeeze(thisWaveform(troughLoc:end)));
         peakLocs_after = temp_loc + troughLoc - 1;
+        if numel(PKS_after) > 0 % more than 1, just take first
+            PKS_after = PKS_after(1);
+            peakLocs_after = peakLocs_after(1);
+        end
+        usedMaxAfter = 1;
+    else
+        usedMaxAfter = 0;
     end
+
+    % If neither a peak before or after is detected with findpeaks
+    if usedMaxAfter > 0 && usedMaxBefore > 0
+        if PKS_before>PKS_after
+            usedMaxBefore = 0;
+        else
+            usedMaxAfter = 0;
+        end
+    end
+
 
     % Get the main peaks before and after the trough
     [mainPeak_before, mainPeakIdx_before] = max(PKS_before);
@@ -110,12 +142,8 @@ else
     peakLoc_after = peakLocs_after(mainPeakIdx_after);
 
     % Combine peak information
-    PKS = [mainPeak_before, mainPeak_after];
-    peakLocs = [peakLoc_before, peakLoc_after];
-
-    % get number of peaks and troughs
-    nPeaks = numel(PKS);
-    nTroughs = numel(TRS);
+    PKS = [PKS_before, PKS_after];
+    peakLocs = [peakLocs_before, peakLocs_after];
 
     % Determine if the unit is somatic or non-somatic
     if (mainPeak_before * firstPeakRatio > mainPeak_after) || max(TRS) < max(PKS)
@@ -123,6 +151,10 @@ else
     else
         isSomatic = 1; % somatic
     end
+
+    % get number of peaks and troughs
+    nPeaks = numel(PKS) - (usedMaxBefore + usedMaxAfter);% drop any of the peaks not detected with findpeaks()
+    nTroughs = numel(TRS);
 
     % (get waveform peak to trough duration)
     % first assess which peak loc to use
