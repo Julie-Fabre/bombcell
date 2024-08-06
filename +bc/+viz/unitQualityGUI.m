@@ -58,11 +58,11 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, 
             iCluster = multiUnit_idx(find(multiUnit_idx > iCluster, 1, 'first'));
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
-        elseif strcmpi(evnt.Key, 'n') %toggle to next  noise/non-somatic unit
+        elseif strcmpi(evnt.Key, 'n') %toggle to next  noise unit
             iCluster = noiseUnit_idx(find(noiseUnit_idx > iCluster, 1, 'first'));
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
-       elseif strcmpi(evnt.Key, 'a') %toggle to next  noise/non-somatic unit
+       elseif strcmpi(evnt.Key, 'a') %toggle to next  non-somatic unit
             iCluster = nonSomaUnit_idx(find(nonSomaUnit_idx > iCluster, 1, 'first'));
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
                 probeLocation, unitType, uniqueTemps, iChunk, plotRaw);
@@ -329,7 +329,7 @@ if unitType(iCluster) == 1
         ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), single unit'], 'Color', [0, .5, 0]);
 elseif unitType(iCluster) == 0 
     set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
-        ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), noise/non-somatic'], 'Color', [1, 0, 0]);
+        ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), noise'], 'Color', [1, 0, 0]);
 elseif unitType(iCluster) == 2
     set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
         ' (phy ID #: ' num2str(thisUnit-1)  '; qMetric row #: ' num2str(iCluster) '), multi-unit'], 'Color', [1, 0, 1]);
@@ -433,7 +433,7 @@ if param.extractRaw
                 (ephysData.channel_positions(maxChan, 2) ));
 
     for iChanToPlot = 1:min(20, size(chansToPlotRaw, 1))
-        if maxChan == chansToPlotRaw(iChanToPlot)
+        if maxChan + diff([maxChan, maxChanRaw]) == chansToPlotRaw(iChanToPlot)
             vals(iChanToPlot,:) = -squeeze(rawWaveforms.average(iCluster, chansToPlotRaw(iChanToPlot), :))'+ ...
                 (ephysData.channel_positions(chansToPlotRaw(iChanToPlot), 2) .*10) ./ scalingFactor;
             set(guiData.maxRawWaveformLines, 'XData', (ephysData.waveform_t + ...

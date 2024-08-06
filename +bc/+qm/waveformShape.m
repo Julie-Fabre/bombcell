@@ -142,10 +142,10 @@ else
     peakLoc_after = peakLocs_after(mainPeakIdx_after);
 
     % Combine peak information
-    if usedMaxBefore == 1 
+    if usedMaxBefore == 1 && mainPeak_before < minProminence*0.9
         PKS =  PKS_after;
         peakLocs = peakLocs_after;
-    elseif usedMaxAfter == 1
+    elseif usedMaxAfter == 1 && mainPeak_after < minProminence*0.9
         PKS = PKS_before;
         peakLocs = peakLocs_before;
     else
