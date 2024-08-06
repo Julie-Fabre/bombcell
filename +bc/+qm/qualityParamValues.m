@@ -72,6 +72,7 @@ param.probeType = 1; % if you are using spikeGLX and your meta file does
     % For additional probe types, make a pull request with more
     % information.  If your spikeGLX meta file contains information about your probe
     % type, or if you are using open ephys, this paramater wil be ignored.
+param.computeSpatialDecay = 1;
 
 % signal to noise ratio
 if kilosortVersion == 4

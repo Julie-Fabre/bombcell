@@ -43,8 +43,12 @@ unitType = nan(length(qMetric.percentageSpikesMissing_gaussian), 1);
 %% Classify units
 % Classify noise units
 unitType(isnan(qMetric.nPeaks) | qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | ...
-    qMetric.spatialDecaySlope > param.minSpatialDecaySlope | qMetric.waveformDuration_peakTrough < param.minWvDuration | ...
+    qMetric.waveformDuration_peakTrough < param.minWvDuration | ...
     qMetric.waveformDuration_peakTrough > param.maxWvDuration | qMetric.waveformBaselineFlatness > param.maxWvBaselineFraction) = 0; % NOISE
+
+if param.computeSpatialDecay == 1
+    unitType(qMetric.spatialDecaySlope > param.minSpatialDecaySlope) = 0; % NOISE
+end
 
 % Classify mua units
 unitType((qMetric.percentageSpikesMissing_gaussian > param.maxPercSpikesMissing | qMetric.nSpikes < param.minNumSpikes | ...

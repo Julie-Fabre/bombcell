@@ -27,6 +27,8 @@ defaultValues.recomputeDuplicateSpikes = 0;
 defaultValues.detrendWaveform = 0;
 defaultValues.extractRaw = 1;
 
+defaultValues.computeSpatialDecay = 1;
+
 % amplitude 
 defaultValues.gain_to_uV = NaN;
 
