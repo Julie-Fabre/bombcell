@@ -141,7 +141,7 @@ else
         rawWaveforms(iCluster).spkMapMean = nanmean(rawWaveforms(iCluster).spkMap, 3); % initialize and pre-allocate
         rawWaveformsFull(iCluster, :, :) = rawWaveforms(iCluster).spkMapMean - ...
             mean(rawWaveforms(iCluster).spkMapMean(:, 1:param.waveformBaselineNoiseWindow), 2); % remove baseline
-        spkMapMean_sm = smoothdata(rawWaveformsFull(iCluster, :, :), 2, 'gaussian', 5); % smooth along dimension 2 (time)
+        spkMapMean_sm = smoothdata(rawWaveforms(iCluster).spkMapMean, 2, 'gaussian', 5); % smooth along dimension 2 (time)
 
         [~, rawWaveformsPeakChan(iCluster)] = max(max(spkMapMean_sm, [], 2) - min(spkMapMean_sm, [], 2)); % maximum channel per cluster 
         average_baseline{iCluster} = squeeze(nanmean(rawWaveforms(iCluster).spkMap(rawWaveformsPeakChan(iCluster),...
