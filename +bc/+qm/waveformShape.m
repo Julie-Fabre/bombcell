@@ -78,12 +78,18 @@ else
     minProminence = minThreshDetectPeaksTroughs * max(abs(squeeze(thisWaveform)));
 
     % Detect trough
-    [TRS, troughLocs] = findpeaks(squeeze(thisWaveform)*-1, 'MinPeakProminence', minProminence);
+    [TRS, troughLocs, widthTrough, prominence] = findpeaks(squeeze(thisWaveform)*-1, 'MinPeakProminence', minProminence);
+    
+    if length(widthTrough) > 1
+       maxPeak = find(prominence == max(prominence));
+       widthTrough = widthTrough(maxPeak);
+    end
 
     % If no trough detected, find the minimum
     if isempty(TRS)
         [TRS, troughLocs] = min(squeeze(thisWaveform));
         nTroughs = 1;
+        widthTrough = NaN;
     else
         nTroughs = numel(TRS);
     end
@@ -196,7 +202,7 @@ else
     
 
     % Determine if the unit is somatic or non-somatic
-    if (mainPeak_before * firstPeakRatio > mainPeak_after && width_before < 4 && usedMaxBefore == 0 && mainPeak_before * 5 > max(TRS)) || ...
+    if (mainPeak_before * firstPeakRatio > mainPeak_after && width_before < 4 && usedMaxBefore == 0 && mainPeak_before * 10 > max(TRS) && widthTrough < 5) || ...
         max(TRS) < max(PKS) || ...
         (mainPeak_after < mainPeak_before && usedMaxBefore == 0)
         isSomatic = 0; % non-somatic
