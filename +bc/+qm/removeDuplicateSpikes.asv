@@ -28,12 +28,6 @@ if removeDuplicateSpikes_flag
         % initialize and re-allocate
         duplicateSpikes_idx = false(1, numSpikes_full);
 
-        % Rename the spike templates according to the remaining templates
-        good_templates_idx = unique(spikeTemplates);
-        new_spike_idx = nan(max(spikeTemplates), 1);
-        new_spike_idx(good_templates_idx) = 1:length(good_templates_idx);
-        spikeTemplates_flat = new_spike_idx(spikeTemplates);
-
         % check for duplicate spikes in batches
         for start_idx = 1:batch_size - overlap_size:numSpikes_full
             end_idx = min(start_idx+batch_size-1, numSpikes_full);
@@ -43,7 +37,7 @@ if removeDuplicateSpikes_flag
 
             [~, ~, batch_removeIdx] = removeDuplicates(batch_spikeTimes_samples, ...
                 batch_spikeTemplates, batch_templateAmplitudes, duplicateSpikeWindow_samples, ...
-                maxChannels, spikeTemplates_flat);
+                maxChannels);
 
             duplicateSpikes_idx(start_idx:end_idx) = batch_removeIdx;
 
@@ -98,7 +92,7 @@ end
 
 
     function [spikeTimes_samples, spikeTemplates, removeIdx] = removeDuplicates(spikeTimes_samples, ...
-            spikeTemplates, templateAmplitudes, duplicateSpikeWindow_samples, maxChannels, spikeTemplates_flat)
+            spikeTemplates, templateAmplitudes, duplicateSpikeWindow_samples, maxChannels)
         numSpikes = length(spikeTimes_samples);
         removeIdx = false(1, numSpikes);
 
@@ -112,7 +106,7 @@ end
                 if removeIdx(iSpike2)
                     continue;
                 end
-                if maxChannels(spikeTemplates_flat(iSpike2)) ~= maxChannels(spikeTemplates_flat(iSpike1)) % spikes are not on same channel
+                if maxChannels(spikeTemplates(iSpike2)) ~= maxChannels(spikeTemplates(iSpike1)) % spikes are not on same channel
                     continue;
                 end
 
@@ -143,7 +137,7 @@ end
                 if removeIdx(iSpike2)
                     continue;
                 end
-                if maxChannels(spikeTemplates_flat(iSpike2)) ~= maxChannels(spikeTemplates_flat(iSpike1)) % spikes are not on same channel
+                if maxChannels(spikeTemplates(iSpike2)) ~= maxChannels(spikeTemplates(iSpike1)) % spikes are not on same channel
                     continue;
                 end
 
