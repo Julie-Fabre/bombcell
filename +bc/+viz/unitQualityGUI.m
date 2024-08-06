@@ -404,6 +404,13 @@ for iChanToPlot = 1:min(20, size(chansToPlot, 1))
     end
 end
 ylim(guiData.tempYLim, [min(min(vals,[],2)).*0.95, max(max(vals,[],2))]) % space for legend
+
+if any(~isnan(qMetric.spatialDecaySlope))
+    param.computeSpatialDecay = 1;
+else
+    param.computeSpatialDecay = 0;
+end
+
 if param.computeSpatialDecay
     tempWvTitleText = ['\\fontsize{9}Template waveform: {\\color[rgb]{%s}# detected peaks/troughs, ', newline, ...
         '\\color[rgb]{%s}is somatic,  \\color[rgb]{%s}spatial decay, \\color[rgb]{%s}baseline flatness, ' newline, ...
