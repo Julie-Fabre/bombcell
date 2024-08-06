@@ -102,7 +102,7 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
 
 
     if plotThis
-
+theseISI = diff(theseSpikeTimes);
         subplot(2, length(timeChunks)-1, (length(timeChunks) - 1)+iTimeChunk)
         theseisiclean = isisChunk(theseISI >= tauC); % removed duplicate spikes
         [isiProba, edgesISI] = histcounts(theseisiclean*1000, [0:0.5:10]);
