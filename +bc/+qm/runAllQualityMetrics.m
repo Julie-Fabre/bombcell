@@ -74,6 +74,9 @@ forGUI = struct;
 % check parameter values
 param = bc.qm.checkParameterFields(param);
 
+% check if probe geometry allows for spatial decay computation 
+param.computeSpatialDecay = bc.qm.checkProbeGeometry(channelPositions);
+
 % get unit max channels
 maxChannels = bc.qm.helpers.getWaveformMaxChannel(templateWaveforms);
 
@@ -159,7 +162,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
         forGUI.spatialDecayPoints(iUnit, :), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), ... .
         forGUI.tempWv(iUnit, :)] = bc.qm.waveformShape(templateWaveforms, thisUnit, qMetric.maxChannels(thisUnit), ...
         param.ephys_sample_rate, channelPositions, param.maxWvBaselineFraction, waveformBaselineWindow, ...
-        param.minThreshDetectPeaksTroughs, param.firstPeakRatio, param.normalizeSpDecay, param.plotDetails); %do we need tempWv ?
+        param.minThreshDetectPeaksTroughs, param.firstPeakRatio, param.normalizeSpDecay, param.computeSpatialDecay, param.plotDetails); %do we need tempWv ?
     
     %% amplitude
     if param.extractRaw

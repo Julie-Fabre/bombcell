@@ -163,16 +163,18 @@ if param.plotGlobal
             ylabel('norm. unit count')
             xlabel(['mean raw waveform', newline, ' peak amplitude (uV)'])
         end
-
-        subplot(4, 5, 10)
-        hold on;
-        rectangle('Position', [min(qMetric.spatialDecaySlope), 0, abs(param.minSpatialDecaySlope -min(qMetric.spatialDecaySlope)), 1], 'FaceColor', [0, .5, 0, 0.2])
-        histogram(qMetric.spatialDecaySlope, 'FaceColor', colorMtx(10, 1:3), 'FaceAlpha', colorMtx(10, 4), 'BinEdges',...
-            [min(qMetric.spatialDecaySlope):(max(qMetric.spatialDecaySlope) - min(qMetric.spatialDecaySlope))./10:max(qMetric.spatialDecaySlope)], 'Normalization', 'probability');
-        yLim = ylim;
-        line([param.minSpatialDecaySlope, param.minSpatialDecaySlope], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        ylabel('norm. unit count')
-        xlabel(['spatial decay', newline, 'slope'])
+        
+        if param.computeSpatialDecay == 1
+            subplot(4, 5, 10)
+            hold on;
+            rectangle('Position', [min(qMetric.spatialDecaySlope), 0, abs(param.minSpatialDecaySlope -min(qMetric.spatialDecaySlope)), 1], 'FaceColor', [0, .5, 0, 0.2])
+            histogram(qMetric.spatialDecaySlope, 'FaceColor', colorMtx(10, 1:3), 'FaceAlpha', colorMtx(10, 4), 'BinEdges',...
+                [min(qMetric.spatialDecaySlope):(max(qMetric.spatialDecaySlope) - min(qMetric.spatialDecaySlope))./10:max(qMetric.spatialDecaySlope)], 'Normalization', 'probability');
+            yLim = ylim;
+            line([param.minSpatialDecaySlope, param.minSpatialDecaySlope], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+            ylabel('norm. unit count')
+            xlabel(['spatial decay', newline, 'slope'])
+        end
 
         subplot(4, 5, 11)
         hold on;
