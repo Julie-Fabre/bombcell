@@ -62,7 +62,7 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
         numViolations = sum(isisChunk <= tauR(iTauR_value) & isisChunk > tauC); % number of observed violations
 
         % Calculate the value under the square root
-        underRoot = 1 - numViolations * durationChunk / (N_chunk^2 * (tauR(iTauR_value) - tauC));
+        underRoot = 1 - numViolations / (N_chunk^2 * (tauR(iTauR_value) - tauC));
 
         % Check if the value is non-negative
         if underRoot >= 0

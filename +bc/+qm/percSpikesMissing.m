@@ -92,7 +92,7 @@ for iTimeChunk = 1:numel(timeChunks) - 1
         %'MaxFunctionEvaluations', 5000);%'MaxFunctionEvaluations', 10000, 'MaxIterations', 1000);
         lb = [];
         ub = [];
-        fitOutput = lsqcurvefit(f, p0, double(ampliBin_gaussian), spikeCountsPerAmpliBin_gaussian, lb, ub, options); %QQ need to look into local minimum error that sometimes happens
+        fitOutput = lsqcurvefit(f, double(p0), double(ampliBin_gaussian), spikeCountsPerAmpliBin_gaussian, lb, ub, options); %QQ need to look into local minimum error that sometimes happens
 
         %norm area calculated by fit parameters
 
