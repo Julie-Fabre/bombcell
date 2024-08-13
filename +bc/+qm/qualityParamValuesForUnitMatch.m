@@ -154,7 +154,7 @@ paramBC.maxRPVviolations = 0.1; % fraction
 paramBC.maxPercSpikesMissing = 20; % Percentage
 paramBC.minNumSpikes = 300; % nr spikes
 paramBC.maxDrift = 100;
-paramBC.minPresenceRatio = 0.7;
+paramBC.minPresenceRatio = 0.1;
 paramBC.minSNR = 0.1;
 
 end
