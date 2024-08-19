@@ -39,6 +39,9 @@ defaultValues.unitType_for_phy = 0;
 % separate good from mua in non-somatic
 defaultValues.splitGoodAndMua_NonSomatic = 0;
 
+% refactory period violations
+defaultValues.hillOrLlobetMethod = 1;
+
 % waveforms: first peak (before trough) to second peak (after trough) ratio
 defaultValues.firstPeakRatio = 0; % if units have an initial peak before the trough,
     % it must be at least firstPeakRatio times larger than the peak after
@@ -47,6 +50,10 @@ defaultValues.firstPeakRatio = 0; % if units have an initial peak before the tro
 defaultValues.normalizeSpDecay = 0;% whether to normalize spatial decay points relative to 
 % maximum - this makes the spatrial decay slop calculation more invariant to the 
 % spike-sorting algorithm used
+defaultValues.minWidthFirstPeak = 0; % in samples
+defaultValues.minMainPeakToTroughRatio = Inf;
+defaultValues.minWidthMainTrough = 0; % in samples
+
 %% Check for missing fields and add them with default value
 [param_complete, missingFields] = bc.qm.addMissingFieldsWithDefault(param, defaultValues);
 

@@ -8,10 +8,11 @@ function [waveformDuration_peakTrough, halfWidth, peakTroughRatio, firstPeakTrou
 plotThis = false;
 baselineThresh = NaN;
 waveformBaselineWindow = NaN;
+computeSpatialDecay = false;
 [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_peakTrough, ...
     ~, ~, ~, thisWaveform] = bc.qm.waveformShape(templateWaveforms, ...
     thisUnit, maxChannel, ephys_sample_rate, channelPositions, baselineThresh, ...
-    waveformBaselineWindow, minThreshDetectPeaksTroughs, firstPeakRatio, normalizeSpDecay, plotThis);
+    waveformBaselineWindow, minThreshDetectPeaksTroughs, firstPeakRatio, normalizeSpDecay, computeSpatialDecay, plotThis);
 
 if ~isnan(nPeaks) && ~isnan(nTroughs)
 

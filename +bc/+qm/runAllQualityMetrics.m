@@ -106,7 +106,6 @@ end
 fprintf('\n Extracting quality metrics from %s ... \n', param.rawFile)
 
 for iUnit = 1:size(uniqueTemplates, 1)
-
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
     % get this unit's attributes
     thisUnit = uniqueTemplates(iUnit);
@@ -124,8 +123,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
     %% fraction contamination (false positives)
     tauR_window = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
     [fractionRPVs, ~, ~] = bc.qm.fractionRPviolations(theseSpikeTimes, theseAmplis, ...
-        tauR_window, param.tauC, ...
-        timeChunks, param.plotDetails, NaN);
+        tauR_window, param.tauC, timeChunks, param.plotDetails, NaN, param.hillOrLlobetMethod);
 
     %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
     [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), ...
@@ -142,7 +140,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
         thisUnits_timesToUse, param.plotDetails);
 
     [qMetric.fractionRPVs(iUnit, :), ~, ~] = bc.qm.fractionRPviolations(theseSpikeTimes, theseAmplis, ...
-        tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails, qMetric.RPV_tauR_estimate(iUnit));
+        tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails, qMetric.RPV_tauR_estimate(iUnit), param.hillOrLlobetMethod);
 
     %% presence ratio (potential false negatives)
     [qMetric.presenceRatio(iUnit)] = bc.qm.presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
@@ -162,7 +160,8 @@ for iUnit = 1:size(uniqueTemplates, 1)
         forGUI.spatialDecayPoints(iUnit, :), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), ... .
         forGUI.tempWv(iUnit, :)] = bc.qm.waveformShape(templateWaveforms, thisUnit, qMetric.maxChannels(thisUnit), ...
         param.ephys_sample_rate, channelPositions, param.maxWvBaselineFraction, waveformBaselineWindow, ...
-        param.minThreshDetectPeaksTroughs, param.firstPeakRatio, param.normalizeSpDecay, param.computeSpatialDecay, param.plotDetails); %do we need tempWv ?
+        param.minThreshDetectPeaksTroughs, param.firstPeakRatio, param.normalizeSpDecay, param.computeSpatialDecay, ...
+        param.minWidthFirstPeak, param.minMainPeakToTroughRatio, param.minWidthMainTrough, param.plotDetails); %do we need tempWv ?
     
     %% amplitude
     if param.extractRaw
