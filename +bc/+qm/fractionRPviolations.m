@@ -59,10 +59,10 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
 
     % total times at which refractory period violations can occur
     for iTauR_value = 1:length(tauR)
-        numViolations = sum(isisChunk <= tauC & isisChunk > tauR(iTauR_value)); % number of observed violations
+        numViolations = sum(isisChunk > tauC & isisChunk <= tauR(iTauR_value)); % number of observed violations
 
         % Calculate the value under the square root
-        underRoot = 1 - numViolations * durationChunk / (N_chunk^2 * (tauC - tauR(iTauR_value)));
+        underRoot = 1 - (numViolations * durationChunk) / (N_chunk^2 * (tauR(iTauR_value) - tauC));
         
         % RPV rate
         RPVrate(iTimeChunk, iTauR_value) = 1 - sqrt(underRoot);
