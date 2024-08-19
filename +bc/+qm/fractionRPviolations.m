@@ -59,18 +59,14 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
 
     % total times at which refractory period violations can occur
     for iTauR_value = 1:length(tauR)
-        numViolations = sum(isisChunk <= tauR(iTauR_value) & isisChunk > tauC); % number of observed violations
+        numViolations = sum(isisChunk <= tauC & isisChunk > tauR(iTauR_value)); % number of observed violations
 
         % Calculate the value under the square root
-        underRoot = 1 - numViolations * durationChunk / (N_chunk^2 * (tauR(iTauR_value) - tauC));
+        underRoot = 1 - numViolations * durationChunk / (N_chunk^2 * (tauC - tauR(iTauR_value)));
+        
+        % RPV rate
+        RPVrate(iTimeChunk, iTauR_value) = 1 - sqrt(underRoot);
 
-        % Check if the value is non-negative
-        if underRoot >= 0
-            RPVrate(iTimeChunk, iTauR_value) = 1 - sqrt(underRoot);
-        else
-            % Handle the case where the value is negative
-            RPVrate(iTimeChunk, iTauR_value) = 1; % set to 1
-        end
 
 
         % below is previous calculation. changed on 16/07/2024
@@ -102,7 +98,7 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
 
 
     if plotThis
-
+theseISI = diff(theseSpikeTimes);
         subplot(2, length(timeChunks)-1, (length(timeChunks) - 1)+iTimeChunk)
         theseisiclean = isisChunk(theseISI >= tauC); % removed duplicate spikes
         [isiProba, edgesISI] = histcounts(theseisiclean*1000, [0:0.5:10]);
