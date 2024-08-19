@@ -110,16 +110,18 @@ else
         [PKS_before, peakLocs_before, width_before, prominence] = findpeaks(squeeze(thisWaveform(1:troughLoc)), 'MinPeakProminence', minProminence);
         if length(width_before) > 1
             maxPeak = find(prominence == max(prominence));
+            maxPeak = maxPeak(1);
             width_before = width_before(maxPeak);
         end
     else
         PKS_before = '';
     end
     if size(thisWaveform, 2) - troughLoc > 3
-        [PKS_after, peakLocs_after, width_after] = findpeaks(squeeze(thisWaveform(troughLoc:end)), 'MinPeakProminence', minProminence);
+        [PKS_after, peakLocs_after, width_after, prominence] = findpeaks(squeeze(thisWaveform(troughLoc:end)), 'MinPeakProminence', minProminence);
         peakLocs_after = peakLocs_after + troughLoc - 1;
         if length(width_after) > 1
             maxPeak = find(prominence == max(prominence));
+            maxPeak = maxPeak(1);
             width_after = width_after(maxPeak);
         end
     else
@@ -136,6 +138,7 @@ else
         end
         if length(PKS_before) > 1
             maxPeak = find(prominence == max(prominence));
+            maxPeak = maxPeak(1);
             peakLocs_before = peakLocs_before(maxPeak);
             PKS_before = PKS_before(maxPeak);
             width_before = width_before(maxPeak);
@@ -163,6 +166,7 @@ else
         end
         if length(PKS_after) > 1
             maxPeak = find(prominence == max(prominence));
+            maxPeak = maxPeak(1);
             peakLocs_after = peakLocs_after(maxPeak);
             PKS_after = PKS_after(maxPeak);
             width_after = width_after(maxPeak);
@@ -197,10 +201,10 @@ else
     peakLoc_after = peakLocs_after(mainPeakIdx_after);
 
     % Combine peak information
-    if usedMaxBefore == 1 && mainPeak_before < minProminence * 0.5
+    if usedMaxBefore == 1 && mainPeak_before(1) < minProminence * 0.5
         PKS = PKS_after;
         peakLocs = peakLocs_after;
-    elseif usedMaxAfter == 1 && mainPeak_after < minProminence * 0.5
+    elseif usedMaxAfter == 1 && mainPeak_after(1) < minProminence * 0.5
         PKS = PKS_before;
         peakLocs = peakLocs_before;
     else
@@ -210,10 +214,10 @@ else
 
 
     % Determine if the unit is somatic or non-somatic
-    if (mainPeak_before * firstPeakRatio > mainPeak_after && width_before < minWidthFirstPeak && usedMaxBefore == 0 &&...
-            mainPeak_before * minMainPeakToTroughRatio > max(TRS) && widthTrough < minWidthMainTrough) || ...
+    if (mainPeak_before(1) * firstPeakRatio > mainPeak_after(1) && width_before < minWidthFirstPeak && usedMaxBefore == 0 &&...
+            mainPeak_before(1) * minMainPeakToTroughRatio > max(TRS) && widthTrough < minWidthMainTrough) || ...
             max(TRS) < max(PKS) || ...
-            (mainPeak_after < mainPeak_before && usedMaxBefore == 0)
+            (mainPeak_after(1) < mainPeak_before(1) && usedMaxBefore == 0)
         isSomatic = 0; % non-somatic
     else
         isSomatic = 1; % somatic
