@@ -1,8 +1,6 @@
 function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_peakTrough, ...
     spatialDecayPoints, spatialDecaySlope, waveformBaseline, thisWaveform] = waveformShape(templateWaveforms, ...
-    thisUnit, maxChannel, ephys_sample_rate, channelPositions, baselineThresh, ...
-    waveformBaselineWindow, minThreshDetectPeaksTroughs, firstPeakRatio, normalizeSpDecay, computeSpatialDecay, ...
-    minWidthFirstPeak, minMainPeakToTroughRatio, minWidthMainTrough, plotThis)
+    thisUnit, maxChannel, param, channelPositions, waveformBaselineWindow)
 % JF
 % Get the number of troughs and peaks for each waveform,
 % determine whether waveform is likely axonal/dendritic (biggest peak before
@@ -20,16 +18,22 @@ function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_pe
 %   template waveforms for each template and channel
 % thisUnit: 1 x 1 double vector, current unit number
 % maxChannel:  1 x 1 double vector, channel with maximum template waveform current unit number
-% ephys_sample_rate: recording sampling rate, in samples per second (eg 30 000)
+% param: structure with fields:
+% - ephys_sample_rate: recording sampling rate, in samples per second (eg 30 000)
+% - baselineThresh: 1 x 1 double vector, minimum baseline value over which
+%   units are classified as noise, only needed if plotThis is set to true
+% - minThreshDetectPeaksTroughs:  QQ describe
+% - firstPeakRatio: 1 x 1 double. if units have an initial peak before the trough,
+%   it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit.
+% - normalizeSpDecay
+% - computeSpatialDecay
+% - minWidthFirstPeak
+% - param.minMainPeakToTroughRatio
+% - minWidthMainTrough
+% - plotThis: boolean, whether to plot waveform and detected peaks or not
 % channelPositions: [nChannels, 2] double matrix with each row giving the x
 %   and y coordinates of that channel, only needed if plotThis is set to true
-% baselineThresh: 1 x 1 double vector, minimum baseline value over which
-%   units are classified as noise, only needed if plotThis is set to true
 % waveformBaselineWindow: QQ describe
-% minThreshDetectPeaksTroughs:  QQ describe
-% firstPeakRatio: 1 x 1 double. if units have an initial peak before the trough,
-%   it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit.
-% plotThis: boolean, whether to plot waveform and detected peaks or not
 % ------
 % Outputs
 % ------
@@ -76,7 +80,7 @@ else
     end
 
     % Set minimum threshold for peak/trough detection
-    minProminence = minThreshDetectPeaksTroughs * max(abs(squeeze(thisWaveform)));
+    minProminence = param.minThreshDetectPeaksTroughs * max(abs(squeeze(thisWaveform)));
 
     % Detect trough
     [TRS, troughLocs, widthTrough, prominence] = findpeaks(squeeze(thisWaveform)*-1, 'MinPeakProminence', minProminence);
@@ -214,8 +218,8 @@ else
 
 
     % Determine if the unit is somatic or non-somatic
-    if (mainPeak_before(1) * firstPeakRatio > mainPeak_after(1) && width_before < minWidthFirstPeak && usedMaxBefore == 0 &&...
-            mainPeak_before(1) * minMainPeakToTroughRatio > max(TRS) && widthTrough < minWidthMainTrough) || ...
+    if (mainPeak_before(1) * param.firstPeakRatio > mainPeak_after(1) && width_before < param.minWidthFirstPeak && usedMaxBefore == 0 &&...
+            mainPeak_before(1) * param.minMainPeakToTroughRatio > max(TRS) && widthTrough < param.minWidthMainTrough) || ...
             max(TRS) < max(PKS) || ...
             (mainPeak_after(1) < mainPeak_before(1) && usedMaxBefore == 0)
         isSomatic = 0; % non-somatic
@@ -244,7 +248,7 @@ else
 
     % waveform duration in microseconds
     if ~isempty(troughLoc) && ~isempty(peakLoc_forDuration)
-        waveformDuration_peakTrough = 1e6 * abs(troughLoc_forDuration-peakLoc_forDuration) / ephys_sample_rate; %in us
+        waveformDuration_peakTrough = 1e6 * abs(troughLoc_forDuration-peakLoc_forDuration) / param.ephys_sample_rate; %in us
     else
         waveformDuration_peakTrough = NaN;
     end
@@ -252,7 +256,7 @@ else
     % (get waveform spatial decay accross channels)
     linearFit = 1;
     [spatialDecaySlope, spatialDecayFit, spatialDecayPoints, spatialDecayPoints_loc, estimatedUnitXY] = ...
-        bc.qm.helpers.getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit, normalizeSpDecay, computeSpatialDecay);
+        bc.qm.helpers.getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit, param.normalizeSpDecay, param.computeSpatialDecay);
 
 
     % (get waveform baseline fraction)
@@ -264,7 +268,7 @@ else
     end
 
     % (plot waveform)
-    if plotThis
+    if param.plotDetails
 
         colorMtx = bc.viz.colors(8);
 
@@ -290,7 +294,7 @@ else
         chanDistances = ((channelPositions(:, 1) - maxXC).^2 ...
             +(channelPositions(:, 2) - maxYC).^2).^0.5;
         chansToPlot = find(chanDistances < 70);
-        wvTime = 1e3 * ((0:size(thisWaveform, 2) - 1) / ephys_sample_rate);
+        wvTime = 1e3 * ((0:size(thisWaveform, 2) - 1) / param.ephys_sample_rate);
         max_value = max(max(abs(squeeze(templateWaveforms(thisUnit, :, chansToPlot))))) * 5;
         for iChanToPlot = 1:min(20, size(chansToPlot, 1))
 
@@ -313,14 +317,14 @@ else
                 % plot baseline lines
                 l1 = line([(wvTime(waveformBaselineWindow(1)) + (channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
                     (wvTime(waveformBaselineWindow(2)) + (channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10)], ...
-                    [baselineThresh * -max(abs(thisWaveform))' + ...
-                    (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value), baselineThresh * -max(abs(thisWaveform))' + ...
+                    [param.baselineThresh * -max(abs(thisWaveform))' + ...
+                    (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value), param.baselineThresh * -max(abs(thisWaveform))' + ...
                     (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value)], 'Color', colorMtx(4, :, :));
 
                 line([(wvTime(waveformBaselineWindow(1)) + (channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
                     (wvTime(waveformBaselineWindow(2)) + (channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10)], ...
-                    [-baselineThresh * -max(abs(thisWaveform))' + ...
-                    (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value), -baselineThresh * -max(abs(thisWaveform))' + ...
+                    [-param.baselineThresh * -max(abs(thisWaveform))' + ...
+                    (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value), -param.baselineThresh * -max(abs(thisWaveform))' + ...
                     (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value)], 'Color', colorMtx(4, :, :));
 
                 % plot waveform duration

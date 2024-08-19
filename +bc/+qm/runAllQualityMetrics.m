@@ -118,18 +118,18 @@ for iUnit = 1:size(uniqueTemplates, 1)
     
     %% percentage spikes missing (false negatives)
     [percentageSpikesMissing_gaussian, percentageSpikesMissing_symmetric, ksTest_pValue, ~, ~, ~] = ...
-        bc.qm.percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails);
+        bc.qm.percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param);
 
     %% fraction contamination (false positives)
     tauR_window = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
     [fractionRPVs, ~, ~] = bc.qm.fractionRPviolations(theseSpikeTimes, theseAmplis, ...
-        tauR_window, param.tauC, timeChunks, param.plotDetails, NaN, param.hillOrLlobetMethod);
+        tauR_window, param, timeChunks, NaN);
 
     %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
     [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), ...
         qMetric.RPV_tauR_estimate(iUnit)] = bc.qm.defineTimechunksToKeep( ...
-        percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
-        param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect
+        percentageSpikesMissing_gaussian, fractionRPVs, param,...
+        theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect
 
     %% re-compute percentage spikes missing and fraction contamination on timechunks
     thisUnits_timesToUse = [qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)];
@@ -137,18 +137,18 @@ for iUnit = 1:size(uniqueTemplates, 1)
     [qMetric.percentageSpikesMissing_gaussian(iUnit), qMetric.percentageSpikesMissing_symmetric(iUnit), ...
         qMetric.ksTest_pValue(iUnit), forGUI.ampliBinCenters{iUnit}, forGUI.ampliBinCounts{iUnit}, ...
         forGUI.ampliGaussianFit{iUnit}] = bc.qm.percSpikesMissing(theseAmplis, theseSpikeTimes, ...
-        thisUnits_timesToUse, param.plotDetails);
+        thisUnits_timesToUse, param);
 
     [qMetric.fractionRPVs(iUnit, :), ~, ~] = bc.qm.fractionRPviolations(theseSpikeTimes, theseAmplis, ...
-        tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails, qMetric.RPV_tauR_estimate(iUnit), param.hillOrLlobetMethod);
+        tauR_window, param, thisUnits_timesToUse, qMetric.RPV_tauR_estimate(iUnit));
 
     %% presence ratio (potential false negatives)
     [qMetric.presenceRatio(iUnit)] = bc.qm.presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
-        qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param.plotDetails);
+        qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param);
 
     %% maximum cumulative drift estimate
     [qMetric.maxDriftEstimate(iUnit), qMetric.cumDriftEstimate(iUnit)] = bc.qm.maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...
-        theseSpikeTimes, channelPositions(:, 2), thisUnit, param.driftBinSize, param.computeDrift, param.plotDetails);
+        theseSpikeTimes, channelPositions(:, 2), thisUnit, param);
 
     %% number spikes
     qMetric.nSpikes(iUnit) = bc.qm.numberSpikes(theseSpikeTimes);
@@ -159,9 +159,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
         forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), ...
         forGUI.spatialDecayPoints(iUnit, :), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), ... .
         forGUI.tempWv(iUnit, :)] = bc.qm.waveformShape(templateWaveforms, thisUnit, qMetric.maxChannels(thisUnit), ...
-        param.ephys_sample_rate, channelPositions, param.maxWvBaselineFraction, waveformBaselineWindow, ...
-        param.minThreshDetectPeaksTroughs, param.firstPeakRatio, param.normalizeSpDecay, param.computeSpatialDecay, ...
-        param.minWidthFirstPeak, param.minMainPeakToTroughRatio, param.minWidthMainTrough, param.plotDetails); %do we need tempWv ?
+        param, channelPositions, waveformBaselineWindow); %do we need tempWv ?
     
     %% amplitude
     if param.extractRaw
@@ -175,9 +173,10 @@ for iUnit = 1:size(uniqueTemplates, 1)
     %% distance metrics
     if param.computeDistanceMetrics
         [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit), ...
-            forGUI.unit_mahal_counts{iUnit}, forGUI.unit_mahal_edges{iUnit}, forGUI.noise_mahal_counts{iUnit}, forGUI.unit_mahal_edges{iUnit}] = bc.qm.getDistanceMetrics(pcFeatures, ...
+            forGUI.unit_mahal_counts{iUnit}, forGUI.unit_mahal_edges{iUnit}, forGUI.noise_mahal_counts{iUnit},...
+            forGUI.unit_mahal_edges{iUnit}] = bc.qm.getDistanceMetrics(pcFeatures, ...
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
-            param.nChannelsIsoDist, param.plotDetails); 
+            param); 
 
     end
 
