@@ -1,5 +1,5 @@
 function [theseSpikeTimes, theseAmplis, theseSpikeTemplates, useThisTimeStart, useThisTimeStop, useTauR] = defineTimechunksToKeep(percSpikesMissing, ...
-    fractionRPVs, maxPercSpikesMissing, maxfractionRPVs, theseAmplis, theseSpikeTimes, theseSpikeTemplates, timeChunks)
+    fractionRPVs, param, theseAmplis, theseSpikeTimes, theseSpikeTemplates, timeChunks)
 % JF
 % define time chunks where the current unit has low refractory period violations and
 % estimated percent spikes missing
@@ -10,8 +10,9 @@ function [theseSpikeTimes, theseAmplis, theseSpikeTemplates, useThisTimeStart, u
 %   unit, for each time chunk
 % fractionRPVs: estimated percentage of spikes missing for the current
 %   unit, for each time chunk
-% maxPercSpikesMissing
-% maxfractionRPVs
+% param: structure withg fields:
+% - maxPercSpikesMissing
+% - maxfractionRPVs
 % theseAmplis: current unit spike-to-template scaling factors
 % theseSpikeTimes: current unit spike times
 % theseSpikeTemplates:  nSpikes × 1 uint32 vector giving the identity of each
@@ -39,7 +40,7 @@ sumRPV = sum(fractionRPVs, 1);
 useTauR = find(sumRPV == min(sumRPV), 1, 'last');
 
 % Identify time chunks that meet the criteria for low missing spikes and RPVs
-useTheseTimes_temp = find(percSpikesMissing < maxPercSpikesMissing & fractionRPVs(:, useTauR) < maxfractionRPVs);
+useTheseTimes_temp = find(percSpikesMissing < param.maxPercSpikesMissing & fractionRPVs(:, useTauR) < param.maxRPVviolations);
 
 if numel(useTheseTimes_temp) > 0 % Case where there are good time chunks
     continousTimes = diff(useTheseTimes_temp);

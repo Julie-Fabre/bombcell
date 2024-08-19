@@ -1,4 +1,4 @@
-function presenceRatio = presenceRatio(theseSpikeTimes, theseAmplis, presenceRatioBinSize, startTime, stopTime, plotThis)
+function presenceRatio = presenceRatio(theseSpikeTimes, theseAmplis, presenceRatioBinSize, startTime, stopTime, param)
 % JF, Calculate fraction of bins that include one or more spikes from a particular unit
 % ------
 % Inputs
@@ -13,7 +13,8 @@ function presenceRatio = presenceRatio(theseSpikeTimes, theseAmplis, presenceRat
 %       is below param.maxPercSpikesMissing and param.maxRPVviolations
 % presenceRatioBin: size of time bins in which to calculate the presence
 %   ratio
-% plotThis: boolean, whether to plot amplitude distribution and fit or not
+% param: structure with fields:
+% - plotThis: boolean, whether to plot amplitude distribution and fit or not
 % ------
 % Outputs
 % ------
@@ -35,7 +36,7 @@ spikesPerBin = arrayfun(@(x) sum(theseSpikeTimes>=presenceRatio_bins(x) & theseS
 fullBins = spikesPerBin >= 0.05*prctile(spikesPerBin, 90);
 presenceRatio = sum(fullBins)/length(spikesPerBin);
 
-if plotThis 
+if param.plotDetails 
     figure('Color','none');
     colors = [146,0,0; 34,207,34; 103, 103, 103]./255;
     scatter(theseSpikeTimes, theseAmplis, 4,[0, 0.35, 0.71],'filled'); hold on;

@@ -1,4 +1,5 @@
-function [percentMissing_gaussian, percentMissing_symmetric, ksTest_pValue, ampliBin_gaussian, spikeCountsPerAmpliBin_gaussian, gaussianFit_cutoff] = percSpikesMissing(theseAmplitudes, theseSpikeTimes, timeChunks, plotThis)
+function [percentMissing_gaussian, percentMissing_symmetric, ksTest_pValue,...
+    ampliBin_gaussian, spikeCountsPerAmpliBin_gaussian, gaussianFit_cutoff] = percSpikesMissing(theseAmplitudes, theseSpikeTimes, timeChunks, param)
 % JF, Estimate the amount of spikes missing (below the detection threshold)
 % by fitting a gaussian to the amplitude distribution for each timeChunk
 % defined in timeChunks
@@ -10,7 +11,7 @@ function [percentMissing_gaussian, percentMissing_symmetric, ksTest_pValue, ampl
 % theseSpikeTimes: nSpikesforThisUnit × 1 double vector of time in seconds
 %   of each of the unit's spikes.
 % timeChunks: timeChunks edges in which to compute the metric
-% plotThis: boolean, whether to plot amplitude distribution and fit or not
+% param, structure with field plotThis: boolean, whether to plot amplitude distribution and fit or not
 % ------
 % Outputs
 % ------
@@ -33,7 +34,7 @@ percentMissing_gaussian = nan(numel(timeChunks)-1, 1);
 percentMissing_symmetric = nan(numel(timeChunks)-1, 1);
 ksTest_pValue = nan(numel(timeChunks)-1, 1);
 
-if plotThis
+if param.plotDetails
     figure('Color', 'none');
 end
 for iTimeChunk = 1:numel(timeChunks) - 1
@@ -110,7 +111,7 @@ for iTimeChunk = 1:numel(timeChunks) - 1
     end
 
     roundedP = num2str(round(percentMissing_gaussian(iTimeChunk), 1));
-    if plotThis
+    if param.plotDetails
         subplot(2, numel(timeChunks)-1, numel(timeChunks)-1+iTimeChunk)
         if sum(spikeCountsPerAmpliBin_gaussian) > 0
             hold on;
@@ -137,7 +138,7 @@ for iTimeChunk = 1:numel(timeChunks) - 1
 
 end
 warning on;
-if plotThis 
+if param.plotDetails 
     if exist('prettify_plot', 'file')
         prettify_plot('FigureColor', 'w', 'XLimits', 'keep', 'YLimits', 'all')
     else

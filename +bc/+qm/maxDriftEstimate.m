@@ -1,5 +1,5 @@
 function [maxDrift_estimate, cumulativeDrift_estimate] = maxDriftEstimate(pcFeatures, pcFeatureIdx, spikeTemplates, ...
-    spikeTimes, channelPositions_z, thisUnit, driftBinSize, computeDrift, plotDetails)
+    spikeTimes, channelPositions_z, thisUnit, param)
 % JF, Estimate the maximum drift for a particular unit
 % ------
 % Inputs
@@ -11,9 +11,11 @@ function [maxDrift_estimate, cumulativeDrift_estimate] = maxDriftEstimate(pcFeat
 % spike_templates: nSpikes × 1 uint32 vector giving the identity of each
 %   spike's matched template
 % thisUnit: unit number
-% computeDrift: boolean, whether tocomputeDrift( this is botle-neck slow step
+% param: structure with fields 
+% - driftBinSize
+% - computeDrift: boolean, whether tocomputeDrift( this is botle-neck slow step
 %   that takes almost 2 seconds per unit)
-% plotThis: boolean, whether to plot results (not implemented yet for this
+% - plotThis: boolean, whether to plot results (not implemented yet for this
 %   function)
 % ------
 % Outputs
@@ -30,7 +32,7 @@ function [maxDrift_estimate, cumulativeDrift_estimate] = maxDriftEstimate(pcFeat
 % visual system reveals functional hierarchy. Nature 592, 86–92 (2021). https://doi.org/10.1038/s41586-020-03171-x
 % For the center of mass estimation, this is based on the method in:
 % https://github.com/cortex-lab/spikes/analysis/ksDriftMap
-if computeDrift
+if param.computeDrift
 
     %% calculate center of mass for each spike
     % if we selected some "good" times for this unit, where rpvs are low and
@@ -46,12 +48,12 @@ if computeDrift
     spikeDepths_inChannels = sum(channelPositions_z(spikePC_feature(spikeTemplates == thisUnit, :)).*pcFeatures_PC1.^2, 2) ./ sum(pcFeatures_PC1.^2, 2); % center of mass: sum(coords.*features)/sum(features)
 
     %% estimate cumulative drift
-    timeBins = min(spikeTimes):driftBinSize:max(spikeTimes);
+    timeBins = min(spikeTimes):param.driftBinSize:max(spikeTimes);
     median_spikeDepth = arrayfun(@(x) median(spikeDepths_inChannels(spikeTimes >= x & spikeTimes < x+1)), timeBins); % median
     maxDrift_estimate = nanmax(median_spikeDepth) - nanmin(median_spikeDepth);
     cumulativeDrift_estimate = sum(abs(diff(median_spikeDepth(~isnan(median_spikeDepth)))));
 
-    if plotDetails
+    if param.plotDetails
         figure(); 
         plot(timeBins, median_spikeDepth)
         xlabel('time (s)')

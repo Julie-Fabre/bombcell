@@ -93,6 +93,10 @@ paramEP.normalizeSpDecay = 1;
 % QQ set this the same as qmetrics (load useChunks Start and stop)
 %paramEP.computeTimeChunks = 1; % compute ephysProperties for different time chunks 
 %paramEP.deltaTimeChunk = 360; %time in seconds 
+paramEP.minWidthFirstPeak = 4; % in samples
+paramEP.minMainPeakToTroughRatio = 10;
+paramEP.minWidthMainTrough = 5; % in samples
+paramEP.firstPeakRatio = 3;
 
 % cell classification parameters
 % - striatum 
