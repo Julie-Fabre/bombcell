@@ -173,8 +173,8 @@ param.minAmplitude = 20; % in uV
 param.maxRPVviolations = 0.1; % fraction
 param.maxPercSpikesMissing = 20; % in percentage
 param.minNumSpikes = 300; % number of spikes
-param.maxDrift = 100;
-param.minPresenceRatio = 0.7;
+param.maxDrift = 100; % in micrometers 
+param.minPresenceRatio = 0.7; % fraction
 param.minSNR = 1;
 
 end
