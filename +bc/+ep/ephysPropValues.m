@@ -96,6 +96,7 @@ paramEP.normalizeSpDecay = 1;
 paramEP.minWidthFirstPeak = 4; % in samples
 paramEP.minMainPeakToTroughRatio = 10;
 paramEP.minWidthMainTrough = 5; % in samples
+paramEP.firstPeakRatio = 3;
 
 % cell classification parameters
 % - striatum 
