@@ -59,6 +59,7 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
 
     % total times at which refractory period violations can occur
     for iTauR_value = 1:length(tauR)
+        overestimateBool(iTimeChunk, iTauR_value) = 0;
         if hillOrLlobetMethod == 1 % hill method
             a = 2 * (tauR(iTauR_value) - tauC) * N_chunk^2 / abs(diff(timeChunks(iTimeChunk:iTimeChunk+1)));
             % observed number of refractory period violations
@@ -66,21 +67,24 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
 
             if nRPVs == 0 % no observed refractory period violations - this can
                 % also be because there are no spikes in this interval - use presence ratio to weed this out
-                rpvRate(iTimeChunk, iTauR_value) = 0;
-                overestimateBool(iTimeChunk, iTauR_value) = 0;
+                RPVrate(iTimeChunk, iTauR_value) = 0;
             else % otherwise solve the equation above
                 rts = roots([-1, 1, -nRPVs / a]);
-                rpvRate(iTimeChunk, iTauR_value) = min(rts);
-                overestimateBool(iTimeChunk, iTauR_value) = 0;
-                if ~isreal(rpvRate(iTimeChunk, iTauR_value)) % function returns imaginary number if r is too high: overestimate number.
+                RPVrate(iTimeChunk, iTauR_value) = min(rts);
+                if ~isreal(RPVrate(iTimeChunk, iTauR_value)) % function returns imaginary number if r is too high: overestimate number.
                     overestimateBool(iTimeChunk, iTauR_value) = 1;
-                    rpvRate(iTimeChunk, iTauR_value) = 1;
+                    if nRPVs < N_chunk %to not get a negative wierd number or a 0 denominator
+                        RPVrate(iTimeChunk, iTauR_value) = nRPVs / (2 * (tauR(iTauR_value) - tauC) * (N_chunk - nRPVs));
+                    else
+                        RPVrate(iTimeChunk, iTauR_value) = 1;
+                    end
                 end
-                if rpvRate(iTimeChunk, iTauR_value) > 1 % it is nonsense to have a rate >1, the assumptions are failing here
-                    rpvRate(iTimeChunk, iTauR_value) = 1;
+                if RPVrate(iTimeChunk, iTauR_value) > 1 % it is nonsense to have a rate >1, the assumptions are failing here
+                    RPVrate(iTimeChunk, iTauR_value) = 1;
                 end
             end
         else
+
             numViolations = sum(isisChunk > tauC & isisChunk <= tauR(iTauR_value)); % number of observed violations
 
             % Calculate the value under the square root
@@ -92,6 +96,7 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
             else
                 % Handle the case where the value is negative
                 RPVrate(iTimeChunk, iTauR_value) = 1; % set to 1
+                overestimateBool(iTimeChunk, iTauR_value) = 1;
             end
         end
 
