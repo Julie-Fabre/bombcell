@@ -94,6 +94,7 @@ param.tauR_valuesStep = 0.5/1000; % refractory period time (s) steps. Only
     % used if param.tauR_valuesMin is different from param.tauR_valuesMax
 param.tauR_valuesMax = 2/1000; % refractory period time (s), usually 0.0020
 param.tauC = 0.1/1000; % censored period time (s) - this is to prevent duplicate spikes 
+param.hillOrLlobetMethod = 1; % 1 to use Hill et al method; 2 to use Llobet et al method
 
 % percentage spikes missing parameters 
 param.computeTimeChunks = 1; % compute fraction refractory period violations 
@@ -122,6 +123,9 @@ param.minThreshDetectPeaksTroughs = 0.1; % this is multiplied by the max value
 param.normalizeSpDecay = 1; % whether to normalize spatial decay points relative to 
 % maximum - this makes the spatrial decay slop calculation more invariant to the 
 % spike-sorting algorithm used
+param.minWidthFirstPeak = 4; % in samples
+param.minMainPeakToTroughRatio = 10;
+param.minWidthMainTrough = 5; % in samples
 
 % recording parameters
 param.ephys_sample_rate = 30000; % samples per second
