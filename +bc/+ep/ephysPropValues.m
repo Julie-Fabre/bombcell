@@ -28,7 +28,7 @@ if nargin < 4
 end
 
 paramEP = struct; 
-paramEP.plotThis = 0;
+paramEP.plotDetails = 0;
 paramEP.verbose = 1;
 
 % recording parameters
