@@ -1,6 +1,6 @@
 function [spatialDecaySlope, spatialDecayFit, spatialDecayPoints, spatialDecayPoints_loc, estimatedUnitXY] = ...
     getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit, normalizePoints, computeSpatialDecay)
-% QQ need to change this to be an exponential fit 
+% QQ need to change this to be an exponential fit !
 % Set default values and validate inputs
 if nargin < 6 || isempty(normalizePoints)
     normalizePoints = false;
