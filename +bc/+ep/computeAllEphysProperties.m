@@ -39,7 +39,7 @@ for iUnit = 1:length(uniqueTemplates)
     theseSpikeTimes = spikeTimes(spikeTemplates == thisUnit);
 
     %% ACG-based properties  
-    ephysProperties.acg(iUnit, :) = bc.ep.computeACG(theseSpikeTimes, paramEP.ACGbinSize, paramEP.ACGduration, paramEP.plotThis);
+    ephysProperties.acg(iUnit, :) = bc.ep.computeACG(theseSpikeTimes, paramEP.ACGbinSize, paramEP.ACGduration, paramEP.plotDetails);
 
     [ephysProperties.postSpikeSuppression_ms(iUnit), ephysProperties.tauRise_ms(iUnit), ephysProperties.tauDecay_ms(iUnit),...
         ephysProperties.refractoryPeriod_ms(iUnit)] = bc.ep.computeACGprop(ephysProperties.acg(iUnit, :), paramEP.ACGbinSize, paramEP.ACGduration);
