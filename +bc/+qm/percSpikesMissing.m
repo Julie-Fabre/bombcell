@@ -37,6 +37,9 @@ ksTest_pValue = nan(numel(timeChunks)-1, 1);
 if param.plotDetails
     figure('Color', 'none');
 end
+% QQ need to add contiion: only run this if peak is present, otherwise it
+% makes no sense and set to 50% or 100% spikes missing - this will disable
+% any warnings too 
 for iTimeChunk = 1:numel(timeChunks) - 1
     % amplitude histogram
     nBins = 50;
