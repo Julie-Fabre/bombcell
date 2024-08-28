@@ -111,11 +111,12 @@ selectedColormap = colormaps.(type);
 
 % Remove background color from the colormap
 if strcmpi(backgroundCol, 'w')
-    selectedColormap = selectedColormap(~all(selectedColormap == 1, 2), :);
+    % If background is white, replace white (1,1,1) with black (0,0,0)
+    selectedColormap(all(selectedColormap == 1, 2), :) = 0;
 elseif strcmpi(backgroundCol, 'k')
-    selectedColormap = selectedColormap(~all(selectedColormap == 0, 2), :);
+    % If background is black, replace black (0,0,0) with white (1,1,1)
+    selectedColormap(all(selectedColormap == 0, 2), :) = 1;
 end
-
 % Select colors based on the colormap type and nColors
 switch type
     case 'standard'
