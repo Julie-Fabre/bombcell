@@ -15,9 +15,9 @@ function [isolationDist, Lratio, silhouetteScore, histogram_mahalUnit_counts, hi
 % allSpikesIdx: nSpikes × 1 uint32 vector giving the identity of each
 %   spike's matched template, for all templates
 % param: structure with fields: 
-% - nChansToUse: number of channels to use to compute distance metrics (eg 4)
+% - nChannelsIsoDist: number of channels to use to compute distance metrics (eg 4)
 % - plotThis: boolean, whether to plot the mahalobnis distance between spikes
-%   of thisUnit and otherUnits on the nChansToUse closest channels
+%   of thisUnit and otherUnits on the nChannelsIsoDist closest channels
 % ------
 % Outputs
 % ------
@@ -31,16 +31,16 @@ function [isolationDist, Lratio, silhouetteScore, histogram_mahalUnit_counts, hi
 
 nPCs = size(pc_features, 2); %should be 3 PCs
 
-% get current unit's max `nChansToUse` channels
-theseChannels = pc_feature_ind(thisUnit, 1:param.nChansToUse);
+% get current unit's max `nChannelsIsoDist` channels
+theseChannels = pc_feature_ind(thisUnit, 1:param.nChannelsIsoDist);
 
 % current unit's features
-theseFeatures = reshape(pc_features(spikesIdx, :, 1:param.nChansToUse), numberSpikes, []);
+theseFeatures = reshape(pc_features(spikesIdx, :, 1:param.nChannelsIsoDist), numberSpikes, []);
 
 % Precompute unique identifiers and allocate space for outputs
 uniqueIDs = unique(allSpikesIdx(allSpikesIdx>0));
-otherFeaturesInd = zeros(0, size(pc_features, 2), param.nChansToUse);
-otherFeatures = zeros(0, size(pc_features, 2), param.nChansToUse);
+otherFeaturesInd = zeros(0, size(pc_features, 2), param.nChannelsIsoDist);
+otherFeatures = zeros(0, size(pc_features, 2), param.nChannelsIsoDist);
 nCount = 1; % initialize counter
 
 % Iterate over each unique ID
@@ -57,7 +57,7 @@ for iID = 1:numel(uniqueIDs)
     otherSpikes = allSpikesIdx == currentID;
 
     % Process channels that are common between current channels and the unit of interest
-    for iChannel = 1:param.nChansToUse
+    for iChannel = 1:param.nChannelsIsoDist
         if ismember(theseChannels(iChannel), currentChannels)
             commonChannelIndex = find(currentChannels == theseChannels(iChannel), 1);
             channelSpikes = pc_features(otherSpikes, :, commonChannelIndex);
@@ -80,16 +80,16 @@ histogram_mahalNoise_counts = NaN;
 histogram_mahalNoise_edges = NaN;
 
 % Reshape features for mahalanobis distance calculation if there are other features
-if ~isempty(otherFeatures) && numberSpikes > param.nChansToUse * nPCs
+if ~isempty(otherFeatures) && numberSpikes > param.nChannelsIsoDist * nPCs
     otherFeatures = reshape(otherFeatures, size(otherFeatures, 1), []);
     mahalD = sort(mahal(otherFeatures, theseFeatures)); % Sorted squared Mahalanobis distances
 
     % Calculate L-ratio
-    L = sum(1-chi2cdf(mahalD, nPCs*param.nChansToUse)); % Assuming chi-square distribution
+    L = sum(1-chi2cdf(mahalD, nPCs*param.nChannelsIsoDist)); % Assuming chi-square distribution
     Lratio = L / numberSpikes;
 
 
-    if nCount > numberSpikes && numberSpikes > param.nChansToUse * nPCs
+    if nCount > numberSpikes && numberSpikes > param.nChannelsIsoDist * nPCs
         % Calculate isolation distance if applicable
         isolationDist = mahalD(numberSpikes);
 
@@ -102,7 +102,7 @@ if ~isempty(otherFeatures) && numberSpikes > param.nChansToUse * nPCs
 end
 
 
-if numberSpikes > param.nChansToUse * nPCs 
+if numberSpikes > param.nChannelsIsoDist * nPCs 
     mahalDself = mahal(theseFeatures, theseFeatures); % Self Mahalanobis distances
   
     [histogram_mahalUnit_counts, histogram_mahalUnit_edges] = histcounts(mahalDself,1:1:200);
@@ -164,7 +164,7 @@ if numberSpikes > param.nChansToUse * nPCs
         % uncomment below to additionnally plot all PCs against each other
         %figure();
         % % Calculate the number of subplots needed
-        % nDims = nChansToUse * nPCs;
+        % nDims = nChannelsIsoDist * nPCs;
         % nSubplots = nDims * (nDims - 1) / 2; % n choose 2 for combinations
         % 
         % % Counter for subplot indexing
