@@ -97,7 +97,7 @@ param.tauC = 0.1/1000; % censored period time (s) - this is to prevent duplicate
 param.hillOrLlobetMethod = 1; % 1 to use Hill et al method; 2 to use Llobet et al method
 
 % percentage spikes missing parameters 
-param.computeTimeChunks = 1; % compute fraction refractory period violations 
+param.computeTimeChunks = 0; % compute fraction refractory period violations 
     % and percent spikes missing for different time chunks 
 param.deltaTimeChunk = 360; %time in seconds 
 
