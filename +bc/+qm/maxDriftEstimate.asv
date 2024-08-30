@@ -35,14 +35,18 @@ function [maxDrift_estimate, cumulativeDrift_estimate] = maxDriftEstimate(pcFeat
 if param.computeDrift
 
     %% calculate center of mass for each spike
-    % if we selected some "good" times for this unit, where rpvs are low and
-    % percent spikes missing too, only keep those times
-
     pcFeatures_PC1 = squeeze(pcFeatures(spikeTemplates == thisUnit, 1, :)); % take the first PC
     pcFeatures_PC1(pcFeatures_PC1 < 0) = 0; % remove negative entries - we don't want to push the center of mass away from there.
-
-    spikePC_feature = double(pcFeatureIdx(spikeTemplates, :)); % get channels for each spike
-    spikeDepths_inChannels = sum(channelPositions_z(spikePC_feature(spikeTemplates == thisUnit, :)).*pcFeatures_PC1.^2, 2) ./ sum(pcFeatures_PC1.^2, 2); % center of mass: sum(coords.*features)/sum(features)
+    % for each spike, get which channel the maximum value is located on 
+try
+    pcFeatureIdx_theseTimes = pcFeatureIdx;
+    pcFeatureIdx_theseTimes(spikeTemplates==0) = [];
+    spikePC_feature = nan(size(spikeTemplates,1),1);
+    spikePC_feature(spikeTemplates>0) = double(pcFeatureIdx_theseTimes(spikeTemplates, :)); % get channels for each spike
+catch
+    keyboard;
+end
+spikeDepths_inChannels = sum(channelPositions_z(pcFeatureIdx(spikeTemplates == thisUnit, :)).*pcFeatures_PC1.^2, 2) ./ sum(pcFeatures_PC1.^2, 2); % center of mass: sum(coords.*features)/sum(features)
 
     %% estimate cumulative drift
     timeBins = min(spikeTimes):param.driftBinSize:max(spikeTimes);
