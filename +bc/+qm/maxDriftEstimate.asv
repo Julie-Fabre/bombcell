@@ -35,6 +35,9 @@ function [maxDrift_estimate, cumulativeDrift_estimate] = maxDriftEstimate(pcFeat
 if param.computeDrift
 
     %% calculate center of mass for each spike
+    % if we selected some "good" times for this unit, where rpvs are low and
+    % percent spikes missing too, only keep those times
+
     pcFeatures_PC1 = squeeze(pcFeatures(spikeTemplates == thisUnit, 1, :)); % take the first PC
     pcFeatures_PC1(pcFeatures_PC1 < 0) = 0; % remove negative entries - we don't want to push the center of mass away from there.
 
