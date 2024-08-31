@@ -67,7 +67,7 @@ if numel(useTheseTimes_temp) > 0 % Case where there are good time chunks
     
     % Index spikes, templates and amplitudes for chosen time chunk
     validIndices_allUnits = spikeTimes_seconds <= useTheseTimes(end) & spikeTimes_seconds >= useTheseTimes(1);
-    theseSpikeTemplates(validIndices_allUnits) = 0; % set to 0 so these are not used in subsequent quality metrics 
+    theseSpikeTemplates(~validIndices_allUnits) = 0; % set to 0 so these are not used in subsequent quality metrics 
 
     validIndices_thisUnit = theseSpikeTimes <= useTheseTimes(end) & theseSpikeTimes >= useTheseTimes(1);
     theseAmplis = theseAmplis(validIndices_thisUnit );

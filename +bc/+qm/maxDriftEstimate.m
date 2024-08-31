@@ -45,8 +45,10 @@ if param.computeDrift
     spikeDepths_inChannels = sum(channelPositions_z(spikePC_feature(spikeTemplates == thisUnit, :)).*pcFeatures_PC1.^2, 2) ./ sum(pcFeatures_PC1.^2, 2); % center of mass: sum(coords.*features)/sum(features)
 
     %% estimate cumulative drift
+
     timeBins = min(spikeTimes):param.driftBinSize:max(spikeTimes);
-    median_spikeDepth = arrayfun(@(x) median(spikeDepths_inChannels), timeBins); % median
+    median_spikeDepth = arrayfun(@(x) median(spikeDepths_inChannels(spikeTimes >= x & spikeTimes < x + param.driftBinSize)), timeBins);
+
     maxDrift_estimate = nanmax(median_spikeDepth) - nanmin(median_spikeDepth);
     cumulativeDrift_estimate = sum(abs(diff(median_spikeDepth(~isnan(median_spikeDepth)))));
 
