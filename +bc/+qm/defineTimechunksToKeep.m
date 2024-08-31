@@ -1,5 +1,5 @@
 function [theseSpikeTimes, theseAmplis, theseSpikeTemplates, useThisTimeStart, useThisTimeStop, useTauR] = defineTimechunksToKeep(percSpikesMissing, ...
-    fractionRPVs, param, theseAmplis, theseSpikeTimes, theseSpikeTemplates, timeChunks)
+    fractionRPVs, param, theseAmplis, theseSpikeTimes, theseSpikeTemplates, timeChunks, spikeTimes_seconds)
 % JF
 % define time chunks where the current unit has low refractory period violations and
 % estimated percent spikes missing
@@ -66,13 +66,13 @@ if numel(useTheseTimes_temp) > 0 % Case where there are good time chunks
     end
     
     % Index spikes, templates and amplitudes for chosen time chunk
-    theseSpikeTemplates(theseSpikeTimes > useTheseTimes(end) | ...
-        theseSpikeTimes < useTheseTimes(1)) = 0;
-    theseAmplis = theseAmplis(theseSpikeTimes <= useTheseTimes(end) & ...
-        theseSpikeTimes >= useTheseTimes(1));
-    theseSpikeTimes = theseSpikeTimes(theseSpikeTimes <= useTheseTimes(end) & ...
-        theseSpikeTimes >= useTheseTimes(1));
-    
+    validIndices_allUnits = spikeTimes_seconds <= useTheseTimes(end) & spikeTimes_seconds >= useTheseTimes(1);
+    theseSpikeTemplates(~validIndices_allUnits) = 0; % set to 0 so these are not used in subsequent quality metrics 
+
+    validIndices_thisUnit = theseSpikeTimes <= useTheseTimes(end) & theseSpikeTimes >= useTheseTimes(1);
+    theseAmplis = theseAmplis(validIndices_thisUnit );
+    theseSpikeTimes = theseSpikeTimes(validIndices_thisUnit );
+
     % Set the start and stop times for the selected chunk
     useThisTimeStart = useTheseTimes(1);
     useThisTimeStop = useTheseTimes(end);
