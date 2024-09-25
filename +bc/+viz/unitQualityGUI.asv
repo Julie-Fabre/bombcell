@@ -368,7 +368,7 @@ chanDistances = ((ephysData.channel_positions(:, 1) - maxXC).^2 ...
 chansToPlot = find(chanDistances < 100);
 vals = [];
 scalingFactor = range(-squeeze(ephysData.templates(thisUnit, :,maxChan))'+ ...
-            (ephysData.channel_positions(maxChan, 2) ))*2.5;
+            (ephysData.channel_positions(maxChan, 2) ));
 
 for iChanToPlot = 1:min(20, size(chansToPlot, 1))
     if maxChan == chansToPlot(iChanToPlot)
@@ -403,7 +403,7 @@ for iChanToPlot = 1:min(20, size(chansToPlot, 1))
         
     end
 end
-ylim(guiData.tempYLim, [min(min(vals,[],2)), max(max(vals,[],2))+0.8]) % space for legend
+ylim(guiData.tempYLim, [min(min(vals,[],2)).*0.95, max(max(vals,[],2))]) % space for legend
 
 if any(~isnan(qMetric.spatialDecaySlope))
     param.computeSpatialDecay = 1;
@@ -432,8 +432,8 @@ if param.computeSpatialDecay
         qMetric.waveformDuration_peakTrough(iCluster) <= param.maxWvDuration)+1, :)),...
         num2str(colorsGdBad(double(abs(qMetric.mainPeak_after_size(iCluster)./ qMetric.mainTrough_size(iCluster)) <= 0.9)+1, :)),...
         num2str(colorsSomatic(double(abs(qMetric.mainTrough_size(iCluster) ./ qMetric.mainPeak_before_size(iCluster)) < param.minMainPeakToTroughRatio&...
-        qMetric.mainPeak_before_width(iCluster)< param.minWidthFirstPeak &...
-        qMetric.mainTrough_width(iCluster) < param.minWidthMainTrough &...
+        qMetric.mainPeak_before_width(iCluster)< param.minWidthFirstPeak(iCluster) &...
+        qMetric.mainTrough_width(iCluster) < param.minWidthMainTrough(iCluster) &...
         abs(qMetric.mainPeak_before_size(iCluster)./qMetric.mainPeak_after_size(iCluster)) > param.firstPeakRatio)+2, :)),...
         num2str(colorsSomatic(double(abs(max([qMetric.mainPeak_before_size(iCluster), qMetric.mainPeak_after_size(iCluster)], [], 2)./ qMetric.mainTrough_size(iCluster)) <= 0.9)+1, :))));
 
@@ -480,7 +480,7 @@ else
     []})
 
 end
-set(guiData.tempLegend, 'Location', 'southwest');
+
 %% plot 3: plot unit mean raw waveform (and individual traces)
 if param.extractRaw
     maxChanRaw = rawWaveforms.peakChan(iCluster);

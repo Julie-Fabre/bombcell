@@ -13,18 +13,51 @@ function upSetPlot_wrapper(qMetric, param,  unitType)
 if sum(ismember(unitType, 0))>0
 
     figHandle_noise = figure('Name','Noise vs neuronal units', 'Color', 'w');
-    UpSet_data_noise = [isnan(qMetric.nPeaks) | qMetric.nPeaks > param.maxNPeaks, ...
-        isnan(qMetric.nTroughs) | qMetric.nTroughs > param.maxNTroughs, ...
-        qMetric.spatialDecaySlope > param.minSpatialDecaySlope, ...
-        qMetric.waveformDuration_peakTrough < param.minWvDuration | qMetric.waveformDuration_peakTrough > param.maxWvDuration, ...
-        qMetric.waveformBaselineFlatness > param.maxWvBaselineFraction];
-    UpSet_labels_noise = {'waveform peak #', 'waveform trough #', 'waveform spatial decay', 'waveform duration', 'waveform baseline flatness'};
-    
-    bc.viz.upSetPlot(UpSet_data_noise, UpSet_labels_noise, figHandle_noise);
-else
-    disp('No noise or non-somatic units with current param settings - consider changing your param values')
-end
+  
+UpSet_data_noise = [
+    isnan(qMetric.nPeaks) | qMetric.nPeaks > param.maxNPeaks, ...
+    isnan(qMetric.nTroughs) | qMetric.nTroughs > param.maxNTroughs, ...
+    qMetric.spatialDecaySlope > param.minSpatialDecaySlope, ...
+    qMetric.waveformDuration_peakTrough < param.minWvDuration | qMetric.waveformDuration_peakTrough > param.maxWvDuration, ...
+    qMetric.waveformBaselineFlatness > param.maxWvBaselineFraction, ...
+    abs(qMetric.mainPeak_after_size./qMetric.mainTrough_size) > 0.9, ...
+];
 
+UpSet_labels_noise = {
+    'waveform peak #', 
+    'waveform trough #', 
+    'waveform spatial decay', 
+    'waveform duration', 
+    'waveform baseline flatness',
+    'waveform second peak to trough ratio'
+};
+
+bc.viz.upSetPlot(UpSet_data_noise, UpSet_labels_noise, figHandle_noise);
+else
+    disp('No noise units with current param settings - consider changing your param values')
+end
+%% NON SOMA UPset plot 
+if sum(ismember(unitType, 3))>0
+
+    figHandle_nonsoma = figure('Name','Non-soma vs soma units', 'Color', 'w');
+  
+UpSet_data_nonsoma = [
+    abs(qMetric.mainPeak_before_size./qMetric.mainPeak_after_size) > param.firstPeakRatio, ...
+    abs(qMetric.mainTrough_size ./ qMetric.mainPeak_before_size) < param.minMainPeakToTroughRatio & ...
+    qMetric.mainPeak_before_width < param.minWidthFirstPeak & ...
+    qMetric.mainTrough_width < param.minWidthMainTrough
+];
+
+UpSet_labels_nonsoma = {
+    'waveform second peak to trough ratio', 
+    'waveform first to 2nd peak ratio', 
+    'waveform main peak to trough ratio'
+};
+
+bc.viz.upSetPlot(UpSet_data_nonsoma, UpSet_labels_nonsoma, figHandle_nonsoma);
+else
+    disp('No non-somatic units with current param settings - consider changing your param values')
+end
 % %% Non-somatic UpSet plot - coming soon
 % figHandle_nonSoma = figure('Name','Non-somatic vs somatic units', 'Color', 'w');
 % 
