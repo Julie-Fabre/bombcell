@@ -44,7 +44,8 @@ unitType = nan(length(qMetric.percentageSpikesMissing_gaussian), 1);
 % Classify noise units
 unitType(isnan(qMetric.nPeaks) | qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | ...
     qMetric.waveformDuration_peakTrough < param.minWvDuration | ...
-    qMetric.waveformDuration_peakTrough > param.maxWvDuration | qMetric.waveformBaselineFlatness > param.maxWvBaselineFraction) = 0; % NOISE
+    qMetric.waveformDuration_peakTrough > param.maxWvDuration | qMetric.waveformBaselineFlatness > param.maxWvBaselineFraction |...
+    abs( qMetric.mainPeak_after_size./ qMetric.mainTrough_size) > 0.9) = 0; % NOISE
 
 if param.computeSpatialDecay == 1
     unitType(qMetric.spatialDecaySlope > param.minSpatialDecaySlope) = 0; % NOISE
@@ -73,11 +74,27 @@ end
 unitType(isnan(unitType)) = 1; % SINGLE SEXY UNIT
 
 % Classify non-somatic units
-if param.splitGoodAndMua_NonSomatic
-    unitType(qMetric.isSomatic ~= param.somatic & unitType == 1) = 3; % GOOD NON-SOMATIC
-    unitType(qMetric.isSomatic ~= param.somatic & unitType == 2) = 4; % MUA NON-SOMATIC
+% check if most high amplitude channels are somatic or non-somatic 
+if isfield(qMetric, 'isSomatic') % old pre 09/2024 method 
+    if param.splitGoodAndMua_NonSomatic
+        unitType(qMetric.isSomatic ~= param.somatic & unitType == 1) = 3; % GOOD NON-SOMATIC
+        unitType(qMetric.isSomatic ~= param.somatic & unitType == 2) = 4; % MUA NON-SOMATIC
+    else
+        unitType(qMetric.isSomatic ~= param.somatic & ismember(unitType,[1 2])) = 3; % NON-SOMATIC
+    end
 else
-    unitType(qMetric.isSomatic ~= param.somatic & ismember(unitType,[1 2])) = 3; % NON-SOMATIC
+
+   isNonSomatic = (abs(qMetric.mainTrough_size ./ qMetric.mainPeak_before_size) < param.minMainPeakToTroughRatio&...
+        qMetric.mainPeak_before_width < param.minWidthFirstPeak &...
+        qMetric.mainTrough_width < param.minWidthMainTrough &...
+        abs(qMetric.mainPeak_before_size./qMetric.mainPeak_after_size) > param.firstPeakRatio) | ...
+        abs(max([qMetric.mainPeak_before_size, qMetric.mainPeak_after_size], [], 2)./ qMetric.mainTrough_size) > 0.9; %hard coded for now, change
+    if param.splitGoodAndMua_NonSomatic
+        unitType(isNonSomatic & unitType == 1) = 3; % GOOD NON-SOMATIC
+        unitType(isNonSomatic & unitType == 2) = 4; % MUA NON-SOMATIC
+    else
+        unitType(isNonSomatic & ismember(unitType,[1 2])) = 3; % NON-SOMATIC
+    end
 end
 
 % Get unit type string

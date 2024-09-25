@@ -125,6 +125,7 @@ param.normalizeSpDecay = 1; % whether to normalize spatial decay points relative
 % spike-sorting algorithm used
 param.minWidthFirstPeak = 4; % in samples
 param.minMainPeakToTroughRatio = 10;
+%param.minPeakToTroughRatio = 0.75;
 param.minWidthMainTrough = 5; % in samples
 
 % recording parameters
