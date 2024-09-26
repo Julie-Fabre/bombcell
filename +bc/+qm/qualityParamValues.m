@@ -157,12 +157,13 @@ param.maxNPeaks = 2; % maximum number of peaks
 param.maxNTroughs = 1; % maximum number of troughs
 param.somatic = 1; % keep only somatic units, and reject non-somatic ones
 param.minWvDuration = 100; % in us
-param.maxWvDuration = 1000; % in us
-param.minSpatialDecaySlope = -0.005; % in a.u./um
+param.maxWvDuration = 1150; % in us
+param.minSpatialDecaySlope = -0.004; % in a.u./um
 param.maxWvBaselineFraction = 0.3; % maximum absolute value in waveform baseline
     % should not exceed this fraction of the waveform's abolute peak value
 param.firstPeakRatio = 3; % if units have an initial peak before the trough,
     % it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit. 
+param.troughToPeakRatio = 0.8;
 
 % distance metrics
 param.isoDmin = 20; % minimum isolation distance value

@@ -63,11 +63,11 @@ if isfield(param,'saveAsTSV') % ensure back-compatibility if users have a previo
     fieldsToSave = {'percentageSpikesMissing_gaussian', ...
         'presenceRatio', 'maxDriftEstimate', 'nPeaks', 'nTroughs','waveformDuration_peakTrough', 'spatialDecaySlope','waveformBaselineFlatness',...
         'signalToNoiseRatio','fractionRPVs_estimatedTauR' };
-    fieldsRename = {'percentageSpikesMissing_gaussian', 'presence_ratio', 'max_drift', 'n_peaks', 'n_troughs','waveform_dur', 'spatial_decay_slope','wv_baseline_flatness',...
+    fieldsRename = {'percentageSpikesMissing_gaussian', 'presence_ratio', 'max_drift', 'n_peaks', 'n_troughs','waveform_dur', 'spatial_decay_slope', 'wv_baseline_flatness',...
         'SNR','frac_RPVs' };
     if param.saveAsTSV == 1 
         cluster_id_vector = qMetric.clusterID - 1; % from bombcell to phy nomenclature 
-        if isfield(param,'ephysKilosortPath') && strcmp(param.ephysKilosortPath, 'NaN') && ~isempty(param.ephysKilosortPath) == 0
+        if isfield(param,'ephysKilosortPath') && ~strcmp(param.ephysKilosortPath, 'NaN') && ~isempty(param.ephysKilosortPath)
             saveTSV_path = param.ephysKilosortPath;
         else
             saveTSV_path = savePath;
