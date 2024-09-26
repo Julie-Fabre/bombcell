@@ -129,7 +129,7 @@ else
     end
 
     % (get waveform spatial decay accross channels)
-    linearFit = param.spDecayLinFit;
+    linearFit = 0;
     param.normalizeSpDecay = 1;
     [spatialDecaySlope, spatialDecayFit, spatialDecayPoints, spatialDecayPoints_loc, estimatedUnitXY] = ...
         bc.qm.helpers.getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit, param.normalizeSpDecay, param.computeSpatialDecay);
@@ -155,20 +155,19 @@ else
         pt1 = scatter(spatialDecayPoints_loc, spatialDecayPoints, [], colorMtx(1, :, :), 'filled');
         hold on;
         if linearFit
-            lf = plot(spatialDecayPoints_loc, spatialDecayPoints_loc*spatialDecayFit(1)+spatialDecayFit(2), '-', 'Color', colorMtx(2, :, :));
-            legend(lf, {['linear fit, slope = ', num2str(spatialDecaySlope)]}, 'TextColor', [0.7, 0.7, 0.7], 'Color', 'none')
+        lf = plot(spatialDecayPoints_loc, spatialDecayPoints_loc*spatialDecayFit(1)+spatialDecayFit(2), '-', 'Color', colorMtx(2, :, :));
+        legend(lf, {['linear fit, slope = ', num2str(spatialDecaySlope)]}, 'TextColor', [0.7, 0.7, 0.7], 'Color', 'none')
         else
             % Generate points for the exponential fit curve
-            fitX = linspace(min(spatialDecayPoints_loc), max(spatialDecayPoints_loc), 100);
-            spatialDecayFitFun = @(x) spatialDecayFit(1) * exp(-spatialDecaySlope * x);
-            fitY = spatialDecayFitFun(fitX);
-            
-            % Plot the exponential fit curve
-            ef = plot(fitX, fitY, '-', 'Color', colorMtx(2, :, :));
-            
-            % Add legend with decay rate
-            legend(ef, {sprintf('Exp. fit, decay rate = %.4f', spatialDecaySlope)}, ...
-                'TextColor', [0.7, 0.7, 0.7], 'Color', 'none')
+fitX = linspace(min(spatialDecayPoints_loc), max(spatialDecayPoints_loc), 100);
+fitY = spatialDecayFit(fitX);
+
+% Plot the exponential fit curve
+ef = plot(fitX, fitY, '-', 'Color', colorMtx(2, :, :));
+
+% Add legend with decay rate
+legend(ef, {sprintf('Exp. fit, decay rate = %.4f', spatialDecayRate)}, ...
+    'TextColor', [0.7, 0.7, 0.7], 'Color', 'none')
         end
         ylabel('trough size (a.u.)')
         xlabel('distance from peak channel (um)')

@@ -54,7 +54,10 @@ defaultValues.minWidthFirstPeak = 0; % in samples
 defaultValues.minMainPeakToTroughRatio = Inf;
 defaultValues.minWidthMainTrough = 0; % in samples
 defaultValues.minWidthMainTrough = 0; % in samples
-param.minTroughToPeakRatio = -Inf; % peak must be less
+defaultValues.minTroughToPeakRatio = -Inf; % peak must be less
+defaultValues.spDecayLinFit = 1;
+defaultValues.minSpatialDecaySlopeExp = 0.01; % in a.u./um
+defaultValues.maxSpatialDecaySlopeExp = 0.1; % in a.u./um
 
 %% Check for missing fields and add them with default value
 [param_complete, missingFields] = bc.qm.addMissingFieldsWithDefault(param, defaultValues);

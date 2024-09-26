@@ -47,8 +47,10 @@ unitType(isnan(qMetric.nPeaks) | qMetric.nPeaks > param.maxNPeaks | qMetric.nTro
     qMetric.waveformDuration_peakTrough > param.maxWvDuration | qMetric.waveformBaselineFlatness > param.maxWvBaselineFraction |...
     abs( qMetric.mainPeak_after_size./ qMetric.mainTrough_size) > param.minTroughToPeakRatio) = 0; % NOISE
 
-if param.computeSpatialDecay == 1
+if param.computeSpatialDecay == 1 && param.spDecayLinFit == 1
     unitType(qMetric.spatialDecaySlope > param.minSpatialDecaySlope) = 0; % NOISE
+else
+    unitType(qMetric.spatialDecaySlope < param.minSpatialDecaySlopeExp | qMetric.spatialDecaySlope > param.maxSpatialDecaySlopeExp) = 0; % NOISE
 end
 
 % Classify mua units
