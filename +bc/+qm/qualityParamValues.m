@@ -156,7 +156,7 @@ param.somatic = 1; % keep only somatic units, and reject non-somatic ones
 param.minWvDuration = 100; % in us
 param.maxWvDuration = 1150; % in us
 param.minSpatialDecaySlope = -0.004; % in a.u./um
-param.minSpatialDecaySlopeExp = 0.01; % in a.u./um
+param.minSpatialDecaySlopeExp = 0.005; % in a.u./um
 param.maxSpatialDecaySlopeExp = 0.1; % in a.u./um
 param.maxWvBaselineFraction = 0.3; % maximum absolute value in waveform baseline
     % should not exceed this fraction of the waveform's abolute peak value
