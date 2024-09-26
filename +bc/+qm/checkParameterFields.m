@@ -53,6 +53,8 @@ defaultValues.normalizeSpDecay = 0;% whether to normalize spatial decay points r
 defaultValues.minWidthFirstPeak = 0; % in samples
 defaultValues.minMainPeakToTroughRatio = Inf;
 defaultValues.minWidthMainTrough = 0; % in samples
+defaultValues.minWidthMainTrough = 0; % in samples
+param.minTroughToPeakRatio = -Inf; % peak must be less
 
 %% Check for missing fields and add them with default value
 [param_complete, missingFields] = bc.qm.addMissingFieldsWithDefault(param, defaultValues);

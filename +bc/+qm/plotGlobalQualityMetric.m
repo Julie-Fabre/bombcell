@@ -108,7 +108,7 @@ if param.plotGlobal
                         xlabel('# troughs')
                     case 3 % second peak to trough ratio
 
-                        ratio_thresh = param.troughToPeakRatio;
+                        ratio_thresh = param.minTroughToPeakRatio;
                         peak_t_ratio = abs(qMetric.mainPeak_after_size./qMetric.mainTrough_size);
                         num_bins = 50; % Adjust this value as needed
                         valid_data = peak_t_ratio;
@@ -155,7 +155,7 @@ if param.plotGlobal
                         xticks([0 5 10])
                         xticklabels({'0', '5', '>10'})
                     case 5 % peak to trough ratio
-                        ratio_thresh = param.troughToPeakRatio;
+                        ratio_thresh = param.minTroughToPeakRatio;
                         peak_t_ratio = abs(max([qMetric.mainPeak_before_size, qMetric.mainPeak_after_size], [], 2)./qMetric.mainTrough_size);
                         num_bins = 50; % Adjust this value as needed
                         valid_data = peak_t_ratio;

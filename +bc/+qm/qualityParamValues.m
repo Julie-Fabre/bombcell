@@ -123,10 +123,6 @@ param.minThreshDetectPeaksTroughs = 0.1; % this is multiplied by the max value
 param.normalizeSpDecay = 1; % whether to normalize spatial decay points relative to 
 % maximum - this makes the spatrial decay slop calculation more invariant to the 
 % spike-sorting algorithm used
-param.minWidthFirstPeak = 4; % in samples
-param.minMainPeakToTroughRatio = 10;
-%param.minPeakToTroughRatio = 0.75;
-param.minWidthMainTrough = 5; % in samples
 
 % recording parameters
 param.ephys_sample_rate = 30000; % samples per second
@@ -163,7 +159,10 @@ param.maxWvBaselineFraction = 0.3; % maximum absolute value in waveform baseline
     % should not exceed this fraction of the waveform's abolute peak value
 param.firstPeakRatio = 3; % if units have an initial peak before the trough,
     % it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit. 
-param.troughToPeakRatio = 0.8;
+param.minTroughToPeakRatio = 0.8; % peak must be less
+param.minWidthFirstPeak = 4; % in samples
+param.minMainPeakToTroughRatio = 10;
+param.minWidthMainTrough = 5; % in samples
 
 % distance metrics
 param.isoDmin = 20; % minimum isolation distance value
