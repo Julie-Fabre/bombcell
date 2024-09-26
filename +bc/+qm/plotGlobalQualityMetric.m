@@ -108,7 +108,7 @@ if param.plotGlobal
                         xlabel('# troughs')
                     case 3 % second peak to trough ratio
 
-                        ratio_thresh = param.troughToPeakRatio;
+                        ratio_thresh = param.minTroughToPeakRatio;
                         peak_t_ratio = abs(qMetric.mainPeak_after_size./qMetric.mainTrough_size);
                         num_bins = 50; % Adjust this value as needed
                         valid_data = peak_t_ratio;
@@ -155,7 +155,7 @@ if param.plotGlobal
                         xticks([0 5 10])
                         xticklabels({'0', '5', '>10'})
                     case 5 % peak to trough ratio
-                        ratio_thresh = param.troughToPeakRatio;
+                        ratio_thresh = param.minTroughToPeakRatio;
                         peak_t_ratio = abs(max([qMetric.mainPeak_before_size, qMetric.mainPeak_after_size], [], 2)./qMetric.mainTrough_size);
                         num_bins = 50; % Adjust this value as needed
                         valid_data = peak_t_ratio;
@@ -242,13 +242,24 @@ if param.plotGlobal
                         xlabel(['mean raw waveform', newline, ' peak amplitude (uV)'])
 
                     case 12 % spatialDecaySlope
-                        rectangle('Position', [min(qMetric.spatialDecaySlope), 0, abs(param.minSpatialDecaySlope-min(qMetric.spatialDecaySlope)), 1], 'FaceColor', [0, .5, 0, 0.2])
-                        histogram(qMetric.spatialDecaySlope, 'FaceColor', colorMtx(12, 1:3), 'FaceAlpha', colorMtx(12, 4), 'BinEdges', ...
-                            [min(qMetric.spatialDecaySlope):(max(qMetric.spatialDecaySlope) - min(qMetric.spatialDecaySlope)) ./ 100:max(qMetric.spatialDecaySlope)], 'Normalization', 'probability');
-                        yLim = ylim;
-                        line([param.minSpatialDecaySlope, param.minSpatialDecaySlope], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-                        ylabel('norm. unit count')
-                        xlabel(['spatial decay', newline, 'slope'])
+                        if param.spDecayLinFit
+                            rectangle('Position', [min(qMetric.spatialDecaySlope), 0, abs(param.minSpatialDecaySlope-min(qMetric.spatialDecaySlope)), 1], 'FaceColor', [0, .5, 0, 0.2])
+                            histogram(qMetric.spatialDecaySlope, 'FaceColor', colorMtx(12, 1:3), 'FaceAlpha', colorMtx(12, 4), 'BinEdges', ...
+                                [min(qMetric.spatialDecaySlope):(max(qMetric.spatialDecaySlope) - min(qMetric.spatialDecaySlope)) ./ 100:max(qMetric.spatialDecaySlope)], 'Normalization', 'probability');
+                            yLim = ylim;
+                            line([param.minSpatialDecaySlope, param.minSpatialDecaySlope], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+                            ylabel('norm. unit count')
+                            xlabel(['spatial decay', newline, 'slope'])
+                        else
+                            rectangle('Position', [param.minSpatialDecaySlopeExp, 0, param.maxSpatialDecaySlopeExp-param.minSpatialDecaySlopeExp, 1], 'FaceColor', [0, .5, 0, 0.2])
+                            histogram(qMetric.spatialDecaySlope, 'FaceColor', colorMtx(12, 1:3), 'FaceAlpha', colorMtx(12, 4), 'BinEdges', ...
+                                [min(qMetric.spatialDecaySlope):(max(qMetric.spatialDecaySlope) - min(qMetric.spatialDecaySlope)) ./ 100:max(qMetric.spatialDecaySlope)], 'Normalization', 'probability');
+                            yLim = ylim;
+                            line([param.minSpatialDecaySlopeExp, param.minSpatialDecaySlopeExp], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+                            line([param.maxSpatialDecaySlopeExp, param.maxSpatialDecaySlopeExp], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+                            ylabel('norm. unit count')
+                            xlabel(['spatial decay', newline, 'slope'])
+                        end
 
                     case 13 % waveformDuration_peakTrough
                         rectangle('Position', [param.minWvDuration, 0, param.maxWvDuration - param.minWvDuration, 1], 'FaceColor', [0, .5, 0, 0.2])
