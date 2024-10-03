@@ -1,5 +1,5 @@
 function [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitudes, ...
-    pcFeatures, pcFeatureIdx, channelPositions, goodChannels] = loadEphysData(ephys_path, datasetidx)
+    pcFeatures, pcFeatureIdx, channelPositions] = loadEphysData(ephys_path, datasetidx)
 % JF, Load ephys data (1-indexed)
 % ------
 % Inputs
@@ -23,8 +23,6 @@ function [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitu
 %   channels contribute to each entry in dim 3 of the pc_features matrix
 % channelPositions: nChannels x 2 double matrix, each row gives the x and y 
 %   coordinates of each channel
-% goodChannels: nChannels x 1 uint32 vector defining the channels used by
-%   kilosort (some are dropped during the spike sorting process)
 %
 
 % load spike templates (= waveforms)
