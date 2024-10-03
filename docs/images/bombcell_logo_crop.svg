@@ -24,9 +24,9 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     inkscape:zoom="1.2935185"
-     inkscape:cx="280.24338"
-     inkscape:cy="294.54545"
+     inkscape:zoom="0.64675926"
+     inkscape:cx="396.5927"
+     inkscape:cy="316.96492"
      inkscape:window-width="1920"
      inkscape:window-height="968"
      inkscape:window-x="1080"
@@ -373,7 +373,7 @@
        d="m 69.651749,81.763764 c -4.220291,-3.45398 -8.707699,-3.852285 -8.302144,-7.392971 0.782943,-6.64247 1.138299,-13.265301 -2.053915,-17.062355 -0.469375,-0.562515 -1.349946,-0.913261 -1.321828,0.504066 1.501943,7.442227 1.347855,8.015935 -0.474376,12.700649 -1.85773,2.289476 -12.42818,-3.293376 -19.41083,-6.581996 -0.45545,-0.214503 -1.48003,0.501229 -0.77545,1.290711 0.70457,0.78948 4.84556,2.234449 2.1071,4.463007 -7.504177,2.660973 -6.18135,2.360048 -13.994757,-0.19408 -0.55322,-0.320885 -2.31408,-0.641849 -0.32153,0.846669 8.325586,3.317035 9.487419,3.610287 19.395817,-0.178315 1.75314,-0.271344 6.38802,1.745961 9.77923,3.666264 7.472,5.766058 7.959275,8.200209 11.972694,14.60618"
        id="path175780"
        sodipodi:nodetypes="cccccszcccccc"
-       inkscape:export-filename="bombcell_logo_crop.png"
+       inkscape:export-filename="bombcell_logo_crop.svg"
        inkscape:export-xdpi="500"
        inkscape:export-ydpi="500" />
     <path
@@ -526,7 +526,7 @@
        sodipodi:nodetypes="cccccccccc" />
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;line-height:1.25;font-family:Cabin;-inkscape-font-specification:'Cabin, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;line-height:1.25;font-family:Cabin;-inkscape-font-specification:'Cabin, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:0px;word-spacing:0px;fill:#404040;fill-opacity:1;stroke-width:0.264583"
        id="text10"
        x="-21.079197"
        y="109.69068"
