@@ -30,7 +30,7 @@ Take a look at [`bombcell_pipeline`](https://github.com/Julie-Fabre/bombcell/blo
 Bombcell requires MATLAB>=2019a.
 
 To begin using Bombcell:
-- [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) the [repository](https://github.com/Julie-Fabre/bombcell/bombcell) and the [dependencies](#Dependencies).
+- [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) the [repository](https://github.com/Julie-Fabre/bombcell/bombcell) and the [dependencies](#Dependencies). You can do this either via git/GitHub desktop or directly by downloading the .zip file and decompressing it. 
 - add bombcell's and the dependancies' folders to [MATLAB's path](https://uk.mathworks.com/help/matlab/ref/pathtool.html).
 - in addition, if you want to compute ephys properties, change your working directory to `bombcell\+bc\+ep\+helpers` in matlab and run `mex -O CCGHeart.c` to able to compute fast ACGs, using part of the [FMAToolbox](https://fmatoolbox.sourceforge.net/).
 
