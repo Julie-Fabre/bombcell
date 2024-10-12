@@ -123,7 +123,7 @@ if param.plotGlobal
                         yLim = ylim;
                         line([ratio_thresh - 0.5, ratio_thresh - 0.5], [0, yLim(2)], 'Color', 'r', 'LineWidth', 2)
                         ylabel('norm. unit count')
-                        xlabel('main peak to trough ratio')
+                        xlabel('2nd peak to trough ratio')
                         
                         if sum(valid_data == 10)> 0
                             xlim([0 10])

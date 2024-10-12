@@ -1,10 +1,10 @@
-function rawAmplitude = getRawAmplitude(rawWaveforms, metaFile, probeType, gain_to_uV)
+function rawAmplitude_mV = getRawAmplitude(rawWaveforms, metaFile, probeType, gain_to_uV)
 % JF, Get the amplitude of the mean raw waveform for a unit
 % ------
 % Inputs
 % ------
 % rawWaveforms: nTimePoints × 1 double vector of the mean raw waveform
-%   for one unit
+%   for one unit in mV
 % metaFileDir: dir structure containing the location of the raw .meta or .oebin file.
 % probeType: optional. only used if you are using spikeGLX *and* the meta
 % file does not contain any probetype field (imDatPrb_type or imProbeOpt)
@@ -36,5 +36,6 @@ end
     
     % scale waveforms to get amplitude in microVolts 
     rawWaveforms = rawWaveforms .* scalingFactor;
-    rawAmplitude = abs(max(rawWaveforms)) + abs(min(rawWaveforms));
+    rawAmplitude_uV = abs(max(rawWaveforms)) + abs(min(rawWaveforms));
+    rawAmplitude_mV = rawAmplitude_uV ./1000;
 end

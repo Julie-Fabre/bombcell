@@ -10,12 +10,16 @@
 % - click on units
 % - probe locations
 
-function unitQualityGuiHandle = unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, ...
+function unitQualityGuiHandle = unitQualityGUI2(memMapData, ephysData, qMetric, forGUI, rawWaveforms, ...
     param, probeLocation, unitType, plotRaw)
 
-%% set up dynamic figure
-unitQualityGuiHandle = figure('color', 'w');
-set(unitQualityGuiHandle, 'KeyPressFcn', @KeyPressCb);
+%% set up dynamic figures
+unitQualityGuiHandle.mainFigure = figure('Name', 'Unit Quality GUI - Main', 'Position', [100, 100, 800, 600]);
+unitQualityGuiHandle.histogramFigure = figure('Name', 'Unit Quality GUI - Histograms', 'Position', [920, 100, 800, 600]);
+
+% Set up KeyPressFcn for both figures
+set(unitQualityGuiHandle.mainFigure, 'KeyPressFcn', @KeyPressCb);
+set(unitQualityGuiHandle.histogramFigure, 'KeyPressFcn', @KeyPressCb);
 
 %% initial conditions
 iCluster = 1;
@@ -29,6 +33,17 @@ if param.splitGoodAndMua_NonSomatic
 else
     nonSomaUnit_idx = find(unitType == 3);
 end
+
+%% waveform ratios
+qMetric.scndPeakToTroughRatio = abs(qMetric.mainPeak_after_size./qMetric.mainTrough_size);
+invalid_peaks = (abs(qMetric.mainTrough_size./qMetric.mainPeak_before_size) > param.minMainPeakToTroughRatio | ...
+                            qMetric.mainPeak_before_width > param.minWidthFirstPeak | ...
+                            qMetric.mainTrough_width > param.minWidthMainTrough);
+peak1_2_ratio = (abs(qMetric.mainPeak_before_size./qMetric.mainPeak_after_size));
+
+qMetric.peak1ToPeak2Ratio = peak1_2_ratio;
+qMetric.peak1ToPeak2Ratio(invalid_peaks) = 0;
+qMetric.mainPeakToTroughRatio = abs(max([qMetric.mainPeak_before_size, qMetric.mainPeak_after_size], [], 2)./qMetric.mainTrough_size);
 
 %% plot initial conditions
 iChunk = 1;
@@ -101,9 +116,105 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, 
 end
 
 function initializePlot(unitQualityGuiHandle, ephysData, qMetric, unitType, uniqueTemps, plotRaw, param)
+%% Histogram figure 
+guiData=struct;
+    figure(unitQualityGuiHandle.histogramFigure);
+    
+    % Define metrics, thresholds, and plot conditions
+    [metricNames, metricThresh1, metricThresh2, plotConditions, metricNames_SHORT] = defineMetrics(param);
 
+    numSubplots = sum(plotConditions);
+
+    % Calculate the best grid layout
+    numRows = floor(sqrt(numSubplots));
+    numCols = ceil(numSubplots/numRows);
+
+    % Color matrix setup
+    colorMtx = [bc.viz.colors(15); bc.viz.colors(15)];
+    colorMtx = [colorMtx(1:21, :, :), repmat(0.7, 21, 1)]; % make 70% transparent
+    colorMtx = colorMtx([1:4:end, 2:4:end, 3:4:end, 4:4:end], :); % shuffle colors
+
+    %sgtitle([num2str(sum(unitType == 1)), ' single units, ', num2str(sum(unitType == 2)), ' multi-units, ', ...
+    %    num2str(sum(unitType == 0)), ' noise units, ', num2str(sum(unitType == 3)), ' non-somatic units.']);
+
+    currentSubplot = 1;
+
+    % Plot each metric
+    for i = 1:length(plotConditions)
+        if plotConditions(i)
+            ax = subplot(numRows, numCols, currentSubplot);
+            hold(ax, 'on');
+            
+            metricName = metricNames{i};
+            metricData = qMetric.(metricName);
+            
+            % Plot histogram
+            if i > 2
+                h = histogram(ax, metricData, 40, 'FaceColor', colorMtx(i, 1:3), 'FaceAlpha', colorMtx(i, 4), 'Normalization', 'probability');
+            else
+                h = histogram(ax, metricData, 'FaceColor', colorMtx(i, 1:3), 'FaceAlpha', colorMtx(i, 4), 'Normalization', 'probability');
+            end
+            
+            % Add threshold lines and rectangles
+            if ~isnan(metricThresh1(i)) || ~isnan(metricThresh2(i))
+                binsize_offset = h.BinWidth/2;
+                
+                line(ax, [metricThresh1(i)+binsize_offset, metricThresh1(i)+binsize_offset], [0, max(h.Values)], 'Color', 'r', 'LineWidth', 2);
+                line(ax, [metricThresh2(i)+binsize_offset, metricThresh2(i)+binsize_offset], [0, max(h.Values)], 'Color', 'r', 'LineWidth', 2);
+                
+                
+                if (~isnan(metricThresh2(i)) && isnan(metricThresh1(i)))
+                    rectangle(ax, 'Position', [metricThresh2(i)+binsize_offset, 0, max(h.BinEdges)+binsize_offset, max(h.Values)], 'FaceColor', [0, .5, 0, 0.2]);
+                elseif (~isnan(metricThresh1(i)) && isnan(metricThresh2(i)))
+                    rectangle(ax, 'Position', [min(h.BinEdges), 0, metricThresh1(i)-min(h.BinEdges)+binsize_offset, max(h.Values)], 'FaceColor', [0, .5, 0, 0.2]);
+                elseif metricThresh2(i) > metricThresh1(i)
+                    rectangle(ax, 'Position', [metricThresh1(i)+binsize_offset, 0, metricThresh2(i)-metricThresh1(i), max(h.Values)], 'FaceColor', [0, .5, 0, 0.2]);
+                else
+                    rectangle(ax, 'Position', [min(metricData) , 0, metricThresh1(i)-min(metricData)+binsize_offset, max(h.Values)], 'FaceColor', [0, .5, 0, 0.2]);
+                end
+            end
+            if ~isnan(metricThresh2(i)) && metricThresh2(i) ~= metricThresh1(i)
+                line(ax, [metricThresh2(i) + binsize_offset, metricThresh2(i) + + binsize_offset], [0, max(h.Values)], 'Color', 'r', 'LineWidth', 2);
+            end
+            if i == 1
+                ylabel(ax, 'frac. units')
+            end
+            %title(ax, metricName)
+            xlabel(ax, metricNames_SHORT{i})
+            
+            % Special case for log scale
+            % if strcmp(metricName, 'Lratio') || strcmp(metricName, 'nSpikes') || strcmp(metricName, 'rawAmplitude') || strcmp(metricName, 'signalToNoiseRatio')
+            %     set(ax, 'XScale', 'log');
+            % end
+            % Add placeholder arrow for current unit's value
+            arrowY = max(h.Values) * 1.2; % Position arrow at 90% of max height
+            arrowX = mean(metricData); % Use mean as a placeholder; this will be updated later
+            arrowHandle = quiver(ax, arrowX, arrowY, 0, -max(h.Values)*0.1, 0, 'MaxHeadSize', 0.5, 'Color', 'k', 'LineWidth', 2);
+
+
+            % Add text label above the arrow
+            textY = arrowY + max(h.Values) * 0.05; % Position text slightly above the arrow
+            textHandle = text(ax, arrowX, textY, sprintf('%.4f', arrowX), ...
+                'HorizontalAlignment', 'center', 'VerticalAlignment', 'bottom', ...
+                'FontWeight', 'bold', 'Color', 'k');
+
+            % Store the axes handle, arrow handle, and text handle for later updates
+            guiData.histogramAxes.(metricName) = ax;
+            guiData.histogramArrows.(metricName) = arrowHandle;
+            guiData.histogramTexts.(metricName) = textHandle;
+
+            % Store the axes handle for later updates
+            guiData.histogramAxes.(metricName) = ax;
+            
+            currentSubplot = currentSubplot + 1;
+        end
+    end
+
+guidata(unitQualityGuiHandle.histogramFigure, guiData);
+
+%% Main figure
 %% main title
-
+figure(unitQualityGuiHandle.mainFigure);
 mainTitle = sgtitle('');
 
 %% initialize and plot units over depth
@@ -247,7 +358,7 @@ ampliFitTitle = title('');
 ampliFitLegend = legend(ampliFit, {''}, 'Location', 'South');
 
 %% save all handles
-guiData = struct;
+
 % main title
 guiData.mainTitle = mainTitle;
 % location plot
@@ -312,14 +423,14 @@ guiData.ampliFitTitle = ampliFitTitle;
 guiData.ampliFitLegend = ampliFitLegend;
 guiData.rpvAmpli = rpvAmpli;
 % upload guiData
-guidata(unitQualityGuiHandle, guiData);
+guidata(unitQualityGuiHandle.mainFigure, guiData);
 end
 
 function updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
     probeLocation, unitType, uniqueTemps, iChunk, plotRaw)
 
 %% Get guidata
-guiData = guidata(unitQualityGuiHandle);
+guiData = guidata(unitQualityGuiHandle.mainFigure);
 thisUnit = uniqueTemps(iCluster);
 colorsGdBad = [1, 0, 0; 0, 0.5, 0];
 colorsSomatic = [0.25,0.41,0.88; 0, 0.5, 0;0.25,0.41,0.88];
@@ -366,44 +477,38 @@ maxYC = ephysData.channel_positions(maxChan, 2);
 chanDistances = ((ephysData.channel_positions(:, 1) - maxXC).^2 ...
     +(ephysData.channel_positions(:, 2) - maxYC).^2).^0.5;
 chansToPlot = find(chanDistances < 100);
-vals = [];
-scalingFactor = range(-squeeze(ephysData.templates(thisUnit, :,maxChan))'+ ...
-            (ephysData.channel_positions(maxChan, 2) ))*2.5;
+
+% Calculate scaling factor based on the range of the maximum channel
+maxChannelWaveform = squeeze(ephysData.templates(thisUnit, :, maxChan));
+scalingFactor = range(-maxChannelWaveform) * 3;  % Increased from 2.5 to 3 for better visibility
+
+vals = zeros(min(20, size(chansToPlot, 1)), size(ephysData.templates, 2));
 
 for iChanToPlot = 1:min(20, size(chansToPlot, 1))
+    thisChannelWaveform = squeeze(ephysData.templates(thisUnit, :, chansToPlot(iChanToPlot)))';
+    vals(iChanToPlot, :) = -thisChannelWaveform + (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) / 100 * scalingFactor);
+
     if maxChan == chansToPlot(iChanToPlot)
-        vals(iChanToPlot,:) = -squeeze(ephysData.templates(thisUnit, :, chansToPlot(iChanToPlot)))'+ ...
-            (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) ./ 100 .* scalingFactor);
-
         set(guiData.maxTemplateWaveformLines, 'XData', (ephysData.waveform_t + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
-            'YData', vals(iChanToPlot,:));
-        hold on;
-        set(guiData.peaks, 'XData', (ephysData.waveform_t(forGUI.peakLocs{iCluster}) ...
-            +(ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
-            'YData', -squeeze(ephysData.templates(thisUnit, forGUI.peakLocs{iCluster}, chansToPlot(iChanToPlot)))'+ ...
-            (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) ./ 100 .* scalingFactor));
-
-        set(guiData.troughs, 'XData', (ephysData.waveform_t(forGUI.troughLocs{iCluster}) ...
-            +(ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
-            'YData', -squeeze(ephysData.templates(thisUnit, forGUI.troughLocs{iCluster}, chansToPlot(iChanToPlot)))'+ ...
-            (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) ./ 100 .* scalingFactor));
-        set(guiData.templateWaveformLines(iChanToPlot), 'XData', nan(82, 1), ...
-            'YData', nan(82, 1));
-
+            'YData', vals(iChanToPlot, :));
         
-
+        % Update peaks and troughs
+        set(guiData.peaks, 'XData', (ephysData.waveform_t(forGUI.peakLocs{iCluster}) + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
+            'YData', vals(iChanToPlot, forGUI.peakLocs{iCluster}));
+        set(guiData.troughs, 'XData', (ephysData.waveform_t(forGUI.troughLocs{iCluster}) + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
+            'YData', vals(iChanToPlot, forGUI.troughLocs{iCluster}));
+        
+        set(guiData.templateWaveformLines(iChanToPlot), 'XData', nan(82, 1), 'YData', nan(82, 1));
     else
-        vals(iChanToPlot,:) = -squeeze(ephysData.templates(thisUnit, :, chansToPlot(iChanToPlot)))'+ ...
-            (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) ./ 100 .* scalingFactor);
-
-        set(guiData.templateWaveformLines(iChanToPlot), 'XData', (ephysData.waveform_t + ...
-            (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
-            'YData', vals(iChanToPlot,:));
-
-        
+        set(guiData.templateWaveformLines(iChanToPlot), 'XData', (ephysData.waveform_t + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
+            'YData', vals(iChanToPlot, :));
     end
 end
-ylim(guiData.tempYLim, [min(min(vals,[],2)), max(max(vals,[],2))+0.8]) % space for legend
+
+% Adjust y-axis limits to prevent overlap with legend
+yMin = min(min(vals, [], 2));
+yMax = max(max(vals, [], 2)) + 1 * range(vals(:));  % Extra space for legend
+ylim(guiData.tempYLim, [yMin, yMax]);
 
 if any(~isnan(qMetric.spatialDecaySlope))
     param.computeSpatialDecay = 1;
@@ -501,34 +606,36 @@ end
 set(guiData.tempLegend, 'Location', 'southwest');
 %% plot 3: plot unit mean raw waveform (and individual traces)
 if param.extractRaw
-    maxChanRaw = rawWaveforms.peakChan(iCluster);
-    %chansToPlotRaw = chansToPlot;
+   maxChanRaw = rawWaveforms.peakChan(iCluster);
     chansToPlotRaw = chansToPlot + diff([maxChan, maxChanRaw]);
-    chansToPlotRaw(chansToPlotRaw<1)=[];
-    chansToPlotRaw(chansToPlotRaw>size(rawWaveforms.average,2))=[];
-    vals =[];
-    scalingFactor = range(-squeeze(rawWaveforms.average(iCluster, maxChanRaw, :))'+ ...
-                (ephysData.channel_positions(maxChan, 2) ))/1000;
-    channel_positions = [ephysData.channel_positions; ephysData.channel_positions+ephysData.channel_positions];%hacky
-
-    for iChanToPlot = 1:min(20, size(chansToPlotRaw, 1))
-        if maxChan + diff([maxChan, maxChanRaw]) == chansToPlotRaw(iChanToPlot)
-            vals(iChanToPlot,:) = -squeeze(rawWaveforms.average(iCluster, chansToPlotRaw(iChanToPlot), :))'+ ...
-                (channel_positions(chansToPlotRaw(iChanToPlot), 2) .*10) ./ scalingFactor;
-            set(guiData.maxRawWaveformLines, 'XData', (ephysData.waveform_t + ...
-                (channel_positions(chansToPlotRaw(iChanToPlot), 1) - 11) / 10), ...
-                'YData', vals(iChanToPlot,:));
-            set(guiData.rawWaveformLines(iChanToPlot), 'XData', nan(82, 1), ...
-                'YData', nan(82, 1));
+    chansToPlotRaw(chansToPlotRaw < 1) = [];
+    chansToPlotRaw(chansToPlotRaw > size(rawWaveforms.average, 2)) = [];
     
+    % Calculate scaling factor for raw waveforms
+    maxRawWaveform = squeeze(rawWaveforms.average(iCluster, maxChanRaw, :));
+    rawScalingFactor = range(-maxRawWaveform) * 3;  %// Increased from 2.5 to 3 for better visibility
+
+    valsRaw = zeros(min(20, size(chansToPlotRaw, 1)), size(rawWaveforms.average, 3));
+    
+    for iChanToPlot = 1:min(20, size(chansToPlotRaw, 1))
+        thisRawWaveform = squeeze(rawWaveforms.average(iCluster, chansToPlotRaw(iChanToPlot), :))';
+        valsRaw(iChanToPlot, :) = -thisRawWaveform + (ephysData.channel_positions(chansToPlotRaw(iChanToPlot), 2) / 100 * rawScalingFactor);
+
+        if maxChan + diff([maxChan, maxChanRaw]) == chansToPlotRaw(iChanToPlot)
+            set(guiData.maxRawWaveformLines, 'XData', (ephysData.waveform_t + (ephysData.channel_positions(chansToPlotRaw(iChanToPlot), 1) - 11) / 10), ...
+                'YData', valsRaw(iChanToPlot, :));
+            set(guiData.rawWaveformLines(iChanToPlot), 'XData', nan(82, 1), 'YData', nan(82, 1));
         else
-             vals(iChanToPlot,:) = -squeeze(rawWaveforms.average(iCluster,chansToPlotRaw(iChanToPlot), :))'+ ...
-                (channel_positions(chansToPlotRaw(iChanToPlot), 2) .*10) ./ scalingFactor;
-            set(guiData.rawWaveformLines(iChanToPlot), 'XData', (ephysData.waveform_t + ...
-                (channel_positions(chansToPlotRaw(iChanToPlot), 1) - 11) / 10), ...
-                'YData', vals(iChanToPlot,:));
+            set(guiData.rawWaveformLines(iChanToPlot), 'XData', (ephysData.waveform_t + (ephysData.channel_positions(chansToPlotRaw(iChanToPlot), 1) - 11) / 10), ...
+                'YData', valsRaw(iChanToPlot, :));
         end
     end
+
+    % Adjust y-axis limits for raw waveforms to prevent overlap with legend
+    yMinRaw = min(min(valsRaw, [], 2));
+    yMaxRaw = max(max(valsRaw, [], 2)) + 1 * range(valsRaw(:));  %// Extra space for legend
+    ylim(guiData.rawWaveformYLim, [yMinRaw, yMaxRaw]);
+
     set(guiData.rawLegend, 'String', ['Amplitude =', num2str(round(qMetric.rawAmplitude(iCluster))), 'uV', newline, ...
         'SNR =', num2str(qMetric.signalToNoiseRatio(iCluster))], 'Location', 'southwest')
     if ~isnan(qMetric.rawAmplitude)
@@ -549,16 +656,16 @@ if param.extractRaw
         set(guiData.rawTitle, 'String', ['\color[rgb]{0 0 0}Mean raw waveform: \color[rgb]{0 0 0} amplitude, \color[rgb]{1 0 0} SNR ']);
     end
     end
-    if ~isempty(vals)
-        try
-        if any(vals > 0 )
-            ylim(guiData.rawWaveformYLim, [min(min(vals,[],2)), max(max(vals,[],2))+1]) % space for legend
-        else
-            ylim(guiData.rawWaveformYLim, [max(max(vals,[],2)), min(min(vals,[],2))+1]) % space for legend
-        end
-        catch
-        end
-    end
+    % if ~isempty(vals)
+    %     try
+    %     if any(vals > 0 )
+    %         ylim(guiData.rawWaveformYLim, [min(min(vals,[],2)), max(max(vals,[],2))+1]) % space for legend
+    %     else
+    %         ylim(guiData.rawWaveformYLim, [max(max(vals,[],2)), min(min(vals,[],2))+1]) % space for legend
+    %     end
+    %     catch
+    %     end
+    % end
 
 
 end
@@ -682,6 +789,34 @@ set(guiData.ampliLegend, 'String', {['# spikes = ', num2str(qMetric.nSpikes(iClu
 if plotRaw
     plotSubRaw(guiData.rawPlotH, guiData.rawPlotLines, guiData.rawSpikeLines, memMapData, ephysData, iCluster, uniqueTemps, iChunk);
 end
+
+%% 9. update hg plot 
+guiData2 = guidata(unitQualityGuiHandle.histogramFigure);
+% Update histogram figure
+    figure(unitQualityGuiHandle.histogramFigure);
+    
+    metricNames = fieldnames(guiData2.histogramAxes);
+    
+    for i = 1:length(metricNames)
+        metricName = metricNames{i};
+        ax = guiData2.histogramAxes.(metricName);
+        arrowHandle = guiData2.histogramArrows.(metricName);
+        textHandle = guiData2.histogramTexts.(metricName);
+        
+        % Get current unit's value for this metric
+        unitValue = qMetric.(metricName)(iCluster);
+        
+        % Update arrow position
+        yLim = get(ax, 'YLim');
+        arrowY = yLim(2) * 0.9; % Position arrow at 90% of y-axis height
+        set(arrowHandle, 'XData', unitValue, 'YData', arrowY);
+        
+        % Update text position and value
+        textY = arrowY + (yLim(2) - yLim(1)) * 0.05; % Position text slightly above the arrow
+        set(textHandle, 'Position', [unitValue, textY, 0]);
+        set(textHandle, 'String', sprintf('%.4f', unitValue));
+    end
+
 end
 
 function updateRawSnippet(unitQualityGuiHandle, memMapData, ephysData, iCluster, iCount, qMetric, param, ...
@@ -815,3 +950,50 @@ end
 % update_plot(cellraster_gui);
 %
 % end
+
+function [metricNames, metricThresh1, metricThresh2, plotConditions, metricNames_SHORT] = defineMetrics(param)
+    metricNames = {'nPeaks', 'nTroughs', 'scndPeakToTroughRatio', 'peak1ToPeak2Ratio', 'mainPeakToTroughRatio', ...
+                   'fractionRPVs_estimatedTauR', 'RPV_tauR_estimate', 'percentageSpikesMissing_gaussian', ...
+                   'percentageSpikesMissing_symmetric', 'nSpikes', 'rawAmplitude', 'spatialDecaySlope', ...
+                   'waveformDuration_peakTrough', 'waveformBaselineFlatness', 'presenceRatio', 'signalToNoiseRatio', ...
+                   'maxDriftEstimate', 'cumDriftEstimate', 'isoD', 'Lratio'};
+
+
+     metricNames_SHORT = {'nPeaks', 'nTroughs', 'scndPeakToTroughRatio', 'peak1ToPeak2Ratio', 'mainPeakToTroughRatio', ...
+                   'fractionRPVs', 'RPV_tauR_estimate', '%SpikesMissing', ...
+                   '%SpikesMissing-symmetric', 'nSpikes', 'rawAmplitude', 'spatialDecaySlope', ...
+                   'waveformDuration', 'waveformBaselineFlatness', 'presenceRatio', 'signalToNoiseRatio', ...
+                   'maxDriftEstimate', 'cumDriftEstimate', 'isolationDist', 'Lratio'};
+               if param.spDecayLinFit
+    metricThresh1 = [param.maxNPeaks, param.maxNTroughs, param.minTroughToPeakRatio, param.firstPeakRatio, param.minTroughToPeakRatio, ...
+                     param.maxRPVviolations, NaN, param.maxPercSpikesMissing, NaN, NaN, NaN, param.minSpatialDecaySlope, ...
+                     param.minWvDuration, param.maxWvBaselineFraction,  NaN, NaN, ...
+                     param.maxDrift, NaN, param.isoDmin, NaN];
+    
+                 
+    metricThresh2 = [NaN, NaN, param.minTroughToPeakRatio, NaN, NaN, ...
+                     NaN, NaN, NaN, NaN, param.minNumSpikes, param.minAmplitude, NaN, ...
+                     param.maxWvDuration, NaN, param.minPresenceRatio, param.minSNR, ...
+                     NaN, NaN, NaN, param.lratioMax];
+               else
+                   metricThresh1 = [param.maxNPeaks, param.maxNTroughs, param.minTroughToPeakRatio, param.firstPeakRatio, param.minTroughToPeakRatio, ...
+                     param.maxRPVviolations, NaN, param.maxPercSpikesMissing, NaN, NaN, NaN, param.minSpatialDecaySlopeExp, ...
+                     param.minWvDuration, param.maxWvBaselineFraction, NaN, NaN, ...
+                     param.maxDrift, NaN, param.isoDmin, NaN];
+    
+                 
+    metricThresh2 = [NaN, NaN, param.minTroughToPeakRatio, NaN, NaN, ...
+                     NaN, NaN, NaN, NaN, param.minNumSpikes, param.minAmplitude, param.maxSpatialDecaySlopeExp, ...
+                     param.maxWvDuration, NaN, param.minPresenceRatio, param.minSNR, ...
+                     NaN, NaN, NaN, param.lratioMax];
+               end
+    plotConditions = [true, true, true, true, true, true, ...
+        param.tauR_valuesMin ~= param.tauR_valuesMax, ...
+        true, true, true, param.extractRaw, ...
+        param.computeSpatialDecay == 1, ...
+        true, true, true, param.extractRaw, ...
+        param.computeDrift, param.computeDrift, ...
+        param.computeDistanceMetrics && ~isnan(param.isoDmin), ...
+        param.computeDistanceMetrics && ~isnan(param.isoDmin)];
+end
+

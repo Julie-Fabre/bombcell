@@ -34,6 +34,16 @@ end
 if param.saveMatFileForGUI
     save(fullfile(savePath, 'templates.qualityMetricDetailsforGUI.mat'), 'forGUI', '-v7.3')
 end
+% compute the waveform ratios 
+qMetric.secndPeakToTroughRatio = abs(qMetric.mainPeak_after_size./qMetric.mainTrough_size);
+invalid_peaks = (abs(qMetric.mainTrough_size./qMetric.mainPeak_before_size) > param.minMainPeakToTroughRatio | ...
+                            qMetric.mainPeak_before_width > param.minWidthFirstPeak | ...
+                            qMetric.mainTrough_width > param.minWidthMainTrough);
+peak1_2_ratio = (abs(qMetric.mainPeak_before_size./qMetric.mainPeak_after_size));
+
+qMetric.peak1ToPeak2Ratio = peak1_2_ratio;
+qMetric.peak1ToPeak2Ratio(invalid_peaks) = 0;
+qMetric.mainPeakToTroughRatio = abs(max([qMetric.mainPeak_before_size, qMetric.mainPeak_after_size], [], 2)./qMetric.mainTrough_size);
 
 % save fraction refractory period violations for all different tauR times
 parquetwrite([fullfile(savePath, 'templates._bc_fractionRefractoryPeriodViolationsPerTauR.parquet')], array2table(qMetric.fractionRPVs))
