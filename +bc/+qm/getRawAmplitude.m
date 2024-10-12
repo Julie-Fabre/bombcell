@@ -1,4 +1,4 @@
-function rawAmplitude_mV = getRawAmplitude(rawWaveforms, metaFile, probeType, gain_to_uV)
+function rawAmplitude_uV = getRawAmplitude(rawWaveforms, metaFile, probeType, gain_to_uV)
 % JF, Get the amplitude of the mean raw waveform for a unit
 % ------
 % Inputs
@@ -37,5 +37,5 @@ end
     % scale waveforms to get amplitude in microVolts 
     rawWaveforms = rawWaveforms .* scalingFactor;
     rawAmplitude_uV = abs(max(rawWaveforms)) + abs(min(rawWaveforms));
-    rawAmplitude_mV = rawAmplitude_uV ./1000;
+    %rawAmplitude_mV = rawAmplitude_uV ./1000;
 end

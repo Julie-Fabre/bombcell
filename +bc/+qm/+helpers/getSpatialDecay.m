@@ -15,8 +15,8 @@ if computeSpatialDecay
         NUM_CHANNELS_FOR_FIT = 6;
     else
         CHANNEL_TOLERANCE = 33; % need to make more restricive. for most geometries, this includes all the channels.
-        MIN_CHANNELS_FOR_FIT = 20;
-        NUM_CHANNELS_FOR_FIT = 25;
+        MIN_CHANNELS_FOR_FIT = 8;
+        NUM_CHANNELS_FOR_FIT = 10;
     end
 
     % Initialize output variables

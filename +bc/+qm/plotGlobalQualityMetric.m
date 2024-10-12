@@ -116,12 +116,13 @@ if param.plotGlobal
                         min_val = min(valid_data);
                         max_val = max(valid_data);
                         edges = linspace(min_val, max_val, num_bins);
+                        binsize = edges(2) - edges(1);
                         [counts, edges] = histcounts(valid_data, edges, 'Normalization', 'probability');
                         centers = sqrt(edges(1:end-1).*edges(2:end));
-                        rectangle('Position', [-0.5, 0, ratio_thresh, 1], 'FaceColor', [0, .5, 0, 0.2])
+                        rectangle('Position', [0, 0, ratio_thresh, 1], 'FaceColor', [0, .5, 0, 0.2])
                         bar(centers, counts, 1, 'FaceColor', colorMtx(3, 1:3), 'FaceAlpha', colorMtx(3, 4));
                         yLim = ylim;
-                        line([ratio_thresh - 0.5, ratio_thresh - 0.5], [0, yLim(2)], 'Color', 'r', 'LineWidth', 2)
+                        line([ratio_thresh, ratio_thresh], [0, yLim(2)], 'Color', 'r', 'LineWidth', 2)
                         ylabel('norm. unit count')
                         xlabel('2nd peak to trough ratio')
                         
@@ -146,10 +147,10 @@ if param.plotGlobal
                         edges = linspace(min_val, max_val, num_bins);
                         [counts, edges] = histcounts(valid_data, edges, 'Normalization', 'probability');
                         centers = sqrt(edges(1:end-1).*edges(2:end));
-                        rectangle('Position', [-0.5, 0, param.firstPeakRatio, 1], 'FaceColor', [0, .5, 0, 0.2])
+                        rectangle('Position', [0, 0, param.firstPeakRatio, 1], 'FaceColor', [0, .5, 0, 0.2])
                         bar(centers, counts, 1, 'FaceColor', colorMtx(4, 1:3), 'FaceAlpha', colorMtx(3, 4));
                         yLim = ylim;
-                        line([param.firstPeakRatio - 0.5, param.firstPeakRatio - 0.5], [0, yLim(2)], 'Color', 'r', 'LineWidth', 2)
+                        line([param.firstPeakRatio, param.firstPeakRatio], [0, yLim(2)], 'Color', 'r', 'LineWidth', 2)
                         ylabel('norm. unit count')
                         xlabel('first to second peak ratio')
                         %ylim([0, 0.1])
@@ -169,10 +170,10 @@ if param.plotGlobal
                         edges = linspace(min_val, max_val, num_bins);
                         [counts, edges] = histcounts(valid_data, edges, 'Normalization', 'probability');
                         centers = sqrt(edges(1:end-1).*edges(2:end));
-                        rectangle('Position', [-0.5, 0, ratio_thresh, 1], 'FaceColor', [0, .5, 0, 0.2])
+                        rectangle('Position', [0, 0, ratio_thresh, 1], 'FaceColor', [0, .5, 0, 0.2])
                         bar(centers, counts, 1, 'FaceColor', colorMtx(5, 1:3), 'FaceAlpha', colorMtx(3, 4));
                         yLim = ylim;
-                        line([ratio_thresh - 0.5, ratio_thresh - 0.5], [0, yLim(2)], 'Color', 'r', 'LineWidth', 2)
+                        line([ratio_thresh, ratio_thresh ], [0, yLim(2)], 'Color', 'r', 'LineWidth', 2)
                         ylabel('norm. unit count')
                         xlabel('main peak to trough ratio')
                        %ylim([0, 0.1])
@@ -238,6 +239,7 @@ if param.plotGlobal
                             maxVal = max(qMetric.rawAmplitude);
                             binEdges = logspace(log10(minVal), log10(maxVal), 40);
                             rectangle('Position', [param.minAmplitude, 0, binEdges(end) - param.minAmplitude, 1], 'FaceColor', [0, .5, 0, 0.2])
+                            
                             histogram(qMetric.rawAmplitude, 'FaceColor', colorMtx(11, 1:3), 'FaceAlpha', colorMtx(11, 4), 'BinEdges', binEdges, 'Normalization', 'probability');
                             yLim = ylim;
                             line([param.minAmplitude, param.minAmplitude], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
@@ -269,8 +271,8 @@ if param.plotGlobal
                         rectangle('Position', [param.minWvDuration, 0, param.maxWvDuration - param.minWvDuration, 1], 'FaceColor', [0, .5, 0, 0.2])
                         histogram(qMetric.waveformDuration_peakTrough, 40, 'FaceColor', colorMtx(13, 1:3), 'FaceAlpha', colorMtx(11, 4), 'Normalization', 'probability');
                         yLim = ylim;
-                        line([param.minWvDuration + 0.5, param.minWvDuration + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-                        line([param.maxWvDuration + 0.5, param.maxWvDuration + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+                        line([param.minWvDuration , param.minWvDuration ], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+                        line([param.maxWvDuration , param.maxWvDuration ], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
                         ylabel('norm. unit count')
                         xlabel(['waveform', newline, 'duration'])
                     case 14 % waveformBaselineFlatness
@@ -302,7 +304,7 @@ if param.plotGlobal
                         xlabel(['signal-to-noise', newline, 'ratio'])
 
                     case 17 % maxDriftEstimate
-                        rectangle('Position', [-0.5, 0, param.maxDrift + 0.5, 1], 'FaceColor', [0, .5, 0, 0.2])
+                        rectangle('Position', [-0.5, 0, param.maxDrift , 1], 'FaceColor', [0, .5, 0, 0.2])
                         histogram(qMetric.maxDriftEstimate, 40, 'FaceColor', colorMtx(17, 1:3), 'FaceAlpha', colorMtx(15, 4), ...
                             'Normalization', 'probability');
                         yLim = ylim;
@@ -321,7 +323,7 @@ if param.plotGlobal
                         rectangle('Position', [param.isoDmin, 0, max(qMetric.isoD) - param.isoDmin, 1], 'FaceColor', [0, .5, 0, 0.2])
                         histogram(qMetric.isoD, 40, 'FaceColor', colorMtx(19, 1:3), 'FaceAlpha', colorMtx(1, 4),  'Normalization', 'probability');
                         yLim = ylim;
-                        line([param.isoDmin + 0.5, param.isoDmin + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+                        line([param.isoDmin , param.isoDmin ], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
                         ylabel('norm. unit count')
                         xlabel('isolation distance')
 
@@ -330,10 +332,10 @@ if param.plotGlobal
                         minVal = min(qMetric.Lratio(qMetric.Lratio > 0));
                         maxVal = max(qMetric.Lratio);
                         binEdges = logspace(log10(minVal), log10(maxVal), 40);
-                        rectangle('Position', [binEdges(1), 0, param.lratioMax - binEdges(1) + 1, 1], 'FaceColor', [0, .5, 0, 0.2])
+                        rectangle('Position', [0, 0, param.lratioMax , 1], 'FaceColor', [0, .5, 0, 0.2])
                         histogram(qMetric.Lratio, 'FaceColor', colorMtx(20, 1:3), 'FaceAlpha', colorMtx(1, 4), 'BinEdges', binEdges, 'Normalization', 'probability');
                         yLim = ylim;
-                        line([param.lratioMax + 0.5, param.lratioMax + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+                        line([param.lratioMax , param.lratioMax ], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
                         ylabel('norm. unit count')
                         xlabel('l-ratio')
                 end

@@ -1,6 +1,6 @@
 function [nPeaks, nTroughs, mainPeak_before_size, mainPeak_after_size, mainTrough_size,...
     mainPeak_before_width, mainPeak_after_width, mainTrough_width, peakLocs, troughLocs, waveformDuration_peakTrough, ...
-    spatialDecayPoints, spatialDecaySlope, waveformBaseline, thisWaveform] = waveformShape(templateWaveforms, ...
+    spatialDecayPoints, spatialDecaySlope, waveformBaseline, thisWaveform, spatialDecayPoints_loc, spatialDecayFit_1] = waveformShape(templateWaveforms, ...
     thisUnit, maxChannel, param, channelPositions, waveformBaselineWindow)
 % JF
 % Get the number of troughs and peaks for each waveform,
@@ -75,6 +75,8 @@ if any(isnan(thisWaveform)) % kilosort can sometimes return all NaNs in a wavefo
     spatialDecayPoints = nan(1, 6);
     spatialDecaySlope = NaN;
     waveformBaseline = NaN;
+    spatialDecayPoints_loc = nan(1, 6); 
+    spatialDecayFit_1 = NaN;
 else
     % get waveform peaks, troughs locations, sizes and widths for top 17
     % channels 
@@ -142,11 +144,10 @@ else
 
     % (get waveform spatial decay accross channels)
     linearFit = param.spDecayLinFit;
-    param.normalizeSpDecay = 1;
     [spatialDecaySlope, spatialDecayFit, spatialDecayPoints, spatialDecayPoints_loc, estimatedUnitXY] = ...
         bc.qm.helpers.getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit, param.normalizeSpDecay, param.computeSpatialDecay);
 
-
+spatialDecayFit_1 = spatialDecayFit(1);
     % (get waveform baseline fraction)
     if ~isnan(waveformBaselineWindow(1))
         waveformBaseline = max(abs(thisWaveform(waveformBaselineWindow(1): ...

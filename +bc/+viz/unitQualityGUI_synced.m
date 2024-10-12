@@ -10,7 +10,7 @@
 % - click on units
 % - probe locations
 
-function unitQualityGuiHandle = unitQualityGUI2(memMapData, ephysData, qMetric, forGUI, rawWaveforms, ...
+function unitQualityGuiHandle = unitQualityGUI_synced(memMapData, ephysData, qMetric, forGUI, rawWaveforms, ...
     param, probeLocation, unitType, plotRaw)
 
 %% set up dynamic figures
@@ -219,7 +219,8 @@ mainTitle = sgtitle('');
 
 %% initialize and plot units over depth
 
-subplot(6, 13, [1, 14, 27, 40, 53, 66], 'YDir', 'reverse');
+    subplot(6, 13, [1, 14, 27, 40, 53, 66], 'YDir', 'reverse');
+
 hold on;
 unitCmap = zeros(length(unitType), 3);
 unitCmap(unitType == 1, :) = repmat([0, 0.5, 0], length(find(unitType == 1)), 1);
@@ -233,68 +234,100 @@ currUnitDots = scatter(0, 0, 100, unitCmap(1, :, :), ...
 xlim([-0.1, 1.1]);
 ylim([min(ephysData.channel_positions(:, 2)) - 50, max(ephysData.channel_positions(:, 2)) + 50]);
 ylabel('Depth (\mum)')
-xlabel('Normalized log rate')
-title('Location on probe')
+xlabel('Norm. log rate')
+%title('Location on probe')
 
 %% initialize template waveforms
-subplot(6, 13, [2:7, 15:20])
+if plotRaw
+    subplot(6, 13, [2:7, 15:20])
+elseif param.extractRaw
+    subplot(6, 13, [2:7, 15:20, 28:33])
+else
+    subplot(6, 13, 2:39)
+end
 hold on;
 max_n_channels_plot = 20;
 templateWaveformLines = arrayfun(@(x) plot(nan(82, 1), nan(82, 1), 'linewidth', 2, 'color', 'k'), 1:max_n_channels_plot);
 maxTemplateWaveformLines = arrayfun(@(x) plot(nan(82, 1), nan(82, 1), 'linewidth', 2, 'color', 'b'), 1);
 peaks = scatter(nan(10, 1), nan(10, 1), [], prettify_rgb('Orange'), 'v', 'filled');
 troughs = scatter(nan(10, 1), nan(10, 1), [], prettify_rgb('Gold'), 'v', 'filled');
-xlabel('Position+Time');
-ylabel('Position');
+%xlabel('Position+Time');
+%ylabel('Position');
 set(gca, 'YDir', 'reverse')
 tempTitle = title('');
-tempLegend = legend([maxTemplateWaveformLines, peaks, troughs, templateWaveformLines(1),...
-    ], {'', '', '', ''}, 'color', 'none');
+tempLegend = legend([maxTemplateWaveformLines, peaks, troughs,...
+    ], {'', '', ''}, 'color', 'none');
 tempYLim = gca;
+set(gca, 'XTick', [], 'YTick', []);
 
 %% initialize raw waveforms
 if param.extractRaw
-    subplot(6, 13, [8:13, 21:26])
+    if plotRaw
+        subplot(6, 13, [8:13, 21:26])
+    else
+        subplot(6, 13, [8:13, 21:26, 34:39])
+    end
     hold on;
     rawWaveformLines = arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', 'k'), 1:max_n_channels_plot);
     maxRawWaveformLines = arrayfun(@(x) plot(nan(82, 1), nan(82, 1), 'linewidth', 2, 'color', 'b'), 1);
     set(gca, 'YDir', 'reverse')
-    xlabel('Position+Time');
-    ylabel('Position');
+    %xlabel('Position+Time');
+    %ylabel('Position');
     rawTitle = title('');
     rawLegend = legend(maxRawWaveformLines, {''}, 'color', 'none');
     rawWaveformYLim = gca;
+    set(gca, 'XTick', [], 'YTick', []);
 end
 
-%% initialize ACG
+%% spDeK plot 
 if plotRaw && param.computeDistanceMetrics
-    subplot(6, 13, 28:31)
+    subplot(6, 13, 29:31)
+elseif param.computeDistanceMetrics
+    subplot(6, 13, 42:44)
 else
-    subplot(6, 13, 28:33)
+    subplot(6, 13, 42:46)
 end
 hold on;
-acgBar = arrayfun(@(x) bar(0:0.1:25, nan(251, 1)), 1);
+spDecayPoints = scatter(NaN, NaN, 'black', 'filled');
+spDecayFit = plot(NaN, NaN, 'Color', prettify_rgb('FireBrick'), 'LineWidth', 2);
+spDecayLegend = legend(spDecayFit, {''});
+spDecayTitle = title('');
+ylabel('ampli. (a.u.)');
+xlabel('distance');
+%% initialize ACG
+if plotRaw && param.computeDistanceMetrics
+    subplot(6, 13, 33:35)
+elseif param.computeDistanceMetrics
+    subplot(6, 13, 46:49)
+else
+    subplot(6, 13, 48:52)
+end
+hold on;
+acgBar = arrayfun(@(x) bar(0:0.1:5, nan(51, 1)), 1);
 acgRefLine = line([NaN, NaN], [NaN, NaN], 'Color', 'r', 'linewidth', 1.2);
 acgAsyLine = line([NaN, NaN], [NaN, NaN], 'Color', 'r', 'linewidth', 1.2);
 xlabel('time (ms)');
 ylabel('sp/s');
 acgTitle = title('');
-
+acgLegend = legend(acgBar, {''});
 %% initialize ISI
 
-if plotRaw && param.computeDistanceMetrics
-    subplot(6, 13, 32:35)
-else
-    subplot(6, 13, 34:39)
-
-end
-hold on;
-isiBar = arrayfun(@(x) bar((0 + 0.25):0.5:(50 - 0.25), nan(100, 1)), 1);
-isiRefLine = line([NaN, NaN], [NaN, NaN], 'Color', 'r', 'linewidth', 1.2);
-xlabel('Interspike interval (ms)')
-ylabel('# of spikes')
-isiTitle = title('');
-isiLegend = legend(isiBar, {''});
+% if plotRaw && param.computeDistanceMetrics
+%     subplot(6, 13, 33:35)
+% elseif param.computeDistanceMetrics
+%     subplot(6, 13, 46:49)
+% else
+%     subplot(6, 13, 48:52)
+% end
+% 
+% 
+% hold on;
+% isiBar = arrayfun(@(x) bar((0 + 0.25):0.5:(50 - 0.25), nan(100, 1)), 1);
+% isiRefLine = line([NaN, NaN], [NaN, NaN], 'Color', 'r', 'linewidth', 1.2);
+% xlabel('Interspike interval (ms)')
+% ylabel('# of spikes')
+% isiTitle = title('');
+% acgLegend = legend(isiBar, {''});
 
 %% initialize isoDistance
 % if param.computeDistanceMetrics %temporarily disabled this plot - better plot coming soon! 
@@ -327,7 +360,7 @@ if plotRaw
 end
 
 %% initialize amplitude * spikes
-ampliAx = subplot(6, 13, [67:70, 73:76]);
+ampliAx = subplot(6, 13, [55:57, 68:70, 74:76]);
 hold on;
 yyaxis left;
 tempAmpli = scatter(NaN, NaN, 'black', 'filled');
@@ -336,7 +369,7 @@ rpvAmpli = scatter(NaN, NaN, 10, 'magenta', 'filled');
 ampliLine = line([NaN, NaN], [NaN, NaN], 'LineWidth', 2.0, 'Color', [0, 0.5, 0]);
 %timeChunkLines = arrayfun(@(x) plot(NaN, NaN, 'linewidth', 2, 'color', 'k'), 1:param.deltaTimeChunk);
 xlabel('Experiment time (s)');
-ylabel('Template amplitude scaling');
+ylabel('Template scaling');
 axis tight
 hold on;
 set(gca, 'YColor', 'k')
@@ -349,11 +382,11 @@ ampliTitle = title('');
 ampliLegend = legend([tempAmpli, rpvAmpli, ampliLine ], {'', '', ''});
 
 %% initialize amplitude fit
-ampliFitAx = subplot(6, 13, 78);
+ampliFitAx = subplot(6, 13, [65,78]);
 hold on;
 ampliBins = barh(NaN, NaN, 'blue');
 ampliBins.FaceAlpha = 0.5;
-ampliFit = plot(NaN, NaN, 'Color', prettify_rgb('Orange'), 'LineWidth', 4);
+ampliFit = plot(NaN, NaN, 'Color', prettify_rgb('Orange'), 'LineWidth', 2);
 ampliFitTitle = title('');
 ampliFitLegend = legend(ampliFit, {''}, 'Location', 'South');
 
@@ -389,11 +422,19 @@ guiData.acgBar = acgBar;
 guiData.acgRefLine = acgRefLine;
 guiData.acgAsyLine = acgAsyLine;
 guiData.acgTitle = acgTitle;
+guiData.acgLegend = acgLegend;
+%Spatial decay 
+guiData.spDecayPoints = spDecayPoints;
+guiData.spDecayFit =spDecayFit;
+guiData.spDecayLegend = spDecayLegend;
+guiData.spDecayTitle = spDecayTitle;
+
+
 % ISI
-guiData.isiBar = isiBar;
-guiData.isiRefLine = isiRefLine;
-guiData.isiTitle = isiTitle;
-guiData.isiLegend = isiLegend;
+% guiData.isiBar = isiBar;
+% guiData.isiRefLine = isiRefLine;
+% guiData.isiTitle = isiTitle;
+% guiData.isiLegend = acgLegend;
 % isoD
 % if param.computeDistanceMetrics
 %     guiData.currIsoD = currIsoD;
@@ -507,60 +548,25 @@ end
 
 % Adjust y-axis limits to prevent overlap with legend
 yMin = min(min(vals, [], 2));
-yMax = max(max(vals, [], 2)) + 1 * range(vals(:));  % Extra space for legend
+yMax = max(max(vals, [], 2)) + 0.5 * range(vals(:));  % Extra space for legend
+try
 ylim(guiData.tempYLim, [yMin, yMax]);
-
+catch
+end
 if any(~isnan(qMetric.spatialDecaySlope))
     param.computeSpatialDecay = 1;
 else
     param.computeSpatialDecay = 0;
 end
 
-if param.computeSpatialDecay
-    tempWvTitleText = ['\\fontsize{9}Template waveform: {\\color[rgb]{%s}# detected peaks/troughs, ', newline, ...
-        '\\color[rgb]{%s}spatial decay, \\color[rgb]{%s}baseline flatness, ', ...
-        '\\color[rgb]{%s}waveform duration', newline '\\color[rgb]{%s}2ndpeak/trough,  ' ...
-        '\\color[rgb]{%s}1rstpeak/2nd, \\color[rgb]{%s}main peak/trough}'];
-else
+
      tempWvTitleText = ['\\fontsize{9}Template waveform: {\\color[rgb]{%s}# detected peaks/troughs, ', newline, ...
         '\\color[rgb]{%s}baseline flatness, ', ...
         '\\color[rgb]{%s}waveform duration', newline '\\color[rgb]{%s}2ndpeak/trough,  ' ...
         '\\color[rgb]{%s}1rstpeak/2nd, \\color[rgb]{%s}main peak/trough}'];
-end
-
-if param.computeSpatialDecay && param.spDecayLinFit
-    set(guiData.tempTitle, 'String', sprintf(tempWvTitleText, ...
-        num2str(colorsGdBad(double(qMetric.nPeaks(iCluster) <= param.maxNPeaks && qMetric.nTroughs(iCluster) <= param.maxNTroughs)+1, :)), ...
-        num2str(colorsGdBad(double(qMetric.spatialDecaySlope(iCluster) <= param.minSpatialDecaySlope)+1, :)),...
-        num2str(colorsGdBad(double(qMetric.waveformBaselineFlatness(iCluster) <= param.maxWvBaselineFraction)+1, :)),...
-        num2str(colorsGdBad(double(qMetric.waveformDuration_peakTrough(iCluster) >= param.minWvDuration && ...
-        qMetric.waveformDuration_peakTrough(iCluster) <= param.maxWvDuration)+1, :)),...
-        num2str(colorsGdBad(double(abs(qMetric.mainPeak_after_size(iCluster)./ qMetric.mainTrough_size(iCluster)) <= param.minTroughToPeakRatio)+1, :)),...
-        num2str(colorsSomatic(double(abs(qMetric.mainTrough_size(iCluster) ./ qMetric.mainPeak_before_size(iCluster)) < param.minMainPeakToTroughRatio &...
-        qMetric.mainPeak_before_width(iCluster)< param.minWidthFirstPeak &...
-        qMetric.mainTrough_width(iCluster) < param.minWidthMainTrough &...
-        abs(qMetric.mainPeak_before_size(iCluster)./qMetric.mainPeak_after_size(iCluster)) > param.firstPeakRatio)+2, :)),...
-        num2str(colorsSomatic(double(abs(max([qMetric.mainPeak_before_size(iCluster), qMetric.mainPeak_after_size(iCluster)], [], 2)./ qMetric.mainTrough_size(iCluster))...
-        <= param.minTroughToPeakRatio)+1, :))));
 
 
 
-elseif param.computeSpatialDecay
-    set(guiData.tempTitle, 'String', sprintf(tempWvTitleText, ...
-        num2str(colorsGdBad(double(qMetric.nPeaks(iCluster) <= param.maxNPeaks && qMetric.nTroughs(iCluster) <= param.maxNTroughs)+1, :)), ...
-        num2str(colorsGdBad(double(qMetric.spatialDecaySlope(iCluster) >= param.minSpatialDecaySlopeExp && qMetric.spatialDecaySlope(iCluster) <= param.maxSpatialDecaySlopeExp)+1, :)),...
-        num2str(colorsGdBad(double(qMetric.waveformBaselineFlatness(iCluster) <= param.maxWvBaselineFraction)+1, :)),...
-        num2str(colorsGdBad(double(qMetric.waveformDuration_peakTrough(iCluster) >= param.minWvDuration && ...
-        qMetric.waveformDuration_peakTrough(iCluster) <= param.maxWvDuration)+1, :)),...
-        num2str(colorsGdBad(double(abs(qMetric.mainPeak_after_size(iCluster)./ qMetric.mainTrough_size(iCluster)) <= param.minTroughToPeakRatio)+1, :)),...
-        num2str(colorsSomatic(double(abs(qMetric.mainTrough_size(iCluster) ./ qMetric.mainPeak_before_size(iCluster)) < param.minMainPeakToTroughRatio&...
-        qMetric.mainPeak_before_width(iCluster)< param.minWidthFirstPeak &...
-        qMetric.mainTrough_width(iCluster) < param.minWidthMainTrough &...
-        abs(qMetric.mainPeak_before_size(iCluster)./qMetric.mainPeak_after_size(iCluster)) > param.firstPeakRatio)+2, :)),...
-        num2str(colorsSomatic(double(abs(max([qMetric.mainPeak_before_size(iCluster), qMetric.mainPeak_after_size(iCluster)], [], 2)./ qMetric.mainTrough_size(iCluster))...
-        <= param.minTroughToPeakRatio)+1, :))));
-
-else
         set(guiData.tempTitle, 'String', sprintf(tempWvTitleText, ...
         num2str(colorsGdBad(double(qMetric.nPeaks(iCluster) <= param.maxNPeaks && qMetric.nTroughs(iCluster) <= param.maxNTroughs)+1, :)), ...
         num2str(colorsGdBad(double(qMetric.waveformBaselineFlatness(iCluster) <= param.maxWvBaselineFraction)+1, :)),...
@@ -568,41 +574,21 @@ else
         qMetric.waveformDuration_peakTrough(iCluster) <= param.maxWvDuration)+1, :)),...
         num2str(colorsGdBad(double(abs(qMetric.mainPeak_after_size(iCluster)./ qMetric.mainTrough_size(iCluster)) <= param.minTroughToPeakRatio)+1, :)),...
         num2str(colorsSomatic(double(abs(qMetric.mainTrough_size(iCluster) ./ qMetric.mainPeak_before_size(iCluster)) < param.minMainPeakToTroughRatio&...
-        qMetric.mainPeak_before_width(iCluster)< param.minWidthFirstPeak(iCluster) &...
-        qMetric.mainTrough_width(iCluster) < param.minWidthMainTrough(iCluster) &...
+        qMetric.mainPeak_before_width(iCluster)< param.minWidthFirstPeak &...
+        qMetric.mainTrough_width(iCluster) < param.minWidthMainTrough &...
         abs(qMetric.mainPeak_before_size(iCluster)./qMetric.mainPeak_after_size(iCluster)) > param.firstPeakRatio)+2, :)),...
         num2str(colorsSomatic(double(abs(max([qMetric.mainPeak_before_size(iCluster), qMetric.mainPeak_after_size(iCluster)], [], 2)./ qMetric.mainTrough_size(iCluster)) <= ...
         param.minTroughToPeakRatio)+1, :))));
 
 
-end
-if param.computeSpatialDecay
+
+
 set(guiData.tempLegend, 'String', {['2ndpeak/trough ratio =', num2str(abs(qMetric.mainPeak_after_size(iCluster)./ qMetric.mainTrough_size(iCluster))), newline,...
-    'mainpeak/trough ratio =', num2str(abs(max([qMetric.mainPeak_before_size(iCluster), qMetric.mainPeak_after_size(iCluster)], [], 2)./ qMetric.mainTrough_size(iCluster))), newline, ...
     'baseline flatness =', num2str(qMetric.waveformBaselineFlatness(iCluster)), newline, ...
     'waveform duration =', num2str(qMetric.waveformDuration_peakTrough(iCluster))], ...
-    [num2str(qMetric.nPeaks(iCluster)), ' peak(s)', newline,...
-    '1rstpeak width=', num2str(qMetric.mainPeak_before_width(iCluster)), newline ...
-    '1rstpeak/2ndpeak ratio=', num2str(abs(qMetric.mainPeak_before_size(iCluster)./qMetric.mainPeak_after_size(iCluster)))], ...
-    [num2str(qMetric.nTroughs(iCluster)), ...
-    ' trough(s)', newline ...
-    'trough width =', num2str(qMetric.mainTrough_width(iCluster))],...
-    ['spatial decay slope =', num2str(qMetric.spatialDecaySlope(iCluster))]})
-else
-set(guiData.tempLegend, 'String', {['2ndpeak/trough ratio =', num2str(abs(qMetric.mainPeak_after_size(iCluster)./ qMetric.mainTrough_size(iCluster))), newline,...
-    'mainpeak/trough ratio =', num2str(abs(max([qMetric.mainPeak_before_size(iCluster), qMetric.mainPeak_after_size(iCluster)], [], 2)./ qMetric.mainTrough_size(iCluster))), newline, ...
-    'baseline flatness =', num2str(qMetric.waveformBaselineFlatness(iCluster)), newline, ...
-    'waveform duration =', num2str(qMetric.waveformDuration_peakTrough(iCluster))], ...
-    [num2str(qMetric.nPeaks(iCluster)), ' peak(s)', newline,...
-    '1rstpeak width=', num2str(qMetric.mainPeak_before_width(iCluster)), newline ...
-    '1rstpeak/2ndpeak ratio=', num2str(abs(qMetric.mainPeak_before_size(iCluster)./qMetric.mainPeak_after_size(iCluster)))], ...
-    [num2str(qMetric.nTroughs(iCluster)), ...
-    ' trough(s)', newline ...
-    'trough width =', num2str(qMetric.mainTrough_width(iCluster))],...
+    ['1rstpeak/2ndpeak ratio=', num2str(abs(qMetric.mainPeak_before_size(iCluster)./qMetric.mainPeak_after_size(iCluster)))], ...
+    [ 'mainpeak/trough ratio =', num2str(abs(max([qMetric.mainPeak_before_size(iCluster), qMetric.mainPeak_after_size(iCluster)], [], 2)./ qMetric.mainTrough_size(iCluster)))],...
     ['']})
-
-
-end
 set(guiData.tempLegend, 'Location', 'southwest');
 %% plot 3: plot unit mean raw waveform (and individual traces)
 if param.extractRaw
@@ -633,8 +619,11 @@ if param.extractRaw
 
     % Adjust y-axis limits for raw waveforms to prevent overlap with legend
     yMinRaw = min(min(valsRaw, [], 2));
-    yMaxRaw = max(max(valsRaw, [], 2)) + 1 * range(valsRaw(:));  %// Extra space for legend
+    yMaxRaw = max(max(valsRaw, [], 2)) + 0.5 * range(valsRaw(:));  %// Extra space for legend
+    try
     ylim(guiData.rawWaveformYLim, [yMinRaw, yMaxRaw]);
+    catch
+    end
 
     set(guiData.rawLegend, 'String', ['Amplitude =', num2str(round(qMetric.rawAmplitude(iCluster))), 'uV', newline, ...
         'SNR =', num2str(qMetric.signalToNoiseRatio(iCluster))], 'Location', 'southwest')
@@ -677,39 +666,70 @@ theseSpikeTimes = ephysData.spike_times(ephysData.spike_templates == thisUnit);
 [ccg, ccg_t] = bc.ep.helpers.CCGBz([double(theseSpikeTimes); double(theseSpikeTimes)], [ones(size(theseSpikeTimes, 1), 1); ...
     ones(size(theseSpikeTimes, 1), 1) * 2], 'binSize', 0.001, 'duration', 0.5, 'norm', 'rate'); %function
 
-set(guiData.acgBar, 'XData', ccg_t(250:501)*1000, 'YData', squeeze(ccg(250:501, 1, 1)));
+set(guiData.acgBar, 'XData', ccg_t(250:301)*1000, 'YData', squeeze(ccg(250:301, 1, 1)));
 set(guiData.acgRefLine, 'XData', [tauR_values(qMetric.RPV_tauR_estimate(iCluster)), ...
     tauR_values(qMetric.RPV_tauR_estimate(iCluster))], 'YData', [0, max(ccg(:, 1, 1))])
 [ccg2, ~] = bc.ep.helpers.CCGBz([double(theseSpikeTimes); double(theseSpikeTimes)], [ones(size(theseSpikeTimes, 1), 1); ...
     ones(size(theseSpikeTimes, 1), 1) * 2], 'binSize', 0.1, 'duration', 10, 'norm', 'rate'); %function
 asymptoteLine = nanmean(ccg2(end-100:end));
-set(guiData.acgAsyLine, 'XData', [0, 250], 'YData', [asymptoteLine, asymptoteLine])
+set(guiData.acgAsyLine, 'XData', [0, 50], 'YData', [asymptoteLine, asymptoteLine])
 
 if qMetric.fractionRPVs_estimatedTauR(iCluster) > param.maxRPVviolations
     set(guiData.acgTitle, 'String', '\color[rgb]{1 0 1}ACG');
 else
     set(guiData.acgTitle, 'String', '\color[rgb]{0 .5 0}ACG');
 end
+set(guiData.acgLegend, 'String', [num2str(qMetric.fractionRPVs_estimatedTauR(iCluster)*100), ' % r.p.v.'])
+% %% 5. plot unit ISI (with refractory period and asymptote lines)
+% 
+% theseISI = diff(theseSpikeTimes);
+% theseISIclean = theseISI(theseISI >= param.tauC); % removed duplicate spikes
+% theseOffendingSpikes = find(theseISIclean < (2 / 1000));
+% 
+% %theseOffendingSpikes = [theseOffendingSpikes; theseOffendingSpikes-1];
+% [isiProba, edgesISI] = histcounts(theseISIclean*1000, [0:0.5:50]);
+% 
+% set(guiData.isiBar, 'XData', edgesISI(1:end-1)+mean(diff(edgesISI)), 'YData', isiProba); %Check FR
+% set(guiData.isiRefLine, 'XData', [tauR_values(qMetric.RPV_tauR_estimate(iCluster)), ...
+%     tauR_values(qMetric.RPV_tauR_estimate(iCluster))], 'YData', [0, max(isiProba)])
+% 
+% if qMetric.fractionRPVs_estimatedTauR(iCluster) > param.maxRPVviolations
+%     set(guiData.isiTitle, 'String', '\color[rgb]{1 0 1}ISI');
+% else
+%     set(guiData.isiTitle, 'String', '\color[rgb]{0 .5 0}ISI');
+% end
+% set(guiData.isiLegend, 'String', [num2str(qMetric.fractionRPVs_estimatedTauR(iCluster)*100), ' % r.p.v.'])
+%% 5. plot spatial decay 
+if param.computeSpatialDecay
+set(guiData.spDecayLegend, 'String', {    ['spatial decay slope =', num2str(qMetric.spatialDecaySlope(iCluster))]})
 
-%% 5. plot unit ISI (with refractory period and asymptote lines)
 
-theseISI = diff(theseSpikeTimes);
-theseISIclean = theseISI(theseISI >= param.tauC); % removed duplicate spikes
-theseOffendingSpikes = find(theseISIclean < (2 / 1000));
+%forGUI.
+set(guiData.spDecayPoints, 'XData', forGUI.spatialDecayPoints_loc(iCluster,:), 'YData', forGUI.spatialDecayPoints(iCluster,:))
 
-%theseOffendingSpikes = [theseOffendingSpikes; theseOffendingSpikes-1];
-[isiProba, edgesISI] = histcounts(theseISIclean*1000, [0:0.5:50]);
+tempspDecayTitleText = ['\\fontsize{9}\\color[rgb]{%s}spatial decay'];
 
-set(guiData.isiBar, 'XData', edgesISI(1:end-1)+mean(diff(edgesISI)), 'YData', isiProba); %Check FR
-set(guiData.isiRefLine, 'XData', [tauR_values(qMetric.RPV_tauR_estimate(iCluster)), ...
-    tauR_values(qMetric.RPV_tauR_estimate(iCluster))], 'YData', [0, max(isiProba)])
-
-if qMetric.fractionRPVs_estimatedTauR(iCluster) > param.maxRPVviolations
-    set(guiData.isiTitle, 'String', '\color[rgb]{1 0 1}ISI');
-else
-    set(guiData.isiTitle, 'String', '\color[rgb]{0 .5 0}ISI');
+if param.spDecayLinFit
+            % plot(forGUI.spatialDecayPoints_loc(iCluster,:), forGUI.spatialDecayPoints_loc(iCluster,:)*qMetric.spatialDecaySlope(iCluster)+forGUI.spatialDecayFit(iCluster),... '-', 'Color', colorMtx(2, :, :));
+        else
+            % Generate points for the exponential fit curve
+            fitX = linspace(min( forGUI.spatialDecayPoints_loc(iCluster,:)), max( forGUI.spatialDecayPoints_loc(iCluster,:)), 100);
+            spatialDecayFitFun = @(x) forGUI.spatialDecayFit(iCluster) * exp(-qMetric.spatialDecaySlope(iCluster) * x);
+            fitY = spatialDecayFitFun(fitX);
+            set(guiData.spDecayFit, 'XData',fitX , 'YData', fitY)
 end
-set(guiData.isiLegend, 'String', [num2str(qMetric.fractionRPVs_estimatedTauR(iCluster)*100), ' % r.p.v.'])
+
+if param.spDecayLinFit
+    set(guiData.spDecayTitle, 'String', sprintf(tempspDecayTitleText, ...
+        num2str(colorsGdBad(double(qMetric.spatialDecaySlope(iCluster) <= param.minSpatialDecaySlope)+1, :))));
+else
+     set(guiData.spDecayTitle, 'String', sprintf(tempspDecayTitleText, ...
+        num2str(colorsGdBad(double(qMetric.spatialDecaySlope(iCluster) >= param.minSpatialDecaySlopeExp && qMetric.spatialDecaySlope(iCluster) <= param.maxSpatialDecaySlopeExp)+1, :))));
+end
+
+
+
+end
 
 %% 6. plot isolation distance
 % if param.computeDistanceMetrics
@@ -744,7 +764,9 @@ end
 
 ephysData.recordingDuration = (max(ephysData.spike_times) - min(ephysData.spike_times));
 theseAmplis = ephysData.template_amplitudes(ephysData.spike_templates == thisUnit);
-
+theseISI = diff(theseSpikeTimes);
+theseISIclean = theseISI(theseISI >= param.tauC); % removed duplicate spikes
+theseOffendingSpikes = find(theseISIclean < (2 / 1000));
 % for debugging if wierd amplitude fit results: percSpikesMissing(theseAmplis, theseSpikeTimes, [min(theseSpikeTimes), max(theseSpikeTimes)], 1);
 
 set(guiData.tempAmpli, 'XData', theseSpikeTimes, 'YData', theseAmplis)
