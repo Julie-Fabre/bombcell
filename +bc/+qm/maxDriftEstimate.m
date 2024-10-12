@@ -39,7 +39,7 @@ if param.computeDrift
     pcFeatures_PC1(pcFeatures_PC1 < 0) = 0; % remove negative entries - we don't want to push the center of mass away from there.
     
     % for each spike, get which channel the maximum value is located on 
-    spikePC_feature = nan(size(spikeTemplates,1),32); 
+    spikePC_feature = nan(size(spikeTemplates,1),size(pcFeatures,3)); 
     spikePC_feature(spikeTemplates>0,:) = double(pcFeatureIdx(spikeTemplates(spikeTemplates>0), :)); % get channels for each spike. only spikeTemplates>0 because in computeTimeChuynks we set spikeTempltes to 0 is they are outside of our "good" time range. 
 
     spikeDepths_inChannels = sum(channelPositions_z(spikePC_feature(spikeTemplates == thisUnit, :)).*pcFeatures_PC1.^2, 2) ./ sum(pcFeatures_PC1.^2, 2); % center of mass: sum(coords.*features)/sum(features)

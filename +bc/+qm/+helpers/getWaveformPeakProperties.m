@@ -163,4 +163,14 @@ mainTrough_size = max(TRS);
 % get number of peaks and troughs
 nPeaks = numel(PKS); % drop any of the peaks not detected with findpeaks()
 nTroughs = numel(TRS);
+if length(width_before) > 1
+    width_before = width_before(1);
+end
+if length(width_after) > 1
+    width_after = width_after(1);
+end
+if length(widthTrough) > 1
+    widthTrough = widthTrough(1);
+end
+
 end

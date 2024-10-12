@@ -185,7 +185,6 @@ if param.plotGlobal
                     case 6 % fractionRPVs_estimatedTauR
                         rectangle('Position', [-0.5, 1e-3, param.maxRPVviolations * 100, 1 - 1e-3], 'FaceColor', [0, .5, 0, 0.2])
                         histogram(qMetric.fractionRPVs_estimatedTauR*100, 40, 'FaceColor', colorMtx(6, 1:3), 'FaceAlpha', colorMtx(4, 4), 'Normalization', 'probability');
-                        set(gca, 'yscale', 'log')
                         yLim = ylim;
                         line([param.maxRPVviolations * 100, param.maxRPVviolations * 100], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
                         ylabel('norm. unit count')
@@ -233,16 +232,20 @@ if param.plotGlobal
                         xlabel('# spikes')
 
                     case 11 % rawAmplitude
-                        set(gca, 'xscale', 'log')
-                        minVal = min(qMetric.rawAmplitude(qMetric.rawAmplitude > 0));
-                        maxVal = max(qMetric.rawAmplitude);
-                        binEdges = logspace(log10(minVal), log10(maxVal), 40);
-                        rectangle('Position', [param.minAmplitude, 0, binEdges(end) - param.minAmplitude, 1], 'FaceColor', [0, .5, 0, 0.2])
-                        histogram(qMetric.rawAmplitude, 'FaceColor', colorMtx(11, 1:3), 'FaceAlpha', colorMtx(11, 4), 'BinEdges', binEdges, 'Normalization', 'probability');
-                        yLim = ylim;
-                        line([param.minAmplitude, param.minAmplitude], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-                        ylabel('norm. unit count')
-                        xlabel(['mean raw waveform', newline, ' peak amplitude (uV)'])
+                        if any(~isnan(qMetric.rawAmplitude))
+                            set(gca, 'xscale', 'log')
+                            minVal = min(qMetric.rawAmplitude(qMetric.rawAmplitude > 0));
+                            maxVal = max(qMetric.rawAmplitude);
+                            binEdges = logspace(log10(minVal), log10(maxVal), 40);
+                            rectangle('Position', [param.minAmplitude, 0, binEdges(end) - param.minAmplitude, 1], 'FaceColor', [0, .5, 0, 0.2])
+                            histogram(qMetric.rawAmplitude, 'FaceColor', colorMtx(11, 1:3), 'FaceAlpha', colorMtx(11, 4), 'BinEdges', binEdges, 'Normalization', 'probability');
+                            yLim = ylim;
+                            line([param.minAmplitude, param.minAmplitude], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
+                            ylabel('norm. unit count')
+                            xlabel(['mean raw waveform', newline, ' peak amplitude (uV)'])
+                        else
+                            warning('raw mean amplitude values have not been calculated')
+                        end
 
                     case 12 % spatialDecaySlope
                         if param.spDecayLinFit

@@ -9,8 +9,9 @@ param.plotThis = false;
 param.baselineThresh = NaN;
 waveformBaselineWindow = NaN;
 param.computeSpatialDecay = false;
-[nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_peakTrough, ...
-    ~, ~, ~, thisWaveform] = bc.qm.waveformShape(templateWaveforms, ...
+[nPeaks, nTroughs, mainPeak_before_size, mainPeak_after_size, mainTrough_size,...
+    mainPeak_before_width, mainPeak_after_width, mainTrough_width, peakLocs, troughLocs, waveformDuration_peakTrough, ...
+    spatialDecayPoints, spatialDecaySlope, waveformBaseline, thisWaveform] = bc.qm.waveformShape(templateWaveforms, ...
     thisUnit, maxChannel, param, channelPositions, ...
     waveformBaselineWindow);
 
@@ -20,8 +21,8 @@ if ~isnan(nPeaks) && ~isnan(nTroughs)
 wvTime = 1e3 * ((0:size(thisWaveform, 2) - 1) / param.ephys_sample_rate);
 
 % Compute Half-Width
-
 troughAmplitude = thisWaveform(troughLocs(1));
+
 halfAmplitude = troughAmplitude / 2;
 aboveHalfIndices = find(thisWaveform >= halfAmplitude);
 halfWidthStartIndex = aboveHalfIndices(find(aboveHalfIndices < peakLocs(end), 1, 'last'));
