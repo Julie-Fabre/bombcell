@@ -2,7 +2,7 @@
 
 if exist('loadRawTraces', 'var') 
     if loadRawTraces 
-        bc_getRawMemMap;
+        bc.viz.getRawMemMap;
     else
         memMapData =[];
     end

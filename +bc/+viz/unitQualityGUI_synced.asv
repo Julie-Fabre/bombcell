@@ -305,7 +305,7 @@ if plotRaw && param.computeDistanceMetrics
 elseif param.computeDistanceMetrics
     subplot(6, 13, 42:44)
 elseif plotRaw
-    subplot(6, 13, 29:33)
+    subplot(6, 13, 29:32)
 else
     subplot(6, 13, 42:46)
 end
@@ -322,7 +322,7 @@ if plotRaw && param.computeDistanceMetrics
 elseif param.computeDistanceMetrics
     subplot(6, 13, 46:49)
 elseif plotRaw
-    subplot(6, 13, 35:39)
+    subplot(6, 13, 33:35)
 else
     subplot(6, 13, 48:52)
 end
@@ -410,7 +410,7 @@ ampliTitle = title('');
 ampliLegend = legend([tempAmpli, rpvAmpli, ampliLine ], {'', '', ''}, 'Location', 'best');
 
 %% initialize amplitude fit
-ampliFitAx = subplot(6, 13, [78]);
+ampliFitAx = subplot(6, 13, [65,78]);
 hold on;
 ampliBins = barh(NaN, NaN, 'blue');
 ampliBins.FaceAlpha = 0.5;
