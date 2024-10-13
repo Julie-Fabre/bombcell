@@ -26,10 +26,10 @@ function [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitu
 %
 
 % load spike templates (= waveforms)
-if exist(fullfile([ephys_path filesep 'spike_templates.npy']))
-  spike_templates_0idx = readNPY([ephys_path filesep 'spike_templates.npy']);
-else % in KS4, "spike_templates" is called "spike_clusters"
-  spike_templates_0idx = readNPY([ephys_path filesep 'spike_clusters.npy']); % templates=clusters <KS4, templates~=clusters KS4
+if exist(fullfile([ephys_path filesep 'spike_clusters.npy']))
+  spike_templates_0idx = readNPY([ephys_path filesep 'spike_clusters.npy']); % already manually-curated / Ks4-n KS4, "spike_templates" is called "spike_clusters"
+else 
+  spike_templates_0idx = readNPY([ephys_path filesep 'spike_templates.npy']); 
 end
 spikeTemplates = spike_templates_0idx + 1;
 
@@ -47,10 +47,10 @@ templateAmplitudes = double(readNPY([ephys_path filesep 'amplitudes.npy'])); % e
 
 % Load and unwhiten templates
 templateWaveforms_whitened = readNPY([ephys_path filesep 'templates.npy']);
-%winv = readNPY([ephys_path filesep 'whitening_mat_inv.npy']);
+winv = readNPY([ephys_path filesep 'whitening_mat_inv.npy']);
 templateWaveforms = zeros(size(templateWaveforms_whitened));
 for t = 1:size(templateWaveforms,1)
-    templateWaveforms(t,:,:) = squeeze(templateWaveforms_whitened(t,:,:));%*winv;
+    templateWaveforms(t,:,:) = squeeze(templateWaveforms_whitened(t,:,:))*winv;
 end
 
 if exist(fullfile([ephys_path filesep  'pc_features.npy']))

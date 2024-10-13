@@ -263,7 +263,7 @@ if plotRaw
 elseif param.extractRaw
     subplot(6, 13, [2:7, 15:20, 28:33])
 else
-    subplot(6, 13, 2:39)
+    subplot(6, 13, [2:13, 15:26, 28:39])
 end
 hold on;
 max_n_channels_plot = 20;
@@ -498,22 +498,22 @@ colorsSomatic = [0.25,0.41,0.88; 0, 0.5, 0;0.25,0.41,0.88];
 %% main title
 if unitType(iCluster) == 1
     set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
-        ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), single unit'], 'Color', [0, .5, 0]);
+        ' (phy ID #: ' num2str(qMetric.phy_clusterID(iCluster)) '; qMetric row #: ' num2str(iCluster) '), single unit'], 'Color', [0, .5, 0]);
 elseif unitType(iCluster) == 0 
     set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
-        ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), noise'], 'Color', [1.0000, 0, 0]);
+        ' (phy ID #: ' num2str(qMetric.phy_clusterID(iCluster)) '; qMetric row #: ' num2str(iCluster) '), noise'], 'Color', [1.0000, 0, 0]);
 elseif unitType(iCluster) == 2
     set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
-        ' (phy ID #: ' num2str(thisUnit-1)  '; qMetric row #: ' num2str(iCluster) '), multi-unit'], 'Color', [1.0000, 0.5469, 0]);
+        ' (phy ID #: ' num2str(qMetric.phy_clusterID(iCluster))  '; qMetric row #: ' num2str(iCluster) '), multi-unit'], 'Color', [1.0000, 0.5469, 0]);
 elseif unitType(iCluster) == 3 && param.splitGoodAndMua_NonSomatic
    set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
-        ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), non-somatic single unit'], 'Color', [0.25,0.41,0.88]);
+        ' (phy ID #: ' num2str(qMetric.phy_clusterID(iCluster)) '; qMetric row #: ' num2str(iCluster) '), non-somatic single unit'], 'Color', [0.25,0.41,0.88]);
 elseif unitType(iCluster) == 3
    set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
-        ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), non-somatic unit'], 'Color', [0.25,0.41,0.88]);
+        ' (phy ID #: ' num2str(qMetric.phy_clusterID(iCluster)) '; qMetric row #: ' num2str(iCluster) '), non-somatic unit'], 'Color', [0.25,0.41,0.88]);
 elseif unitType(iCluster) == 4
    set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
-        ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), non-somatic multi unit'], 'Color', [ 0.54, 0, 0.54]);
+        ' (phy ID #: ' num2str(qMetric.phy_clusterID(iCluster)) '; qMetric row #: ' num2str(iCluster) '), non-somatic multi unit'], 'Color', [ 0.54, 0, 0.54]);
 end
 
 %% plot 1: update curr unit location
