@@ -184,30 +184,30 @@ for i = 1:length(plotConditions)
         % Add horizontal lines instead of rectangles
         yLim = ylim(ax);
         xLim = xlim(ax);
-        lineY = yLim(1) - 0.02 * (yLim(2) - yLim(1)); % Position lines slightly below the plot
+        lineY = yLim(1) - 0.04 * (yLim(2) - yLim(1)); % Position lines slightly below the plot
         
         if ~isnan(metricThresh1(i)) || ~isnan(metricThresh2(i))
             if ~isnan(metricThresh1(i)) && ~isnan(metricThresh2(i))
-                line(ax, [xLim(1)+binsize_offset, metricThresh1(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,1:3), 'LineWidth', 2);
-                line(ax, [metricThresh1(i)+binsize_offset, metricThresh2(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,4:6), 'LineWidth', 2);
-                line(ax, [metricThresh2(i)+binsize_offset, xLim(2)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,7:9), 'LineWidth', 2);
+                line(ax, [xLim(1)+binsize_offset, metricThresh1(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,1:3), 'LineWidth', 6);
+                line(ax, [metricThresh1(i)+binsize_offset, metricThresh2(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,4:6), 'LineWidth', 6);
+                line(ax, [metricThresh2(i)+binsize_offset, xLim(2)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,7:9), 'LineWidth', 6);
             elseif ~isnan(metricThresh1(i))
-                line(ax, [xLim(1)+binsize_offset, metricThresh1(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,1:3), 'LineWidth', 2);
-                line(ax, [metricThresh1(i)+binsize_offset, xLim(2)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,4:6), 'LineWidth', 2);
+                line(ax, [xLim(1)+binsize_offset, metricThresh1(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,1:3), 'LineWidth', 6);
+                line(ax, [metricThresh1(i)+binsize_offset, xLim(2)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,4:6), 'LineWidth', 6);
             elseif ~isnan(metricThresh2(i))
-                line(ax, [xLim(1)+binsize_offset, metricThresh2(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,1:3), 'LineWidth', 2);
-                line(ax, [metricThresh2(i)+binsize_offset, xLim(2)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,4:6), 'LineWidth', 2);
+                line(ax, [xLim(1)+binsize_offset, metricThresh2(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,1:3), 'LineWidth', 6);
+                line(ax, [metricThresh2(i)+binsize_offset, xLim(2)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,4:6), 'LineWidth', 6);
             end
         end
         
         if i == 1
-            ylabel(ax, 'frac. units')
+            ylabel(ax, 'frac. units', 'FontSize',12)
         end
-        xlabel(ax, metricNames_SHORT{i})
+        xlabel(ax, metricNames_SHORT{i}, 'FontSize', 11)
         
         % Add quiver for current unit's value at the bottom
         arrowX = mean(metricData); % Use mean as a placeholder; this will be updated later
-        arrowY = lineY - 0.05 * (yLim(2) - yLim(1));
+        arrowY = lineY - 0.1 * (yLim(2) - yLim(1));
         arrowHandle = quiver(ax, arrowX, arrowY, 0, 0.1 * (yLim(2) - yLim(1)), 0, 'MaxHeadSize', 0.5, 'Color', 'k', 'LineWidth', 2);
 
         % Add red text label on x-axis for the unit's value
@@ -223,6 +223,8 @@ for i = 1:length(plotConditions)
         guiData.histogramAxes.(metricName) = ax;
         guiData.histogramArrows.(metricName) = arrowHandle;
         %guiData.histogramTexts.(metricName) = textHandle;
+        ax.FontSize = 12; 
+            
         axis tight;
         
         currentSubplot = currentSubplot + 1;
