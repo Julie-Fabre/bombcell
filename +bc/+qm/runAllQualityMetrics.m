@@ -161,8 +161,8 @@ for iUnit = 1:size(uniqueTemplates, 1)
         forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), ...
         forGUI.spatialDecayPoints(iUnit, :), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), ... .
         forGUI.tempWv(iUnit, :), forGUI.spatialDecayPoints_loc(iUnit, :), forGUI.spatialDecayFit(iUnit)] = bc.qm.waveformShape(templateWaveforms, thisUnit, qMetric.maxChannels(thisUnit), ...
-        param, channelPositions, waveformBaselineWindow); %do we need tempWv ?
-    
+        param, channelPositions, waveformBaselineWindow);
+
     %% amplitude
     if param.extractRaw
         qMetric.rawAmplitude(iUnit) = bc.qm.getRawAmplitude(rawWaveformsFull(iUnit, rawWaveformsPeakChan(iUnit), :), ...
