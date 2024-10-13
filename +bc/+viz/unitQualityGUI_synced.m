@@ -1072,7 +1072,7 @@ function [metricNames, metricThresh1, metricThresh2, plotConditions, metricNames
 
         metricLineCols = [0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0;...%1 'nPeaks'
         0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0;...%, 2 'nTroughs'
-        0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0;...%, 3 'scndPeakToTroughRatio'
+        0.2, 0.2, 0.2, 1, 0, 0, 1, 0, 0;...%, 3 'scndPeakToTroughRatio'
        0.2, 0.2, 0.2, 0.25,0.41,0.88, 0, 0, 0;...%, 4 'peak1ToPeak2Ratio'
        0.2, 0.2, 0.2, 0.25,0.41,0.88, 0, 0, 0;...%, 5 'mainPeakToTroughRatio', ...
        0, 0.5, 0, 1.0000,0.5469, 0, 0, 0, 0;...% 6 'fractionRPVs_estimatedTauR'
