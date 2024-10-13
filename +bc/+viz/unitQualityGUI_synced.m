@@ -310,7 +310,7 @@ end
 hold on;
 spDecayPoints = scatter(NaN, NaN, 'black', 'filled');
 spDecayFit = plot(NaN, NaN, 'Color', prettify_rgb('FireBrick'), 'LineWidth', 2);
-spDecayLegend = legend(spDecayFit, {''});
+spDecayLegend = legend(spDecayFit, {''}, 'Location', 'best');
 spDecayTitle = title('');
 ylabel('ampli. (a.u.)');
 %xlabel('distance');
@@ -329,7 +329,7 @@ acgAsyLine = line([NaN, NaN], [NaN, NaN], 'Color', 'r', 'linewidth', 1.2);
 xlabel('time (ms)');
 ylabel('sp/s');
 acgTitle = title('');
-acgLegend = legend(acgBar, {''});
+acgLegend = legend(acgBar, {''}, 'Location', 'best');
 %% initialize ISI
 
 % if plotRaw && param.computeDistanceMetrics
@@ -399,7 +399,7 @@ set(gca, 'YColor', [1, 0.5, 0])
 ylabel('Firing rate (sp/sec)');
 
 ampliTitle = title('');
-ampliLegend = legend([tempAmpli, rpvAmpli, ampliLine ], {'', '', ''});
+ampliLegend = legend([tempAmpli, rpvAmpli, ampliLine ], {'', '', ''}, 'Location', 'best');
 
 %% initialize amplitude fit
 ampliFitAx = subplot(6, 13, [65,78]);
@@ -408,7 +408,7 @@ ampliBins = barh(NaN, NaN, 'blue');
 ampliBins.FaceAlpha = 0.5;
 ampliFit = plot(NaN, NaN, 'Color', prettify_rgb('Orange'), 'LineWidth', 2);
 ampliFitTitle = title('');
-ampliFitLegend = legend(ampliFit, {''}, 'Location', 'South');
+ampliFitLegend = legend(ampliFit, {''}, 'Location', 'best');
 
 %% save all handles
 
@@ -501,7 +501,7 @@ if unitType(iCluster) == 1
         ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), single unit'], 'Color', [0, .5, 0]);
 elseif unitType(iCluster) == 0 
     set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
-        ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), noise'], 'Color', [1.0000, 0.5469, 0]);
+        ' (phy ID #: ' num2str(thisUnit-1) '; qMetric row #: ' num2str(iCluster) '), noise'], 'Color', [1.0000, 0, 0]);
 elseif unitType(iCluster) == 2
     set(guiData.mainTitle, 'String', ['Unit ID #', num2str(thisUnit), ...
         ' (phy ID #: ' num2str(thisUnit-1)  '; qMetric row #: ' num2str(iCluster) '), multi-unit'], 'Color', [1.0000, 0.5469, 0]);
