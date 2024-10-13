@@ -117,7 +117,7 @@ else
     param.waveformBaselineWindowStart = 20;
     param.waveformBaselineWindowStop = 30; % in samples 
 end
-param.minThreshDetectPeaksTroughs = 0.1; % this is multiplied by the max value 
+param.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value 
     % in a units waveform to give the minimum prominence to detect peaks using
     % matlab's findpeaks function.
 param.normalizeSpDecay = 1; % whether to normalize spatial decay points relative to 

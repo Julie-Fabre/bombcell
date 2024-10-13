@@ -12,7 +12,7 @@ function upSetPlot_wrapper(qMetric, param, unitType)
 %% Noise UpSet plot
 if sum(ismember(unitType, 0)) > 0
 
-    figHandle_noise = figure('Name', 'Noise vs neuronal units', 'Color', 'w');
+    figHandle_noise = figure('Name', 'Noise vs neuronal units', 'Color', 'w', 'Position', [100, 100, 900, 900]);
     if param.spDecayLinFit
         UpSet_data_noise = [ ...
             isnan(qMetric.nPeaks) | qMetric.nPeaks > param.maxNPeaks, ...
@@ -34,15 +34,26 @@ if sum(ismember(unitType, 0)) > 0
     end
 
     UpSet_labels_noise = { ...
-        'waveform peak #', ...
-        'waveform trough #', ...
-        'waveform spatial decay', ...
-        'waveform duration', ...
-        'waveform baseline flatness', ...
-        'waveform 2nd peak to trough ratio'; ...
+        '# peaks', ...
+        '# troughs', ...
+        'spatial decay', ...
+        'duration', ...
+        'baseline flatness', ...
+        'peak_2/trough'; ...
         };
 
-    bc.viz.upSetPlot(UpSet_data_noise, UpSet_labels_noise, figHandle_noise);
+    red_colors = [
+    0.8627 0.0784 0.2353;  % Crimson
+    1.0000 0.1412 0.0000;  % Scarlet
+    0.7255 0.0000 0.0000;  % Cherry
+    0.5020 0.0000 0.1255;  % Burgundy
+    0.5020 0.0000 0.0000;  % Maroon
+    0.8039 0.3608 0.3608   % Indian Red
+    ];
+
+    bc.viz.upSetPlot(UpSet_data_noise, UpSet_labels_noise, figHandle_noise, red_colors);
+    hold on;
+    sgtitle('Units classified as noise')
 else
     disp('No noise units with current param settings - consider changing your param values')
 end
@@ -50,7 +61,7 @@ end
 %% Non-somatic UpSet plot
 if sum(ismember(unitType, 3)) > 0
 
-    figHandle_nonsoma = figure('Name', 'Non-soma vs soma units', 'Color', 'w');
+    figHandle_nonsoma = figure('Name', 'Non-soma vs soma units', 'Color', 'w','Position', [100, 100, 900, 900]);
 
     UpSet_data_nonsoma = [ ...
         (abs(qMetric.mainPeak_before_size./qMetric.mainPeak_after_size) > param.firstPeakRatio & ...
@@ -60,10 +71,15 @@ if sum(ismember(unitType, 3)) > 0
         ];
     
 
-    UpSet_labels_nonsoma = { 'waveform 1rst to 2nd peak ratio',...
-        'waveform main peak to trough ratio'};
-
-    bc.viz.upSetPlot(UpSet_data_nonsoma, UpSet_labels_nonsoma, figHandle_nonsoma);
+    UpSet_labels_nonsoma = { 'peak_1/peak_2',...
+        'peak_{main}/trough'};
+blue_colors = [
+    0.2549 0.4118 0.8824;  % Royal Blue
+    0.0000 0.0000 0.5020   % Navy Blue
+];
+    bc.viz.upSetPlot(UpSet_data_nonsoma, UpSet_labels_nonsoma, figHandle_nonsoma, blue_colors);
+    hold on;
+    sgtitle('Units classified as non-somatic');
 else
     disp('No non-somatic units with current param settings - consider changing your param values')
 end
@@ -77,7 +93,7 @@ end
 
 %% MUA UpSet plot
 if sum(ismember(unitType, [1, 2])) > 0
-    figHandle_mua = figure('Name', 'Multi vs single units', 'Color', 'w');
+    figHandle_mua = figure('Name', 'Multi vs single units', 'Color', 'w','Position', [100, 100, 900, 900]);
 
     UpSet_data_mua = [qMetric.percentageSpikesMissing_gaussian > param.maxPercSpikesMissing, ...
         qMetric.nSpikes < param.minNumSpikes, ...
@@ -107,14 +123,29 @@ if sum(ismember(unitType, [1, 2])) > 0
     end
 
     UpSet_data_mua = UpSet_data_mua(ismember(unitType, [1, 2]), :); %Keep only MUA and single units - remove noise and non-somatic
-    bc.viz.upSetPlot(UpSet_data_mua, UpSet_labels_mua, figHandle_mua);
+    darker_yellow_orange_colors = [
+    0.7843 0.7843 0.0000;  % Dark Yellow
+    0.8235 0.6863 0.0000;  % Dark Golden Yellow
+    0.8235 0.5294 0.0000;  % Dark Orange
+    0.8039 0.4118 0.3647;  % Dark Coral
+    0.8235 0.3176 0.2275;  % Dark Tangerine
+    0.8235 0.6157 0.6510;  % Dark Salmon
+    0.7882 0.7137 0.5765;  % Dark Goldenrod
+    0.8235 0.5137 0.3922;  % Dark Light Coral
+    0.7569 0.6196 0.0000;  % Darker Goldenrod
+    0.8235 0.4510 0.0000   % Darker Orange
+];
+
+    bc.viz.upSetPlot(UpSet_data_mua, UpSet_labels_mua, figHandle_mua, darker_yellow_orange_colors);
+    hold on;
+    sgtitle('Units classified as MUA');
 else
     disp('No MUA or good units with current param settings - consider changing your param values')
 end
 
 %% Non-somatic MUA UpSet plot
 if param.splitGoodAndMua_NonSomatic
-    figHandle_muaNonSoma = figure('Name', 'Non-somatic multi vs single units', 'Color', 'w');
+    figHandle_muaNonSoma = figure('Name', 'Non-somatic multi vs single units', 'Color', 'w','Position', [100, 100, 900, 900]);
 
     UpSet_data_muaNonSoma = [qMetric.percentageSpikesMissing_gaussian > param.maxPercSpikesMissing, ...
         qMetric.nSpikes < param.minNumSpikes, ...
@@ -144,6 +175,8 @@ if param.splitGoodAndMua_NonSomatic
     end
 
     UpSet_data_muaNonSoma = UpSet_data_muaNonSoma(ismember(unitType, [3, 4]), :); %Keep only non-somatic MUA and single units - remove noise and somatic
-    bc.viz.upSetPlot(UpSet_data_muaNonSoma, UpSet_labels_muaNonSoma, figHandle_muaNonSoma);
+    bc.viz.upSetPlot(UpSet_data_muaNonSoma, UpSet_labels_muaNonSoma, figHandle_muaNonSoma, darker_yellow_orange_colors);
+    hold on;
+    sgtitle('Units classified as non-somatic & MUA');
 end
 end

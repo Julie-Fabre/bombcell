@@ -1,5 +1,7 @@
 
 %% unit quality gui: plot various quality metric plots for single units
+% This function is very messy - don't attempt to modify. Send me an email or raise an issue :) 
+% 
 % toggle between units with the right and left arrows
 % the slowest part by far of this is plotting the raw data, need to figure out how
 % to make this faster
@@ -130,9 +132,35 @@ guiData=struct;
     numCols = ceil(numSubplots/numRows);
 
     % Color matrix setup
-    colorMtx = [bc.viz.colors(15); bc.viz.colors(15)];
-    colorMtx = [colorMtx(1:21, :, :), repmat(0.7, 21, 1)]; % make 70% transparent
-    colorMtx = colorMtx([1:4:end, 2:4:end, 3:4:end, 4:4:end], :); % shuffle colors
+    red_colors = [
+    0.8627 0.0784 0.2353;  % Crimson
+    1.0000 0.1412 0.0000;  % Scarlet
+    0.7255 0.0000 0.0000;  % Cherry
+    0.5020 0.0000 0.1255;  % Burgundy
+    0.5020 0.0000 0.0000;  % Maroon
+    0.8039 0.3608 0.3608   % Indian Red
+];
+
+    blue_colors = [
+    0.2549 0.4118 0.8824;  % Royal Blue
+    0.0000 0.0000 0.5020   % Navy Blue
+];
+    % Color matrix setup
+     darker_yellow_orange_colors = [
+    0.7843 0.7843 0.0000;  % Dark Yellow
+    0.8235 0.6863 0.0000;  % Dark Golden Yellow
+    0.8235 0.5294 0.0000;  % Dark Orange
+    0.8039 0.4118 0.3647;  % Dark Coral
+    0.8235 0.3176 0.2275;  % Dark Tangerine
+    0.8235 0.6157 0.6510;  % Dark Salmon
+    0.7882 0.7137 0.5765;  % Dark Goldenrod
+    0.8235 0.5137 0.3922;  % Dark Light Coral
+    0.7569 0.6196 0.0000;  % Darker Goldenrod
+    0.8235 0.4510 0.0000   % Darker Orange
+];
+
+
+    colorMtx = [red_colors; blue_colors;darker_yellow_orange_colors]; % shuffle colors
 
     %sgtitle([num2str(sum(unitType == 1)), ' single units, ', num2str(sum(unitType == 2)), ' multi-units, ', ...
     %    num2str(sum(unitType == 0)), ' noise units, ', num2str(sum(unitType == 3)), ' non-somatic units.']);
@@ -148,9 +176,9 @@ for i = 1:length(plotConditions)
         
         % Plot histogram
         if i > 2
-            h = histogram(ax, metricData, 40, 'FaceColor', colorMtx(i, 1:3), 'FaceAlpha', colorMtx(i, 4), 'Normalization', 'probability');
+            h = histogram(ax, metricData, 40, 'FaceColor', colorMtx(i, 1:3),  'Normalization', 'probability');
         else
-            h = histogram(ax, metricData, 'FaceColor', colorMtx(i, 1:3), 'FaceAlpha', colorMtx(i, 4), 'Normalization', 'probability');
+            h = histogram(ax, metricData, 'FaceColor', colorMtx(i, 1:3), 'Normalization', 'probability');
         end
         binsize_offset = h.BinWidth/2;
         % Add horizontal lines instead of rectangles

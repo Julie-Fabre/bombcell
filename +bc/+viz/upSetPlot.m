@@ -1,4 +1,4 @@
-function upSetPlot(data, labels, figH)
+function upSetPlot(data, labels, figH, setSizeColor)
 % More info on UpSet plots in the original publication:
 % Alexander Lex, Nils Gehlenborg, Hendrik Strobelt, Romain Vuillemot,
 % Hanspeter Pfister. UpSet: Visualization of Intersecting Sets
@@ -10,14 +10,15 @@ function upSetPlot(data, labels, figH)
 % written by Zhaoxu Liu / slandarer
 
 if nargin < 3 || isempty(figH)
-    figH = figure('Units', 'normalized', 'Position', [.3, .2, .5, .63], 'Color', [1, 1, 1]);
-
+    figH = figure('Units', 'normalized', 'Position', [.2, .2, 1, .63], 'Color', [1, 1, 1]);
 end
-% set colors 
-intxColor = [66, 182, 195] ./ 255;
-setSizeColor = bc.viz.colors(size(data,2));
-lineColor = [61, 58, 61] ./ 255;
 
+% set colors 
+intxColor = [0, 0, 0];
+if nargin < 4 || isempty(setSizeColor)
+setSizeColor = bc.viz.colors(size(data,2));
+end
+lineColor = [61, 58, 61] ./ 255;
 
 % get probabilities & groups 
 pBool = abs(dec2bin((1:(2^size(data, 2) - 1))')) - 48;
@@ -36,22 +37,22 @@ sType = sType(sInd);
 %% create figure and subplots
 axI = axes('Parent', figH);
 hold on;
-set(axI, 'Position', [.33, .35, .655, .61], 'LineWidth', 1.2, 'Box', 'off', 'TickDir', 'out', ...
+set(axI, 'Position', [.45, .35, .53, .48], 'LineWidth', 1.2, 'Box', 'off', 'TickDir', 'out', ...
     'FontName', 'Arial', 'FontSize', 12, 'XTick', [], 'XLim', [0, length(pType) + 1])
 axI.YLabel.String = 'Intersection Size';
 axI.YLabel.FontSize = 16;
-%
+
 axS = axes('Parent', figH);
 hold on;
-set(axS, 'Position', [.01, .08, .245, .26], 'LineWidth', 1.2, 'Box', 'off', 'TickDir', 'out', ...
+set(axS, 'Position', [.2, .08, .2, .26], 'LineWidth', 1.2, 'Box', 'off', 'TickDir', 'out', ...
     'FontName', 'Arial', 'FontSize', 12, 'YColor', 'none', 'YLim', [.5, size(data, 2) + .5], ...
     'YAxisLocation', 'right', 'XDir', 'reverse', 'YTick', [])
 axS.XLabel.String = 'Set Size';
 axS.XLabel.FontSize = 16;
-%
+
 axL = axes('Parent', figH);
 hold on;
-set(axL, 'Position', [.33, .08, .655, .26], 'YColor', 'none', 'YLim', [.5, size(data, 2) + .5], 'XColor', 'none', 'XLim', axI.XLim)
+set(axL, 'Position', [.45, .08, .53, .26], 'YColor', 'none', 'YLim', [.5, size(data, 2) + .5], 'XColor', 'none', 'XLim', axI.XLim)
 
 %% plot interaction bar plots 
 barHdlI = bar(axI, pCount);
@@ -69,19 +70,21 @@ barHdlI.FaceColor = 'flat';
 for i = 1:length(pType)
     barHdlI.CData(i, :) = intxColor(i, :);
 end
-text(axI, 1:length(pType), pCount, string(pCount), 'HorizontalAlignment', 'center', ...
-    'VerticalAlignment', 'bottom', 'FontName', 'Arial', 'FontSize', 12, 'Color', [61, 58, 61]./255)
+%text(axI, 1:length(pType), pCount, string(pCount), 'HorizontalAlignment', 'center', ...
+%    'VerticalAlignment', 'bottom', 'FontName', 'Arial', 'FontSize', 12, 'Color', [61, 58, 61]./255)
 
 %% plot set sizes 
 barHdlS = barh(axS, sCount, 'BarWidth', .6);
 barHdlS.EdgeColor = 'none';
 barHdlS.BaseLine.Color = 'none';
+
+% Adjust label position
 for i = 1:size(data, 2)
-    annotation('textbox', [(axS.Position(1) + axS.Position(3) + axI.Position(1)) / 2 - .02, ...
-        axS.Position(2) + axS.Position(4) ./ size(data, 2) .* (i - .5) - .02, .04, .04], ...
-        'String', labels{sInd(i)}, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...
-        'FitBoxToText', 'on', 'LineStyle', 'none', 'FontName', 'Arial', 'FontSize', 13)
+    text(axS, max(sCount), i, labels{sInd(i)}, 'HorizontalAlignment', 'right', ...
+        'VerticalAlignment', 'middle', 'FontName', 'Arial', 'FontSize', 13, ...
+        'Color', [0.2, 0.2, 0.2]);
 end
+
 if size(setSizeColor, 1) == 1
     setSizeColor = [setSizeColor; setSizeColor];
 end
@@ -97,8 +100,11 @@ for i = 1:size(data, 2)
     barHdlS.CData(i, :) = setSizeColor(i, :);
     sstr{i} = [num2str(sCount(i)), ' '];
 end
-text(axS, sCount, 1:size(data, 2), sstr, 'HorizontalAlignment', 'right', ...
-    'VerticalAlignment', 'middle', 'FontName', 'Arial', 'FontSize', 12, 'Color', [61, 58, 61]./255)
+%text(axS, sCount + max(sCount)*0.02, 1:size(data, 2), sstr, 'HorizontalAlignment', 'left', ...
+%    'VerticalAlignment', 'middle', 'FontName', 'Arial', 'FontSize', 12, 'Color', [61, 58, 61]./255)
+
+% Adjust x-axis limits to accommodate labels
+axS.XLim = [-max(sCount)*0.15, max(sCount) * 1.5];
 
 %% plot interaction details 
 patchColor = [248, 246, 249; 255, 254, 255] ./ 255;

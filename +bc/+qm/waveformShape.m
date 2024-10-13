@@ -146,8 +146,11 @@ else
     linearFit = param.spDecayLinFit;
     [spatialDecaySlope, spatialDecayFit, spatialDecayPoints, spatialDecayPoints_loc, estimatedUnitXY] = ...
         bc.qm.helpers.getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit, param.normalizeSpDecay, param.computeSpatialDecay);
-
-spatialDecayFit_1 = spatialDecayFit(1);
+    if linearFit
+        spatialDecayFit_1 = spatialDecayFit(2);
+    else
+        spatialDecayFit_1 = spatialDecayFit(1);
+    end
     % (get waveform baseline fraction)
     if ~isnan(waveformBaselineWindow(1))
         waveformBaseline = max(abs(thisWaveform(waveformBaselineWindow(1): ...
