@@ -121,7 +121,7 @@ guiData=struct;
     figure(unitQualityGuiHandle.histogramFigure);
     
     % Define metrics, thresholds, and plot conditions
-    [metricNames, metricThresh1, metricThresh2, plotConditions, metricNames_SHORT, metricLineCols] = defineMetrics(param);
+    [metricNames, metricThresh1, metricThresh2, plotConditions, metricNames_SHORT] = defineMetrics(param);
 
     numSubplots = sum(plotConditions);
 
@@ -160,15 +160,15 @@ for i = 1:length(plotConditions)
         
         if ~isnan(metricThresh1(i)) || ~isnan(metricThresh2(i))
             if ~isnan(metricThresh1(i)) && ~isnan(metricThresh2(i))
-                line(ax, [xLim(1)+binsize_offset, metricThresh1(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,1:3), 'LineWidth', 2);
-                line(ax, [metricThresh1(i)+binsize_offset, metricThresh2(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,4:6), 'LineWidth', 2);
-                line(ax, [metricThresh2(i)+binsize_offset, xLim(2)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,7:9), 'LineWidth', 2);
+                line(ax, [xLim(1)+binsize_offset, metricThresh1(i)+binsize_offset], [lineY, lineY], 'Color', 'r', 'LineWidth', 2);
+                line(ax, [metricThresh1(i)+binsize_offset, metricThresh2(i)+binsize_offset], [lineY, lineY], 'Color', 'g', 'LineWidth', 2);
+                line(ax, [metricThresh2(i)+binsize_offset, xLim(2)+binsize_offset], [lineY, lineY], 'Color', 'r', 'LineWidth', 2);
             elseif ~isnan(metricThresh1(i))
-                line(ax, [xLim(1)+binsize_offset, metricThresh1(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,1:3), 'LineWidth', 2);
-                line(ax, [metricThresh1(i)+binsize_offset, xLim(2)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,4:6), 'LineWidth', 2);
+                line(ax, [xLim(1)+binsize_offset, metricThresh1(i)+binsize_offset], [lineY, lineY], 'Color', 'g', 'LineWidth', 2);
+                line(ax, [metricThresh1(i)+binsize_offset, xLim(2)+binsize_offset], [lineY, lineY], 'Color', 'r', 'LineWidth', 2);
             elseif ~isnan(metricThresh2(i))
-                line(ax, [xLim(1)+binsize_offset, metricThresh2(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,1:3), 'LineWidth', 2);
-                line(ax, [metricThresh2(i)+binsize_offset, xLim(2)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,4:6), 'LineWidth', 2);
+                line(ax, [xLim(1)+binsize_offset, metricThresh2(i)+binsize_offset], [lineY, lineY], 'Color', 'r', 'LineWidth', 2);
+                line(ax, [metricThresh2(i)+binsize_offset, xLim(2)+binsize_offset], [lineY, lineY], 'Color', 'g', 'LineWidth', 2);
             end
         end
         
@@ -285,7 +285,7 @@ spDecayFit = plot(NaN, NaN, 'Color', prettify_rgb('FireBrick'), 'LineWidth', 2);
 spDecayLegend = legend(spDecayFit, {''});
 spDecayTitle = title('');
 ylabel('ampli. (a.u.)');
-%xlabel('distance');
+xlabel('distance');
 %% initialize ACG
 if plotRaw && param.computeDistanceMetrics
     subplot(6, 13, 33:35)
@@ -1041,19 +1041,19 @@ function [metricNames, metricThresh1, metricThresh2, plotConditions, metricNames
        0, 0.5, 0, 1.0000,0.5469, 0, 0, 0, 0;...%, 7 'RPV_tauR_estimate', 
        0, 0.5, 0, 1.0000,0.5469, 0, 0, 0, 0;...%'8 percentageSpikesMissing_gaussian'
        0, 0.5, 0, 1.0000,0.5469, 0, 0, 0, 0;...%'9 percentageSpikesMissing_symmetric'
-       1.0000,0.5469, 0, 0, 0.5, 0, 0, 0, 0;...;%,10  # spikes'
+       0, 0.5, 0, 1.0000,0.5469, 0, 0, 0, 0;...;%,10  # spikes'
        1.0000,0.5469, 0, 0, 0.5, 0, 0, 0, 0;...% 11, 'amplitude', 
        1,0,0, 0.2, 0.2, 0.2, 1, 0, 0;...% 12 'spatial decay', 
        1,0,0, 0.2, 0.2, 0.2, 1, 0, 0;...% 13 'waveform duration',
-       0.2, 0.2, 0.2, 1,0,0, 1, 0, 0;...% 14 'baseline flatness', 
-        1.0000,0.5469, 0, 0, 0.5, 0, 0, 0, 0;...% 15'presence ratio', 
-       1.0000,0.5469, 0, 0, 0.5, 0, 0, 0, 0;...% 16'SNR',
-       1.0000,0.5469, 0, 0, 0.5, 0, 0, 0, 0;...% 17 'maximum drift',
-       1.0000,0.5469, 0, 0, 0.5, 0, 0, 0, 0;...% 18 'cum. drift', 
-       0, 0.5, 0, 1.0000,0.5469, 0, 0, 0, 0;% 19'isolation dist.', 
-       1.0000,0.5469, 0, 0, 0.5, 0, 0, 0, 0;...% 20'L-ratio'
+       1,0,0, 0.2, 0.2, 0.2, 1, 0, 0;...% 14 'baseline flatness', 
+       1,0,0, 0.2, 0.2, 0.2, 1, 0, 0;...% 14'presence ratio', 
+       1,0,0, 0.2, 0.2, 0.2, 1, 0, 0;...% 16'SNR',
+       0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0;...% 17 'maximum drift',
+       0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0;...% 18 'cum. drift', 
+       1,0,0, 0.2, 0.2, 0.2, 1, 0, 0;% 19'isolation dist.', 
+       0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0;...% 20'L-ratio'
                    ];
-indices_ordered = [1,2,14,13,3,12,4,5,11,16,6,10,15,8,17,18,19,20];
+indices_ordered = [1,2,14,13,3,12,4,5,11,16,6,10,14,8,17,18,19,20];
     metricNames = metricNames(indices_ordered );
     metricNames_SHORT  = metricNames_SHORT(indices_ordered );
     metricThresh1 = metricThresh1(indices_ordered );
