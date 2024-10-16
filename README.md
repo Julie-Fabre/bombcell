@@ -44,6 +44,7 @@ To begin using Bombcell:
     - Image Processing Toolbox
     - Statistics and Machine Learning Toolbox
     - Parallel Computing Toolbox
+    - Optimization Toolbox
 
 In addition we would like to acknowledge:
 - to compute fast ACGs, we use a function (`CCGHeart.c`) part of the [FMAToolbox](https://fmatoolbox.sourceforge.net/), and it is already included in bombcell.
