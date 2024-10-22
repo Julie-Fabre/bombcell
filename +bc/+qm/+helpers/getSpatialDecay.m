@@ -31,6 +31,8 @@ if computeSpatialDecay
 
     if numel(channels_withSameX) < MIN_CHANNELS_FOR_FIT
         warning('Insufficient channels with similar X position for fitting.');
+        spatialDecayPoints_loc = nan(NUM_CHANNELS_FOR_FIT,1);
+        spatialDecayPoints = nan(1, NUM_CHANNELS_FOR_FIT);
         return;
     end
 
