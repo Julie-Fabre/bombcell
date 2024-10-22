@@ -154,6 +154,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
     qMetric.nSpikes(iUnit) = bc.qm.numberSpikes(theseSpikeTimes);
 
     %% waveform
+    try
     waveformBaselineWindow = [param.waveformBaselineWindowStart, param.waveformBaselineWindowStop];
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.mainPeak_before_size(iUnit), ...
         qMetric.mainPeak_after_size(iUnit), qMetric.mainTrough_size(iUnit), qMetric.mainPeak_before_width(iUnit),...
@@ -162,6 +163,9 @@ for iUnit = 1:size(uniqueTemplates, 1)
         forGUI.spatialDecayPoints(iUnit, :), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), ... .
         forGUI.tempWv(iUnit, :), forGUI.spatialDecayPoints_loc(iUnit, :), forGUI.spatialDecayFit(iUnit)] = bc.qm.waveformShape(templateWaveforms, thisUnit, qMetric.maxChannels(thisUnit), ...
         param, channelPositions, waveformBaselineWindow);
+    catch
+        keyboard
+    end
 
     %% amplitude
     if param.extractRaw

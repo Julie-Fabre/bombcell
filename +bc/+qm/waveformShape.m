@@ -72,10 +72,15 @@ if any(isnan(thisWaveform)) % kilosort can sometimes return all NaNs in a wavefo
     peakLocs = NaN;
     troughLocs = NaN;
     waveformDuration_peakTrough = NaN;
-    spatialDecayPoints = nan(1, 6);
+    if param. param.spDecayLinFit
+        num_buff = 6;
+    else
+        num_buff = 10;
+    end
+    spatialDecayPoints = nan(1, num_buff);
     spatialDecaySlope = NaN;
     waveformBaseline = NaN;
-    spatialDecayPoints_loc = nan(1, 6); 
+    spatialDecayPoints_loc = nan(1, num_buff); 
     spatialDecayFit_1 = NaN;
 else
     % get waveform peaks, troughs locations, sizes and widths for top 17
