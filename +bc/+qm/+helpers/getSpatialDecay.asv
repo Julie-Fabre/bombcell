@@ -72,7 +72,7 @@ if computeSpatialDecay
 
         
         % Perform exponential fit using lsqcurvefit
-        [fitParams, ~, residual, ~, ~, ~, jacobian] = lsqcurvefit(expDecayFun, initialGuess, double(spatialDecayPoints_loc), spatialDecayPoints'), [], [], options);
+        [fitParams, ~, residual, ~, ~, ~, jacobian] = lsqcurvefit(expDecayFun, initialGuess, spatialDecayPoints_loc, spatialDecayPoints', [], [], options);
         
         spatialDecaySlope = fitParams(2);  % The decay rate is the second parameter
         spatialDecayFit = fitParams;
@@ -93,6 +93,7 @@ if computeSpatialDecay
     % Pad spatialDecayPoints with NaNs if necessary
     if length(spatialDecayPoints) < NUM_CHANNELS_FOR_FIT
         spatialDecayPoints = [spatialDecayPoints, nan(1, NUM_CHANNELS_FOR_FIT-length(spatialDecayPoints))];
+         spatialDecayPoints = [spatialDecayPoints, nan(1, NUM_CHANNELS_FOR_FIT-length(spatialDecayPoints))];
     end
 
 else
