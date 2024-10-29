@@ -95,7 +95,7 @@ if computeSpatialDecay
     % Pad spatialDecayPoints with NaNs if necessary
     if length(spatialDecayPoints) < NUM_CHANNELS_FOR_FIT
         spatialDecayPoints = [spatialDecayPoints, nan(1, NUM_CHANNELS_FOR_FIT-length(spatialDecayPoints))];
-         spatialDecayPoints_loc = [spatialDecayPoints_loc; nan(1, NUM_CHANNELS_FOR_FIT-length(spatialDecayPoints_loc))];
+        spatialDecayPoints_loc = [spatialDecayPoints_loc; nan(NUM_CHANNELS_FOR_FIT-length(spatialDecayPoints_loc),1)];
     end
 
 else
