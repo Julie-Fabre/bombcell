@@ -67,7 +67,7 @@ if exist(fullfile([ephys_path, filesep, 'spike_clusters.npy']))
     spike_clusters_0idx = readNPY([ephys_path, filesep, 'spike_clusters.npy']); % already manually-curated
     spikeClusters = spike_clusters_0idx + 1;
 
-    newTemplates = unique(spikeClusters(~ismember(uint32(spikeClusters), spikeTemplates)));
+    newTemplates = unique(spikeClusters(~ismember(uint32(spikeClusters), uint32(spikeTemplates))));
 
     if ~isempty(newTemplates)
         % initialize templates and pc features
@@ -101,8 +101,6 @@ else
      % check raw waveforms 
      bc.load.checkAndConvertRawWaveforms(savePath, spikeTemplates, spikeClusters)
 end
-
-
 
 %% Only use data set of interest - for unit match
 if nargin > 3 && ~isempty(datasetidx) %- for unit match

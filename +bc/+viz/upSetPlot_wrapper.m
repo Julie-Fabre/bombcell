@@ -77,7 +77,11 @@ blue_colors = [
     0.2549 0.4118 0.8824;  % Royal Blue
     0.0000 0.0000 0.5020   % Navy Blue
 ];
+try
     bc.viz.upSetPlot(UpSet_data_nonsoma, UpSet_labels_nonsoma, figHandle_nonsoma, blue_colors);
+catch
+    keyboard;
+end
     hold on;
     sgtitle('Units classified as non-somatic');
 else

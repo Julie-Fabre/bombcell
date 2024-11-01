@@ -1,4 +1,4 @@
-function qMetric = saveQMetrics(param, qMetric, forGUI, savePath)
+function qMetric = saveQMetrics(param, qMetric, forGUI, savePath, medianSpikeDepth, timeBins)
 % JF, Reformat and save ephys properties
 % ------
 % Inputs
@@ -15,6 +15,11 @@ function qMetric = saveQMetrics(param, qMetric, forGUI, savePath)
 % ------
 % ephysProperties: reformated ephysProperties structure into a table array
 
+% Save full drift information
+if param.computeDrift
+    parquetwrite([fullfile(savePath, 'templates._bc_medianSpikeDepth.parquet')], array2table(medianSpikeDepth))
+    parquetwrite([fullfile(savePath, 'time_chunks._bc_medianSpikeDepth.parquet')], array2table(timeBins))
+end
 % Get ratios
 qMetric.scndPeakToTroughRatio = abs(qMetric.mainPeak_after_size./qMetric.mainTrough_size);
 invalid_peaks = (abs(qMetric.mainTrough_size./qMetric.mainPeak_before_size) > param.minMainPeakToTroughRatio | ...
@@ -45,6 +50,7 @@ end
 if param.saveMatFileForGUI
     save(fullfile(savePath, 'templates.qualityMetricDetailsforGUI.mat'), 'forGUI', '-v7.3')
 end
+
 % compute the waveform ratios 
 qMetric.secndPeakToTroughRatio = abs(qMetric.mainPeak_after_size./qMetric.mainTrough_size);
 invalid_peaks = (abs(qMetric.mainTrough_size./qMetric.mainPeak_before_size) > param.minMainPeakToTroughRatio | ...
@@ -80,7 +86,6 @@ parquetwrite([fullfile(savePath, 'templates._bc_qMetrics.parquet')], qMetricTabl
 qMetric = qMetricTable;
 
 
-%% Get ratios
 % optionally, also save output as a .tsv file
 if isfield(param,'saveAsTSV') % ensure back-compatibility if users have a previous version of param 
 

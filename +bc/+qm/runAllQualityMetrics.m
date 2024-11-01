@@ -147,8 +147,8 @@ for iUnit = 1:size(uniqueTemplates, 1)
         qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param);
 
     %% maximum cumulative drift estimate
-    [qMetric.maxDriftEstimate(iUnit), qMetric.cumDriftEstimate(iUnit)] = bc.qm.maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...
-        theseSpikeTimes, channelPositions(:, 2), thisUnit, param);
+    [qMetric.maxDriftEstimate(iUnit), qMetric.cumDriftEstimate(iUnit), medianSpikeDepth(iUnit,:), timeBins] = bc.qm.maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...
+        theseSpikeTimes, channelPositions(:, 2), thisUnit, param, timeChunks);
 
     %% number spikes
     qMetric.nSpikes(iUnit) = bc.qm.numberSpikes(theseSpikeTimes);
@@ -197,7 +197,7 @@ end
 
 fprintf('\n Finished extracting quality metrics from %s', param.rawFile)
 
-qMetric = bc.qm.saveQMetrics(param, qMetric, forGUI, savePath);
+qMetric = bc.qm.saveQMetrics(param, qMetric, forGUI, savePath, medianSpikeDepth, timeBins);
 fprintf('\n Saved quality metrics from %s to %s \n', param.rawFile, savePath)
 
 unitType = bc.qm.getQualityUnitType(param, qMetric, savePath);

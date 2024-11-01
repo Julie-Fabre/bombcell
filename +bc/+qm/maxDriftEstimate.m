@@ -1,5 +1,5 @@
-function [maxDrift_estimate, cumulativeDrift_estimate] = maxDriftEstimate(pcFeatures, pcFeatureIdx, spikeTemplates, ...
-    spikeTimes, channelPositions_z, thisUnit, param)
+function [maxDrift_estimate, cumulativeDrift_estimate, median_spikeDepth, timeBins, spikeDepths_inChannels] = maxDriftEstimate(pcFeatures, pcFeatureIdx, spikeTemplates, ...
+    spikeTimes, channelPositions_z, thisUnit, param, timeChunks)
 % JF, Estimate the maximum drift for a particular unit
 % ------
 % Inputs
@@ -46,8 +46,15 @@ if param.computeDrift
 
     %% estimate cumulative drift
 
-    timeBins = min(spikeTimes):param.driftBinSize:max(spikeTimes);
+    timeBins = timeChunks(1):param.driftBinSize:timeChunks(end);
     median_spikeDepth = arrayfun(@(x) median(spikeDepths_inChannels(spikeTimes >= x & spikeTimes < x + param.driftBinSize)), timeBins);
+
+    % Find bins with no spikes and set them to NaN
+    for i = 1:length(timeBins)
+        if sum(spikeTimes >= timeBins(i) & spikeTimes < timeBins(i) + param.driftBinSize) == 0
+            median_spikeDepth(i) = NaN;
+        end
+    end
 
     maxDrift_estimate = nanmax(median_spikeDepth) - nanmin(median_spikeDepth);
     cumulativeDrift_estimate = sum(abs(diff(median_spikeDepth(~isnan(median_spikeDepth)))));
@@ -61,6 +68,9 @@ if param.computeDrift
 
     end
 else
+    median_spikeDepth = NaN;
     maxDrift_estimate = NaN;
     cumulativeDrift_estimate = NaN;
+    timeBins = NaN;
+    spikeDepths_inChannels = NaN;
 end
