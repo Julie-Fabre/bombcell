@@ -60,6 +60,7 @@ end
 channelPositions = readNPY([ephys_path, filesep, 'channel_positions.npy']);
 %goodChannels = readNPY([ephys_path filesep  'channel_map.npy']) + 1;
 
+
 % in any merging/splitting has been done in phy, create the corresponding
 % templates & pc_features
 if exist(fullfile([ephys_path, filesep, 'spike_clusters.npy']))
@@ -85,14 +86,23 @@ if exist(fullfile([ephys_path, filesep, 'spike_clusters.npy']))
             templateWaveforms(iNewTemplate, :, :) = newWaveform;
             pcFeatureIdx(iNewTemplate, :) = newPcFeatureIdx;
         end
+        % check raw waveforms 
+        bc.load.checkAndConvertRawWaveforms(savePath, spikeTemplates, spikeClusters)
+
 
     else
         spikeClusters = spikeTemplates;
-    end
+         % check raw waveforms 
+        bc.load.checkAndConvertRawWaveforms(savePath, spikeTemplates, spikeClusters)
 
-    % check raw waveforms 
-    bc.load.checkAndConvertRawWaveforms(savePath, spikeTemplates, spikeClusters)
+    end
+else
+    spikeClusters = spikeTemplates;
+     % check raw waveforms 
+     bc.load.checkAndConvertRawWaveforms(savePath, spikeTemplates, spikeClusters)
 end
+
+
 
 %% Only use data set of interest - for unit match
 if nargin > 3 && ~isempty(datasetidx) %- for unit match

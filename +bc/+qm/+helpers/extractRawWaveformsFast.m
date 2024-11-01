@@ -183,10 +183,11 @@ if any(emptyWaveforms)
     % Save compact format
     writeNPY(rawWaveformsCompact, fullfile(savePath, 'templates._bc_rawWaveforms.npy'));
     writeNPY(rawWaveformsPeakChanCompact, fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy'));
-    
+
  
 
 end
+
 %% estimate signal-to-noise ratio 
 unique_clus = unique(spikeClusters);
 if ~isempty(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'))
@@ -200,8 +201,11 @@ if ~isempty(fullfile(savePath, 'templates._bc_baselineNoiseAmplitude.npy'))
         mad(average_baseline_cat(average_baseline_idx_cat == X)), ...
         unique_clus, 'Uni', false));
 else
-    rawWaveformsFull = [];
-    rawWaveformsPeakChan = [];
+
     signalToNoiseRatio = [];
 end
-end
+else
+    signalToNoiseRatio = [];
+        rawWaveformsFull = [];
+    rawWaveformsPeakChan = [];
+    end
