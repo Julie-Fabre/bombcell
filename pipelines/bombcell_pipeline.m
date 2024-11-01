@@ -37,7 +37,7 @@ end
 
 %% load data 
 [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitudes, pcFeatures, ...
-    pcFeatureIdx, channelPositions] = bc.load.loadEphysData(ephysKilosortPath);
+    pcFeatureIdx, channelPositions] = bc.load.loadEphysData(ephysKilosortPath, savePath);
 
 %% detect whether data is compressed, decompress locally if necessary
 rawFile = bc.dcomp.manageDataCompression(ephysRawDir, decompressDataLocal);
