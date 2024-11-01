@@ -79,6 +79,8 @@ if removeDuplicateSpikes_flag
         rawWaveformsPeakChan = rawWaveformsPeakChan(~emptyUnits_idx);
     end
 
+    emptyUnits_idx = ~ismember(unique_templates, nonEmptyUnits);
+
     if ~isempty(signalToNoiseRatio)
         signalToNoiseRatio = signalToNoiseRatio(~emptyUnits_idx);
     end
