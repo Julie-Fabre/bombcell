@@ -63,10 +63,12 @@ for iID = 1:numel(uniqueIDs)
             channelSpikes = pc_features(otherSpikes, :, commonChannelIndex);
             otherFeatures(nCount:nCount+size(channelSpikes, 1)-1, :, iChannel) = channelSpikes;
             otherFeaturesInd(nCount:nCount+size(channelSpikes, 1)-1, :, iChannel) = currentID;
-            nCount = nCount + size(channelSpikes, 1);
+            
         end
     end
-
+    if any(ismember(theseChannels, currentChannels))
+        nCount = nCount + size(channelSpikes, 1);
+    end
 end
 
 % Predefine outputs to handle cases where conditions are not met
