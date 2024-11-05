@@ -1,5 +1,5 @@
 
-function [ephysProperties, unitClassif] = runAllEphysPipeline(ephysPath, savePath, rerunEP, region)
+function [ephysProperties, unitClassif] = runAllEphysProperties(ephysPath, savePath, rerunEP, region)
 
 
 %% compute ephys properties 
