@@ -1,5 +1,5 @@
 function [rawWaveformsFull, rawWaveformsPeakChan, baselineNoiseAmplitude, baselineNoiseAmplitudeIndex, emptyWaveforms] = ...
-    loadRawWaveforms(savePath, spikeClusters, spikeWidth, nDataChannels, waveformBaselineNoiseWindow)
+    loadRawWaveforms(savePath, spikeClusters, spikeWidth, nSpikeChannels, waveformBaselineNoiseWindow)
 
 rawWaveformFolder = dir(fullfile(savePath, 'templates._bc_rawWaveforms_kilosort_format.npy'));
 unique_clusters = unique(spikeClusters);
@@ -17,7 +17,7 @@ if ~isempty(rawWaveformFolder)
     emptyWaveforms = empty_row_indices(ismember(empty_row_indices, unique_clusters));
 
 else
-    rawWaveformsFull = nan(max(unique_clusters), spikeWidth, nDataChannels);
+    rawWaveformsFull = nan(max(unique_clusters), spikeWidth, nSpikeChannels);
     rawWaveformsPeakChan = nan(max(unique_clusters), 1);
     emptyWaveforms = unique_clusters;
     baselineNoiseAmplitude = nan(numel(unique_clusters) * waveformBaselineNoiseWindow, 1);
