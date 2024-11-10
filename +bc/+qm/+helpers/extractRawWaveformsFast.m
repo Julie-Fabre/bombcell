@@ -32,8 +32,9 @@ if param.extractRaw
     nChannels = param.nChannels; % (385)
     spikeWidth = param.spikeWidth;
     % load raw waveforms and check if any empty
+    nSpikeChannels = nChannels - param.nSyncChannels;
     [rawWaveformsFull, rawWaveformsPeakChan, baselineNoiseAmplitude, baselineNoiseAmplitudeIndex, emptyWaveforms] = ...
-        bc.qm.helpers.loadRawWaveforms(savePath, spikeClusters, spikeWidth, nChannels, param.waveformBaselineNoiseWindow);
+        bc.qm.helpers.loadRawWaveforms(savePath, spikeClusters, spikeWidth, nSpikeChannels, param.waveformBaselineNoiseWindow);
     if any(emptyWaveforms)
 
         %% Extract raw waveforms
