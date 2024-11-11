@@ -34,6 +34,9 @@ if param.extractRaw
     % load raw waveforms and check if any empty
     [rawWaveformsFull, rawWaveformsPeakChan, baselineNoiseAmplitude, baselineNoiseAmplitudeIndex, emptyWaveforms] = ...
         bc.qm.helpers.loadRawWaveforms(savePath, spikeClusters, spikeWidth, nChannels, param.waveformBaselineNoiseWindow);
+    if reExtract
+        emptyWaveforms 
+    end
     if any(emptyWaveforms)
 
         %% Extract raw waveforms
