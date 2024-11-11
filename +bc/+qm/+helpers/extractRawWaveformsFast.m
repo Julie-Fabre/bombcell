@@ -34,11 +34,10 @@ if param.extractRaw
     % load raw waveforms and check if any empty
     nSpikeChannels = nChannels - param.nSyncChannels;
     [rawWaveformsFull, rawWaveformsPeakChan, baselineNoiseAmplitude, baselineNoiseAmplitudeIndex, emptyWaveforms] = ...
-    if reExtract
-        emptyWaveforms = unique(zpikeClusters);
-    end
-
         bc.qm.helpers.loadRawWaveforms(savePath, spikeClusters, spikeWidth, nSpikeChannels, param.waveformBaselineNoiseWindow);
+    if reExtract
+        emptyWaveforms = unique(spikeClusters);
+    end
 
     if any(emptyWaveforms)
 
