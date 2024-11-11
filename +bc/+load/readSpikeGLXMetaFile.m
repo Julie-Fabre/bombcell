@@ -35,12 +35,25 @@ function [scalingFactor, channelMapImro, probeType] = readSpikeGLXMetaFile(metaF
         error(['No probe type found in meta file and no probeType specified. ', ...
             'Please specify a probe type parameter.']);
     end
+<<<<<<< HEAD
     
     % Get channel map information
     if isfield(meta, 'imroTbl')
         channelMapImro = meta.imroTbl;
     elseif isfield(meta, 'imRoTbl')  % Alternative spelling
         channelMapImro = meta.imRoTbl;
+=======
+end
+
+% get bits_encoding
+expr_imMax = 'imMaxInt=';
+[~, startIndeximMax] = regexp(filetext, expr_imMax);
+if isempty(startIndeximMax) % new convention in new spike glx argh
+    if ismember(probeType, {'1', '3', '0', '1020', '1030', '1100', '1120', '1121', '1122', '1123', '1200', '1300', '1110'}) %NP1, NP1-like
+        bits_encoding = 2^10; % 10-bit analog to digital
+    elseif ismember(probeType, {'21', '2003', '2004', '24', '2013', '2014', '2020'}) % NP2, NP2-like
+        bits_encoding = 2^14; % 14-bit analog to digital
+>>>>>>> 29a169963c9923ca4a382d0e4dc6b32afb0cb208
     else
         channelMapImro = '';
         if strcmp(probeType, '0')
