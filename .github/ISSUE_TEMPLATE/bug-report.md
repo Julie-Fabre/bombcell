@@ -8,6 +8,7 @@ assignees: ''
 ---
 
 ### Describe the bug 
+What's wrong? 
 
 ### Provide screenshots
 If you have any screenshots (.e.g. of bombcell's output plots, bombcell's GUI, Phy, ...) please add them. 

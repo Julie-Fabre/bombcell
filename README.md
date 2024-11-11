@@ -30,7 +30,7 @@ Take a look at [`bombcell_pipeline`](https://github.com/Julie-Fabre/bombcell/blo
 Bombcell requires MATLAB>=2019a.
 
 To begin using Bombcell:
-- [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) the [repository](https://github.com/Julie-Fabre/bombcell/bombcell) and the [dependencies](#Dependencies).
+- [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) the [repository](https://github.com/Julie-Fabre/bombcell/bombcell) and the [dependencies](#Dependencies). You can do this either via git/GitHub desktop or directly by downloading the .zip file and decompressing it. 
 - add bombcell's and the dependancies' folders to [MATLAB's path](https://uk.mathworks.com/help/matlab/ref/pathtool.html).
 - in addition, if you want to compute ephys properties, change your working directory to `bombcell\+bc\+ep\+helpers` in matlab and run `mex -O CCGHeart.c` to able to compute fast ACGs, using part of the [FMAToolbox](https://fmatoolbox.sourceforge.net/).
 
@@ -44,6 +44,7 @@ To begin using Bombcell:
     - Image Processing Toolbox
     - Statistics and Machine Learning Toolbox
     - Parallel Computing Toolbox
+    - Optimization Toolbox
 
 In addition we would like to acknowledge:
 - to compute fast ACGs, we use a function (`CCGHeart.c`) part of the [FMAToolbox](https://fmatoolbox.sourceforge.net/), and it is already included in bombcell.
@@ -60,5 +61,5 @@ Bombcell is under the open-source [copyleft](https://www.gnu.org/licenses/copyle
 
 ### 📬 Contact us
 
-If you run into any issues or if you have any suggestions, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues) or create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request). You can email [us: juliemfabre[at]gmail[dot]com](mailto:juliemfabre@gmail.com), but github issues are preferred.  You can also use the [Neuropixels slack workgroup](https://join.slack.com/t/neuropixelsgroup/shared_invite/zt-2h3sp1nfr-JZrpKWxeVptI0EPbHAoxKA).
+If you run into any issues or if you have any suggestions, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues) or create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request). You can also use the [Neuropixels slack workgroup](https://join.slack.com/t/neuropixelsgroup/shared_invite/zt-2h3sp1nfr-JZrpKWxeVptI0EPbHAoxKA).
 Please star the project to support us, using the top-right "⭐ Star" button.
