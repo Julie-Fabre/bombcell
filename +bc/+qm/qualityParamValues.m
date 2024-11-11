@@ -64,7 +64,7 @@ end
 if strcmp(rawFile, "NaN")
     param.extractRaw = 0;
 else
-param.extractRaw = 1; %whether to extract raw waveforms or not 
+    param.extractRaw = 1; %whether to extract raw waveforms or not 
 end
 param.probeType = 1; % if you are using spikeGLX and your meta file does 
     % not contain information about your probe type for some reason
@@ -94,9 +94,10 @@ param.tauR_valuesStep = 0.5/1000; % refractory period time (s) steps. Only
     % used if param.tauR_valuesMin is different from param.tauR_valuesMax
 param.tauR_valuesMax = 2/1000; % refractory period time (s), usually 0.0020
 param.tauC = 0.1/1000; % censored period time (s) - this is to prevent duplicate spikes 
+param.hillOrLlobetMethod = 1; % 1 to use Hill et al method; 2 to use Llobet et al method
 
 % percentage spikes missing parameters 
-param.computeTimeChunks = 1; % compute fraction refractory period violations 
+param.computeTimeChunks = 0; % compute fraction refractory period violations 
     % and percent spikes missing for different time chunks 
 param.deltaTimeChunk = 360; %time in seconds 
 
@@ -122,6 +123,7 @@ param.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value
 param.normalizeSpDecay = 1; % whether to normalize spatial decay points relative to 
 % maximum - this makes the spatrial decay slop calculation more invariant to the 
 % spike-sorting algorithm used
+param.spDecayLinFit = 0; % if false, use an exponential fit
 
 % recording parameters
 param.ephys_sample_rate = 30000; % samples per second
@@ -152,12 +154,18 @@ param.maxNPeaks = 2; % maximum number of peaks
 param.maxNTroughs = 1; % maximum number of troughs
 param.somatic = 1; % keep only somatic units, and reject non-somatic ones
 param.minWvDuration = 100; % in us
-param.maxWvDuration = 1000; % in us
-param.minSpatialDecaySlope = -0.005; % in a.u./um
+param.maxWvDuration = 1150; % in us
+param.minSpatialDecaySlope = -0.008; % in a.u./um
+param.minSpatialDecaySlopeExp = 0.01; % in a.u./um
+param.maxSpatialDecaySlopeExp = 0.1; % in a.u./um
 param.maxWvBaselineFraction = 0.3; % maximum absolute value in waveform baseline
     % should not exceed this fraction of the waveform's abolute peak value
-param.firstPeakRatio = 1.2; % if units have an initial peak before the trough,
+param.firstPeakRatio = 3; % if units have an initial peak before the trough,
     % it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit. 
+param.minTroughToPeakRatio = 0.8; % peak must be less
+param.minWidthFirstPeak = 4; % in samples
+param.minMainPeakToTroughRatio = 5; % trough should be min 5 x bigger than 1rst peak to count as non-somatic 
+param.minWidthMainTrough = 5; % in samples
 
 % distance metrics
 param.isoDmin = 20; % minimum isolation distance value
@@ -169,8 +177,8 @@ param.minAmplitude = 20; % in uV
 param.maxRPVviolations = 0.1; % fraction
 param.maxPercSpikesMissing = 20; % in percentage
 param.minNumSpikes = 300; % number of spikes
-param.maxDrift = 100;
-param.minPresenceRatio = 0.7;
+param.maxDrift = 100; % in micrometers 
+param.minPresenceRatio = 0.7; % fraction
 param.minSNR = 1;
 
 end

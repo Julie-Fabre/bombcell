@@ -28,7 +28,7 @@ if nargin < 4
 end
 
 paramEP = struct; 
-paramEP.plotThis = 0;
+paramEP.plotDetails = 0;
 paramEP.verbose = 1;
 
 % recording parameters
@@ -90,9 +90,14 @@ paramEP.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value
 paramEP.maxWvBaselineFraction = 0.3; % maximum absolute value in waveform baseline
     % should not exceed this fraction of the waveform's abolute peak value
 paramEP.normalizeSpDecay = 1;
+paramEP.spDecayLinFit = 1;
 % QQ set this the same as qmetrics (load useChunks Start and stop)
 %paramEP.computeTimeChunks = 1; % compute ephysProperties for different time chunks 
 %paramEP.deltaTimeChunk = 360; %time in seconds 
+paramEP.minWidthFirstPeak = 4; % in samples
+paramEP.minMainPeakToTroughRatio = 10;
+paramEP.minWidthMainTrough = 5; % in samples
+paramEP.firstPeakRatio = 3;
 
 % cell classification parameters
 % - striatum 

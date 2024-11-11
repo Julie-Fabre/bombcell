@@ -1,5 +1,5 @@
 function [RPVrate, nRPVs, overestimateBool] = fractionRPviolations(theseSpikeTimes, theseAmplitudes, ...
-    tauR, tauC, timeChunks, plotThis, RPV_tauR_estimate)
+    tauR, param, timeChunks, RPV_tauR_estimate)
 % JF, get the estimated fraction of refractory period violation for a unit
 % for each timeChunk
 % ------
@@ -11,9 +11,11 @@ function [RPVrate, nRPVs, overestimateBool] = fractionRPviolations(theseSpikeTim
 %   that was applied to the template when extracting that spike
 %   , only needed if plotThis is set to true
 % tauR: refractory period
-% tauC: censored period
 % timeChunk: experiment duration time chunks
-% plotThis: boolean, whether to plot ISIs or not
+% param: structure with field s
+% - plotThis: boolean, whether to plot ISIs or not
+% - tauC: censored period
+% - hillOrLlobetMethod
 % ------
 % Outputs
 % ------
@@ -26,8 +28,8 @@ function [RPVrate, nRPVs, overestimateBool] = fractionRPviolations(theseSpikeTim
 % ------
 % Reference
 % ------
-% Llobet V et al., biorXiv 2023.
-% previous: Hill, Daniel N., Samar B. Mehta, and David Kleinfeld.
+% - Llobet V et al., biorXiv 2023. (see equation 3, page 11)
+% - Hill, Daniel N., Samar B. Mehta, and David Kleinfeld.
 % "Quality metrics to accompany spike sorting of extracellular signals."
 % Journal of Neuroscience 31.24 (2011): 8699-8705:
 % r = 2*(tauR - tauC) * N^2 * (1-Fp) * Fp / T , solve for Fp , fraction
@@ -39,7 +41,7 @@ RPVrate = ones(length(timeChunks)-1, length(tauR));
 overestimateBool = nan(length(timeChunks)-1, length(tauR));
 nRPVs = nan(length(timeChunks)-1, length(tauR));
 
-if plotThis
+if param.plotDetails
     figure('Color', 'none');
 end
 
@@ -59,52 +61,54 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
 
     % total times at which refractory period violations can occur
     for iTauR_value = 1:length(tauR)
-        numViolations = sum(isisChunk <= tauR(iTauR_value) & isisChunk > tauC); % number of observed violations
+        overestimateBool(iTimeChunk, iTauR_value) = 0;
+        if param.hillOrLlobetMethod == 1 % hill method
+            a = 2 * (tauR(iTauR_value) - param.tauC) * N_chunk^2 / abs(diff(timeChunks(iTimeChunk:iTimeChunk+1)));
+            % observed number of refractory period violations
+            nRPVs = sum(diff(theseSpikeTimes(theseSpikeTimes >= timeChunks(iTimeChunk) & theseSpikeTimes < timeChunks(iTimeChunk+1))) <= tauR(iTauR_value));
 
-        % Calculate the value under the square root
-        underRoot = 1 - numViolations / (N_chunk^2 * (tauR(iTauR_value) - tauC));
-
-        % Check if the value is non-negative
-        if underRoot >= 0
-            RPVrate(iTimeChunk, iTauR_value) = 1 - sqrt(underRoot);
+            if nRPVs == 0 % no observed refractory period violations - this can
+                % also be because there are no spikes in this interval - use presence ratio to weed this out
+                RPVrate(iTimeChunk, iTauR_value) = 0;
+            else % otherwise solve the equation above
+                rts = roots([-1, 1, -nRPVs / a]);
+                RPVrate(iTimeChunk, iTauR_value) = min(rts);
+                if ~isreal(RPVrate(iTimeChunk, iTauR_value)) % function returns imaginary number if r is too high: overestimate number.
+                    overestimateBool(iTimeChunk, iTauR_value) = 1;
+                    if nRPVs < N_chunk %to not get a negative wierd number or a 0 denominator
+                        RPVrate(iTimeChunk, iTauR_value) = nRPVs / (2 * (tauR(iTauR_value) - param.tauC) * (N_chunk - nRPVs));
+                    else
+                        RPVrate(iTimeChunk, iTauR_value) = 1;
+                    end
+                end
+                if RPVrate(iTimeChunk, iTauR_value) > 1 % it is nonsense to have a rate >1, the assumptions are failing here
+                    RPVrate(iTimeChunk, iTauR_value) = 1;
+                end
+            end
         else
-            % Handle the case where the value is negative
-            RPVrate(iTimeChunk, iTauR_value) = 1; % set to 1
+
+            numViolations = sum(isisChunk > param.tauC & isisChunk <= tauR(iTauR_value)); % number of observed violations
+
+            % Calculate the value under the square root
+            underRoot = 1 - (numViolations * (durationChunk - 2 * N_chunk * param.tauC)) / (N_chunk^2 * (tauR(iTauR_value) - param.tauC));
+
+            % RPV rate
+            if underRoot >= 0
+                RPVrate(iTimeChunk, iTauR_value) = 1 - sqrt(underRoot);
+            else
+                % Handle the case where the value is negative
+                RPVrate(iTimeChunk, iTauR_value) = 1; % set to 1
+                overestimateBool(iTimeChunk, iTauR_value) = 1;
+            end
         end
 
-
-        % below is previous calculation. changed on 16/07/2024
-        % a = 2 * (tauR(iTauR_value) - tauC) * N_chunk^2 / abs(diff(timeChunks(iTimeChunk:iTimeChunk+1)));
-        % % observed number of refractory period violations
-        % nRPVs = sum(diff(theseSpikeTimes(theseSpikeTimes >= timeChunks(iTimeChunk) & theseSpikeTimes < timeChunks(iTimeChunk+1))) <= tauR(iTauR_value));
-        %
-        % if nRPVs == 0 % no observed refractory period violations - this can
-        %     % also be because there are no spikes in this interval - use presence ratio to weed this out
-        %     fractionRPVs(iTimeChunk, iTauR_value) = 0;
-        %     overestimateBool(iTimeChunk, iTauR_value) = 0;
-        % else % otherwise solve the equation above
-        %     rts = roots([-1, 1, -nRPVs / a]);
-        %     fractionRPVs(iTimeChunk, iTauR_value) = min(rts);
-        %     overestimateBool(iTimeChunk, iTauR_value) = 0;
-        %     if ~isreal(fractionRPVs(iTimeChunk, iTauR_value)) % function returns imaginary number if r is too high: overestimate number.
-        %         overestimateBool(iTimeChunk, iTauR_value) = 1;
-        %         if nRPVs < N_chunk % to not get a negative wierd number or a 0 denominator
-        %             fractionRPVs(iTimeChunk, iTauR_value) = nRPVs / (N_chunk - nRPVs);
-        %         else
-        %             fractionRPVs(iTimeChunk, iTauR_value) = 1;
-        %         end
-        %     end
-        %     if fractionRPVs(iTimeChunk, iTauR_value) > 1 % it is nonsense to have a rate >1, the assumptions are failing here
-        %         fractionRPVs(iTimeChunk, iTauR_value) = 1;
-        %     end
-        % end
     end
 
 
-    if plotThis
-
+    if param.plotDetails
+        theseISI = diff(theseSpikeTimes);
         subplot(2, length(timeChunks)-1, (length(timeChunks) - 1)+iTimeChunk)
-        theseisiclean = isisChunk(theseISI >= tauC); % removed duplicate spikes
+        theseisiclean = isisChunk(theseISI >= param.tauC); % removed duplicate spikes
         [isiProba, edgesISI] = histcounts(theseisiclean*1000, [0:0.5:10]);
         bar(edgesISI(1:end-1)+mean(diff(edgesISI)), isiProba, 'FaceColor', [0, 0.35, 0.71], ...
             'EdgeColor', [0, 0.35, 0.71]); %Check FR
@@ -141,7 +145,7 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
 
 end
 
-if plotThis
+if param.plotDetails
     subplot(2, numel(timeChunks)-1, 1:numel(timeChunks)-1)
     scatter(theseSpikeTimes, theseAmplitudes, 4, [0, 0.35, 0.71], 'filled');
     hold on;

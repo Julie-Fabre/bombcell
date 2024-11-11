@@ -1,7 +1,7 @@
-function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_peakTrough, ...
-    spatialDecayPoints, spatialDecaySlope, waveformBaseline, thisWaveform] = waveformShape(templateWaveforms, ...
-    thisUnit, maxChannel, ephys_sample_rate, channelPositions, baselineThresh, ...
-    waveformBaselineWindow, minThreshDetectPeaksTroughs, firstPeakRatio, normalizeSpDecay, computeSpatialDecay, plotThis)
+function [nPeaks, nTroughs, mainPeak_before_size, mainPeak_after_size, mainTrough_size,...
+    mainPeak_before_width, mainPeak_after_width, mainTrough_width, peakLocs, troughLocs, waveformDuration_peakTrough, ...
+    spatialDecayPoints, spatialDecaySlope, waveformBaseline, thisWaveform, spatialDecayPoints_loc, spatialDecayFit_1] = waveformShape(templateWaveforms, ...
+    thisUnit, maxChannel, param, channelPositions, waveformBaselineWindow)
 % JF
 % Get the number of troughs and peaks for each waveform,
 % determine whether waveform is likely axonal/dendritic (biggest peak before
@@ -19,16 +19,22 @@ function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_pe
 %   template waveforms for each template and channel
 % thisUnit: 1 x 1 double vector, current unit number
 % maxChannel:  1 x 1 double vector, channel with maximum template waveform current unit number
-% ephys_sample_rate: recording sampling rate, in samples per second (eg 30 000)
+% param: structure with fields:
+% - ephys_sample_rate: recording sampling rate, in samples per second (eg 30 000)
+% - baselineThresh: 1 x 1 double vector, minimum baseline value over which
+%   units are classified as noise, only needed if plotThis is set to true
+% - minThreshDetectPeaksTroughs:  QQ describe
+% - firstPeakRatio: 1 x 1 double. if units have an initial peak before the trough,
+%   it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit.
+% - normalizeSpDecay
+% - computeSpatialDecay
+% - minWidthFirstPeak
+% - param.minMainPeakToTroughRatio
+% - minWidthMainTrough
+% - plotThis: boolean, whether to plot waveform and detected peaks or not
 % channelPositions: [nChannels, 2] double matrix with each row giving the x
 %   and y coordinates of that channel, only needed if plotThis is set to true
-% baselineThresh: 1 x 1 double vector, minimum baseline value over which
-%   units are classified as noise, only needed if plotThis is set to true
 % waveformBaselineWindow: QQ describe
-% minThreshDetectPeaksTroughs:  QQ describe
-% firstPeakRatio: 1 x 1 double. if units have an initial peak before the trough,
-%   it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit.
-% plotThis: boolean, whether to plot waveform and detected peaks or not
 % ------
 % Outputs
 % ------
@@ -53,146 +59,104 @@ function [nPeaks, nTroughs, isSomatic, peakLocs, troughLocs, waveformDuration_pe
 
 % (find peaks and troughs using MATLAB's built-in function)
 thisWaveform = templateWaveforms(thisUnit, :, maxChannel);
-
+nChannels_to_eval = 1;
 if any(isnan(thisWaveform)) % kilosort can sometimes return all NaNs in a waveform, we classify these units as noise
     nPeaks = NaN;
     nTroughs = NaN;
-    isSomatic = NaN;
+    mainPeak_before_size = nan(1,nChannels_to_eval);
+    mainPeak_after_size = nan(1,nChannels_to_eval);
+    mainTrough_size = nan(1,nChannels_to_eval);
+    mainPeak_before_width = nan(1,nChannels_to_eval);
+    mainPeak_after_width = nan(1,nChannels_to_eval);
+    mainTrough_width = nan(1,nChannels_to_eval);
     peakLocs = NaN;
     troughLocs = NaN;
     waveformDuration_peakTrough = NaN;
-    spatialDecayPoints = nan(1, 6);
+    if param. param.spDecayLinFit
+        num_buff = 6;
+    else
+        num_buff = 10;
+    end
+    spatialDecayPoints = nan(1, num_buff);
     spatialDecaySlope = NaN;
     waveformBaseline = NaN;
+    spatialDecayPoints_loc = nan(1, num_buff); 
+    spatialDecayFit_1 = NaN;
 else
-    % Set minimum threshold for peak/trough detection
-    minProminence = minThreshDetectPeaksTroughs * max(abs(squeeze(thisWaveform)));
-
-    % Detect trough
-    [TRS, troughLocs] = findpeaks(squeeze(thisWaveform)*-1, 'MinPeakProminence', minProminence);
-
-    % If no trough detected, find the minimum
-    if isempty(TRS)
-        [TRS, troughLocs] = min(squeeze(thisWaveform));
-        nTroughs = 1;
-    else
-        nTroughs = numel(TRS);
-    end
-
-    % Get the main trough location
-    [mainTrough, mainTroughIdx] = max(TRS);
-    % If there are two troughs with the exact same value, choose the first
-    % one
-    if numel(mainTrough) > 1
-        mainTrough = mainTrough(1);
-        mainTroughIdx = mainTroughIdx(1);
-    end
-    troughLoc = troughLocs(mainTroughIdx);
-
-    % Find peaks before and after the trough
-    if troughLoc > 3 % need at least 3 samples 
-        [PKS_before, peakLocs_before] = findpeaks(squeeze(thisWaveform(1:troughLoc)), 'MinPeakProminence', minProminence);
-    else
-        PKS_before = '';
-    end
-    if size(thisWaveform,2) - troughLoc > 3
-        [PKS_after, peakLocs_after] = findpeaks(squeeze(thisWaveform(troughLoc:end)), 'MinPeakProminence', minProminence);
-        peakLocs_after = peakLocs_after + troughLoc - 1;
-    else
-        PKS_after = '';
-    end
-    
-    % If no peaks detected, find the maximum values
-    if isempty(PKS_before)
-        [PKS_before, peakLocs_before] = max(squeeze(thisWaveform(1:troughLoc)));
-        if numel(PKS_before) > 0 % more than 1, just take first
-            PKS_before = PKS_before(1);
-            peakLocs_before = peakLocs_before(1);
-        end
-        usedMaxBefore = 1;
-    else
-        usedMaxBefore = 0;
-    end
-    if isempty(PKS_after)
-        [PKS_after, temp_loc] = max(squeeze(thisWaveform(troughLoc:end)));
-        peakLocs_after = temp_loc + troughLoc - 1;
-        if numel(PKS_after) > 0 % more than 1, just take first
-            PKS_after = PKS_after(1);
-            peakLocs_after = peakLocs_after(1);
-        end
-        usedMaxAfter = 1;
-    else
-        usedMaxAfter = 0;
-    end
-
-    % If neither a peak before or after is detected with findpeaks
-    if usedMaxAfter > 0 && usedMaxBefore > 0
-        if PKS_before>PKS_after
-            usedMaxBefore = 0;
+    % get waveform peaks, troughs locations, sizes and widths for top 17
+    % channels 
+    theseChannels = maxChannel; % - 8 : maxChannel + 8;
+    for iChannel = 1%:17 % evaluate peak and trough sizes and widths for top 17 channels
+        if theseChannels(iChannel) > 0 && theseChannels(iChannel) <= size(templateWaveforms,3)
+            if theseChannels(iChannel) == maxChannel
+                thisWaveform = templateWaveforms(thisUnit, :, theseChannels(iChannel));
+                [nPeaks(iChannel), nTroughs(iChannel), mainPeak_before_size(iChannel), mainPeak_after_size(iChannel), mainTrough_size(iChannel),...
+                    mainPeak_before_width(iChannel), mainPeak_after_width(iChannel), mainTrough_width(iChannel), peakLocs, troughLocs, PKS, TRS, troughLoc] = ...
+                    bc.qm.helpers.getWaveformPeakProperties(thisWaveform, param);
+            else
+                thisWaveform = templateWaveforms(thisUnit, :, theseChannels(iChannel));
+                [nPeaks(iChannel), nTroughs(iChannel), mainPeak_before_size(iChannel), mainPeak_after_size(iChannel), mainTrough_size(iChannel),...
+                    mainPeak_before_width(iChannel), mainPeak_after_width(iChannel), mainTrough_width(iChannel), ~, ~, ~, ~, ~] = ...
+                    bc.qm.helpers.getWaveformPeakProperties(thisWaveform, param);
+            end
         else
-            usedMaxAfter = 0;
+            nPeaks(iChannel) = NaN;
+            nTroughs(iChannel) = NaN;
+            mainPeak_before_size(iChannel) = NaN;
+            mainPeak_after_size(iChannel) = NaN;
+            mainTrough_size(iChannel) = NaN;
+            mainPeak_before_width(iChannel) = NaN;
+            mainPeak_after_width(iChannel) = NaN;
+            mainTrough_width(iChannel) = NaN;
+
         end
     end
 
-
-    % Get the main peaks before and after the trough
-    [mainPeak_before, mainPeakIdx_before] = max(PKS_before);
-    [mainPeak_after, mainPeakIdx_after] = max(PKS_after);
-    peakLoc_before = peakLocs_before(mainPeakIdx_before);
-    peakLoc_after = peakLocs_after(mainPeakIdx_after);
-
-    % Combine peak information
-    if usedMaxBefore == 1 && mainPeak_before < minProminence*0.9
-        PKS =  PKS_after;
-        peakLocs = peakLocs_after;
-    elseif usedMaxAfter == 1 && mainPeak_after < minProminence*0.9
-        PKS = PKS_before;
-        peakLocs = peakLocs_before;
-    else
-        PKS = [PKS_before, PKS_after];
-        peakLocs = [peakLocs_before, peakLocs_after];
-    end
-    
-
-    % Determine if the unit is somatic or non-somatic
-    if (mainPeak_before * firstPeakRatio > mainPeak_after) || max(TRS) < max(PKS)
-        isSomatic = 0; % non-somatic
-    else
-        isSomatic = 1; % somatic
-    end
-
-    % get number of peaks and troughs
-    nPeaks = numel(PKS);% drop any of the peaks not detected with findpeaks()
-    nTroughs = numel(TRS);
 
     % (get waveform peak to trough duration)
     % first assess which peak loc to use
     max_waveform_abs_value = max(abs(thisWaveform));
-    max_waveform_location = abs(thisWaveform) == max_waveform_abs_value;
+    if length(max_waveform_abs_value) > 1
+        max_waveform_abs_value = max_waveform_abs_value(1);
+    end
+    max_waveform_location = find(abs(thisWaveform) == max_waveform_abs_value);
+     if length(max_waveform_location) > 1
+       max_waveform_location = max_waveform_location(1);
+    end
     max_waveform_value = thisWaveform(max_waveform_location);
     if max_waveform_value(end) > 0
         peakLoc_forDuration = peakLocs(PKS == max(PKS));
+        if length(peakLoc_forDuration) > 1
+            peakLoc_forDuration = peakLoc_forDuration(1);
+        end
         [~, troughLoc_forDuration] = min(thisWaveform(peakLoc_forDuration:end)); % to calculate waveform duration
         troughLoc_forDuration = troughLoc_forDuration + peakLoc_forDuration - 1;
     else
         troughLoc_forDuration = troughLocs(TRS == max(TRS));
+        if length(troughLoc_forDuration) > 1
+            troughLoc_forDuration = troughLoc_forDuration(1);
+        end
         [~, peakLoc_forDuration] = max(thisWaveform(troughLoc_forDuration:end)); % to calculate waveform duration
         peakLoc_forDuration = peakLoc_forDuration + troughLoc_forDuration - 1;
     end
 
     % waveform duration in microseconds
     if ~isempty(troughLoc) && ~isempty(peakLoc_forDuration)
-        waveformDuration_peakTrough = 1e6 * abs(troughLoc_forDuration-peakLoc_forDuration) / ephys_sample_rate; %in us
+        waveformDuration_peakTrough = 1e6 * abs(troughLoc_forDuration-peakLoc_forDuration) / param.ephys_sample_rate; %in us
     else
         waveformDuration_peakTrough = NaN;
     end
 
     % (get waveform spatial decay accross channels)
-    linearFit = 1;
+    linearFit = param.spDecayLinFit;
     [spatialDecaySlope, spatialDecayFit, spatialDecayPoints, spatialDecayPoints_loc, estimatedUnitXY] = ...
-        bc.qm.helpers.getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit, normalizeSpDecay, computeSpatialDecay);
+        bc.qm.helpers.getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit, param.normalizeSpDecay, param.computeSpatialDecay);
 
-
+       if linearFit
+            spatialDecayFit_1 = spatialDecayFit(end);
+       else
+        spatialDecayFit_1 = spatialDecayFit(1);
+       end
     % (get waveform baseline fraction)
     if ~isnan(waveformBaselineWindow(1))
         waveformBaseline = max(abs(thisWaveform(waveformBaselineWindow(1): ...
@@ -202,9 +166,9 @@ else
     end
 
     % (plot waveform)
-    if plotThis
+    if param.plotDetails
 
-        colorMtx = colors(8);
+        colorMtx = bc.viz.colors(8);
 
 
         figure();
@@ -212,23 +176,37 @@ else
         subplot(4, 2, 7:8)
         pt1 = scatter(spatialDecayPoints_loc, spatialDecayPoints, [], colorMtx(1, :, :), 'filled');
         hold on;
-        lf = plot(spatialDecayPoints_loc, spatialDecayPoints_loc*spatialDecayFit(1)+spatialDecayFit(2), '-', 'Color', colorMtx(2, :, :));
-
+        if linearFit
+            lf = plot(spatialDecayPoints_loc, spatialDecayPoints_loc*spatialDecayFit(1)+spatialDecayFit(2), '-', 'Color', colorMtx(2, :, :));
+            legend(lf, {['linear fit, slope = ', num2str(spatialDecaySlope)]}, 'TextColor', [0.7, 0.7, 0.7], 'Color', 'none')
+        else
+            % Generate points for the exponential fit curve
+            fitX = linspace(min(spatialDecayPoints_loc), max(spatialDecayPoints_loc), 100);
+            spatialDecayFitFun = @(x) spatialDecayFit(1) * exp(-spatialDecaySlope * x);
+            fitY = spatialDecayFitFun(fitX);
+            
+            % Plot the exponential fit curve
+            ef = plot(fitX, fitY, '-', 'Color', colorMtx(2, :, :));
+            
+            % Add legend with decay rate
+            legend(ef, {sprintf('Exp. fit, decay rate = %.4f', spatialDecaySlope)}, ...
+                'TextColor', [0.7, 0.7, 0.7], 'Color', 'none')
+        end
         ylabel('trough size (a.u.)')
         xlabel('distance from peak channel (um)')
-        legend(lf, {['linear fit, slope = ', num2str(spatialDecaySlope)]}, 'TextColor', [0.7, 0.7, 0.7], 'Color', 'none')
+        
 
         subplot(4, 2, 1:6)
         set(gca, 'YDir', 'reverse');
         hold on;
-        set(gca, 'XColor', 'w', 'YColor', 'w')
+        set(gca, 'XColor', 'k', 'YColor', 'k')
         maxChan = maxChannel;
         maxXC = channelPositions(maxChan, 1);
         maxYC = channelPositions(maxChan, 2);
         chanDistances = ((channelPositions(:, 1) - maxXC).^2 ...
             +(channelPositions(:, 2) - maxYC).^2).^0.5;
         chansToPlot = find(chanDistances < 70);
-        wvTime = 1e3 * ((0:size(thisWaveform, 2) - 1) / ephys_sample_rate);
+        wvTime = 1e3 * ((0:size(thisWaveform, 2) - 1) / param.ephys_sample_rate);
         max_value = max(max(abs(squeeze(templateWaveforms(thisUnit, :, chansToPlot))))) * 5;
         for iChanToPlot = 1:min(20, size(chansToPlot, 1))
 
@@ -251,14 +229,14 @@ else
                 % plot baseline lines
                 l1 = line([(wvTime(waveformBaselineWindow(1)) + (channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
                     (wvTime(waveformBaselineWindow(2)) + (channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10)], ...
-                    [baselineThresh * -max(abs(thisWaveform))' + ...
-                    (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value), baselineThresh * -max(abs(thisWaveform))' + ...
+                    [param.maxWvBaselineFraction * -max(abs(thisWaveform))' + ...
+                    (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value), param.maxWvBaselineFraction * -max(abs(thisWaveform))' + ...
                     (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value)], 'Color', colorMtx(4, :, :));
 
                 line([(wvTime(waveformBaselineWindow(1)) + (channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
                     (wvTime(waveformBaselineWindow(2)) + (channelPositions(chansToPlot(iChanToPlot), 1) - 11) / 10)], ...
-                    [-baselineThresh * -max(abs(thisWaveform))' + ...
-                    (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value), -baselineThresh * -max(abs(thisWaveform))' + ...
+                    [-param.maxWvBaselineFraction * -max(abs(thisWaveform))' + ...
+                    (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value), -param.maxWvBaselineFraction * -max(abs(thisWaveform))' + ...
                     (channelPositions(chansToPlot(iChanToPlot), 2) ./ 100 * max_value)], 'Color', colorMtx(4, :, :));
 
                 % plot waveform duration
@@ -284,7 +262,7 @@ else
         celLoc = scatter((estimatedUnitXY(1) + -11)/10+wvTime(42), estimatedUnitXY(2)/100*max_value, 50, 'x', 'MarkerEdgeColor', colorMtx(5, :, :), ...
             'MarkerFaceColor', colorMtx(5, :, :));
 
-        legend([p1, peak, trough, dur, l1], {['is somatic =', num2str(isSomatic), newline], ...
+        legend([p1, peak, trough, dur, l1], {[''], ...
             [num2str(nPeaks), ' peak(s)'], [num2str(nTroughs), ...
             ' trough(s)'], 'duration', 'baseline line'}, ...
             'TextColor', [0.7, 0.7, 0.7], 'Color', 'none')

@@ -12,271 +12,219 @@ function plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, temp
 if param.plotGlobal
 
     %% plot summary of unit categorization
-    
+
     % upSet plots (3 or 4) : Noise, Non-axonal, MUA, (Non-axonal MUA)
     bc.viz.upSetPlot_wrapper(qMetric, param, unitType)
 
     %% plot summary of waveforms classified as noise/mua/good
     % 1. single/multi/noise/axonal waveforms
     figure('Color', 'w');
-    
+
     if param.splitGoodAndMua_NonSomatic == 0
         unitTypeString = {'Noise', 'Good', 'MUA', 'Non-somatic'};
     else
         unitTypeString = {'Noise', 'Somatic Good', 'Somatic MUA', 'Non-somatic Good', 'Non-somatic MUA'};
     end
     uniqueTemplates_idx = 1:size(uniqueTemplates, 1);
-    for iUnitType = 0:length(unitTypeString)-1
+    for iUnitType = 0:length(unitTypeString) - 1
         subplot(2, ceil(length(unitTypeString)/2), iUnitType+1)
-        title([unitTypeString{iUnitType+1}, ' unit template waveforms']);
+        title([unitTypeString{iUnitType+1}, ' unit waveforms']);
         hold on;
         singleU = uniqueTemplates_idx(find(unitType == iUnitType));
         set(gca, 'XColor', 'w', 'YColor', 'w')
         singleUnitLines = arrayfun(@(x) plot(squeeze(templateWaveforms(singleU(x), :)), 'linewidth', 1, 'Color', [0, 0, 0, 0.2]), 1:size(singleU, 2));
-        if param.spikeWidth==61 %Kilosort 4
-            xlim([1 61])
+        if param.spikeWidth == 61 %Kilosort 4
+            xlim([1, 61])
         else
             xlim([21, 82])
         end
     end
 
     %% plot distributions of unit quality metric values for each quality metric
-    figure();
+
+    figure('Position', [100, 100, 1500, 900], 'Color', 'w');
     try
-        colorMtx = bc.viz.colors(15);
-        colorMtx = [colorMtx(1:15, :, :), repmat(0.7, 15, 1)]; % make 70% transparent
-        colorMtx = colorMtx([1:4:end, 2:4:end, 3:4:end, 4:4:end], :); % shuffle colors to get more distinct pairs
 
-        title([num2str(sum(unitType == 1)), ' single units, ', num2str(sum(unitType == 2)), ' multi-units, ', ...
-            num2str(sum(unitType == 0)), ' noise units, ', num2str(sum(unitType == 3)), ' non-somatic units.']);
-        hold on;
+        qMetric.scndPeakToTroughRatio = abs(qMetric.mainPeak_after_size./qMetric.mainTrough_size);
+invalid_peaks = (abs(qMetric.mainTrough_size./qMetric.mainPeak_before_size) > param.minMainPeakToTroughRatio | ...
+                            qMetric.mainPeak_before_width > param.minWidthFirstPeak | ...
+                            qMetric.mainTrough_width > param.minWidthMainTrough);
+peak1_2_ratio = (abs(qMetric.mainPeak_before_size./qMetric.mainPeak_after_size));
 
-        subplot(4, 5, 1)
-        hold on;
-        rectangle('Position', [min(qMetric.nPeaks)-0.5, 0, param.maxNPeaks - min(qMetric.nPeaks)+1, 1 ], 'FaceColor', [0, .5, 0, 0.2])        
-        histogram(qMetric.nPeaks, 'FaceColor', colorMtx(1, 1:3), 'FaceAlpha', colorMtx(1, 4), 'Normalization', 'probability');
-        yLim = ylim;
-        line([param.maxNPeaks + 0.5, param.maxNPeaks + 0.5], [0, yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        ylabel('norm. unit count')
-        xlabel('# peaks')
+qMetric.peak1ToPeak2Ratio = peak1_2_ratio;
+qMetric.peak1ToPeak2Ratio(invalid_peaks) = 0;
+qMetric.mainPeakToTroughRatio = abs(max([qMetric.mainPeak_before_size, qMetric.mainPeak_after_size], [], 2)./qMetric.mainTrough_size);
+         % Define metrics, thresholds, and plot conditions
+    [metricNames, metricThresh1, metricThresh2, plotConditions, metricNames_SHORT, metricLineCols] = defineMetrics(param);
+
+    numSubplots = sum(plotConditions);
+
+    % Calculate the best grid layout
+    numRows = floor(sqrt(numSubplots));
+    numCols = ceil(numSubplots/numRows);
+
+    red_colors = [
+    0.8627 0.0784 0.2353;  % Crimson
+    1.0000 0.1412 0.0000;  % Scarlet
+    0.7255 0.0000 0.0000;  % Cherry
+    0.5020 0.0000 0.1255;  % Burgundy
+    0.5020 0.0000 0.0000;  % Maroon
+    0.8039 0.3608 0.3608   % Indian Red
+];
+
+    blue_colors = [
+    0.2549 0.4118 0.8824;  % Royal Blue
+    0.0000 0.0000 0.5020   % Navy Blue
+];
+    % Color matrix setup
+     darker_yellow_orange_colors = [
+    0.7843 0.7843 0.0000;  % Dark Yellow
+    0.8235 0.6863 0.0000;  % Dark Golden Yellow
+    0.8235 0.5294 0.0000;  % Dark Orange
+    0.8039 0.4118 0.3647;  % Dark Coral
+    0.8235 0.3176 0.2275;  % Dark Tangerine
+    0.8235 0.6157 0.6510;  % Dark Salmon
+    0.7882 0.7137 0.5765;  % Dark Goldenrod
+    0.8235 0.5137 0.3922;  % Dark Light Coral
+    0.7569 0.6196 0.0000;  % Darker Goldenrod
+    0.8235 0.4510 0.0000   % Darker Orange
+];
 
 
-        subplot(4, 5, 2)
-        hold on;
-        rectangle('Position', [min(qMetric.nTroughs)-0.5, 0, param.maxNTroughs - min(qMetric.nTroughs)+1,1], 'FaceColor', [0, .5, 0, 0.2])
-        histogram(qMetric.nTroughs, 'FaceColor', colorMtx(2, 1:3), 'FaceAlpha', colorMtx(2, 4), 'Normalization', 'probability');
-        yLim = ylim;
-        line([param.maxNTroughs + 0.5, param.maxNTroughs + 0.5], [0, yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        ylabel('norm. unit count')
-        xlabel('# troughs')
+    colorMtx = [red_colors; blue_colors;darker_yellow_orange_colors]; % shuffle colors
 
+    currentSubplot = 1;
 
-        subplot(4, 5, 3)
-        hold on;
-        rectangle('Position', [-0.5, 0, param.somatic , 1], 'FaceColor', [0, .5, 0, 0.2])
-        histogram(1-qMetric.isSomatic, 'FaceColor', colorMtx(3, 1:3), 'FaceAlpha', colorMtx(3, 4), 'Normalization', 'probability');
-        yLim = ylim;
-        line([param.somatic - 0.5, param.somatic - 0.5], [0, yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        xticks([0, 1])
-        xticklabels({'Y', 'N'})
-        ylabel('norm. unit count')
-        xlabel('somatic?')
-
-
-        subplot(4, 5, 4)
-        hold on;
-        rectangle('Position', [-0.5, 1e-3, param.maxRPVviolations*100, 1-1e-3], 'FaceColor', [0, .5, 0, 0.2])
-        
-        histogram(qMetric.fractionRPVs_estimatedTauR*100, 'FaceColor', colorMtx(4, 1:3), 'FaceAlpha', colorMtx(4, 4), 'BinEdges', [0:5:100], 'Normalization', 'probability');
-        set(gca, 'yscale', 'log')
-        yLim = ylim;
-        line([param.maxRPVviolations * 100, param.maxRPVviolations * 100], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        ylabel('norm. unit count')
-        xlabel(['refractory period', newline, 'violations (%)'])
-
-        if param.tauR_valuesMin ~= param.tauR_valuesMax
-            subplot(4, 5, 5)
-            hold on;
-            tauR_values = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
-            histogram(tauR_values(qMetric.RPV_tauR_estimate), 'FaceColor', colorMtx(5, 1:3), 'FaceAlpha', colorMtx(5, 4), 'BinEdges', ...
-                [param.tauR_valuesMin - 1 / 1000:param.tauR_valuesStep:param.tauR_valuesMax + 1 / 1000], 'Normalization', 'probability');
-            set(gca, 'yscale', 'log')
-            yLim = ylim;
-            ylabel('norm. unit count')
-            if length(tauR_values) == 1
-                xlabel('estimated refractory period (s)')
+    for i = 1:length(plotConditions)
+        if plotConditions(i)
+            ax = subplot(numRows, numCols, currentSubplot);
+            hold(ax, 'on');
+            
+            metricName = metricNames{i};
+            metricData = qMetric.(metricName);
+            
+            % Plot histogram
+            if i > 2
+                h = histogram(ax, metricData, 40, 'FaceColor', colorMtx(i, 1:3), 'Normalization', 'probability');
             else
-                xlabel(['estimated', newline, 'refractory period (s)'])
+                h = histogram(ax, metricData, 'FaceColor', colorMtx(i, 1:3), 'Normalization', 'probability');
             end
+            binsize_offset = h.BinWidth/2;
+            
+            % Add horizontal lines
+            yLim = ylim(ax);
+            xLim = xlim(ax);
+            lineY = yLim(1) - 0.02 * (yLim(2) - yLim(1)); % Position lines slightly below the plot
+            
+            if ~isnan(metricThresh1(i)) || ~isnan(metricThresh2(i))
+                if ~isnan(metricThresh1(i)) && ~isnan(metricThresh2(i))
+                    line(ax, [xLim(1)+binsize_offset, metricThresh1(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,1:3), 'LineWidth', 6);
+                    line(ax, [metricThresh1(i)+binsize_offset, metricThresh2(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,4:6), 'LineWidth', 6);
+                    line(ax, [metricThresh2(i)+binsize_offset, xLim(2)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,7:9), 'LineWidth', 6);
+                elseif ~isnan(metricThresh1(i))
+                    line(ax, [xLim(1)+binsize_offset, metricThresh1(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,1:3), 'LineWidth', 6);
+                    line(ax, [metricThresh1(i)+binsize_offset, xLim(2)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,4:6), 'LineWidth', 6);
+                elseif ~isnan(metricThresh2(i))
+                    line(ax, [xLim(1)+binsize_offset, metricThresh2(i)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,1:3), 'LineWidth', 6);
+                    line(ax, [metricThresh2(i)+binsize_offset, xLim(2)+binsize_offset], [lineY, lineY], 'Color', metricLineCols(i,4:6), 'LineWidth', 6);
+                end
+            end
+            
+            if i == 1
+                ylabel(ax, 'frac. units','FontSize', 13)
+            end
+            xlabel(ax, metricNames_SHORT{i},'FontSize', 13)
+            
+            % Adjust axis limits to accommodate the lines
+            ylim(ax, [yLim(1) - 0.1 * (yLim(2) - yLim(1)), yLim(2)]);
+            ax.FontSize = 12; 
+            
+            axis tight;
+
+
+
+            
+            currentSubplot = currentSubplot + 1;
         end
-
-        subplot(4, 5, 6)
-        hold on;
-        rectangle('Position', [-0.5,0, param.maxPercSpikesMissing+0.5, 1], 'FaceColor', [0, .5, 0, 0.2])
-        histogram(qMetric.percentageSpikesMissing_gaussian, 'FaceColor', colorMtx(6, 1:3), 'FaceAlpha', colorMtx(6, 4), 'BinEdges', ...
-            [0:5:max(qMetric.percentageSpikesMissing_gaussian)], 'Normalization', 'probability');
-        yLim = ylim;
-        line([param.maxPercSpikesMissing, param.maxPercSpikesMissing], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        ylabel('norm. unit count')
-        xlabel(['% spikes below', newline, 'detection threshold,', newline, 'gaussian assumption'])
-
-        subplot(4, 5, 7)
-        hold on;
-        histogram(qMetric.percentageSpikesMissing_symmetric, 'FaceColor', colorMtx(7, 1:3), 'FaceAlpha', colorMtx(7, 4), 'BinEdges', ...
-            [0:5:max(qMetric.percentageSpikesMissing_symmetric)], 'Normalization', 'probability');
-        yLim = ylim;
-        % line([param.maxPercSpikesMissing, param.maxPercSpikesMissing], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        %xLim = xlim;
-        %rectangle('Position',[xLim(1) yLim(1)  param.maxPercSpikesMissing
-        %- 0.5-xLim(1) yLim(2)-yLim(1)], 'FaceColor',[0, .5, 0, 0.2]) % not
-        %currently used
-        ylabel('norm. unit count')
-        xlabel(['% spikes below', newline, 'detection threshold,', newline, 'symmetric assumption'])
-
-        subplot(4, 5, 8)
-        hold on;
-        set(gca, 'xscale', 'log')
-        minVal = min(qMetric.nSpikes); % Minimum 
-        maxVal = max(qMetric.nSpikes); % Maximum value
-        binEdges = logspace(log10(minVal), log10(maxVal), 20);
-        rectangle('Position', [param.minNumSpikes,0, binEdges(end)-param.minNumSpikes, 1], 'FaceColor', [0, .5, 0, 0.2])
-        histogram(qMetric.nSpikes, 'FaceColor', colorMtx(8, 1:3), 'FaceAlpha', colorMtx(8, 4), 'BinEdges', binEdges, 'Normalization', 'probability');
-        yLim = ylim;
-        line([param.minNumSpikes, param.minNumSpikes], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        xLim = xlim;
-        rectangle('Position', [param.minNumSpikes, yLim(1), xLim(2) - param.minNumSpikes, yLim(2) - yLim(1)], 'FaceColor', [0, .5, 0, 0.2])
-        ylabel('norm. unit count')
-        xlabel('# spikes')
-
-
-        if param.extractRaw
-            subplot(4, 5, 9)
-            hold on;
-            set(gca, 'xscale', 'log')
-            minVal = min(qMetric.rawAmplitude(qMetric.rawAmplitude>0)); % Minimum 
-            maxVal = max(qMetric.rawAmplitude); % Maximum value
-            binEdges = logspace(log10(minVal), log10(maxVal), 20);
-            rectangle('Position', [param.minAmplitude, 0, binEdges(end) - param.minAmplitude, 1], 'FaceColor', [0, .5, 0, 0.2])
-            histogram(qMetric.rawAmplitude, 'FaceColor', colorMtx(9, 1:3), 'FaceAlpha', colorMtx(9, 4), 'BinEdges', binEdges, 'Normalization', 'probability');
-            yLim = ylim;
-            line([param.minAmplitude, param.minAmplitude], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-            ylabel('norm. unit count')
-            xlabel(['mean raw waveform', newline, ' peak amplitude (uV)'])
-        end
-        
-        if param.computeSpatialDecay == 1
-            subplot(4, 5, 10)
-            hold on;
-            rectangle('Position', [min(qMetric.spatialDecaySlope), 0, abs(param.minSpatialDecaySlope -min(qMetric.spatialDecaySlope)), 1], 'FaceColor', [0, .5, 0, 0.2])
-            histogram(qMetric.spatialDecaySlope, 'FaceColor', colorMtx(10, 1:3), 'FaceAlpha', colorMtx(10, 4), 'BinEdges',...
-                [min(qMetric.spatialDecaySlope):(max(qMetric.spatialDecaySlope) - min(qMetric.spatialDecaySlope))./10:max(qMetric.spatialDecaySlope)], 'Normalization', 'probability');
-            yLim = ylim;
-            line([param.minSpatialDecaySlope, param.minSpatialDecaySlope], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-            ylabel('norm. unit count')
-            xlabel(['spatial decay', newline, 'slope'])
-        end
-
-        subplot(4, 5, 11)
-        hold on;
-        rectangle('Position', [param.minWvDuration, 0, param.maxWvDuration - param.minWvDuration, 1], 'FaceColor', [0, .5, 0, 0.2])  
-        histogram(qMetric.waveformDuration_peakTrough, 'FaceColor', colorMtx(11, 1:3), 'FaceAlpha', colorMtx(11, 4), 'BinEdges', ...
-            [0:40:max(qMetric.waveformDuration_peakTrough)], 'Normalization', 'probability');
-        yLim = ylim;
-        line([param.minWvDuration + 0.5, param.minWvDuration + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        line([param.maxWvDuration + 0.5, param.maxWvDuration + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        ylabel('norm. unit count')
-        xlabel(['waveform', newline, 'duration'])
-
-        subplot(4, 5, 12)
-        hold on;
-        rectangle('Position', [0, 0, param.maxWvBaselineFraction, 1], 'FaceColor', [0, .5, 0, 0.2])
-        histogram(qMetric.waveformBaselineFlatness, 'FaceColor', colorMtx(12, 1:3), 'FaceAlpha', colorMtx(12, 4), 'BinEdges', ...
-            [0:0.05:max(qMetric.waveformBaselineFlatness)], 'Normalization', 'probability');
-        yLim = ylim;
-        line([param.maxWvBaselineFraction, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        ylabel('norm. unit count')
-        xlabel(['waveform baseline', newline, '''flatness'''])
-
-        subplot(4, 5, 13) % presence ratio
-        hold on;
-        rectangle('Position', [param.minPresenceRatio, 0, max(qMetric.presenceRatio)-param.minPresenceRatio,1], 'FaceColor', [0, .5, 0, 0.2])
-        histogram(qMetric.presenceRatio, 'FaceColor', colorMtx(13, 1:3), 'FaceAlpha', colorMtx(13, 4), 'BinEdges', ...
-            [0:0.05:max(qMetric.presenceRatio)], 'Normalization', 'probability');
-        yLim = ylim;
-        line([param.minPresenceRatio, param.minPresenceRatio], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-        ylabel('norm. unit count')
-        xlabel('presence ratio')
-
-        if param.extractRaw
-            subplot(4, 5, 14) % signal to noise ratio
-            hold on;
-            set(gca, 'xscale', 'log')
-            minVal = min(qMetric.signalToNoiseRatio(qMetric.signalToNoiseRatio>0)); % Minimum 
-            maxVal = max(qMetric.signalToNoiseRatio); % Maximum value
-            binEdges = logspace(log10(minVal), log10(maxVal), 20);
-            rectangle('Position', [param.minSNR, 0, max(qMetric.signalToNoiseRatio)-param.minSNR, 1], 'FaceColor', [0, .5, 0, 0.2])
-            histogram(qMetric.signalToNoiseRatio, 'FaceColor', colorMtx(14, 1:3), 'FaceAlpha', colorMtx(14, 4), 'BinEdges', binEdges, 'Normalization', 'probability');
-            yLim = ylim;
-            line([param.minSNR, param.minSNR], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-            ylabel('norm. unit count')
-            xlabel(['signal-to-noise', newline, 'ratio'])
-        end
-
-        if param.computeDrift
-            subplot(4, 5, 15) % max drift estimate
-            hold on;
-            rectangle('Position',[-0.5, 0, param.maxDrift+0.5, 1], 'FaceColor',[0, .5, 0, 0.2])
-            histogram(qMetric.maxDriftEstimate, 'FaceColor', colorMtx(15, 1:3), 'FaceAlpha', colorMtx(15, 4), 'BinEdges', ...
-                [0:5:max(qMetric.maxDriftEstimate)], 'Normalization', 'probability');
-            yLim = ylim;
-            line([param.maxDrift , param.maxDrift ], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-            ylabel('norm. unit count')
-            xlabel('max drift estimate')
-
-            subplot(4, 5, 16) % max drift estimate
-            hold on;
-            histogram(qMetric.cumDriftEstimate, 'FaceColor', colorMtx(15, 1:3), 'FaceAlpha', colorMtx(15, 4), 'BinEdges', ...
-                [0:50:max(qMetric.cumDriftEstimate)], 'Normalization', 'probability');
-            yLim = ylim;
-            %line([param.plotDetails, param.maxWvBaselineFraction], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-            ylabel('norm. unit count')
-            xlabel('cum drift estimate')
-
-        end
-
-
-        if param.computeDistanceMetrics && ~isnan(param.isoDmin)
-            subplot(4, 5, 18)
-            hold on;
-            rectangle('Position', [param.isoDmin, 0, max(qMetric.isoD) - param.isoDmin, 1], 'FaceColor', [0, .5, 0, 0.2])
-            histogram(qMetric.isoD, 'FaceColor', colorMtx(1, 1:3), 'FaceAlpha', colorMtx(1, 4), 'BinEdges', [0:10:max(qMetric.isoD)], 'Normalization', 'probability');
-            yLim = ylim;
-            line([param.isoDmin + 0.5, param.isoDmin + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-            ylabel('norm. unit count')
-            xlabel('isolation distance')
-
-
-            subplot(4, 5, 19)
-            hold on;
-            set(gca, 'xscale', 'log')
-            minVal = min(qMetric.Lratio(qMetric.Lratio>0)); % Minimum 
-            maxVal = max(qMetric.Lratio); % Maximum value
-            binEdges = logspace(log10(minVal), log10(maxVal), 20);
-            rectangle('Position',[binEdges(1), 0, param.lratioMax-binEdges(1)+1, 1], 'FaceColor',[0, .5, 0, 0.2])
-            histogram(qMetric.Lratio, 'FaceColor', colorMtx(1, 1:3), 'FaceAlpha', colorMtx(1, 4), 'BinEdges', binEdges, 'Normalization', 'probability');
-            yLim = ylim;
-            line([param.lratioMax + 0.5, param.lratioMax + 0.5], [yLim(1), yLim(2)], 'Color', 'r', 'LineWidth', 2)
-            ylabel('norm. unit count')
-            xlabel('l-ratio')
-
-
-        end
+    end
     catch
         warning('could not plot global plots')
     end
-    if exist('prettify_plot', 'file')
-        prettify_plot('FigureColor', 'w')
+
+
+
+end
+function [metricNames, metricThresh1, metricThresh2, plotConditions, metricNames_SHORT, metricLineCols] = defineMetrics(param)
+    metricNames = {'nPeaks', 'nTroughs', 'scndPeakToTroughRatio', 'peak1ToPeak2Ratio', 'mainPeakToTroughRatio', ...
+                   'fractionRPVs_estimatedTauR', 'RPV_tauR_estimate', 'percentageSpikesMissing_gaussian', ...
+                   'percentageSpikesMissing_symmetric', 'nSpikes', 'rawAmplitude', 'spatialDecaySlope', ...
+                   'waveformDuration_peakTrough', 'waveformBaselineFlatness', 'presenceRatio', 'signalToNoiseRatio', ...
+                   'maxDriftEstimate', 'cumDriftEstimate', 'isoD', 'Lratio'};
+
+    metricNames_SHORT = {'# peaks', '# troughs', 'peak_2/trough', 'peak_1/peak_2', 'peak_{main}/trough', ...
+                   'frac. RPVs', 'RPV_tauR_estimate', '% spikes missing', ...
+                   '%SpikesMissing-symmetric', '# spikes', 'amplitude', 'spatial decay', ...
+                   'waveform duration', 'baseline flatness', 'presence ratio', 'SNR', ...
+                   'maximum drift', 'cum. drift', 'isolation dist.', 'L-ratio'};
+
+    if param.spDecayLinFit
+        metricThresh1 = [param.maxNPeaks, param.maxNTroughs, param.minTroughToPeakRatio, param.firstPeakRatio, param.minTroughToPeakRatio, ...
+                         param.maxRPVviolations, NaN, param.maxPercSpikesMissing, NaN, NaN, NaN, param.minSpatialDecaySlope, ...
+                         param.minWvDuration, param.maxWvBaselineFraction,  NaN, NaN, ...
+                         param.maxDrift, NaN, param.isoDmin, NaN];
+        
+        metricThresh2 = [NaN, NaN, param.minTroughToPeakRatio, NaN, NaN, ...
+                         NaN, NaN, NaN, NaN, param.minNumSpikes, param.minAmplitude, NaN, ...
+                         param.maxWvDuration, NaN, param.minPresenceRatio, param.minSNR, ...
+                         NaN, NaN, NaN, param.lratioMax];
     else
-        warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
+        metricThresh1 = [param.maxNPeaks, param.maxNTroughs, param.minTroughToPeakRatio, param.firstPeakRatio, param.minTroughToPeakRatio, ...
+                         param.maxRPVviolations, NaN, param.maxPercSpikesMissing, NaN, NaN, NaN, param.minSpatialDecaySlopeExp, ...
+                         param.minWvDuration, param.maxWvBaselineFraction, NaN, NaN, ...
+                         param.maxDrift, NaN, param.isoDmin, NaN];
+        
+        metricThresh2 = [NaN, NaN, param.minTroughToPeakRatio, NaN, NaN, ...
+                         NaN, NaN, NaN, NaN, param.minNumSpikes, param.minAmplitude, param.maxSpatialDecaySlopeExp, ...
+                         param.maxWvDuration, NaN, param.minPresenceRatio, param.minSNR, ...
+                         NaN, NaN, NaN, param.lratioMax];
     end
+
+    plotConditions = [true, true, true, true, true, true, ...
+        param.tauR_valuesMin ~= param.tauR_valuesMax, ...
+        true, false, true, param.extractRaw, ...
+        param.computeSpatialDecay == 1, ...
+        true, true, true, param.extractRaw, ...
+        param.computeDrift, param.computeDrift, ...
+        param.computeDistanceMetrics && ~isnan(param.isoDmin), ...
+        param.computeDistanceMetrics && ~isnan(param.isoDmin)];
+
+    metricLineCols = [0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0;...%1 'nPeaks'
+    0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0;...%, 2 'nTroughs'
+    0.2, 0.2, 0.2, 1, 0, 0, 1, 0, 0;...%, 3 'scndPeakToTroughRatio'
+    0.2, 0.2, 0.2, 0.25,0.41,0.88, 0, 0, 0;...%, 4 'peak1ToPeak2Ratio'
+    0.2, 0.2, 0.2, 0.25,0.41,0.88, 0, 0, 0;...%, 5 'mainPeakToTroughRatio', ...
+    0, 0.5, 0, 1.0000,0.5469, 0, 0, 0, 0;...% 6 'fractionRPVs_estimatedTauR'
+    0, 0.5, 0, 1.0000,0.5469, 0, 0, 0, 0;...%, 7 'RPV_tauR_estimate', 
+    0, 0.5, 0, 1.0000,0.5469, 0, 0, 0, 0;...%'8 percentageSpikesMissing_gaussian'
+    0, 0.5, 0, 1.0000,0.5469, 0, 0, 0, 0;...%'9 percentageSpikesMissing_symmetric'
+    1.0000,0.5469, 0, 0, 0.5, 0, 0, 0, 0;...;%,10  # spikes'
+    1.0000,0.5469, 0, 0, 0.5, 0, 0, 0, 0;...% 11, 'amplitude', 
+    1,0,0, 0.2, 0.2, 0.2, 1, 0, 0;...% 12 'spatial decay', 
+    1,0,0, 0.2, 0.2, 0.2, 1, 0, 0;...% 13 'waveform duration',
+    0.2, 0.2, 0.2, 1,0,0, 1, 0, 0;...% 14 'baseline flatness', 
+    1.0000,0.5469, 0, 0, 0.5, 0, 0, 0, 0;...% 15'presence ratio', 
+    1.0000,0.5469, 0, 0, 0.5, 0, 0, 0, 0;...% 16'SNR',
+    1.0000,0.5469, 0, 0, 0.5, 0, 0, 0, 0;...% 17 'maximum drift',
+    1.0000,0.5469, 0, 0, 0.5, 0, 0, 0, 0;...% 18 'cum. drift', 
+    0, 0.5, 0, 1.0000,0.5469, 0, 0, 0, 0;% 19'isolation dist.', 
+    1.0000,0.5469, 0, 0, 0.5, 0, 0, 0, 0;...% 20'L-ratio'
+               ];
+    indices_ordered = [1,2,14,13,3,12,4,5,11,16,6,10,15,8,17,18,19,20];
+    metricNames = metricNames(indices_ordered);
+    metricNames_SHORT = metricNames_SHORT(indices_ordered);
+    metricThresh1 = metricThresh1(indices_ordered);
+    metricThresh2 = metricThresh2(indices_ordered);
+    plotConditions = plotConditions(indices_ordered);
+    metricLineCols = metricLineCols(indices_ordered,:);
+end
 end

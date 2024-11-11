@@ -2,7 +2,7 @@
 
 if exist('loadRawTraces', 'var') 
     if loadRawTraces 
-        bc_getRawMemMap;
+        bc.viz.getRawMemMap;
     else
         memMapData =[];
     end
@@ -19,7 +19,7 @@ ephysData = struct;
 if exist('spikeTimes_samples','var')
     ephysData.spike_times_samples = spikeTimes_samples;
     ephysData.ephys_sample_rate = 30000;
-    ephysData.spike_templates = spikeTemplates;
+    ephysData.spike_templates = spikeClusters;
     ephysData.templates = templateWaveforms;
     ephysData.template_amplitudes = templateAmplitudes;
     ephysData.channel_positions = channelPositions;
@@ -47,16 +47,16 @@ ephysParams = struct;
 plotRaw = 1;
 probeLocation = [];
 
-% load raw waveforms 
-if exist([fullfile(savePath, 'templates._bc_rawWaveforms.npy')], 'file')
-    rawWaveforms.average = readNPY([fullfile(savePath, 'templates._bc_rawWaveforms.npy')]);
-    rawWaveforms.peakChan = readNPY([fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy')]);
+if exist([fullfile(savePath, 'templates._bc_rawWaveforms_kilosort_format.npy')], 'file')
+    rawWaveforms.average = readNPY([fullfile(savePath, 'templates._bc_rawWaveforms_kilosort_format.npy')]);
+    rawWaveforms.peakChan = readNPY([fullfile(savePath, 'templates._bc_rawWaveformPeakChannels_kilosort_format.npy')]);
 else
-    rawWaveforms.average = nan(max(ephysData.spike_templates),82,size(ephysData.templates,3));
-    rawWaveforms.peakChan = ones(max(ephysData.spike_templates),1); 
+    rawWaveforms.average = nan(max(ephysData.spike_templates), 82, size(ephysData.templates,3));
+    rawWaveforms.peakChan = ones(max(ephysData.spike_templates), 1); 
 end
 
 % remove any duplicate spikes 
+param.removeDuplicateSpikes =0; %disable for now, we don't need here. speed up :)
 [uniqueTemplates, ~, ephysData.spike_times_samples, ephysData.spike_templates, ephysData.template_amplitudes, ...
     ~, rawWaveforms.average, rawWaveforms.peakChan, signalToNoiseRatio] = ...
     bc.qm.removeDuplicateSpikes(ephysData.spike_times_samples, ephysData.spike_templates, ephysData.template_amplitudes,...

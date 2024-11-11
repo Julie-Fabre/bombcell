@@ -1,20 +1,23 @@
 function [spatialDecaySlope, spatialDecayFit, spatialDecayPoints, spatialDecayPoints_loc, estimatedUnitXY] = ...
     getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit, normalizePoints, computeSpatialDecay)
-
+% QQ need to change this to be an exponential fit !
 % Set default values and validate inputs
 if nargin < 6 || isempty(normalizePoints)
     normalizePoints = false;
 end
 
-if ~linearFit
-    error('Non-linear fit is not yet implemented.');
-end
 
 if computeSpatialDecay
     % Constants
-    CHANNEL_TOLERANCE = 33; % need to make more restricive. for most geometries, this includes all the channels.
-    MIN_CHANNELS_FOR_FIT = 5;
-    NUM_CHANNELS_FOR_FIT = 6;
+    if linearFit
+        CHANNEL_TOLERANCE = 33; % need to make more restricive. for most geometries, this includes all the channels.
+        MIN_CHANNELS_FOR_FIT = 5;
+        NUM_CHANNELS_FOR_FIT = 6;
+    else
+        CHANNEL_TOLERANCE = 33; % need to make more restricive. for most geometries, this includes all the channels.
+        MIN_CHANNELS_FOR_FIT = 8;
+        NUM_CHANNELS_FOR_FIT = 10;
+    end
 
     % Initialize output variables
     spatialDecaySlope = NaN;
@@ -28,6 +31,8 @@ if computeSpatialDecay
 
     if numel(channels_withSameX) < MIN_CHANNELS_FOR_FIT
         warning('Insufficient channels with similar X position for fitting.');
+        spatialDecayPoints_loc = nan(NUM_CHANNELS_FOR_FIT,1);
+        spatialDecayPoints = nan(1, NUM_CHANNELS_FOR_FIT);
         return;
     end
 
@@ -53,13 +58,44 @@ if computeSpatialDecay
         spatialDecayPoints = spatialDecayPoints / max(spatialDecayPoints);
     end
 
-    % Perform linear fit
-    spatialDecayFit = polyfit(spatialDecayPoints_loc, spatialDecayPoints, 1);
-    spatialDecaySlope = spatialDecayFit(1);
+    if ~linearFit
+       % Define the exponential decay function
+        expDecayFun = @(b,x) b(1) * exp(-b(2)*x);
+        
+        % Set options for lsqcurvefit
+        options = optimoptions('lsqcurvefit', 'Display', 'off');
+        
+        % Initial guess for parameters [A, b]
+        initialGuess = [1, 0.1];
+
+        % ensure input variables are double() 
+        spatialDecayPoints_loc = double(spatialDecayPoints_loc);
+        spatialDecayPoints = double(spatialDecayPoints);
+
+        
+        % Perform exponential fit using lsqcurvefit
+        [fitParams, ~, residual, ~, ~, ~, jacobian] = lsqcurvefit(expDecayFun, initialGuess, spatialDecayPoints_loc, spatialDecayPoints', [], [], options);
+        
+        spatialDecaySlope = fitParams(2);  % The decay rate is the second parameter
+        spatialDecayFit = fitParams;
+        
+        % Calculate confidence intervals
+        %ci = nlparci(fitParams, residual, 'jacobian', jacobian);
+        
+        % Print fit results
+        %fprintf('Amplitude: %.4f (95%% CI: %.4f to %.4f)\n', fitParams(1), ci(1,1), ci(1,2));
+        %fprintf('Spatial decay rate: %.4f (95%% CI: %.4f to %.4f)\n', spatialDecaySlope, ci(2,1), ci(2,2));
+    else
+
+        % Perform linear fit
+        spatialDecayFit = polyfit(spatialDecayPoints_loc, spatialDecayPoints, 1);
+        spatialDecaySlope = spatialDecayFit(1);
+    end
 
     % Pad spatialDecayPoints with NaNs if necessary
     if length(spatialDecayPoints) < NUM_CHANNELS_FOR_FIT
         spatialDecayPoints = [spatialDecayPoints, nan(1, NUM_CHANNELS_FOR_FIT-length(spatialDecayPoints))];
+        spatialDecayPoints_loc = [spatialDecayPoints_loc; nan(NUM_CHANNELS_FOR_FIT-length(spatialDecayPoints_loc),1)];
     end
 
 else

@@ -61,7 +61,8 @@ if removeDuplicateSpikes_flag
     % check if there are any empty units
     unique_templates = unique(spikeTemplates);
     nonEmptyUnits = unique(spikeTemplates(~duplicateSpikes_idx));
-    emptyUnits_idx = ~ismember(unique_templates, nonEmptyUnits);
+    emptyUnits_idx = zeros(max(spikeTemplates), 1, 'logical');  % Initialize with size matching rawWaveformsFull rows
+    emptyUnits_idx(unique_templates) = ~ismember(unique_templates, nonEmptyUnits);  % Mark only existing templates as empty/non-empty
 
     % remove any empty units from ephys data
     spikeTimes_samples = spikeTimes_samples(~duplicateSpikes_idx);
@@ -77,6 +78,8 @@ if removeDuplicateSpikes_flag
         rawWaveformsFull = rawWaveformsFull(~emptyUnits_idx, :, :);
         rawWaveformsPeakChan = rawWaveformsPeakChan(~emptyUnits_idx);
     end
+
+    emptyUnits_idx = ~ismember(unique_templates, nonEmptyUnits);
 
     if ~isempty(signalToNoiseRatio)
         signalToNoiseRatio = signalToNoiseRatio(~emptyUnits_idx);

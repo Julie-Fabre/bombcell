@@ -39,7 +39,7 @@ for iUnit = 1:length(uniqueTemplates)
     theseSpikeTimes = spikeTimes(spikeTemplates == thisUnit);
 
     %% ACG-based properties  
-    ephysProperties.acg(iUnit, :) = bc.ep.computeACG(theseSpikeTimes, paramEP.ACGbinSize, paramEP.ACGduration, paramEP.plotThis);
+    ephysProperties.acg(iUnit, :) = bc.ep.computeACG(theseSpikeTimes, paramEP.ACGbinSize, paramEP.ACGduration, paramEP.plotDetails);
 
     [ephysProperties.postSpikeSuppression_ms(iUnit), ephysProperties.tauRise_ms(iUnit), ephysProperties.tauDecay_ms(iUnit),...
         ephysProperties.refractoryPeriod_ms(iUnit)] = bc.ep.computeACGprop(ephysProperties.acg(iUnit, :), paramEP.ACGbinSize, paramEP.ACGduration);
@@ -54,9 +54,9 @@ for iUnit = 1:length(uniqueTemplates)
     % Work in progress: add option to use mean raw waveform 
     [ephysProperties.waveformDuration_peakTrough_us(iUnit), ephysProperties.halfWidth_ms(iUnit), ...
         ephysProperties.peakTroughRatio(iUnit), ephysProperties.firstPeakTroughRatio(iUnit),...
-        ephysProperties.nPeaks(iUnit), ephysProperties.nTroughs(iUnit), ephysProperties.isSomatic(iUnit)] =...
+        ephysProperties.nPeaks(iUnit), ephysProperties.nTroughs(iUnit)] =...
         bc.ep.computeWaveformProp(templateWaveforms,thisUnit, ephysProperties.maxChannels(thisUnit),...
-        paramEP.ephys_sample_rate, channelPositions,  paramEP.minThreshDetectPeaksTroughs, paramEP.maxWvBaselineFraction, paramEP.normalizeSpDecay);
+        paramEP, channelPositions);
 
     %% Burstiness properties
     % Work in progress
