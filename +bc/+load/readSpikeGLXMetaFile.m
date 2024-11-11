@@ -1,5 +1,5 @@
 function [scalingFactor, channelMapImro, probeType] = readSpikeGLXMetaFile(metaFile, probeType)
-% JF
+% JF QQ NEEDS UPDATING - SEE JENNIFER COLONELL'S FUNCTIONS
 % read spikeGLX meta file and calculate scaling factor value to convert raw data to
 % microvolts
 % ------
@@ -97,8 +97,10 @@ end
 %
 if ismember(probeType, {'1', '3', '0', '1020', '1030', '1100', '1120', '1121', '1122', '1123', '1200', '1300', '1110'}) %NP1, NP2-like
     gain = 500; % 10-bit analog to digital
-elseif ismember(probeType, {'21', '2003', '2004', '24', '2013', '2014', '2020'}) % NP2, NP2-like
+elseif ismember(probeType, {'21', '2003', '2004', '24', '2014', '2020'}) % NP2, NP2-like
     gain = 80; % 14-bit analog to digital
+elseif ismember(probeType, {'2013'}
+    gain = 100;
 else
     error('unrecognized probe type. Check the imDatPrb_type value in your meta file and create a github issue / email us to add support for this probe type')
 end

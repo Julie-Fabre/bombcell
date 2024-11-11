@@ -71,6 +71,7 @@ paramBC.tauR_valuesMin = 2/1000; % refractory period time (s), usually 0.0020 ch
 paramBC.tauR_valuesStep = 0.5./1000; % refractory period time (s), usually 0.0020
 paramBC.tauR_valuesMax = 2./1000; % refractory period time (s), usually 0.0020
 paramBC.tauC = 0.1/1000; % censored period time (s)
+paramBC.hillOrLlobetMethod = 1; % 1 to use Hill et al method; 2 to use Llobet et al method
 
 % percentage spikes missing parameters 
 paramBC.computeTimeChunks = 0; % compute fraction refractory period violations 
@@ -94,9 +95,6 @@ else
     paramBC.waveformBaselineWindowStop = 30; % in samples 
 end
 paramBC.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value 
-paramBC.firstPeakRatio = 1.1; % if units have an initial peak before the trough,
-% in a units waveform to give the minimum prominence to detect peaks using
-% matlab's findpeaks function.
 paramBC.normalizeSpDecay = 1; % whether to normalize spatial decay points relative to 
 % maximum - this makes the spatrial decay slop calculation more invariant to the 
 % spike-sorting algorithm used
@@ -135,7 +133,6 @@ paramBC.maxRPVviolations = 0.1; % fraction
 paramBC.maxPercSpikesMissing = 20; % Percentage
 paramBC.minNumSpikes = 300;
 
-paramBC.minSignalToNoiseRatio = 0.9; % JF: this should be removed unless you guys use it - bombcell does not. 
 paramBC.maxDrift = 100;
 paramBC.minPresenceRatio = 0.7;
 paramBC.minSNR = 0.1;
@@ -148,6 +145,15 @@ paramBC.minWvDuration = 100; % in us
 paramBC.maxWvDuration = 800; % in us
 paramBC.minSpatialDecaySlope = -0.005;
 paramBC.maxWvBaselineFraction = 0.3;
+paramBC.minSpatialDecaySlopeExp = 0.01; % in a.u./um
+paramBC.maxSpatialDecaySlopeExp = 0.1; % in a.u./um
+paramBC.firstPeakRatio = 3; % if units have an initial peak before the trough,
+    % it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit. 
+paramBC.minTroughToPeakRatio = 0.9; % peak must be less
+paramBC.minWidthFirstPeak = 4; % in samples
+paramBC.minMainPeakToTroughRatio = 5; % trough should be min 5 x bigger than 1rst peak to count as non-somatic 
+paramBC.minWidthMainTrough = 5; % in samples
+
 
 %distance metrics
 paramBC.isoDmin = 20; 
