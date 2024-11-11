@@ -1,48 +1,65 @@
 function [scalingFactor, channelMapImro, probeType] = readSpikeGLXMetaFile(metaFile, probeType)
-% Read SpikeGLX meta file and calculate scaling factor to convert raw data to microvolts
-% Based on Jennifer Colonell's SGLX_readMeta implementation: https://github.com/jenniferColonell/SpikeGLX_Datafile_Tools
+% JF QQ NEEDS UPDATING - SEE JENNIFER COLONELL'S FUNCTIONS
+% read spikeGLX meta file and calculate scaling factor value to convert raw data to
+% microvolts
+% ------
+% Inputs
+% ------
+% metaFile: string, full path to meta file (should be a structure.oebin file)
+% ------
+% Outputs
+% ------
+% scaling factor: double, scaling factor value to convert raw data to
+% microvolts
 %
-% Inputs:
-%   metaFile: string, full path to meta file
-%   probeType: string, (optional) probe type if not found in meta file
-%
-% Outputs:
-%   scalingFactor: double, scaling factor to convert raw data to microvolts
-%   channelMapImro: string, channel map information
-%   probeType: string, detected or provided probe type
 
-    % Parse meta file using the official method
-    fid = fopen(metaFile, 'r');
-    C = textscan(fid, '%[^=] = %[^\r\n]');
-    fclose(fid);
-    
-    % Convert to structure
-    meta = struct();
-    for i = 1:length(C{1})
-        tag = C{1}{i};
-        if tag(1) == '~'
-            tag = sprintf('%s', tag(2:end));
-        end
-        meta.(tag) = C{2}{i};
+% read meta file
+filetext = fileread(metaFile);
+
+% try and get probe type from meta file (imDatPrb_type or imProbeOpt fields)
+expr_scaling = 'imDatPrb_type=*';
+[~, startIndex] = regexp(filetext, expr_scaling);
+if isempty(startIndex) % try second option: there are two different saving conventions
+    expr_scaling = 'imProbeOpt=*';
+    [~, startIndex] = regexp(filetext, expr_scaling);
+end
+if isempty(startIndex) % if still no probe type information is found, use the param value
+    if strcmp(probeType, 'NaN')
+        error(['no probe type found in spikeGLX meta file and no param.probeType specified. ', ...
+            'Edit the param.probeType value in bc_qualityParamValues.'])
     end
-    
-    % Get probe type
-    if isfield(meta, 'imDatPrb_type')
-        probeType = meta.imDatPrb_type;
-    elseif isfield(meta, 'imProbeOpt')
-        probeType = meta.imProbeOpt;
-    elseif strcmp(probeType, 'NaN')
-        error(['No probe type found in meta file and no probeType specified. ', ...
-            'Please specify a probe type parameter.']);
+else
+    endIndex = find(filetext(startIndex:end) == newline, 1, 'first') + startIndex - 2;
+    if isempty(endIndex)
+        endIndex = length(filetext);
     end
-<<<<<<< HEAD
-    
+    probeType = filetext(startIndex+1:endIndex-1);
+end
+
+% get channel map information
+expr_chanMap = 'imRoFile=';
+[~, startIndexChanMap] = regexp(filetext, expr_chanMap);
+expr_afterChanMap = 'imSampRate';
+[~, endIndexChanMap] = regexp(filetext, expr_afterChanMap);
+if isempty(startIndexChanMap) % new convention in new spike glx argh
+    expr_chanMap = 'imroFile=';
+    [~, startIndexChanMap] = regexp(filetext, expr_chanMap);
+    expr_afterChanMap = 'nDataDirs';
+    [~, endIndexChanMap] = regexp(filetext, expr_afterChanMap);
+end
+
+channelMapImro = filetext(startIndexChanMap+1:endIndexChanMap-2-length(expr_afterChanMap));
+if isempty(channelMapImro) % default was used
+    if strcmp(probeType, '0')
+        channelMapImro = 'NPtype21_bank0_ref0';
+    end
+
     % Get channel map information
     if isfield(meta, 'imroTbl')
         channelMapImro = meta.imroTbl;
     elseif isfield(meta, 'imRoTbl')  % Alternative spelling
         channelMapImro = meta.imRoTbl;
-=======
+    end
 end
 
 % get bits_encoding
@@ -53,76 +70,48 @@ if isempty(startIndeximMax) % new convention in new spike glx argh
         bits_encoding = 2^10; % 10-bit analog to digital
     elseif ismember(probeType, {'21', '2003', '2004', '24', '2013', '2014', '2020'}) % NP2, NP2-like
         bits_encoding = 2^14; % 14-bit analog to digital
->>>>>>> 29a169963c9923ca4a382d0e4dc6b32afb0cb208
     else
-        channelMapImro = '';
-        if strcmp(probeType, '0')
-            channelMapImro = 'NPtype21_bank0_ref0';
-        end
+        error('unrecognized probe type. Check the imDatPrb_type value in your meta file and create a github issue / email us to add support for this probe type')
     end
-    
-    % Get maximum integer value (bits encoding)
-    if isfield(meta, 'imMaxInt')
-        bits_encoding = str2double(meta.imMaxInt);
-    else
-        % Determine based on probe type
-        probeNum = str2double(probeType);
-        if ismember(probeNum, [1, 3, 0, 1020, 1030, 1100, 1120, 1121, 1122, 1123, 1200, 1300, 1110])
-            bits_encoding = 512;  % NP1: 10-bit ADC = 2^9
-        elseif ismember(probeNum, [21, 2003, 2004, 24, 2013, 2014, 2020])
-            bits_encoding = 16384;  % NP2: 14-bit ADC = 2^14
-        else
-            error('Unrecognized probe type: %s', probeType);
-        end
+else
+    endIndex = find(filetext(startIndeximMax:end) == newline, 1, 'first') + startIndeximMax - 2;
+    if isempty(endIndex)
+        endIndex = length(filetext);
     end
-    
-    % Get voltage range
-    if isfield(meta, 'imAiRangeMax')
-        Vrange = str2double(meta.imAiRangeMax) * 2 * 1e6;  % Convert to microvolts
-    else
-        probeNum = str2double(probeType);
-        if ismember(probeNum, [1, 3, 0, 1020, 1030, 1100, 1120, 1121, 1122, 1123, 1200, 1300, 1110])
-            Vrange = 1.2e6;  % NP1: ±0.6V
-        elseif ismember(probeNum, [21, 2003, 2004, 24, 2013, 2014, 2020])
-            Vrange = 1.0e6;  % NP2: ±0.5V
-        else
-            error('Unrecognized probe type for voltage range: %s', probeType);
-        end
-    end
-    
-    % Get gain - Use ChanGainsIM from the reference implementation
-    if isfield(meta, 'imroTbl') || isfield(meta, 'imRoTbl')
-        % Parse the gain from the imro table
-        if isfield(meta, 'typeEnabled')
-            % 3A data
-            C = textscan(meta.imroTbl, '(%*s %*s %*s %d %d', ...
-                'EndOfLine', ')', 'HeaderLines', 1);
-        else
-            % 3B data
-            C = textscan(meta.imroTbl, '(%*s %*s %*s %d %d %*s', ...
-                'EndOfLine', ')', 'HeaderLines', 1);
-        end
-        if ~isempty(C{1})
-            gain = double(C{1}(1));  % Use first channel's gain
-        else
-            gain = getDefaultGain(probeType);
-        end
-    else
-        gain = getDefaultGain(probeType);
-    end
-    
-    % Calculate scaling factor
-    scalingFactor = Vrange / bits_encoding / gain;
+    bits_encoding = str2num(filetext(startIndeximMax+1:endIndex-1));
 end
 
-function gain = getDefaultGain(probeType)
-    % Helper function to get default gain based on probe type
-    probeNum = str2double(probeType);
-    if ismember(probeNum, [1, 3, 0, 1020, 1030, 1100, 1120, 1121, 1122, 1123, 1200, 1300, 1110])
-        gain = 500;  % NP1
-    elseif ismember(probeNum, [21, 2003, 2004, 24, 2013, 2014, 2020])
-        gain = 80;   % NP2
+% get
+expr_vMax = 'imAiRangeMax =';
+[~, startIndexvMax] = regexp(filetext, expr_vMax);
+if isempty(startIndexvMax) % new convention in new spike glx argh
+    if ismember(probeType, {'1', '3', '0', '1020', '1030', '1100', '1120', '1121', '1122', '1123', '1200', '1300', '1110'}) %NP1, NP2-like
+        Vrange = 1.2e6; % from -0.6 to 0.6 V = 1.2 V = 1.2 e6 microvolts
+    elseif ismember(probeType, {'21', '2003', '2004', '24', '2013', '2014', '2020'}) % NP2, NP2-like
+        Vrange = 1e6; % from -0.5 to 0.5 V = 1 V = 1 e6 microvolts
     else
-        error('Unrecognized probe type for gain: %s', probeType);
+        error('unrecognized probe type. Check the imDatPrb_type value in your meta file and create a github issue / email us to add support for this probe type')
     end
+else
+    endIndex = find(filetext(startIndexvMax:end) == newline, 1, 'first') + startIndexvMax - 2;
+    if isempty(endIndex)
+        endIndex = length(filetext);
+    end
+    Vrange = 2 * str2num(filetext(startIndexvMax+1:endIndex-1)) * 1e6;
+end
+
+% gain - QQ read out from table, modify. this could be wrong in some cases.
+%
+if ismember(probeType, {'1', '3', '0', '1020', '1030', '1100', '1120', '1121', '1122', '1123', '1200', '1300', '1110'}) %NP1, NP2-like
+    gain = 500; % 10-bit analog to digital
+elseif ismember(probeType, {'21', '2003', '2004', '24', '2014', '2020'}) % NP2, NP2-like
+    gain = 80; % 14-bit analog to digital
+elseif ismember(probeType, {'2013'})
+    gain = 100;
+else
+    error('unrecognized probe type. Check the imDatPrb_type value in your meta file and create a github issue / email us to add support for this probe type')
+end
+
+% calculate scaling factor
+scalingFactor = Vrange / bits_encoding / gain;
 end
