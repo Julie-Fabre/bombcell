@@ -88,7 +88,7 @@ if param.extractRaw
             nSpkLocal = numel(rawWaveforms(iCluster).spkIndsub);
 
             % Initialize spike map for this cluster
-            rawWaveforms(iCluster).spkMap = nan(nChannels-param.nSyncChannels, nSpkLocal, spikeWidth);
+            rawWaveforms(iCluster).spkMap = nan(nChannels-param.nSyncChannels, spikeWidth, nSpkLocal);
 
             % loop over spikes for this cluster
             for iSpike = 1:nSpkLocal
@@ -108,11 +108,6 @@ if param.extractRaw
                         rawWaveforms(iCluster).spkMap(:, :, iSpike) = data(1:nChannels-param.nSyncChannels, :);
                     end
                 end
-            end
-
-            % Check the formats are correct 
-            if ~ismember(size(rawWaveforms(iCluster).spkMap,2), [61, 82]) && ismember(size(rawWaveforms(iCluster).spkMap,3), [61, 82])
-                rawWaveforms(iCluster).spkMap = permute(rawWaveforms(iCluster).spkMap, [1,3,2]);
             end
 
             % Save multiple raw if needed
