@@ -110,10 +110,7 @@ if param.extractRaw
                 end
             end
 
-            % Check the formats are correct 
-            if ~ismember(size(rawWaveforms(iCluster).spkMap,2), [61, 82]) && ismember(size(rawWaveforms(iCluster).spkMap,3), [61, 82])
-                rawWaveforms(iCluster).spkMap = permute(rawWaveforms(iCluster).spkMap, [1,3,2]);
-            end
+            
 
             % Save multiple raw if needed
             if param.saveMultipleRaw
