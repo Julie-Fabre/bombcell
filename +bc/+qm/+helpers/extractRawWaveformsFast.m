@@ -88,7 +88,7 @@ if param.extractRaw
             nSpkLocal = numel(rawWaveforms(iCluster).spkIndsub);
 
             % Initialize spike map for this cluster
-            rawWaveforms(iCluster).spkMap = nan(nChannels-param.nSyncChannels, spikeWidth, nSpkLocal);
+            rawWaveforms(iCluster).spkMap = nan(nChannels-param.nSyncChannels, nSpkLocal, spikeWidth);
 
             % loop over spikes for this cluster
             for iSpike = 1:nSpkLocal
