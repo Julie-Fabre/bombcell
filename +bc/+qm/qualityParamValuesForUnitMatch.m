@@ -71,6 +71,7 @@ paramBC.tauR_valuesMin = 2/1000; % refractory period time (s), usually 0.0020 ch
 paramBC.tauR_valuesStep = 0.5./1000; % refractory period time (s), usually 0.0020
 paramBC.tauR_valuesMax = 2./1000; % refractory period time (s), usually 0.0020
 paramBC.tauC = 0.1/1000; % censored period time (s)
+paramBC.hillOrLlobetMethod = 1; % 1 to use Hill et al method; 2 to use Llobet et al method
 
 % percentage spikes missing parameters
 paramBC.computeTimeChunks = 0; % compute fraction refractory period violations
@@ -97,6 +98,7 @@ paramBC.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value
 paramBC.normalizeSpDecay = 1; % whether to normalize spatial decay points relative to
 % maximum - this makes the spatrial decay slop calculation more invariant to the
 % spike-sorting algorithm used
+paramBC.spDecayLinFit = 0; % if false, use an exponential fit
 
 
 % recording parametrs
@@ -137,11 +139,17 @@ paramBC.maxNTroughs = 1;
 paramBC.somatic = 1;
 paramBC.minWvDuration = 50; % in us
 paramBC.maxWvDuration = 1500; % in us
-paramBC.minSpatialDecaySlope = -0.005;
+paramBC.minSpatialDecaySlope = -0.008;% in a.u./um
+paramBC.minSpatialDecaySlopeExp = 0.01; % in a.u./um
+paramBC.maxSpatialDecaySlopeExp = 0.1; % in a.u./um
 paramBC.maxWvBaselineFraction = 0.3;
-paramBC.firstPeakRatio = 1.2; % if units have an initial peak before the trough,
+paramBC.firstPeakRatio = 3; % if units have an initial peak before the trough,
 % in a units waveform to give the minimum prominence to detect peaks using
 % matlab's findpeaks function.
+paramBC.minTroughToPeakRatio = 0.8; % peak must be less
+paramBC.minWidthFirstPeak = 4; % in samples
+paramBC.minMainPeakToTroughRatio = 5; % trough should be min 5 x bigger than 1rst peak to count as non-somatic 
+paramBC.minWidthMainTrough = 5; % in samples
 
 %distance metrics
 paramBC.isoDmin = 20;

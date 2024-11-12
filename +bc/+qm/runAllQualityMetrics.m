@@ -113,7 +113,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
     qMetric.clusterID(iUnit) = thisUnit; % this is the cluster ID as it appears in phy, 1-indexed (adding 1)
 
     theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
-    theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
+    theseAmplis = double(templateAmplitudes(spikeTemplates == thisUnit));
 
     
     %% percentage spikes missing (false negatives)
