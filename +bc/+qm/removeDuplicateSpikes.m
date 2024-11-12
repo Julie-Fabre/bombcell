@@ -15,6 +15,7 @@ function [nonEmptyUnits, duplicateSpikes_idx, spikeTimes_samples, spikeTemplates
 % Outputs
 % ------
 %
+templateAmplitudes = double(templateAmplitudes);% ensure double
 
 if removeDuplicateSpikes_flag
     % Check if we need to extract duplicate spikes
@@ -68,7 +69,7 @@ if removeDuplicateSpikes_flag
     spikeTimes_samples = spikeTimes_samples(~duplicateSpikes_idx);
     spikeTemplates = spikeTemplates(~duplicateSpikes_idx);
     templateAmplitudes = templateAmplitudes(~duplicateSpikes_idx);
-    templateAmplitudes = double(templateAmplitudes);% ensure double
+    
 
     if ~isempty(pcFeatures) && any(~isnan(pcFeatures), 'all')
 
