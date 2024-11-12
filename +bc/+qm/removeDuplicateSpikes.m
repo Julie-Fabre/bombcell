@@ -68,6 +68,7 @@ if removeDuplicateSpikes_flag
     spikeTimes_samples = spikeTimes_samples(~duplicateSpikes_idx);
     spikeTemplates = spikeTemplates(~duplicateSpikes_idx);
     templateAmplitudes = templateAmplitudes(~duplicateSpikes_idx);
+    templateAmplitudes = double(templateAmplitudes);% ensure double
 
     if ~isempty(pcFeatures) && any(~isnan(pcFeatures), 'all')
 
