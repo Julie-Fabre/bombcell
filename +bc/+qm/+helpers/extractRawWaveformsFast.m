@@ -35,6 +35,10 @@ if param.extractRaw
     nSpikeChannels = nChannels - param.nSyncChannels;
     [rawWaveformsFull, rawWaveformsPeakChan, baselineNoiseAmplitude, baselineNoiseAmplitudeIndex, emptyWaveforms] = ...
         bc.qm.helpers.loadRawWaveforms(savePath, spikeClusters, spikeWidth, nSpikeChannels, param.waveformBaselineNoiseWindow);
+    if reExtract
+        emptyWaveforms = unique(spikeClusters);
+    end
+
     if any(emptyWaveforms)
 
         %% Extract raw waveforms
@@ -120,7 +124,7 @@ if param.extractRaw
                 tmpspkmap = cat(3, tmpspkmap{:});
                 writeNPY(tmpspkmap, fullfile(savePath, 'RawWaveforms', ['Unit', num2str(emptyWaveforms(iCluster)-1), '_RawSpikes.npy']))
             end
-
+            
             % Calculate mean and peak channel
             rawWaveforms(iCluster).spkMapMean = nanmean(rawWaveforms(iCluster).spkMap, 3)';
             rawWaveformsFull(rawWaveforms(iCluster).clInd, :, :) = rawWaveforms(iCluster).spkMapMean - ...
