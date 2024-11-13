@@ -114,6 +114,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
 
     theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
+    theseAmplis = double(theseAmplis); % make sure amplitudes is a double()
 
     
     %% percentage spikes missing (false negatives)
