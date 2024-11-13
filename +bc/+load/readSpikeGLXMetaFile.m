@@ -1,5 +1,5 @@
 function [scalingFactor, channelMapImro, probeType] = readSpikeGLXMetaFile(metaFile, probeType)
-% JF QQ NEEDS UPDATING - SEE JENNIFER COLONELL'S FUNCTIONS
+% JF
 % read spikeGLX meta file and calculate scaling factor value to convert raw data to
 % microvolts
 % ------
@@ -53,13 +53,6 @@ if isempty(channelMapImro) % default was used
     if strcmp(probeType, '0')
         channelMapImro = 'NPtype21_bank0_ref0';
     end
-
-    % Get channel map information
-    if isfield(meta, 'imroTbl')
-        channelMapImro = meta.imroTbl;
-    elseif isfield(meta, 'imRoTbl')  % Alternative spelling
-        channelMapImro = meta.imRoTbl;
-    end
 end
 
 % get bits_encoding
@@ -104,10 +97,10 @@ end
 %
 if ismember(probeType, {'1', '3', '0', '1020', '1030', '1100', '1120', '1121', '1122', '1123', '1200', '1300', '1110'}) %NP1, NP2-like
     gain = 500; % 10-bit analog to digital
-elseif ismember(probeType, {'21', '2003', '2004', '24', '2014', '2020'}) % NP2, NP2-like
-    gain = 80; % 14-bit analog to digital
-elseif ismember(probeType, {'2013'})
-    gain = 100;
+elseif ismember(probeType, {'21', '2003', '2004', '24'}) % NP2, NP2-like
+    gain = 80;
+elseif ismember(probeType, {'2013', '2014', '2020'}) % NP2, NP2-like
+    gain = 100; % 14-bit analog to digital
 else
     error('unrecognized probe type. Check the imDatPrb_type value in your meta file and create a github issue / email us to add support for this probe type')
 end
