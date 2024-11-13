@@ -61,13 +61,12 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
 
     % total times at which refractory period violations can occur
     for iTauR_value = 1:length(tauR)
-        nRPVs = sum(diff(theseSpikeTimes(theseSpikeTimes >= timeChunks(iTimeChunk) & theseSpikeTimes < timeChunks(iTimeChunk+1))) <= tauR(iTauR_value));
-        RPVfraction(iTimeChunk, iTauR_value) = nRPVs / N_chunk;
         overestimateBool(iTimeChunk, iTauR_value) = 0;
         if param.hillOrLlobetMethod == 1 % hill method
             a = 2 * (tauR(iTauR_value) - param.tauC) * N_chunk^2 / abs(diff(timeChunks(iTimeChunk:iTimeChunk+1)));
             % observed number of refractory period violations
-            
+            nRPVs = sum(diff(theseSpikeTimes(theseSpikeTimes >= timeChunks(iTimeChunk) & theseSpikeTimes < timeChunks(iTimeChunk+1))) <= tauR(iTauR_value));
+
             if nRPVs == 0 % no observed refractory period violations - this can
                 % also be because there are no spikes in this interval - use presence ratio to weed this out
                 RPVrate(iTimeChunk, iTauR_value) = 0;
@@ -76,6 +75,8 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
                 RPVrate(iTimeChunk, iTauR_value) = min(rts);
                 if ~isreal(RPVrate(iTimeChunk, iTauR_value)) % function returns imaginary number if r is too high
                     overestimateBool(iTimeChunk, iTauR_value) = 1;
+                    a = 2 * (tauR(iTauR_value) - param.tauC) * N_chunk^2 / abs(diff(timeChunks(iTimeChunk:iTimeChunk+1)));
+                    rts = roots([-1, 1, -nRPVs / a]);
                     RPVrate(iTimeChunk, iTauR_value) = nRPVs / (2 * (tauR(iTauR_value) - param.tauC) * (N_chunk - nRPVs));
                 end
                 if RPVrate(iTimeChunk, iTauR_value) > 1 % it is nonsense to have a rate >1, the assumptions are failing here

@@ -76,11 +76,6 @@ if removeDuplicateSpikes_flag
         pcFeatures = pcFeatures(~duplicateSpikes_idx, :, :);
     end
 
-    if ~isempty(rawWaveformsFull)
-        rawWaveformsFull = rawWaveformsFull(~emptyUnits_idx, :, :);
-        rawWaveformsPeakChan = rawWaveformsPeakChan(~emptyUnits_idx);
-    end
-
     emptyUnits_idx = ~ismember(unique_templates, nonEmptyUnits);
 
     if ~isempty(signalToNoiseRatio)
