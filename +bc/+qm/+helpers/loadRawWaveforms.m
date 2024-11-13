@@ -17,7 +17,7 @@ if ~isempty(rawWaveformFolder)
     emptyWaveforms = empty_row_indices(ismember(empty_row_indices, unique_clusters));
 
 else
-    rawWaveformsFull = nan(max(unique_clusters), spikeWidth, nSpikeChannels);
+    rawWaveformsFull = nan(max(unique_clusters), nSpikeChannels, spikeWidth);
     rawWaveformsPeakChan = nan(max(unique_clusters), 1);
     emptyWaveforms = unique_clusters;
     baselineNoiseAmplitude = nan(numel(unique_clusters) * waveformBaselineNoiseWindow, 1);
