@@ -37,11 +37,11 @@ end
 
 % save parameters
 if ~istable(param)
-    if isempty(param.ephysKilosortPath)
+    if ~isfield(param,'ephysKilosortPath') || isempty(param.ephysKilosortPath)
         param.ephysKilosortPath = 'NaN';
     end
 
-    if isempty(param.gain_to_uV)
+    if ~isfield(param,'gain_to_uV') || isempty(param.gain_to_uV)
         param.gain_to_uV = 'NaN';
     end
     parquetwrite([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')], struct2table(param))
