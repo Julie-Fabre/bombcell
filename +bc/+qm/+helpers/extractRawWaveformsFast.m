@@ -71,7 +71,6 @@ if param.extractRaw
         % Get binary file name
         fid = fopen(param.rawFile, 'r');
 
-
         % loop over spike clusters
         for iCluster = 1:size(emptyWaveforms, 1)
             % Get cluster information
