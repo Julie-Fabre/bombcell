@@ -125,7 +125,7 @@ if param.extractRaw
             end
             
             % Calculate mean and peak channel
-            rawWaveforms(iCluster).spkMapMean = nanmean(rawWaveforms(iCluster).spkMap, 3)';
+            rawWaveforms(iCluster).spkMapMean = nanmean(rawWaveforms(iCluster).spkMap, 3);
             rawWaveformsFull(rawWaveforms(iCluster).clInd, :, :) = rawWaveforms(iCluster).spkMapMean - ...
                 mean(rawWaveforms(iCluster).spkMapMean(:, 1:param.waveformBaselineNoiseWindow), 2);
             spkMapMean_sm = smoothdata(rawWaveforms(iCluster).spkMapMean, 2, 'gaussian', 5);
