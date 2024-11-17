@@ -3,6 +3,8 @@ import numpy as np
 
 from matplotlib.figure import Figure
 
+from tqdm.auto import tqdm
+
 # import bombcell.extract_raw_waveforms as erw
 # import bombcell.loading_utils as led
 # import bombcell.default_parameters as params
@@ -341,7 +343,8 @@ def get_all_quality_metrics(unique_templates, spike_times_seconds, spike_templat
 
     not_enough_spikes = np.zeros(unique_templates.size)
     bad_units = 0
-    for unit_idx in range(unique_templates.size):
+    bar_description = 'Computing BombCell quality metrics: {percentage:3.0f}%|{bar:10}| {n}/{total} units'
+    for unit_idx in tqdm(range(unique_templates.size), bar_format=bar_description):
         this_unit = unique_templates[unit_idx]
         quality_metrics['phy_cluster_id'][unit_idx] = this_unit
         quality_metrics['cluster_id'][unit_idx] = this_unit
@@ -414,7 +417,7 @@ def get_all_quality_metrics(unique_templates, spike_times_seconds, spike_templat
 
         # amplitude
         gain_to_uV = 1
-        if param['extract_raw_waveforms']:
+        if raw_waveforms_full is not None and param['extract_raw_waveforms']:
             quality_metrics['raw_amplitude'][unit_idx] = qm.get_raw_amplitude(raw_waveforms_full[unit_idx], gain_to_uV)
         else:
             quality_metrics['raw_amplitude'][unit_idx] = np.nan
@@ -424,9 +427,6 @@ def get_all_quality_metrics(unique_templates, spike_times_seconds, spike_templat
             quality_metrics['isolation_dist'][unit_idx], quality_metrics['l_ratio'][unit_idx], quality_metrics['silhouette_score'][unit_idx], histrogram_mahal_units_counts, histrogram_mahal_units_edges,\
                 histrogram_mahal_noise_counts, histrogram_mahal_noise_edges = qm.get_distance_metrics(pc_features, pc_features_idx, this_unit, spike_templates, param)
         time_dist_metrics = time.time() - time_tmp
-
-        if (unit_idx+1) % 10 == 0 or unit_idx == unique_templates.shape[0] - 1:
-            print(f'done unit idx {unit_idx + 1} out of {unique_templates.shape[0]}')
     
     times = {'times_spikes_missing_1' : times_spikes_missing_1, 'times_RPV_1' : times_RPV_1,
              'times_chunks_to_keep' : times_chunks_to_keep, 'times_spikes_missing_2' : times_spikes_missing_2,

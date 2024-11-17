@@ -22,8 +22,8 @@ def load_ephys_data(ehpys_path):
         The array which gives each spike time in samples (*not* seconds)
     spike_templates : ndarray (n_spikes,)
         The array which assigns a spike to a cluster
-    template_waveforms : ndarray (m_tempaltes, n_time_points, n_channels)
-        The array of template waveforms for each tempalte and channel
+    template_waveforms : ndarray (m_templates, n_time_points, n_channels)
+        The array of template waveforms for each templates and channel
     pc_features : ndarray (n_spikes, n_features_per_channel, n_pc_features)
         The array giving the PC values for each spike
     pc_feature_idx : ndarray (n_templates, n_pc_features)
@@ -40,7 +40,7 @@ def load_ephys_data(ehpys_path):
         spike_templates = np.load(os.path.join(ehpys_path, 'spike_templates.npy'))
     else:
         spike_templates = np.load(os.path.join(ehpys_path, 'spike_clusters.npy'))
-        #tempaltes = clusters < KS4, tempaltes ~=clusters KS4
+        #templates = clusters < KS4, templates ~=clusters KS4
 
     #load in spike times
     if os.path.exists(os.path.join(ehpys_path, 'spike_times_corrected.npy')):
@@ -51,14 +51,14 @@ def load_ephys_data(ehpys_path):
     template_amplitudes = np.load(os.path.join(ehpys_path, 'amplitudes.npy')).astype(np.float64)
 
     #load and unwhiten templates
-    tempalte_waveforms_whitened = np.load(os.path.join(ehpys_path, 'templates.npy'))
+    templates_waveforms_whitened = np.load(os.path.join(ehpys_path, 'templates.npy'))
     winv = np.load(os.path.join(ehpys_path, 'whitening_mat_inv.npy'))
-    tempaltes_waveforms = np.zeros_like(tempalte_waveforms_whitened)
-    for t in range(tempaltes_waveforms.shape[0]):
-        tempaltes_waveforms[t,:,:] = tempalte_waveforms_whitened[t,:,:].squeeze() @ winv
+    templates_waveforms = np.zeros_like(templates_waveforms_whitened)
+    for t in range(templates_waveforms.shape[0]):
+        templates_waveforms[t,:,:] = templates_waveforms_whitened[t,:,:].squeeze() @ winv
 
     if os.path.exists(os.path.join(ehpys_path, 'pc_features.npy')):
-        pc_features = np.load(os.path.join(ehpys_path, 'pc_features.npy'))
+        pc_features = np.load(os.path.join(ehpys_path, 'pc_features.npy')).squeeze()
         pc_features_idx = np.load(os.path.join(ehpys_path, 'pc_feature_ind.npy'))
     else:
         pc_features = np.nan
@@ -67,8 +67,14 @@ def load_ephys_data(ehpys_path):
     channel_positions = np.load(os.path.join(ehpys_path, 'channel_positions.npy'))
     good_channels = np.load(os.path.join(ehpys_path, 'channel_map.npy'))
     
-    return spike_times_samples, spike_templates, tempaltes_waveforms, template_amplitudes, \
-           pc_features, pc_features_idx, channel_positions, good_channels
+    return (spike_times_samples,
+            spike_templates,
+            templates_waveforms,
+            template_amplitudes,
+            pc_features,
+            pc_features_idx,
+            channel_positions,
+            good_channels)
 
 def get_gain_spikeglx(meta_path):
     """

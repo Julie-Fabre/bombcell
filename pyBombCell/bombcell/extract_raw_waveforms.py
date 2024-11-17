@@ -205,7 +205,7 @@ def extract_raw_waveforms(param, spike_templates, spike_times, re_extract_wavefo
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
-    #get necessary info from param
+    # Get necessary info from param
     raw_data_path = param['raw_data_dir']
     meta_path = Path(param['ephys_meta_file'])
     n_channels = param['n_channels']

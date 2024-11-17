@@ -196,7 +196,7 @@ def remove_duplicate_spikes(spike_times_samples, spike_templates, template_ampli
         template_amplitudes = template_amplitudes[np.argwhere(duplicate_spike_idx == 0)]
 
         if pc_features is not None:
-            pc_features = pc_features[[np.argwhere(duplicate_spike_idx == 0)], :, :]
+            pc_features = pc_features[[np.argwhere(duplicate_spike_idx == 0)], :, :].squeeze()
         
         if raw_waveforms_full is not None:
             raw_waveforms_full = raw_waveforms_full[empty_unit_idx == False, :, :]
@@ -205,8 +205,16 @@ def remove_duplicate_spikes(spike_times_samples, spike_templates, template_ampli
         if signal_to_noise_ratio is not None:
             signal_to_noise_ratio = signal_to_noise_ratio[empty_unit_idx == False]
 
-        return non_empty_units, duplicate_spike_idx, spike_times_samples, spike_templates, template_amplitudes, \
-                pc_features, raw_waveforms_full, raw_waveforms_peak_channel, signal_to_noise_ratio, max_channels
+        return (non_empty_units,
+                duplicate_spike_idx,
+                spike_times_samples,
+                spike_templates,
+                template_amplitudes,
+                pc_features,
+                raw_waveforms_full,
+                raw_waveforms_peak_channel,
+                signal_to_noise_ratio,
+                max_channels)
 
 def gaussian_cut(bin_centers, A, u, s, c):
     """

@@ -8,6 +8,7 @@ def path_handler(path: str) -> None:
     path = Path(path).expanduser()
     assert path.parent.exists(), f"{str(path.parent)} must exist to create {str(path)}."
     path.mkdir(exist_ok = True)
+    return path
 
 
 def save_qmetric_tsv(metric, unique_templates, save_path, file_name, column_titles):
