@@ -1201,19 +1201,19 @@ def get_quality_unit_type(param, quality_metrics):
     """
 
     #converting dataframes to dictionary of numpy arrays
-    quality_metrics = dict(zip(quality_metrics.columns, quality_metrics.values.T))
-    param = dict(zip(param.columns, param.values.T))
+    # quality_metrics = dict(zip(quality_metrics.columns, quality_metrics.values.T))
+    # param = dict(zip(param.columns, param.values.T))
 
     
     #Testing for non-somatic waveforms
-    is_non_somatic = np.zeros(quality_metrics['nPeaks'].shape[0])
+    is_non_somatic = np.zeros(quality_metrics['n_peaks'].shape[0])
 
-    is_non_somatic[(quality_metrics['mainTrough_size'] / np.max((quality_metrics['mainPeak_before_size'] , quality_metrics['mainPeak_after_size']), axis = 0)) < param['minTroughToPeakRatio']] = 1 
+    is_non_somatic[(quality_metrics['trough'] / np.max((quality_metrics['main_peak_before'] , quality_metrics['main_peak_after']), axis = 0)) < param['min_main_peak_to_trough_ratio']] = 1 
 
-    is_non_somatic[(quality_metrics['mainPeak_before_size'] / quality_metrics['mainPeak_after_size'])  > param['firstPeakRatio']] = 1
+    is_non_somatic[(quality_metrics['main_peak_before'] / quality_metrics['main_peak_after'])  > param['first_peak_ratio']] = 1
 
-    is_non_somatic[(quality_metrics['mainPeak_before_size'] * param['firstPeakRatio'] > quality_metrics['mainPeak_after_size']) & (quality_metrics['mainPeak_before_width'] < param['minWidthFirstPeak']) \
-        & (quality_metrics['mainPeak_before_size'] * param['minMainPeakToTroughRatio'] > quality_metrics['mainTrough_size']) & (quality_metrics['mainTrough_width'] < param['minWidthMainTrough'])] = 1
+    is_non_somatic[(quality_metrics['main_peak_before'] * param['first_peak_ratio'] > quality_metrics['main_peak_after']) & (quality_metrics['width_before'] < param['min_width_first_peak']) \
+        & (quality_metrics['main_peak_before'] * param['min_main_peak_to_trough_ratio'] > quality_metrics['main_trough_size']) & (quality_metrics['trough_width'] < param['min_width_main_trough'])] = 1
 
     #Test all quality metrics
     ## categorise units
@@ -1223,12 +1223,12 @@ def get_quality_unit_type(param, quality_metrics):
     # unit_type == 3 all non-somatic units (if split somatic units its good non-somatic units)
     # unit_type == 4 (if split somatic units its mua non-somatic units)
 
-    unit_type = np.full(quality_metrics['nPeaks'].shape[0], np.nan)
+    unit_type = np.full(quality_metrics['n_peaks'].shape[0], np.nan)
 
     # classify noise
-    unit_type[np.isnan(quality_metrics['nPeaks'])] = 0
-    unit_type[quality_metrics['nPeaks']  > param['maxNPeaks']] = 0
-    unit_type[quality_metrics['nTroughs'] > param['maxNTroughs']] = 0
+    unit_type[np.isnan(quality_metrics['n_peaks'])] = 0
+    unit_type[quality_metrics['n_peaks']  > param['max_n_peaks']] = 0
+    unit_type[quality_metrics['n_troughs'] > param['max_n_troughs']] = 0
     unit_type[quality_metrics['waveformDuration_peakTrough'] < param['minWvDuration']] = 0
     unit_type[quality_metrics['waveformDuration_peakTrough'] > param['maxWvDuration']] = 0
     unit_type[quality_metrics['waveformBaselineFlatness'] > param['maxWvBaselineFraction']] = 0
