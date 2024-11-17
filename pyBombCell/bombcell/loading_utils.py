@@ -1,7 +1,11 @@
-import numpy as np
 import os
-import bombcell.extract_raw_waveforms as erw
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+import bombcell.extract_raw_waveforms as erw
+
 
 def load_ephys_data(ehpys_path):
     """
@@ -111,3 +115,45 @@ def get_gain_spikeglx(meta_path):
 
     scaling_factor = v_range / bits_encoding / gain # is v_range / (bits_encoding * gain)
     return scaling_factor
+
+
+def load_bc_results(bc_path):
+    """
+    Loads saved BombCell results
+
+    Parameters
+    ----------
+    bc_path : string
+        The absolute path to the directory which has the saved BombCell results
+
+    Returns
+    -------
+    tuple (df, df, df)
+        The data frames of hte BombCell results
+    """
+    #Files
+    #BombCell params ML
+    param_path = os.path.join(bc_path, '_bc_parameters._bc_qMetrics.parquet')
+    if os.path.exists(param_path):
+        param = pd.read_parquet(param_path)
+    else:
+        print('Paramater file not found')
+
+
+    #BombCell quality metrics
+    quality_metrics_path = os.path.join(bc_path, 'templates._bc_qMetrics.parquet')
+    if os.path.exists(quality_metrics_path):
+        quality_metrics = pd.read_parquet(quality_metrics_path)
+    else:
+        print('Quality Metrics file not found')
+
+
+    #BombCell fration RPVS all TauR
+    fractions_RPVs_all_taur_path = os.path.join(bc_path, 'templates._bc_fractionRefractoryPeriodViolationsPerTauR.parquet')
+    if os.path.exists(fractions_RPVs_all_taur_path):
+        fractions_RPVs_all_taur = pd.read_parquet(fractions_RPVs_all_taur_path)
+    else:
+        print('Fraction RPVs all TauR file not found')
+        fractions_RPVs_all_taur = None
+
+    return param, quality_metrics, fractions_RPVs_all_taur

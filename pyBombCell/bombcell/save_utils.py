@@ -1,6 +1,14 @@
 import os
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+
+def path_handler(path: str) -> None:
+    path = Path(path).expanduser()
+    assert path.parent.exists(), f"{str(path.parent)} must exist to create {str(path)}."
+    path.mkdir(exist_ok = True)
+
 
 def save_qmetric_tsv(metric, unique_templates, save_path, file_name, column_titles):
     """
@@ -19,6 +27,9 @@ def save_qmetric_tsv(metric, unique_templates, save_path, file_name, column_titl
     column_titles : tuple
         A tuple whihc contains the column title for the tsv file
     """
+    # Create save_path if it does not exist
+    save_path = path_handler(save_path)
+
     file_path = os.path.join(save_path, file_name)
     data_to_save = pd.DataFrame(data = np.array((unique_templates, metric)).T, columns = column_titles)
     data_to_save.to_csv(file_path, sep ="\t", index = False)
@@ -38,6 +49,9 @@ def save_quality_metrics_as_tsvs(quality_metrics, unit_type_string, unique_templ
     save_path : str
         The path to the save directory
     """
+    # Create save_path if it does not exist
+    save_path = path_handler(save_path)
+
     save_qmetric_tsv(unit_type_string, unique_templates, save_path, r'cluster_bc_unitType.tsv', ('cluster_id', 'bc_unitType'))
     save_qmetric_tsv(quality_metrics['fraction_RPVs'], unique_templates, save_path, r'cluster_frac_RPVs.tsv', ('cluster_id', 'frac_RPVs'))
     save_qmetric_tsv(quality_metrics['is_somatic'], unique_templates, save_path, r'cluster_is_somatic.tsv', ('cluster_id', 'is_somatic'))
@@ -65,6 +79,9 @@ def save_quality_metrics_as_parquet(quality_metrics, save_path, file_name = 'tem
     file_name : str, optional
         The name of the file, by default 'templates._bc_qMetrics.parquet'
     """
+    # Create save_path if it does not exist
+    save_path = path_handler(save_path)
+
     file_path = os.path.join(save_path, file_name)
     quality_metrics_save = quality_metrics.copy()
     quality_metrics_save['max_channels'] = quality_metrics['max_channels'][quality_metrics['cluster_id'].astype(int)]
@@ -84,6 +101,9 @@ def save_params_as_parquet(param, save_path, file_name = '_bc_parameters._bc_qMe
     file_name : str, optional
         The name of the file, by default '_bc_parameters._bc_qMetrics.parquet'
     """
+    # Create save_path if it does not exist
+    save_path = path_handler(save_path)
+
     file_path = os.path.join(save_path, file_name)
     param_df = pd.DataFrame.from_dict(param)
     param_df.to_parquet(file_path)
@@ -101,6 +121,9 @@ def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, save_p
     save_path : str
         The path to the save directory
     """
+    # Create save_path if it does not exist
+    save_path = path_handler(save_path)
+
     file_path_raw_waveforms = os.path.join(save_path, 'templates._bc_rawWaveforms.npy')
     np.save(file_path_raw_waveforms, raw_waveforms_full)
 
@@ -128,6 +151,9 @@ def save_results(quality_metrics, unit_type_string, unique_templates, param, raw
     save_path : str
         The path to the save directory
     """
+    # Create save_path if it does not exist
+    save_path = path_handler(save_path)
+
     save_quality_metrics_as_tsvs(quality_metrics, unit_type_string, unique_templates, save_path)
     save_quality_metrics_as_parquet(quality_metrics, save_path, file_name = 'templates._bc_qMetrics.parquet')
     save_params_as_parquet(param, save_path, file_name = '_bc_parameters._bc_qMetrics.parquet')

@@ -1,18 +1,19 @@
-import os 
+import os
+
 import numpy as np
-import bombcell.extract_raw_waveforms as erw
-import bombcell.load_ephys_data as led
-import bombcell.default_parameters as params
-import matplotlib.pyplot as plt
 from numba import njit
+
 from scipy.optimize import curve_fit
-from scipy.signal import medfilt
-from scipy.stats import kstest
-from scipy.stats import ks_2samp
-from scipy.stats import norm
-from scipy.signal import find_peaks
-from numba import njit
-from scipy.stats import chi2
+from scipy.signal import medfilt, find_peaks
+from scipy.stats import kstest, ks_2samp, norm, chi2
+
+import matplotlib.pyplot as plt
+
+# import bombcell.extract_raw_waveforms as erw
+# import bombcell.loading_utils as led
+# import bombcell.default_parameters as params
+from bombcell.save_utils import path_handler
+
 
 def get_waveform_max_channel(template_waveforms):
     """
@@ -141,6 +142,10 @@ def remove_duplicate_spikes(spike_times_samples, spike_templates, template_ampli
     tuple
         All of the arrays with duplicate spikes removed
     """
+
+    # Create save_path if it does not exist
+    save_path = path_handler(save_path)
+
     if param['remove_duplicate_spike']:
         # check if spikes are already extract or need to recompute
         if param['recompute_duplicate_spike'] or ~os.path.isdir(os.path.join(save_path, 'spikes._bc_duplicateSpikes.npy')):
@@ -1164,3 +1169,100 @@ def get_raw_amplitude(this_raw_waveform, gain_to_uV):
 
     return raw_amplitude
 
+def get_quality_unit_type(param, quality_metrics):
+    """
+    Assign each unit a type based of its' quality metrics.
+    unit_type == 0 all noise units
+    unit_type == 1 all good units
+    unit_type == 2 all mua units
+    unit_type == 3 all non-somatic units (if split somatic units its good non-somatic units)
+    unit_type == 4 (if split somatic units its mua non-somatic units)
+
+
+    Parameters
+    ----------
+    param : df
+        The param dataframe from ML BombCell 
+    quality_metrics : df
+        The quality metrics dataframefrom ML BombCell
+
+    Returns
+    -------
+    tuple (np array, np array)
+        Two array of the unit types one as number the other as strings
+    """
+
+    #converting dataframes to dictionary of numpy arrays
+    quality_metrics = dict(zip(quality_metrics.columns, quality_metrics.values.T))
+    param = dict(zip(param.columns, param.values.T))
+
+    
+    #Testing for non-somatic waveforms
+    is_non_somatic = np.zeros(quality_metrics['nPeaks'].shape[0])
+
+    is_non_somatic[(quality_metrics['mainTrough_size'] / np.max((quality_metrics['mainPeak_before_size'] , quality_metrics['mainPeak_after_size']), axis = 0)) < param['minTroughToPeakRatio']] = 1 
+
+    is_non_somatic[(quality_metrics['mainPeak_before_size'] / quality_metrics['mainPeak_after_size'])  > param['firstPeakRatio']] = 1
+
+    is_non_somatic[(quality_metrics['mainPeak_before_size'] * param['firstPeakRatio'] > quality_metrics['mainPeak_after_size']) & (quality_metrics['mainPeak_before_width'] < param['minWidthFirstPeak']) \
+        & (quality_metrics['mainPeak_before_size'] * param['minMainPeakToTroughRatio'] > quality_metrics['mainTrough_size']) & (quality_metrics['mainTrough_width'] < param['minWidthMainTrough'])] = 1
+
+    #Test all quality metrics
+    ## categorise units
+    # unit_type == 0 all noise units
+    # unit_type == 1 all good units
+    # unit_type == 2 all mua units
+    # unit_type == 3 all non-somatic units (if split somatic units its good non-somatic units)
+    # unit_type == 4 (if split somatic units its mua non-somatic units)
+
+    unit_type = np.full(quality_metrics['nPeaks'].shape[0], np.nan)
+
+    # classify noise
+    unit_type[np.isnan(quality_metrics['nPeaks'])] = 0
+    unit_type[quality_metrics['nPeaks']  > param['maxNPeaks']] = 0
+    unit_type[quality_metrics['nTroughs'] > param['maxNTroughs']] = 0
+    unit_type[quality_metrics['waveformDuration_peakTrough'] < param['minWvDuration']] = 0
+    unit_type[quality_metrics['waveformDuration_peakTrough'] > param['maxWvDuration']] = 0
+    unit_type[quality_metrics['waveformBaselineFlatness'] > param['maxWvBaselineFraction']] = 0
+    unit_type[quality_metrics['spatialDecaySlope'] < param['minSpatialDecaySlopeExp']] = 0
+    unit_type[quality_metrics['spatialDecaySlope'] > param['maxSpatialDecaySlopeExp']] = 0
+
+    # classify as mua
+    #ALL or ANY?
+    unit_type[np.logical_and(quality_metrics['percentageSpikesMissing_gaussian'] > param['maxPercSpikesMissing'], np.isnan(unit_type))] = 2
+    unit_type[np.logical_and(quality_metrics['nSpikes'] < param['minNumSpikes'] , np.isnan(unit_type))] = 2
+    unit_type[np.logical_and(quality_metrics['fractionRPVs_estimatedTauR']> param['maxRPVviolations'], np.isnan(unit_type))] = 2
+    unit_type[np.logical_and(quality_metrics['presenceRatio'] < param['minPresenceRatio'] , np.isnan(unit_type))] = 2
+
+    if param['extractRaw'].astype(int) == 1:
+        unit_type[np.logical_and(quality_metrics['rawAmplitude'] < param['min_aminAmplitudemplitude'] , np.isnan(unit_type))] = 2
+        unit_type[np.logical_and(quality_metrics['signalToNoiseRatio'] < param['minSNR'] , np.isnan(unit_type))] = 2
+
+    if param['computeDrift'].astype(int) == 1:
+        unit_type[np.logical_and(quality_metrics['maxDriftEstimate'] > param['maxDrift'] , np.isnan(unit_type))] = 2
+
+    if param['computeDistanceMetrics'].astype(int) == 1 & ~np.isnan(param['isoDmin'].astype(int)):
+        unit_type[np.logical_and(quality_metrics['isoD'] > param['isoDmin'] , np.isnan(unit_type))] = 2
+        unit_type[np.logical_and(quality_metrics['Lratio'] > param['lratioMax'] , np.isnan(unit_type))] = 2
+
+    unit_type[np.isnan(unit_type)] = 1 # SINGLE SEXY UNIT
+
+    if param['splitGoodAndMua_NonSomatic'].astype(int) == 1:
+        unit_type[np.logical_and(is_non_somatic == 1, unit_type == 1)] = 3 # Good non-somatic
+        unit_type[np.logical_and(is_non_somatic == 1, unit_type == 2)] = 4 # MUA non-somatic
+    else:
+        unit_type[np.logical_and(is_non_somatic == 1, unit_type != 0)] = 3 # Good non-somatic
+
+    #Have unit types as strings as well
+    unit_type_string = np.full(unit_type.size, '', dtype = object)
+    unit_type_string[unit_type == 0] = 'NOISE'
+    unit_type_string[unit_type == 1] = 'GOOD'
+    unit_type_string[unit_type == 2] = 'MUA'
+
+    if param['splitGoodAndMua_NonSomatic'].astype(int) == 1:
+        unit_type_string[unit_type == 3] = 'NON-SOMA GOOD'
+        unit_type_string[unit_type == 4] = 'NON-SOMA MUA'
+    else:
+        unit_type_string[unit_type == 3] = 'NON-SOMA'
+    
+    return unit_type, unit_type_string

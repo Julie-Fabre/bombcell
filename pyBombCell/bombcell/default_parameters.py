@@ -1,6 +1,11 @@
 import numpy as np
 
-def default_parameters(kilosort_path, raw_dir = None, kilosort_version = None, ephys_meta_dir = None, gain_to_uV = None):
+
+def default_parameters(kilosort_path,
+                       raw_dir = None,
+                       kilosort_version = None,
+                       ephys_meta_dir = None,
+                       gain_to_uV = None):
     param = {
         'show_detail_plots' : False, # show step-by-step plots
         'show_summary_plots' : True, # Summary plots of quality metrics

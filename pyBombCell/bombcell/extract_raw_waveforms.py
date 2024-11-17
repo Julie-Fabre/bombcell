@@ -1,10 +1,15 @@
 import os
-import numpy as np
+from pathlib import Path
 from joblib import Parallel, delayed
+
+import numpy as np
+
+from mtscomp import Reader
 from scipy.signal import detrend
 from scipy.ndimage import gaussian_filter
-from mtscomp import Reader
-from pathlib import Path
+
+from bombcell.save_utils import path_handler
+
 
 def read_meta(meta_path):
     """
@@ -67,6 +72,9 @@ def process_a_unit(raw_data, spike_width, half_width, all_spikes_idxs, n_channel
     cluster_raw_waveforms
         A dictionary of the necessary infomation extract from the raw data
     """
+    # Create save_path if it does not exist
+    save_path = path_handler(save_path)
+
     cluster_raw_waveforms = {}
     spike_idx = all_spikes_idxs[~np.isnan(all_spikes_idxs)]
     n_spikes_sampled = spike_idx.size
@@ -194,6 +202,8 @@ def extract_raw_waveforms(param, spike_templates, spike_times, re_extract_wavefo
     save_path : str
         The path to the direcotry where results will be saved
     """
+    # Create save_path if it does not exist
+    save_path = path_handler(save_path)
 
     #get necessary info from param
     raw_data_path = param['raw_data_dir']
@@ -205,6 +215,7 @@ def extract_raw_waveforms(param, spike_templates, spike_times, re_extract_wavefo
     save_multiple_raw = param.get('save_multiple_raw', False) #get and save data for UnitMatch
     waveform_baseline_noise = param.get('waveform_baseline_noise', 20)
 
+    
     raw_waveform_dir = os.path.join(save_path, 'templates._bc_rawWaveforms.npy')
 
     if os.path.isdir(raw_waveform_dir):

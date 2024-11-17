@@ -1,12 +1,14 @@
-import os 
+import time
 import numpy as np
-import bombcell.extract_raw_waveforms as erw
-import bombcell.load_ephys_data as led
-import bombcell.default_parameters as params
-import matplotlib.pyplot as plt
-import bombcell.quality_metrics as qm
-import time 
+
 from matplotlib.figure import Figure
+
+# import bombcell.extract_raw_waveforms as erw
+# import bombcell.loading_utils as led
+# import bombcell.default_parameters as params
+# import matplotlib.pyplot as plt
+import bombcell.quality_metrics as qm
+
 
 def show_times(times_spikes_missing_1, times_RPV_1, times_chunks_to_keep, times_spikes_missing_2, times_RPV_2, times_pressence_ratio, times_max_drift, times_waveform_shape):
     print(f'The time the first spikes missing took: {times_spikes_missing_1.sum()}')
