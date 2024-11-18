@@ -140,7 +140,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
         thisUnits_timesToUse, param);
 
     [qMetric.fractionRPVs(iUnit, :), ~, ~] = bc.qm.fractionRPviolations(theseSpikeTimes, theseAmplis, ...
-        tauR_window, param, thisUnits_timesToUse, qMetric.RPV_tauR_estimate(iUnit)); %rename: fractionRPV should be called RPVrate
+        tauR_window, param, thisUnits_timesToUse, qMetric.RPV_tauR_estimate(iUnit)); %QQ rename: fractionRPV should be called RPVrate
 
     %% presence ratio (potential false negatives)
     [qMetric.presenceRatio(iUnit)] = bc.qm.presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
