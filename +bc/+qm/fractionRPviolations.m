@@ -1,4 +1,4 @@
-function [RPVrate, nRPVs, overestimateBool] = fractionRPviolations(theseSpikeTimes, theseAmplitudes, ...
+function [RPVrate, RPVfraction, overestimateBool] = fractionRPviolations(theseSpikeTimes, theseAmplitudes, ...
     tauR, param, timeChunks, RPV_tauR_estimate)
 % JF, get the estimated fraction of refractory period violation for a unit
 % for each timeChunk
@@ -21,7 +21,8 @@ function [RPVrate, nRPVs, overestimateBool] = fractionRPviolations(theseSpikeTim
 % ------
 % RPVrate estimated false positive rate of the spikes in the given
 %   spike train.
-% nRPVs: number refractory period violations
+% RPVfraction: fraction of refractory period violations over the total
+%   number of spikes. 
 % overestimateBool: boolean, true if the number of refractory period violations
 %    is too high. we then overestimate the fraction of
 %    contamination.
@@ -34,12 +35,28 @@ function [RPVrate, nRPVs, overestimateBool] = fractionRPviolations(theseSpikeTim
 % Journal of Neuroscience 31.24 (2011): 8699-8705:
 % r = 2*(tauR - tauC) * N^2 * (1-Fp) * Fp / T , solve for Fp , fraction
 % refractory period violatons. 2 factor because rogue spikes can occur before or
-% after true spike
+% after true spike. 
+%
+% Note: there is a difference between the Hill et al.  paper (which I based 
+% this function on) and their implementation in UltraMegaSort. They use an 
+% approximation in UltraMegaSort, which I think was intended to avoid imaginary 
+% numbers. 
+% Another point: Hill et al's solution is partially incorrect because they used 
+% an expression from Meunier et al (2003) that assumed contaminating spikes 
+% came from a single neuron with a refractory period. The correct expression, 
+% derived in Llobet et al (bioRxiv 2022), accounts for contamination from true 
+% Poisson processes like electrical noise or multiple nearby neurons. However,
+% this method fails a lot and generally I get a sense that it over-estimates 
+% the RPVs significantly. I am still figuring out why this is.results but is 
+% not accurate to the solution they provide in the paper.
+% Final point: this function assumes a set tauR, but this is likely
+% different for different brain regions - IBL/Steinmetz lab nicely take this 
+% into account here: https://github.com/SteinmetzLab/slidingRefractory
 
 % initialize variables
 RPVrate = ones(length(timeChunks)-1, length(tauR));
 overestimateBool = nan(length(timeChunks)-1, length(tauR));
-nRPVs = nan(length(timeChunks)-1, length(tauR));
+RPVfraction = nan(length(timeChunks)-1, length(tauR));
 
 if param.plotDetails
     figure('Color', 'none');
@@ -58,12 +75,14 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
     % chunk ISIs
     isisChunk = diff(spikeChunk);
 
-
     % total times at which refractory period violations can occur
     for iTauR_value = 1:length(tauR)
         nRPVs = sum(diff(theseSpikeTimes(theseSpikeTimes >= timeChunks(iTimeChunk) & theseSpikeTimes < timeChunks(iTimeChunk+1))) <= tauR(iTauR_value));
+        
         RPVfraction(iTimeChunk, iTauR_value) = nRPVs / N_chunk;
+        
         overestimateBool(iTimeChunk, iTauR_value) = 0;
+        
         if param.hillOrLlobetMethod == 1 % hill method
             a = 2 * (tauR(iTauR_value) - param.tauC) * N_chunk^2 / abs(diff(timeChunks(iTimeChunk:iTimeChunk+1)));
             % observed number of refractory period violations
@@ -84,7 +103,34 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
             end
         else % Llobet method - currently frequently overstimates rate - this part needs more work and checking 
 
+        %     _compute_rp_violations_numba(nb_rp_violations, spike_trains, spike_clusters, t_c, t_r):
+        % n_units = len(nb_rp_violations)
+        % 
+        % for i in numba.prange(n_units):
+        %     spike_train = spike_trains[spike_clusters == i]
+        %     n_v = _compute_nb_violations_numba(spike_train, t_r)
+        % %     nb_rp_violations[i] += n_v
+        %     def _compute_nb_violations_numba(spike_train, t_r):
+        % n_v = 0
+        % N = len(spike_train)
+        % 
+        % for i in range(N):
+        %     for j in range(i + 1, N):
+        %         diff = spike_train[j] - spike_train[i]
+        % 
+        %         if diff > t_r:
+        %             break
+        % 
+        %         # if diff < t_c:
+        %         #     continue
+        % 
+        %         n_v += 1
+        % 
+        % return n_v
+
+
             numViolations = sum(isisChunk > param.tauC & isisChunk <= tauR(iTauR_value)); % number of observed violations
+            fpRate =  1 - sqrt(1 - numViolations*D/(Nt^2*(refDur-minISI)));
 
             % Calculate the value under the square root
             underRoot = 1 - (numViolations * (durationChunk - 2 * N_chunk * param.tauC)) / (N_chunk^2 * (tauR(iTauR_value) - param.tauC));
