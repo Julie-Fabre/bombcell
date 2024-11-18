@@ -20,9 +20,10 @@ function [RPVrate, RPVfraction, overestimateBool] = fractionRPviolations(theseSp
 % Outputs
 % ------
 % RPVrate estimated false positive rate of the spikes in the given
-%   spike train.
+%   spike train, using the Hill et al. equations or 
+% Llobet et al. equations
 % RPVfraction: fraction of refractory period violations over the total
-%   number of spikes. 
+%   number of spikes.
 % overestimateBool: boolean, true if the number of refractory period violations
 %    is too high. we then overestimate the fraction of
 %    contamination.
@@ -35,26 +36,26 @@ function [RPVrate, RPVfraction, overestimateBool] = fractionRPviolations(theseSp
 % Journal of Neuroscience 31.24 (2011): 8699-8705:
 % r = 2*(tauR - tauC) * N^2 * (1-Fp) * Fp / T , solve for Fp , fraction
 % refractory period violatons. 2 factor because rogue spikes can occur before or
-% after true spike. 
+% after true spike.
 %
-% Note: there is a difference between the Hill et al.  paper (which I based 
-% this function on) and their implementation in UltraMegaSort. They use an 
-% approximation in UltraMegaSort, which I think was intended to avoid imaginary 
-% numbers. 
-% Another point: Hill et al's solution is partially incorrect because they used 
-% an expression from Meunier et al (2003) that assumed contaminating spikes 
-% came from a single neuron with a refractory period. The correct expression, 
-% derived in Llobet et al (bioRxiv 2022), accounts for contamination from true 
-% Poisson processes like electrical noise or multiple nearby neurons. However,
-% this method fails a lot and generally I get a sense that it over-estimates 
-% the RPVs significantly. I am still figuring out why this is.results but is 
-% not accurate to the solution they provide in the paper.
+% Note: there is a difference between the Hill et al.  paper (which I based
+% this function on) and their implementation in UltraMegaSort. They use an
+% approximation in UltraMegaSort, which I think was intended to avoid imaginary
+% numbers but is not accurate to the solution they provide in the paper.
+% Another point: Hill et al's solution is partially incorrect because they used
+% an expression from Meunier et al (2003) that assumed contaminating spikes
+% came from a single neuron with a refractory period. The correct expression,
+% derived in Llobet et al (bioRxiv 2022), accounts for contamination from true
+% Poisson processes like electrical noise or multiple nearby neurons. IN
+% practice, below a rate of 30, both methods are highly correlated and
+% agree. 
 % Final point: this function assumes a set tauR, but this is likely
-% different for different brain regions - IBL/Steinmetz lab nicely take this 
+% different for different brain regions - IBL/Steinmetz lab nicely take this
 % into account here: https://github.com/SteinmetzLab/slidingRefractory
 
 % initialize variables
-RPVrate = ones(length(timeChunks)-1, length(tauR));
+RPVrate_Hill = ones(length(timeChunks)-1, length(tauR));
+RPVrate_Llobet = ones(length(timeChunks)-1, length(tauR));
 overestimateBool = nan(length(timeChunks)-1, length(tauR));
 RPVfraction = nan(length(timeChunks)-1, length(tauR));
 
@@ -77,82 +78,72 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
 
     % total times at which refractory period violations can occur
     for iTauR_value = 1:length(tauR)
-        nRPVs = sum(diff(theseSpikeTimes(theseSpikeTimes >= timeChunks(iTimeChunk) & theseSpikeTimes < timeChunks(iTimeChunk+1))) <= tauR(iTauR_value));
-        
+        thisSpikeTrain = theseSpikeTimes(theseSpikeTimes >= timeChunks(iTimeChunk) & theseSpikeTimes < timeChunks(iTimeChunk+1));
+        nRPVs = sum(diff(thisSpikeTrain) <= tauR(iTauR_value));
+
         RPVfraction(iTimeChunk, iTauR_value) = nRPVs / N_chunk;
-        
+
         overestimateBool(iTimeChunk, iTauR_value) = 0;
         
-        if param.hillOrLlobetMethod == 1 % hill method
-            a = 2 * (tauR(iTauR_value) - param.tauC) * N_chunk^2 / abs(diff(timeChunks(iTimeChunk:iTimeChunk+1)));
+            k = 2 * (tauR(iTauR_value) - param.tauC) * N_chunk^2;
+            T = abs(diff(timeChunks(iTimeChunk:iTimeChunk+1)));
+            % a = 2 * (tauR(iTauR_value) - param.tauC) * N_chunk^2 / abs(diff(timeChunks(iTimeChunk:iTimeChunk+1)));
             % observed number of refractory period violations
-            
+
             if nRPVs == 0 % no observed refractory period violations - this can
                 % also be because there are no spikes in this interval - use presence ratio to weed this out
-                RPVrate(iTimeChunk, iTauR_value) = 0;
+                RPVrate_Hill(iTimeChunk, iTauR_value) = 0;
             else % otherwise solve the equation above
-                rts = roots([-1, 1, -nRPVs / a]);
-                RPVrate(iTimeChunk, iTauR_value) = min(rts);
-                if ~isreal(RPVrate(iTimeChunk, iTauR_value)) % function returns imaginary number if r is too high
-                    overestimateBool(iTimeChunk, iTauR_value) = 1;
-                    RPVrate(iTimeChunk, iTauR_value) = nRPVs / (2 * (tauR(iTauR_value) - param.tauC) * (N_chunk - nRPVs));
+                rts = roots([k, -k, nRPVs * T]);
+                RPVrate_Hill(iTimeChunk, iTauR_value) = min(rts);
+                if ~isreal(RPVrate_Hill(iTimeChunk, iTauR_value)) % function returns imaginary number if r is too high
+                    RPVrate_Hill(iTimeChunk, iTauR_value) = nRPVs / (2 * (tauR(iTauR_value) - param.tauC) * (N_chunk - nRPVs));
                 end
-                if RPVrate(iTimeChunk, iTauR_value) > 1 % it is nonsense to have a rate >1, the assumptions are failing here
-                    RPVrate(iTimeChunk, iTauR_value) = 1;
+                if RPVrate_Hill(iTimeChunk, iTauR_value) > 1 % it is nonsense to have a rate >1, the assumptions are failing here
+                    RPVrate_Hill(iTimeChunk, iTauR_value) = 1;
+                    overestimateBool(iTimeChunk, iTauR_value) = 1;
                 end
             end
-        else % Llobet method - currently frequently overstimates rate - this part needs more work and checking 
+        
+            N = length(thisSpikeTrain);
+            isi_matrix_full = nan(N, N);
 
-        %     _compute_rp_violations_numba(nb_rp_violations, spike_trains, spike_clusters, t_c, t_r):
-        % n_units = len(nb_rp_violations)
-        % 
-        % for i in numba.prange(n_units):
-        %     spike_train = spike_trains[spike_clusters == i]
-        %     n_v = _compute_nb_violations_numba(spike_train, t_r)
-        % %     nb_rp_violations[i] += n_v
-        %     def _compute_nb_violations_numba(spike_train, t_r):
-        % n_v = 0
-        % N = len(spike_train)
-        % 
-        % for i in range(N):
-        %     for j in range(i + 1, N):
-        %         diff = spike_train[j] - spike_train[i]
-        % 
-        %         if diff > t_r:
-        %             break
-        % 
-        %         # if diff < t_c:
-        %         #     continue
-        % 
-        %         n_v += 1
-        % 
-        % return n_v
+            % Calculate pairwise ISI matrix (slightly different method for
+            % Llobet et al. - they do all ISI violations not just across neighbouring spikes)
+            isi_matrix_full = thisSpikeTrain' - thisSpikeTrain;
 
+            % Set lower triangular part and diagonal to false
+            isi_matrix_full(tril(true(N))) = nan;
 
-            numViolations = sum(isisChunk > param.tauC & isisChunk <= tauR(iTauR_value)); % number of observed violations
-            fpRate =  1 - sqrt(1 - numViolations*D/(Nt^2*(refDur-minISI)));
+            % Find violations
+            isi_violations_sum = sum(isi_matrix_full <= tauR(iTauR_value) & isi_matrix_full >= param.tauC, 'all');
 
             % Calculate the value under the square root
-            underRoot = 1 - (numViolations * (durationChunk - 2 * N_chunk * param.tauC)) / (N_chunk^2 * (tauR(iTauR_value) - param.tauC));
+            underRoot = 1 - (isi_violations_sum * (durationChunk - 2 * N_chunk * param.tauC)) / (N_chunk^2 * (tauR(iTauR_value) - param.tauC));
 
             % RPV rate
             if underRoot >= 0
-                RPVrate(iTimeChunk, iTauR_value) = 1 - sqrt(underRoot);
+                RPVrate_Llobet(iTimeChunk, iTauR_value) = 1 - sqrt(underRoot);
             else
                 % Handle the case where the value is negative
-                RPVrate(iTimeChunk, iTauR_value) = 1; % set to 1
-                overestimateBool(iTimeChunk, iTauR_value) = 1;
+                RPVrate_Llobet(iTimeChunk, iTauR_value) = 1; % set to 1
+
             end
         end
 
-    end
 
+    
+if param.hillOrLlobetMethod
+     RPVrate = RPVrate_Hill;
+else
+    RPVrate = RPVrate_Llobet;
+end
 
     if param.plotDetails
         theseISI = diff(theseSpikeTimes);
         subplot(2, length(timeChunks)-1, (length(timeChunks) - 1)+iTimeChunk)
         theseisiclean = isisChunk(theseISI >= param.tauC); % removed duplicate spikes
-        [isiProba, edgesISI] = histcounts(theseisiclean*1000, [0:0.5:10]);
+        [isiProba, edgesISI] = histcounts(theseisiclean*1000, [0:0.5:100]);
         bar(edgesISI(1:end-1)+mean(diff(edgesISI)), isiProba, 'FaceColor', [0, 0.35, 0.71], ...
             'EdgeColor', [0, 0.35, 0.71]); %Check FR
         if iTimeChunk == 1
@@ -171,15 +162,19 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
                 line([tauR(iTauR_value) * 1000, tauR(iTauR_value) * 1000], [ylims(1), ylims(2)], 'Color', [0.86, 0.2, 0.13]);
             end
             if length(tauR) == 1
-                title({[num2str(round(RPVrate(iTimeChunk, 1)*100, 1)), '% rpv']});
+                title({[num2str(RPVrate_Hill(iTimeChunk, 1)*100, '%.0f'), '% rpv (Hill)', newline, ...
+                    num2str(RPVrate_Llobet(iTimeChunk, 1)*100, '%.0f'), '% rpv (Llobet)', newline, ...
+                    'frac. rpv=', num2str(RPVfraction(iTimeChunk, 1), '%.3f')]});
             else
-                title([num2str(round(RPVrate(iTimeChunk, 1)*100, 1)), '% rpv', newline, ...
-                    num2str(round(RPVrate(iTimeChunk, length(tauR))*100, 1)), '% rpv']);
+                title([num2str(round(RPVrate_Hill(iTimeChunk, 1)*100, '%.0f')), '% rpv', newline, ...
+                    num2str(round(RPVrate_Hill(iTimeChunk, length(tauR))*100, '%.0f')), '% rpv']);
             end
 
         else
             line([tauR(RPV_tauR_estimate) * 1000, tauR(RPV_tauR_estimate) * 1000], [ylims(1), ylims(2)], 'Color', [0.86, 0.2, 0.13]);
-            title({[num2str(RPVrate(RPV_tauR_estimate)*100, 1), '% rpv']});
+            title({[num2str(RPVrate_Hill(iTimeChunk, RPV_tauR_estimate)*100, '%.0f'), '% rpv (Hill)', newline, ...
+                num2str(RPVrate_Llobet(iTimeChunk, RPV_tauR_estimate)*100, '%.0f'), '% rpv (Llobet)', newline, ...
+                'frac. rpv=', num2str(RPVfraction(iTimeChunk, RPV_tauR_estimate), '%.3f')]});
 
         end
 
