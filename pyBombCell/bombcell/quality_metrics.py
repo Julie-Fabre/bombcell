@@ -1208,12 +1208,12 @@ def get_quality_unit_type(param, quality_metrics):
     #Testing for non-somatic waveforms
     is_non_somatic = np.zeros(quality_metrics['n_peaks'].shape[0])
 
-    is_non_somatic[(quality_metrics['trough'] / np.max((quality_metrics['main_peak_before'] , quality_metrics['main_peak_after']), axis = 0)) < param['min_main_peak_to_trough_ratio']] = 1 
+    is_non_somatic[(quality_metrics['trough'] / np.max((quality_metrics['main_peak_before'] , quality_metrics['main_peak_after']), axis = 0)) < param['non_somatic_trough_peak_ratio']] = 1 
 
-    is_non_somatic[(quality_metrics['main_peak_before'] / quality_metrics['main_peak_after'])  > param['first_peak_ratio']] = 1
+    is_non_somatic[(quality_metrics['main_peak_before'] / quality_metrics['main_peak_after'])  > param['non_somatic_peak_before_to_after_ratio']] = 1
 
     is_non_somatic[(quality_metrics['main_peak_before'] * param['first_peak_ratio'] > quality_metrics['main_peak_after']) & (quality_metrics['width_before'] < param['min_width_first_peak']) \
-        & (quality_metrics['main_peak_before'] * param['min_main_peak_to_trough_ratio'] > quality_metrics['main_trough_size']) & (quality_metrics['trough_width'] < param['min_width_main_trough'])] = 1
+    & (quality_metrics['main_peak_before'] * param['min_main_peak_to_trough_ratio'] > quality_metrics['trough']) & (quality_metrics['trough_width'] < param['min_width_main_trough'])] = 1
 
     #Test all quality metrics
     ## categorise units
@@ -1229,33 +1229,33 @@ def get_quality_unit_type(param, quality_metrics):
     unit_type[np.isnan(quality_metrics['n_peaks'])] = 0
     unit_type[quality_metrics['n_peaks']  > param['max_n_peaks']] = 0
     unit_type[quality_metrics['n_troughs'] > param['max_n_troughs']] = 0
-    unit_type[quality_metrics['waveformDuration_peakTrough'] < param['minWvDuration']] = 0
-    unit_type[quality_metrics['waveformDuration_peakTrough'] > param['maxWvDuration']] = 0
-    unit_type[quality_metrics['waveformBaselineFlatness'] > param['maxWvBaselineFraction']] = 0
-    unit_type[quality_metrics['spatialDecaySlope'] < param['minSpatialDecaySlopeExp']] = 0
-    unit_type[quality_metrics['spatialDecaySlope'] > param['maxSpatialDecaySlopeExp']] = 0
+    unit_type[quality_metrics['waveform_duration_peak_trough'] < param['min_wave_duration']] = 0
+    unit_type[quality_metrics['waveform_duration_peak_trough'] > param['max_wave_duration']] = 0
+    unit_type[quality_metrics['waveform_baseline'] > param['max_wave_baseline_fraction']] = 0
+    unit_type[quality_metrics['exp_decay'] > param['min_spatial_decay_slope']] = 0
+    unit_type[quality_metrics['exp_decay'] < param['max_spatial_decay_slope']] = 0
 
     # classify as mua
     #ALL or ANY?
-    unit_type[np.logical_and(quality_metrics['percentageSpikesMissing_gaussian'] > param['maxPercSpikesMissing'], np.isnan(unit_type))] = 2
-    unit_type[np.logical_and(quality_metrics['nSpikes'] < param['minNumSpikes'] , np.isnan(unit_type))] = 2
-    unit_type[np.logical_and(quality_metrics['fractionRPVs_estimatedTauR']> param['maxRPVviolations'], np.isnan(unit_type))] = 2
-    unit_type[np.logical_and(quality_metrics['presenceRatio'] < param['minPresenceRatio'] , np.isnan(unit_type))] = 2
+    unit_type[np.logical_and(quality_metrics['percent_missing_gaussian'] > param['max_perc_spikes_missing'], np.isnan(unit_type))] = 2
+    unit_type[np.logical_and(quality_metrics['n_spikes'] < param['min_num_spikes_total'] , np.isnan(unit_type))] = 2
+    unit_type[np.logical_and(quality_metrics['fraction_RPVs']> param['max_RPV'], np.isnan(unit_type))] = 2
+    unit_type[np.logical_and(quality_metrics['presence_ratio'] < param['min_presence_ratio'] , np.isnan(unit_type))] = 2
 
-    if param['extractRaw'].astype(int) == 1:
-        unit_type[np.logical_and(quality_metrics['rawAmplitude'] < param['min_aminAmplitudemplitude'] , np.isnan(unit_type))] = 2
-        unit_type[np.logical_and(quality_metrics['signalToNoiseRatio'] < param['minSNR'] , np.isnan(unit_type))] = 2
+    if param['extract_raw_waveforms']:
+        unit_type[np.logical_and(quality_metrics['raw_amplitude'] < param['min_amplitude'] , np.isnan(unit_type))] = 2
+        unit_type[np.logical_and(quality_metrics['signal_to_noise_ratio'] < param['min_SNR'] , np.isnan(unit_type))] = 2
 
-    if param['computeDrift'].astype(int) == 1:
-        unit_type[np.logical_and(quality_metrics['maxDriftEstimate'] > param['maxDrift'] , np.isnan(unit_type))] = 2
+    if param['compute_drift']:
+        unit_type[np.logical_and(quality_metrics['max_drift_estimate'] > param['max_drift'] , np.isnan(unit_type))] = 2
 
-    if param['computeDistanceMetrics'].astype(int) == 1 & ~np.isnan(param['isoDmin'].astype(int)):
-        unit_type[np.logical_and(quality_metrics['isoD'] > param['isoDmin'] , np.isnan(unit_type))] = 2
-        unit_type[np.logical_and(quality_metrics['Lratio'] > param['lratioMax'] , np.isnan(unit_type))] = 2
+    if param['compute_distance_metrics']:
+        unit_type[np.logical_and(quality_metrics['isolation_dist'] > param['iso_d_min'] , np.isnan(unit_type))] = 2
+        unit_type[np.logical_and(quality_metrics['l_ratio'] > param['lratio_max'] , np.isnan(unit_type))] = 2
 
     unit_type[np.isnan(unit_type)] = 1 # SINGLE SEXY UNIT
 
-    if param['splitGoodAndMua_NonSomatic'].astype(int) == 1:
+    if param['split_good_and_mua_non_somatic']:
         unit_type[np.logical_and(is_non_somatic == 1, unit_type == 1)] = 3 # Good non-somatic
         unit_type[np.logical_and(is_non_somatic == 1, unit_type == 2)] = 4 # MUA non-somatic
     else:
@@ -1267,7 +1267,7 @@ def get_quality_unit_type(param, quality_metrics):
     unit_type_string[unit_type == 1] = 'GOOD'
     unit_type_string[unit_type == 2] = 'MUA'
 
-    if param['splitGoodAndMua_NonSomatic'].astype(int) == 1:
+    if param['split_good_and_mua_non_somatic']:
         unit_type_string[unit_type == 3] = 'NON-SOMA GOOD'
         unit_type_string[unit_type == 4] = 'NON-SOMA MUA'
     else:

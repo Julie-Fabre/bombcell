@@ -105,8 +105,12 @@ def save_params_as_parquet(param, save_path, file_name = '_bc_parameters._bc_qMe
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
+    #PyArrow cant save Path type objects as a parquet
+    param_save = param.copy()
+    param_save['ephys_kilosort_path'] = str(param['ephys_kilosort_path'])
+
     file_path = os.path.join(save_path, file_name)
-    param_df = pd.DataFrame.from_dict(param)
+    param_df = pd.DataFrame.from_dict(param_save)
     param_df.to_parquet(file_path)
 
 def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, save_path):
