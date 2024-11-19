@@ -20,7 +20,7 @@ function [RPVrate, RPVfraction, overestimateBool] = fractionRPviolations(theseSp
 % Outputs
 % ------
 % RPVrate estimated false positive rate of the spikes in the given
-%   spike train, using the Hill et al. equations or 
+%   spike train, using the Hill et al. equations or
 % Llobet et al. equations
 % RPVfraction: fraction of refractory period violations over the total
 %   number of spikes.
@@ -48,7 +48,7 @@ function [RPVrate, RPVfraction, overestimateBool] = fractionRPviolations(theseSp
 % derived in Llobet et al (bioRxiv 2022), accounts for contamination from true
 % Poisson processes like electrical noise or multiple nearby neurons. IN
 % practice, below a rate of 30, both methods are highly correlated and
-% agree. 
+% agree.
 % Final point: this function assumes a set tauR, but this is likely
 % different for different brain regions - IBL/Steinmetz lab nicely take this
 % into account here: https://github.com/SteinmetzLab/slidingRefractory
@@ -84,60 +84,60 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
         RPVfraction(iTimeChunk, iTauR_value) = nRPVs / N_chunk;
 
         overestimateBool(iTimeChunk, iTauR_value) = 0;
-        
-            k = 2 * (tauR(iTauR_value) - param.tauC) * N_chunk^2;
-            T = abs(diff(timeChunks(iTimeChunk:iTimeChunk+1)));
-            % a = 2 * (tauR(iTauR_value) - param.tauC) * N_chunk^2 / abs(diff(timeChunks(iTimeChunk:iTimeChunk+1)));
-            % observed number of refractory period violations
+if param.hillOrLlobetMethod
+        k = 2 * (tauR(iTauR_value) - param.tauC) * N_chunk^2;
+        T = abs(diff(timeChunks(iTimeChunk:iTimeChunk+1)));
+        % a = 2 * (tauR(iTauR_value) - param.tauC) * N_chunk^2 / abs(diff(timeChunks(iTimeChunk:iTimeChunk+1)));
+        % observed number of refractory period violations
 
-            if nRPVs == 0 % no observed refractory period violations - this can
-                % also be because there are no spikes in this interval - use presence ratio to weed this out
-                RPVrate_Hill(iTimeChunk, iTauR_value) = 0;
-            else % otherwise solve the equation above
-                rts = roots([k, -k, nRPVs * T]);
-                RPVrate_Hill(iTimeChunk, iTauR_value) = min(rts);
-                if ~isreal(RPVrate_Hill(iTimeChunk, iTauR_value)) % function returns imaginary number if r is too high
-                    RPVrate_Hill(iTimeChunk, iTauR_value) = nRPVs / (2 * (tauR(iTauR_value) - param.tauC) * (N_chunk - nRPVs));
-                end
-                if RPVrate_Hill(iTimeChunk, iTauR_value) > 1 % it is nonsense to have a rate >1, the assumptions are failing here
-                    RPVrate_Hill(iTimeChunk, iTauR_value) = 1;
-                    overestimateBool(iTimeChunk, iTauR_value) = 1;
-                end
+        if nRPVs == 0 % no observed refractory period violations - this can
+            % also be because there are no spikes in this interval - use presence ratio to weed this out
+            RPVrate_Hill(iTimeChunk, iTauR_value) = 0;
+        else % otherwise solve the equation above
+            rts = roots([k, -k, nRPVs * T]);
+            RPVrate_Hill(iTimeChunk, iTauR_value) = min(rts);
+            if ~isreal(RPVrate_Hill(iTimeChunk, iTauR_value)) % function returns imaginary number if r is too high
+                RPVrate_Hill(iTimeChunk, iTauR_value) = nRPVs / (2 * (tauR(iTauR_value) - param.tauC) * (N_chunk - nRPVs));
             end
-        
-            N = length(thisSpikeTrain);
-            isi_matrix_full = nan(N, N);
-
-            % Calculate pairwise ISI matrix (slightly different method for
-            % Llobet et al. - they do all ISI violations not just across neighbouring spikes)
-            isi_matrix_full = thisSpikeTrain' - thisSpikeTrain;
-
-            % Set lower triangular part and diagonal to false
-            isi_matrix_full(tril(true(N))) = nan;
-
-            % Find violations
-            isi_violations_sum = sum(isi_matrix_full <= tauR(iTauR_value) & isi_matrix_full >= param.tauC, 'all');
-
-            % Calculate the value under the square root
-            underRoot = 1 - (isi_violations_sum * (durationChunk - 2 * N_chunk * param.tauC)) / (N_chunk^2 * (tauR(iTauR_value) - param.tauC));
-
-            % RPV rate
-            if underRoot >= 0
-                RPVrate_Llobet(iTimeChunk, iTauR_value) = 1 - sqrt(underRoot);
-            else
-                % Handle the case where the value is negative
-                RPVrate_Llobet(iTimeChunk, iTauR_value) = 1; % set to 1
-
+            if RPVrate_Hill(iTimeChunk, iTauR_value) > 1 % it is nonsense to have a rate >1, the assumptions are failing here
+                RPVrate_Hill(iTimeChunk, iTauR_value) = 1;
+                overestimateBool(iTimeChunk, iTauR_value) = 1;
             end
         end
+else % this method is slower
+        N = length(thisSpikeTrain);
+        isi_matrix_full = nan(N, N);
 
+        % Calculate pairwise ISI matrix (slightly different method for
+        % Llobet et al. - they do all ISI violations not just across neighbouring spikes)
+        isi_matrix_full = thisSpikeTrain' - thisSpikeTrain;
 
-    
-if param.hillOrLlobetMethod
-     RPVrate = RPVrate_Hill;
-else
-    RPVrate = RPVrate_Llobet;
+        % Set lower triangular part and diagonal to false
+        isi_matrix_full(tril(true(N))) = nan;
+
+        % Find violations
+        isi_violations_sum = sum(isi_matrix_full <= tauR(iTauR_value) & isi_matrix_full >= param.tauC, 'all');
+
+        % Calculate the value under the square root
+        underRoot = 1 - (isi_violations_sum * (durationChunk - 2 * N_chunk * param.tauC)) / (N_chunk^2 * (tauR(iTauR_value) - param.tauC));
+
+        % RPV rate
+        if underRoot >= 0
+            RPVrate_Llobet(iTimeChunk, iTauR_value) = 1 - sqrt(underRoot);
+        else
+            % Handle the case where the value is negative
+            RPVrate_Llobet(iTimeChunk, iTauR_value) = 1; % set to 1
+
+        end
 end
+    end
+
+
+    if param.hillOrLlobetMethod
+        RPVrate = RPVrate_Hill;
+    else
+        RPVrate = RPVrate_Llobet;
+    end
 
     if param.plotDetails
         theseISI = diff(theseSpikeTimes);
@@ -162,18 +162,16 @@ end
                 line([tauR(iTauR_value) * 1000, tauR(iTauR_value) * 1000], [ylims(1), ylims(2)], 'Color', [0.86, 0.2, 0.13]);
             end
             if length(tauR) == 1
-                title({[num2str(RPVrate_Hill(iTimeChunk, 1)*100, '%.0f'), '% rpv (Hill)', newline, ...
-                    num2str(RPVrate_Llobet(iTimeChunk, 1)*100, '%.0f'), '% rpv (Llobet)', newline, ...
+                title({[num2str(RPVrate(iTimeChunk, 1)*100, '%.0f'), '% rpv', newline, ...
                     'frac. rpv=', num2str(RPVfraction(iTimeChunk, 1), '%.3f')]});
             else
-                title([num2str(round(RPVrate_Hill(iTimeChunk, 1)*100, '%.0f')), '% rpv', newline, ...
-                    num2str(round(RPVrate_Hill(iTimeChunk, length(tauR))*100, '%.0f')), '% rpv']);
+                title([num2str(round(RPVrate(iTimeChunk, 1)*100, '%.0f')), '% rpv', newline, ...
+                    num2str(round(RPVrate(iTimeChunk, length(tauR))*100, '%.0f')), '% rpv']);
             end
 
         else
             line([tauR(RPV_tauR_estimate) * 1000, tauR(RPV_tauR_estimate) * 1000], [ylims(1), ylims(2)], 'Color', [0.86, 0.2, 0.13]);
-            title({[num2str(RPVrate_Hill(iTimeChunk, RPV_tauR_estimate)*100, '%.0f'), '% rpv (Hill)', newline, ...
-                num2str(RPVrate_Llobet(iTimeChunk, RPV_tauR_estimate)*100, '%.0f'), '% rpv (Llobet)', newline, ...
+            title({[num2str(RPVrate(iTimeChunk, RPV_tauR_estimate)*100, '%.0f'), '% rpv', newline, ...
                 'frac. rpv=', num2str(RPVfraction(iTimeChunk, RPV_tauR_estimate), '%.3f')]});
 
         end
