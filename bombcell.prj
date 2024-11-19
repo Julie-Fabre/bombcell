@@ -1,5 +1,5 @@
 <deployment-project plugin="plugin.toolbox" plugin-version="1.0">
-  <configuration file="/home/julie/Dropbox/MATLAB/onPaths/bombcell/bombcell.prj" location="/home/julie/Dropbox/MATLAB/onPaths/bombcell" name="bombcell" target="target.toolbox" target-name="Package Toolbox">
+  <configuration build-checksum="3750464635" file="/home/julie/Dropbox/MATLAB/onPaths/bombcell/bombcell.prj" location="/home/julie/Dropbox/MATLAB/onPaths/bombcell" name="bombcell" target="target.toolbox" target-name="Package Toolbox">
     <param.appname>bombcell</param.appname>
     <param.authnamewatermark>Julie Fabre</param.authnamewatermark>
     <param.email>julie.mfabre@gmail.com</param.email>
@@ -35,18 +35,10 @@
 %
 
 .git
-.github</param.exclude.filters>
+.github
+.toy_data</param.exclude.filters>
     <param.exclude.pcodedmfiles>true</param.exclude.pcodedmfiles>
-    <param.examples>&lt;?xml version="1.0" encoding="utf-8"?&gt;
-&lt;examples&gt;
-   &lt;exampleCategory name="bombcell"&gt;
-      &lt;example name="gettingStarted" type="html"&gt;
-         &lt;file type="source"&gt;/html/gettingStarted.html&lt;/file&gt;
-         &lt;file type="main"&gt;/gettingStarted.mlx&lt;/file&gt;
-         &lt;file type="thumbnail"/&gt;
-      &lt;/example&gt;
-   &lt;/exampleCategory&gt;
-&lt;/examples&gt;</param.examples>
+    <param.examples />
     <param.demosxml />
     <param.apps />
     <param.registered.apps />
@@ -85,6 +77,7 @@
       <param.products.version />
       <param.platforms />
       <param.exclude.pcodedmfiles />
+      <param.examples />
       <param.demosxml />
       <param.apps />
       <param.registered.apps />
@@ -116,12 +109,10 @@
       <file>${PROJECT_ROOT}/LICENSE</file>
       <file>${PROJECT_ROOT}/README.md</file>
       <file>${PROJECT_ROOT}/demos</file>
-      <file>${PROJECT_ROOT}/demos.xml</file>
-      <file>${PROJECT_ROOT}/doc</file>
       <file>${PROJECT_ROOT}/docs</file>
       <file>${PROJECT_ROOT}/gettingStarted.mlx</file>
-      <file>${PROJECT_ROOT}/html</file>
       <file>${PROJECT_ROOT}/pipelines</file>
+      <file>${PROJECT_ROOT}/release</file>
       <file>${PROJECT_ROOT}/toy_data</file>
     </fileset.rootfiles>
     <fileset.depfun.included>
