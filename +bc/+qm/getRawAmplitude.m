@@ -25,10 +25,9 @@ end
 if strcmp(metaFile, 'NaN') == 0
     if contains(metaFile, 'oebin')
         % open ephys format
-        scalingFactor = bc.load.readOEMetaFile(metaFile);
+        scalingFactor = bc.load.readOEMetaFile(metaFile); % single sclaing factor per channel for now 
     else
         % spikeGLX format
-
         [scalingFactor, ~, ~] = bc.load.readSpikeGLXMetaFile(metaFile, probeType);
     end
 else
