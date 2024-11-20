@@ -1,4 +1,4 @@
-function [scalingFactor, channelMapImro, probeType] = readSpikeGLXMetaFile(metaFile, probeType, peakChan)
+function [scalingFactor_uV, channelMapImro, probeType] = readSpikeGLXMetaFile(metaFile, probeType, peakChan)
 % JF
 % read spikeGLX meta file and calculate scaling factor value to convert raw data to
 % microvolts
@@ -32,7 +32,6 @@ gain_allChannels = bc.dependencies.SGLX_readMeta.ChanGainsIM(meta);
 allChannels_index = bc.dependencies.SGLX_readMeta.OriginalChans(meta);
 thisChannel = find(allChannels_index == peakChan);
 thisGain = gain_allChannels(thisChannel);
-thisGain_uV = thisGain * 10e3;
 
 % bits_encoding 
 bits_encoding = meta.imMaxInt;
@@ -42,5 +41,5 @@ Vrange = meta.imAiRangeMax;
 
 % calculate scaling factor
 scalingFactor = Vrange / bits_encoding / thisGain;
-
+scalingFactor_uV = scalingFactor * 1000;
 end

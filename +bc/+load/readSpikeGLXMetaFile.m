@@ -32,7 +32,6 @@ gain_allChannels = bc.dependencies.SGLX_readMeta.ChanGainsIM(meta);
 allChannels_index = bc.dependencies.SGLX_readMeta.OriginalChans(meta);
 thisChannel = find(allChannels_index == peakChan);
 thisGain = gain_allChannels(thisChannel);
-thisGain_uV = thisGain * 10e3;
 
 % bits_encoding 
 bits_encoding = meta.imMaxInt;
