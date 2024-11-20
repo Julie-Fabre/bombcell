@@ -85,6 +85,9 @@ maxChannels = bc.qm.helpers.getWaveformMaxChannel(templateWaveforms);
     spikeTimes_samples, spikeClusters, param.reextractRaw, savePath, param.verbose); % takes ~10' for
 % an average dataset, the first time it is run, <1 min after that
 
+% get analog voltage scaling factor 
+scalingFactors = bc.qm.helpers.getAnalogToVoltageScaling(param);
+
 % remove any duplicate spikes
 [uniqueTemplates, ~, spikeTimes_samples, spikeTemplates, templateAmplitudes, ...
     pcFeatures, rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio, ...
@@ -166,7 +169,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
     %% amplitude
     if param.extractRaw
         qMetric.rawAmplitude(iUnit) = bc.qm.getRawAmplitude(rawWaveformsFull(thisUnit,  rawWaveformsPeakChan(thisUnit), :), ...
-            rawWaveformsPeakChan(thisUnit), param.ephysMetaFile, param.probeType, param.gain_to_uV);
+            rawWaveformsPeakChan(thisUnit), scalingFactors);
     else
         qMetric.rawAmplitude(iUnit) = NaN;
         qMetric.signalToNoiseRatio(iUnit) = NaN;
