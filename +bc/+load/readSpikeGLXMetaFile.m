@@ -1,4 +1,4 @@
-function [scalingFactor_uV, channelMapImro, probeType] = readSpikeGLXMetaFile(metaFile, probeType, peakChan)
+function [scalingFactor_uV, channelMapImro, probeType] = readSpikeGLXMetaFile(param)
 % JF
 % read spikeGLX meta file and calculate scaling factor value to convert raw data to
 % microvolts
@@ -12,6 +12,9 @@ function [scalingFactor_uV, channelMapImro, probeType] = readSpikeGLXMetaFile(me
 % scaling factor: double, scaling factor value to convert raw data to
 % microvolts
 %
+metaFile = param.ephysMetaFile;
+probeType = param.probeType;
+recordingChannels_n = param.nChannels - param.nSyncChannels;
 
 meta = bc.dependencies.SGLX_readMeta.ReadMeta(metaFile);
 
@@ -30,16 +33,19 @@ probeType = meta.imDatPrb_type;
 % gain 
 gain_allChannels = bc.dependencies.SGLX_readMeta.ChanGainsIM(meta);
 allChannels_index = bc.dependencies.SGLX_readMeta.OriginalChans(meta);
-thisChannel = find(allChannels_index == peakChan);
-thisGain = gain_allChannels(thisChannel);
+
+allChannels_index(allChannels_index > recordingChannels_n) = []; % remove sync
+
+[~, sort_idx]= sort(allChannels_index);
+gain_allChannels_ordered = gain_allChannels(sort_idx);
 
 % bits_encoding 
-bits_encoding = meta.imMaxInt;
+bits_encoding = str2num(meta.imMaxInt);
 
 % voltage range
-Vrange = meta.imAiRangeMax;
+Vrange = str2num(meta.imAiRangeMax);
 
 % calculate scaling factor
-scalingFactor = Vrange / bits_encoding / thisGain;
-scalingFactor_uV = scalingFactor * 1000;
+scalingFactor = Vrange / bits_encoding ./ gain_allChannels_ordered;
+scalingFactor_uV = scalingFactor * 1e6;
 end

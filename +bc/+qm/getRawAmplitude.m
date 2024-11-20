@@ -1,4 +1,4 @@
-function rawAmplitude_uV = getRawAmplitude(rawWaveforms, peakChan, metaFile, probeType, gain_to_uV)
+function rawAmplitude = getRawAmplitude(rawWaveforms, peakChan, scalingFactors)
 % JF, Get the amplitude of the mean raw waveform for a unit
 % ------
 % Inputs
@@ -21,20 +21,10 @@ else
     probeType = num2str(probeType);
 end
 
-% get scaling factor 
-if strcmp(metaFile, 'NaN') == 0
-    if contains(metaFile, 'oebin')
-        % open ephys format
-        scalingFactor_uV = bc.load.readOEMetaFile(metaFile); % single sclaing factor per channel for now 
-    else
-        % spikeGLX format
-        [scalingFactor_uV, ~, ~] = bc.load.readSpikeGLXMetaFile(metaFile, probeType, peakChan);
-    end
-else
-    scalingFactor_uV = gain_to_uV;
-end
+% get scaling factor for peak chan 
+scalingFactor = scalingFactors(peakChan);
     
-    % scale waveforms to get amplitude in microVolts 
-    rawWaveforms = rawWaveforms .* scalingFactor_uV;
-    rawAmplitude_uV = abs(max(rawWaveforms)) + abs(min(rawWaveforms));
+% scale waveforms to get amplitude in microVolts 
+rawWaveforms = rawWaveforms .* scalingFactor;
+rawAmplitude_uV = abs(max(rawWaveforms)) + abs(min(rawWaveforms));
 end
