@@ -1,4 +1,4 @@
-function rawAmplitude = getRawAmplitude(rawWaveforms, peakChan, scalingFactors)
+function rawAmplitude_uV = getRawAmplitude(rawWaveforms, peakChan, scalingFactors)
 % JF, Get the amplitude of the mean raw waveform for a unit
 % ------
 % Inputs
