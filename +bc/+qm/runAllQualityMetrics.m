@@ -165,8 +165,8 @@ for iUnit = 1:size(uniqueTemplates, 1)
 
     %% amplitude
     if param.extractRaw
-        qMetric.rawAmplitude(iUnit) = bc.qm.getRawAmplitude(rawWaveformsFull(thisUnit, rawWaveformsPeakChan(thisUnit), :), ...
-            param.ephysMetaFile, param.probeType, param.gain_to_uV);
+        qMetric.rawAmplitude(iUnit) = bc.qm.getRawAmplitude(rawWaveformsFull(thisUnit, :, :), ...
+            rawWaveformsPeakChan(thisUnit), param.ephysMetaFile, param.probeType, param.gain_to_uV);
     else
         qMetric.rawAmplitude(iUnit) = NaN;
         qMetric.signalToNoiseRatio(iUnit) = NaN;

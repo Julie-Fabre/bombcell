@@ -4,7 +4,7 @@
 % Simple class of MATLAB functions deomonstrating
 % how to read and manipulate SpikeGLX meta and binary files.
 % When this file is included in the MATLAB path, the individual methods
-% are called with SGLX_readMeta.<function name>
+% are called with bc.dependencies.SGLX_readMeta.<function name>
 %
 % The most important method in the class is ReadMeta().
 % The functions for reading binary data are not optimized for speed,
@@ -34,13 +34,16 @@ methods(Static)
 % utility functions below.
 %
 function [meta] = ReadMeta(binName, path)
-
+    if nargin < 2
+    full_path_meta = binName;
+    else
     % Create the matching metafile name
     [~,name,~] = fileparts(binName);
     metaName = strcat(name, '.meta');
-
+    full_path_meta = fullfile(path, metaName);
+    end
     % Parse ini file into cell entries C{1}{i} = C{2}{i}
-    fid = fopen(fullfile(path, metaName), 'r');
+    fid = fopen(full_path_meta, 'r');
 % -------------------------------------------------------------
 %    Need 'BufSize' adjustment for MATLAB earlier than 2014
 %    C = textscan(fid, '%[^=] = %[^\r\n]', 'BufSize', 32768);
@@ -101,7 +104,7 @@ function digArray = ExtractDigital(dataArray, meta, dwReq, dLineList)
     % Get channel index of requested digital word dwReq
     switch meta.typeThis
         case 'imec'
-            [AP, LF, SY] = SGLX_readMeta.ChannelCountsIM(meta);
+            [AP, LF, SY] = bc.dependencies.SGLX_readMeta.ChannelCountsIM(meta);
             if SY == 0
                 fprintf('No imec sync channel saved\n');
                 digArray = [];
@@ -110,7 +113,7 @@ function digArray = ExtractDigital(dataArray, meta, dwReq, dLineList)
                 digCh = AP + LF + dwReq;
             end
         case 'nidq'
-            [MN,MA,XA,DW] = SGLX_readMeta.ChannelCountsNI(meta);
+            [MN,MA,XA,DW] = bc.dependencies.SGLX_readMeta.ChannelCountsNI(meta);
             if dwReq > DW
                 fprintf('Maximum digital word in file = %d\n', DW);
                 digArray = [];
@@ -119,7 +122,7 @@ function digArray = ExtractDigital(dataArray, meta, dwReq, dLineList)
                 digCh = MN + MA + XA + dwReq;
             end
         case 'obx'
-            [XA,DW,SY] = SGLX_readMeta.ChannelCountsOBX(meta);
+            [XA,DW,SY] = bc.dependencies.SGLX_readMeta.ChannelCountsOBX(meta);
             if dwReq > DW
                 fprintf('Maximum digital word in file = %d\n', DW);
                 digArray = [];
@@ -317,7 +320,7 @@ function [APgain,LFgain, APChan0_to_uV, LFChan0_to_uV] = ChanGainsIM(meta)
             APgain = APgain + 1;
         end
     end
-    fI2V = SGLX_readMeta.Int2Volts(meta);
+    fI2V = bc.dependencies.SGLX_readMeta.Int2Volts(meta);
     APChan0_to_uV = 1e6*fI2V/APgain(1);
     if size(LFgain) > 0
         LFChan0_to_uV = 1e6*fI2V/LFgain(1);
@@ -341,12 +344,12 @@ end % ChanGainsIM
 %
 function dataArray = GainCorrectNI(dataArray, chanList, meta)
 
-    [MN,MA] = SGLX_readMeta.ChannelCountsNI(meta);
-    fI2V = SGLX_readMeta.Int2Volts(meta);
+    [MN,MA] = bc.dependencies.SGLX_readMeta.ChannelCountsNI(meta);
+    fI2V = bc.dependencies.SGLX_readMeta.Int2Volts(meta);
 
     for i = 1:length(chanList)
         j = chanList(i);    % index into timepoint
-        conv = fI2V / SGLX_readMeta.ChanGainNI(j, MN, MA, meta);
+        conv = fI2V / bc.dependencies.SGLX_readMeta.ChanGainNI(j, MN, MA, meta);
         dataArray(j,:) = dataArray(j,:) * conv;
     end
 end % GainCorrectNI
@@ -365,7 +368,7 @@ end % GainCorrectNI
 %
 function dataArray = GainCorrectOBX(dataArray, chanList, meta)
 
-    fI2V = SGLX_readMeta.Int2Volts(meta);
+    fI2V = bc.dependencies.SGLX_readMeta.Int2Volts(meta);
 
     for i = 1:length(chanList)
         j = chanList(i);    % index into timepoint
@@ -388,13 +391,13 @@ end % GainCorrectOBX
 function dataArray = GainCorrectIM(dataArray, chanList, meta)
 
     % Look up gain with acquired channel ID
-    chans = SGLX_readMeta.OriginalChans(meta);
-    [APgain,LFgain] = SGLX_readMeta.ChanGainsIM(meta);
+    chans = bc.dependencies.SGLX_readMeta.OriginalChans(meta);
+    [APgain,LFgain] = bc.dependencies.SGLX_readMeta.ChanGainsIM(meta);
     nAP = length(APgain);
     nNu = nAP * 2;
 
     % Common conversion factor
-    fI2V = SGLX_readMeta.Int2Volts(meta);
+    fI2V = bc.dependencies.SGLX_readMeta.Int2Volts(meta);
 
     for i = 1:length(chanList)
         j = chanList(i);    % index into timepoint
@@ -421,7 +424,7 @@ function bankTimes = svyBankTimes(meta)
                 'EndOfLine', ')' );
     
     nBank = numel(C{1}) + 1;  % bank0/shank0 is at time = 0
-    srate = SGLX_readMeta.SampRate(meta);
+    srate = bc.dependencies.SGLX_readMeta.SampRate(meta);
 
     bankTimes = zeros([nBank,4], "double");
     bankTimes(2:nBank,1) = double(C{1});
@@ -470,6 +473,7 @@ end % writeMeta
 % streamStr, e.g. 'ap' or 'lf'
 %
 %
+
 function [runName,gateStr,triggerStr,probeStr,streamStr] = parseFileName(fileName)
 
     % Remove extension, if present
