@@ -1,4 +1,4 @@
-function [scalingFactor, channelMapImro, probeType] = readSpikeGLXMetaFile(metaFile, probeType)
+function [scalingFactor, channelMapImro, probeType] = readSpikeGLXMetaFile(metaFile, probeType, peakChan)
 % JF
 % read spikeGLX meta file and calculate scaling factor value to convert raw data to
 % microvolts

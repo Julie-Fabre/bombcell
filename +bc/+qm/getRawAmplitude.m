@@ -28,7 +28,7 @@ if strcmp(metaFile, 'NaN') == 0
         scalingFactor = bc.load.readOEMetaFile(metaFile); % single sclaing factor per channel for now 
     else
         % spikeGLX format
-        [scalingFactor, ~, ~] = bc.load.readSpikeGLXMetaFile(metaFile, probeType);
+        [scalingFactor, ~, ~] = bc.load.readSpikeGLXMetaFile(metaFile, probeType, peakChan);
     end
 else
     scalingFactor = gain_to_uV;
