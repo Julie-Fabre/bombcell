@@ -48,6 +48,7 @@ To begin using Bombcell:
 
 In addition we would like to acknowledge:
 - to compute fast ACGs, we use a function (`CCGHeart.c`) part of the [FMAToolbox](https://fmatoolbox.sourceforge.net/), and it is already included in bombcell.
+- to read in spikeGLX meta data, we use a function from Jennifer Colonell's [SpikeGLX_Datafile_Tools]([SpikeGLX_Datafile_Tools](https://github.com/jenniferColonell/SpikeGLX_Datafile_Tools) repository. 
 
 ### 🤗 Support and citing
 
