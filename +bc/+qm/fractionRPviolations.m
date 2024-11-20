@@ -105,30 +105,23 @@ if param.hillOrLlobetMethod
             end
         end
 else % this method is slower
-        N = length(thisSpikeTrain);
-        isi_matrix_full = nan(N, N);
-
-        % Calculate pairwise ISI matrix (slightly different method for
-        % Llobet et al. - they do all ISI violations not just across neighbouring spikes)
-        isi_matrix_full = thisSpikeTrain' - thisSpikeTrain;
-
-        % Set lower triangular part and diagonal to false
-        isi_matrix_full(tril(true(N))) = nan;
-
-        % Find violations
-        isi_violations_sum = sum(isi_matrix_full <= tauR(iTauR_value) & isi_matrix_full >= param.tauC, 'all');
-
-        % Calculate the value under the square root
-        underRoot = 1 - (isi_violations_sum * (durationChunk - 2 * N_chunk * param.tauC)) / (N_chunk^2 * (tauR(iTauR_value) - param.tauC));
-
-        % RPV rate
-        if underRoot >= 0
-            RPVrate_Llobet(iTimeChunk, iTauR_value) = 1 - sqrt(underRoot);
-        else
-            % Handle the case where the value is negative
-            RPVrate_Llobet(iTimeChunk, iTauR_value) = 1; % set to 1
-
+    N = length(thisSpikeTrain);
+    isi_violations_sum = 0;
+    
+    for i = 1:N
+        for j = i+1:N
+            isi = thisSpikeTrain(j) - thisSpikeTrain(i);
+            if isi <= tauR(iTauR_value) && isi >= param.tauC
+                isi_violations_sum = isi_violations_sum + 1;
+            end
         end
+    end
+    underRoot = 1 - (isi_violations_sum * (durationChunk - 2 * N_chunk * param.tauC)) / (N_chunk^2 * (tauR(iTauR_value) - param.tauC));
+    if underRoot >= 0
+        RPVrate_Llobet(iTimeChunk, iTauR_value) = 1 - sqrt(underRoot);
+    else
+        RPVrate_Llobet(iTimeChunk, iTauR_value) = 1;
+    end
 end
     end
 
