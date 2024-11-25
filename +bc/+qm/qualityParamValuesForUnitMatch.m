@@ -68,8 +68,8 @@ end
 
 % refractory period parameters - change closer together
 paramBC.tauR_valuesMin = 2/1000; % refractory period time (s), usually 0.0020 change
-paramBC.tauR_valuesStep = 0.5./1000; % refractory period time (s), usually 0.0020
-paramBC.tauR_valuesMax = 2./1000; % refractory period time (s), usually 0.0020
+paramBC.tauR_valuesStep = 0.5/1000; % refractory period time (s), usually 0.0020
+paramBC.tauR_valuesMax = 2/1000; % refractory period time (s), usually 0.0020
 paramBC.tauC = 0.1/1000; % censored period time (s)
 paramBC.hillOrLlobetMethod = 1; % 1 to use Hill et al method; 0 to use Llobet et al method
 
