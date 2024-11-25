@@ -71,7 +71,7 @@ paramBC.tauR_valuesMin = 2/1000; % refractory period time (s), usually 0.0020 ch
 paramBC.tauR_valuesStep = 0.5./1000; % refractory period time (s), usually 0.0020
 paramBC.tauR_valuesMax = 2./1000; % refractory period time (s), usually 0.0020
 paramBC.tauC = 0.1/1000; % censored period time (s)
-paramBC.hillOrLlobetMethod = 1; % 1 to use Hill et al method; 2 to use Llobet et al method
+paramBC.hillOrLlobetMethod = 1; % 1 to use Hill et al method; 0 to use Llobet et al method
 
 % percentage spikes missing parameters 
 paramBC.computeTimeChunks = 0; % compute fraction refractory period violations 
