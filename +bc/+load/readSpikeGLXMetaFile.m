@@ -19,7 +19,11 @@ recordingChannels_n = param.nChannels - param.nSyncChannels;
 meta = bc.dependencies.SGLX_readMeta.ReadMeta(metaFile);
 
 % channelMapImro 
-channelMapImro = meta.imRoFile;
+if isfield(meta, 'imRoFile')
+    channelMapImro = meta.imRoFile;
+elseif isfield(meta, 'imroFile')
+    channelMapImro = meta.imRoFile;
+end
 if isempty(channelMapImro) % default was used
     if strcmp(probeType, '0')
         channelMapImro = 'NPtype21_bank0_ref0';

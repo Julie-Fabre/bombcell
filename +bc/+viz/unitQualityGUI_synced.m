@@ -70,7 +70,7 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, 
             end
             
             
-        elseif strcmpi(evnt.Key, 'g') %toggle to next single-unit
+        elseif strcmpi(evnt.Key, 'g') % toggle to next single-unit
             iCluster = goodUnit_idx(find(goodUnit_idx > iCluster, 1, 'first')); 
             if ~isempty(iCluster)
                 updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
@@ -78,7 +78,7 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, 
             else
                 disp('Done cycling through good units.')
             end
-        elseif strcmpi(evnt.Key, 'm') %toggle to next multi-unit
+        elseif strcmpi(evnt.Key, 'm') % toggle to next multi-unit
             iCluster = multiUnit_idx(find(multiUnit_idx > iCluster, 1, 'first'));
             if ~isempty(iCluster)
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
@@ -86,7 +86,7 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, 
             else
                 disp('Done cycling through MUA units.')
             end
-        elseif strcmpi(evnt.Key, 'n') %toggle to next  noise unit
+        elseif strcmpi(evnt.Key, 'n') % toggle to next noise unit
             iCluster = noiseUnit_idx(find(noiseUnit_idx > iCluster, 1, 'first'));
             if ~isempty(iCluster)
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
@@ -94,7 +94,7 @@ updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, 
             else
                 disp('Done cycling through noise units.')
             end
-       elseif strcmpi(evnt.Key, 'a') %toggle to next  non-somatic unit
+       elseif strcmpi(evnt.Key, 'a') % toggle to next non-somatic unit
             iCluster = nonSomaUnit_idx(find(nonSomaUnit_idx > iCluster, 1, 'first'));
             if ~isempty(iCluster)
             updateUnit(unitQualityGuiHandle, memMapData, ephysData, rawWaveforms, iCluster, qMetric, forGUI, param, ...
