@@ -22,7 +22,7 @@ meta = bc.dependencies.SGLX_readMeta.ReadMeta(metaFile);
 if isfield(meta, 'imRoFile')
     channelMapImro = meta.imRoFile;
 elseif isfield(meta, 'imroFile')
-    channelMapImro = meta.imRoFile;
+    channelMapImro = meta.imroFile;
 end
 if isempty(channelMapImro) % default was used
     if strcmp(probeType, '0')
