@@ -13,10 +13,12 @@ function [scalingFactor_uV, channelMapImro, probeType] = readSpikeGLXMetaFile(pa
 % microvolts
 %
 metaFile = param.ephysMetaFile;
-probeType = param.probeType;
 recordingChannels_n = param.nChannels - param.nSyncChannels;
 
 meta = bc.dependencies.SGLX_readMeta.ReadMeta(metaFile);
+
+% probeType 
+probeType = meta.imDatPrb_type;
 
 % channelMapImro 
 if isfield(meta, 'imRoFile')
@@ -30,8 +32,7 @@ if isempty(channelMapImro) % default was used
     end
 end
 
-% probeType 
-probeType = meta.imDatPrb_type;
+
 
 %% scaling factor 
 % gain 
