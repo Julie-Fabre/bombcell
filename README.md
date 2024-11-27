@@ -2,7 +2,12 @@
 [![License](https://img.shields.io/badge/license-GPLv3-yellow)](https://github.com/Julie-Fabre/bombcell/blob/master/LICENSE)
 [![View bombcell on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://uk.mathworks.com/matlabcentral/fileexchange/136619-bombcell)
 
-# 💣 Bombcell: find bombshell cells! 💣 <img src="./docs/images/bombcell_logo_crop.svg" width="25%" title="bombcell" alt="bombcell" align="right" vspace = "20">
+# 💣 Bombcell: find bombshell cells! 💣 
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="./docs/images/bombcell_logo_crop.svg"  width="25%" title="bombcell" alt="bombcell" align="right" vspace = "20">
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/images/bombcell_logo_crop_DARK.svg" width="25%" title="bombcell" alt="bombcell" align="right" vspace = "20">
+  <img alt="Shows a black logo in light color mode and a white one in dark color mode." width="25%" title="bombcell" alt="bombcell" align="right" vspace = "20">
+</picture>
 
 Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem, evaluating the quality of recorded units and extracting essential electrophysiological properties. Bombcell can replace manual curation or can be used as a tool to aid manual curation. See [this talk](https://youtu.be/CvXUtGzkXIY?si=lHkLN885OCb4WJEv) at the annual Neuropixels course about quality control.
 
