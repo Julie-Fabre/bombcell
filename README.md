@@ -4,8 +4,8 @@
 
 # 💣 Bombcell: find bombshell cells! 💣 
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="./docs/images/bombcell_logo_crop.svg"  width="25%" title="bombcell" alt="bombcell" align="right" vspace = "20">
-  <source media="(prefers-color-scheme: dark)" srcset="./docs/images/bombcell_logo_crop_DARK.svg" width="25%" title="bombcell" alt="bombcell" align="right" vspace = "20">
+  <source media="(prefers-color-scheme: light)" srcset="./docs/images/bombcell_logo_crop.svg"  width="40%" title="bombcell" alt="bombcell" align="right" vspace = "20">
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/images/bombcell_logo_crop_DARK.svg" width="40%" title="bombcell" alt="bombcell" align="right" vspace = "20">
   <img alt="Shows a black logo in light color mode and a white one in dark color mode." width="25%" title="bombcell" alt="bombcell" align="right" vspace = "20">
 </picture>
 
