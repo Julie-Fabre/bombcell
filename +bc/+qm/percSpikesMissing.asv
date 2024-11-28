@@ -224,10 +224,10 @@ if param.plotDetails
 
          %dd outlier line and label
         outlier_line = quantiles(2) + iqr_threshold*iqr;
-        yline(outlier_line, 'Color', [0.5430, 0, 0.5430], 'LineWidth', 1.5)
-        text([xlims(2), xlims(2)] * [0.98; 0.02], [outlier_line, outlier_line] * [1.0; 0.91], 'Outlier Threshold', ...
+        yline(outlier_line, 'r--', 'LineWidth', 1.5)
+        text([xlims(2), xlims(2)] * [0.98; 0.02], [outlier_line, outlier_line] * [1.05; 0.95], 'Outlier Threshold', ...
             'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom', ...
-            'Color', [0.5430, 0, 0.5430], 'FontWeight', 'bold')
+            'Color', 'p', 'FontWeight', 'bold')
 
     end
     xlabel('time (s)')

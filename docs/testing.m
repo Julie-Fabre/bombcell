@@ -1,5 +1,5 @@
 % Set paths
-test_dataset_location = '/home/julie/Downloads/OneDrive_1_25-11-2024/';
+test_dataset_location = '/home/julie/Downloads/kilosort4-20241127T195144Z-001/kilosort4/';
 
 % These paths below are the paths you will need to input to load data and save the computed quality metrics / ephys properties. Here we are leaving ephysRawFile as "NaN" to not load raw data (it is too cumbersome to store these large files on github). All metrics relating to raw data (amplitude, signal to noise ratio) will not be computed. 
 ephysKilosortPath = test_dataset_location;
