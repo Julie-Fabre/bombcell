@@ -5,9 +5,9 @@ from matplotlib.figure import Figure
 
 from tqdm.auto import tqdm
 
-# import bombcell.extract_raw_waveforms as erw
-# import bombcell.loading_utils as led
-# import bombcell.default_parameters as params
+import bombcell.extract_raw_waveforms as erw
+import bombcell.loading_utils as led
+import bombcell.default_parameters as pf
 # import matplotlib.pyplot as plt
 import bombcell.quality_metrics as qm
 
@@ -332,6 +332,41 @@ def set_unit_nan(unit_idx, quality_metrics, not_enough_spikes):
 
 def get_all_quality_metrics(unique_templates, spike_times_seconds, spike_templates, template_amplitudes, time_chunks, 
                             pc_features, pc_features_idx, quality_metrics, raw_waveforms_full, channel_positions, template_waveforms, param):
+    """
+    This function runs all of the quality metric calculations
+
+    Parameters
+    ----------
+    unique_templates : ndarray
+        An of unique id for each unit
+    spike_times_seconds : ndarray
+        The times of spikes in seconds
+    spike_templates : ndarray
+        The id of each spike
+    template_amplitudes : ndarray
+        The amplitude for each spike
+    time_chunks : ndarray
+        The time chunks to use
+    pc_features : ndarray
+        The principal components of the data
+    pc_features_idx : ndarray
+        The unit and channel indexes for the principal components
+    quality_metrics : dict
+        The empty quality metrics dictionary
+    raw_waveforms_full : ndarray
+        The raw extracted waveforms
+    channel_positions : ndarray
+        The max channels of each unit
+    template_waveforms : ndarray
+        The template waveforms for each unit
+    param : dict
+        The dictionary of parameters
+
+    Returns
+    -------
+    (dict, dict)
+        The quality_metrics dictionary and the times taken for each section
+    """
     #Collect the time it takes to run each section
     times_spikes_missing_1 = np.zeros(unique_templates.shape[0])
     times_RPV_1 = np.zeros(unique_templates.shape[0])
@@ -440,99 +475,112 @@ def get_all_quality_metrics(unique_templates, spike_times_seconds, spike_templat
 
     return quality_metrics, times
 
-#Function is in quality_metrics.py
-# def get_quality_unit_type(param, quality_metrics):
-#     """
-#     Assign each unit a type based of its' quality metrics.
-#     unit_type == 0 all noise units
-#     unit_type == 1 all good units
-#     unit_type == 2 all mua units
-#     unit_type == 3 all non-somatic units (if split somatic units its good non-somatic units)
-#     unit_type == 4 (if split somatic units its mua non-somatic units)
+def run_bombcell(ks_dir, raw_dir, save_path, gain_to_uV, unit_match = False):
+    """
+    This function runs the entire bombcell pipeline from input data paths
+
+    Parameters
+    ----------
+    ks_dir : string
+        The path to the KiloSort (or equivalent) save directory
+    raw_dir : string
+        The path to the raw data directory
+    save_path : string
+        The path to the directory to save the bombcell results
+    gain_to_uV : float
+        The gain if not giving a .meta (or equivalent) file in raw_dir
+    unit_match : bool, optional
+        If True will use parameters for UnitMatch to save two units per session for cross verification
+        , by default False
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+    spike_times_samples, spike_templates, template_waveforms, template_amplitudes, \
+            pc_features, pc_features_idx, channel_positions, good_channels = led.load_ephys_data(ks_dir)
+
+    #ephys_raw_data and gain_to_uv will be None if no raw_dir given
+    ephys_raw_data, meta_path, gain_to_uV = manage_if_raw_data(raw_dir)
+
+    if unit_match:
+        param = pf.default_parameters_for_unitmatch(ks_dir, raw_dir = raw_dir, ephys_meta_dir = meta_path)
+    else:
+        param = pf.default_parameters(ks_dir, raw_dir = raw_dir, ephys_meta_dir = meta_path)
+
+    # Extract or load in raw waveforms
+    if raw_dir != None:
+        raw_waveforms_full, raw_waveforms_peak_channel, SNR = erw.extract_raw_waveforms(
+                            param,
+                            spike_templates.squeeze(),
+                            spike_times_samples.squeeze(),
+                            param['re_extract_raw'],
+                            save_path
+                            )
+    else:
+        raw_waveforms_full = None
+        raw_waveforms_peak_channel = None
+        SNR = None
+        param['extract_raw_waveforms'] = False #No waveforms to extract!
+
+    # pre-load peak channels
+    max_channels = qm.get_waveform_max_channel(template_waveforms)
+
+    # Remove duplicate spikes
+    (non_empty_units,
+    duplicate_spike_idx,
+    spike_times_samples,
+    spike_templates,
+    template_amplitudes,
+    pc_features,
+    raw_waveforms_full,
+    raw_waveforms_peak_channel,
+    signal_to_noise_ratio,
+    max_channels) = \
+        qm.remove_duplicate_spikes(spike_times_samples,
+                                spike_templates,
+                                template_amplitudes,
+                                max_channels,
+                                save_path,
+                                param,
+                                pc_features = pc_features,
+                                raw_waveforms_full = raw_waveforms_full,
+                                raw_waveforms_peak_channel = raw_waveforms_peak_channel, 
+                                signal_to_noise_ratio = SNR)
 
 
-#     Parameters
-#     ----------
-#     param : df
-#         The param dataframe from ML BombCell 
-#     quality_metrics : df
-#         The quality metrics dataframefrom ML BombCell
+    # Divide recording into time chunks
+    spike_times_seconds = spike_times_samples / param['ephys_sample_rate']
+    if param['compute_time_chunks']:
+        time_chunks = np.arange(np.min(spike_times_seconds), np.max(spike_times_seconds), param['delta_time_chunk'])
+    else:
+        time_chunks = np.array((np.min(spike_times_seconds), np.max(spike_times_seconds)))
 
-#     Returns
-#     -------
-#     tuple (np array, np array)
-#         Two array of the unit types one as number the other as strings
-#     """
-    
-#     #Testing for non-somatic waveforms
-#     is_non_somatic = np.zeros(quality_metrics['n_peaks'].shape[0])
+    # Should be got as part of removing duplicate spikes!!! 
+    unique_templates = np.unique(spike_templates) 
 
-#     is_non_somatic[(quality_metrics['trough'] / np.max((quality_metrics['main_peak_before'] , quality_metrics['main_peak_after']), axis = 0)) < param['non_somatic_trough_peak_ratio']] = 1 
+    # Initialize quality metrics dictionary
+    n_units = unique_templates.size
+    quality_metrics = create_quality_metrics_dict(n_units, snr = SNR)
+    quality_metrics['max_channels'] = max_channels
+    param['use_hill_method'] = True # use the old method for RPVs
+    param['compute_time_chunks'] = False
 
-#     is_non_somatic[(quality_metrics['main_peak_before'] / quality_metrics['main_peak_after'])  > param['non_somatic_peak_before_to_after_ratio']] = 1
+    # Complete with remaining quality metrics
+    quality_metrics, times = get_all_quality_metrics(unique_templates,
+                                                        spike_times_seconds,
+                                                        spike_templates,
+                                                        template_amplitudes,
+                                                        time_chunks,
+                                                        pc_features,
+                                                        pc_features_idx,
+                                                        quality_metrics,
+                                                        raw_waveforms_full,
+                                                        channel_positions,
+                                                        template_waveforms, param)
+    return quality_metrics, param, unique_templates, raw_waveforms_full, raw_waveforms_peak_channel
 
-#     is_non_somatic[(quality_metrics['main_peak_before'] * param['first_peak_ratio'] > quality_metrics['main_peak_after']) & (quality_metrics['width_before'] < param['min_width_first_peak']) \
-#     & (quality_metrics['main_peak_before'] * param['min_main_peak_to_trough_ratio'] > quality_metrics['trough']) & (quality_metrics['trough_width'] < param['min_width_main_trough'])] = 1
-
-#     #Test all quality metrics
-#     ## categorise units
-#     # unit_type == 0 all noise units
-#     # unit_type == 1 all good units
-#     # unit_type == 2 all mua units
-#     # unit_type == 3 all non-somatic units (if split somatic units its good non-somatic units)
-#     # unit_type == 4 (if split somatic units its mua non-somatic units)
-
-#     unit_type = np.full(quality_metrics['n_peaks'].shape[0], np.nan)
-
-#     # classify noise
-#     unit_type[np.isnan(quality_metrics['n_peaks'])] = 0
-#     unit_type[quality_metrics['n_peaks']  > param['max_n_peaks']] = 0
-#     unit_type[quality_metrics['n_troughs'] > param['max_n_troughs']] = 0
-#     unit_type[quality_metrics['waveform_duration_peak_trough'] < param['min_wave_duration']] = 0
-#     unit_type[quality_metrics['waveform_duration_peak_trough'] > param['max_wave_duration']] = 0
-#     unit_type[quality_metrics['waveform_baseline'] > param['max_wave_baseline_fraction']] = 0
-#     unit_type[quality_metrics['exp_decay'] > param['min_spatial_decay_slope']] = 0
-#     unit_type[quality_metrics['exp_decay'] < param['max_spatial_decay_slope']] = 0
-
-#     # classify as mua
-#     #ALL or ANY?
-#     unit_type[np.logical_and(quality_metrics['percent_missing_gaussian'] > param['max_perc_spikes_missing'], np.isnan(unit_type))] = 2
-#     unit_type[np.logical_and(quality_metrics['n_spikes'] < param['min_num_spikes_total'] , np.isnan(unit_type))] = 2
-#     unit_type[np.logical_and(quality_metrics['fraction_RPVs']> param['max_RPV'], np.isnan(unit_type))] = 2
-#     unit_type[np.logical_and(quality_metrics['presence_ratio'] < param['min_presence_ratio'] , np.isnan(unit_type))] = 2
-
-#     if param['extract_raw_waveforms']:
-#         unit_type[np.logical_and(quality_metrics['raw_amplitude'] < param['min_amplitude'] , np.isnan(unit_type))] = 2
-#         unit_type[np.logical_and(quality_metrics['signal_to_noise_ratio'] < param['min_SNR'] , np.isnan(unit_type))] = 2
-
-#     if param['compute_drift']:
-#         unit_type[np.logical_and(quality_metrics['max_drift_estimate'] > param['max_drift'] , np.isnan(unit_type))] = 2
-
-#     if param['compute_distance_metrics']:
-#         unit_type[np.logical_and(quality_metrics['isolation_dist'] > param['iso_d_min'] , np.isnan(unit_type))] = 2
-#         unit_type[np.logical_and(quality_metrics['l_ratio'] > param['lratio_max'] , np.isnan(unit_type))] = 2
-
-#     unit_type[np.isnan(unit_type)] = 1 # SINGLE SEXY UNIT
-
-#     if param['split_good_and_mua_non_somatic']:
-#         unit_type[np.logical_and(is_non_somatic == 1, unit_type == 1)] = 3 # Good non-somatic
-#         unit_type[np.logical_and(is_non_somatic == 1, unit_type == 2)] = 4 # MUA non-somatic
-#     else:
-#         unit_type[np.logical_and(is_non_somatic == 1, unit_type != 0)] = 3 # Good non-somatic
-
-#     #Have unit types as strings as well
-#     unit_type_string = np.full(unit_type.size, '', dtype = object)
-#     unit_type_string[unit_type == 0] = 'NOISE'
-#     unit_type_string[unit_type == 1] = 'GOOD'
-#     unit_type_string[unit_type == 2] = 'MUA'
-
-#     if param['split_good_and_mua_non_somatic']:
-#         unit_type_string[unit_type == 3] = 'NON-SOMA GOOD'
-#         unit_type_string[unit_type == 4] = 'NON-SOMA MUA'
-#     else:
-#         unit_type_string[unit_type == 3] = 'NON-SOMA'
-    
-#     return unit_type, unit_type_string
 
 def make_qm_table(quality_metrics, param, unique_templates, unit_type):
     # classify noise
@@ -596,5 +644,29 @@ def make_qm_table(quality_metrics, param, unique_templates, unit_type):
     qm_table_array = np.vstack((unique_templates, qm_table_array))
     #DO this for the optional params
     qm_table = pd.DataFrame(qm_table_array, index = ['Original ID', 'NaN result', 'Peaks', 'Troughs', 'Waveform Min Length', 'Waveform Max Length', 'Baseline', 'Spatial Decay', \
-                                                    'Min Spikes', 'Missing Spikes', 'RPVs', 'Presence Ratio', 'Not Somatic', 'Good Unit']).T
+                                                    'Min Spikes', 'Missing Spikes', 'RPVs', 'Presence Ratio', 'Somatic', 'Good Unit']).T
     return qm_table
+
+
+def manage_if_raw_data(raw_dir):
+    """
+    This function handles the decompression of raw data and extraction of gain if a raw_dir is given
+
+    Parameters
+    ----------
+    raw_dir : str / None
+        Either a string with the path to the raw data directory or None
+
+    Returns
+    -------
+    tuple
+        The raw data path the meta directory path and the gain if applicable
+    """
+    if raw_dir != None:
+        ephys_raw_data, meta_path = erw.manage_data_compression(raw_dir, decompressed_data_local = raw_dir)
+        gain_to_uV = erw.get_gain_spikeglx(meta_path)
+        return ephys_raw_data, meta_path, gain_to_uV
+    else:
+        return None, None, None
+
+    

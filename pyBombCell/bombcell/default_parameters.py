@@ -41,7 +41,7 @@ def default_parameters(kilosort_path,
                                         # bombcell will estimate values in between using
                                         # tauR_values_steps
         'tauC' : 0.1/1000, # censored period time (s), to prevent duplicate spikes
-        'use_hill_method' : 1, # use hill if 1, else use Llobet et al.
+        'use_hill_method' : True, # use hill if 1, else use Llobet et al.
         
         ## Percentage spikes missing parameters
         'compute_time_chunks' : True, # compute fraction refractory period violations and
@@ -169,6 +169,7 @@ def default_parameters_for_unitmatch(kilosort_path, raw_dir = None, kilosort_ver
                                         # bombcell will estimate values in between using
                                         # tauR_values_steps
         'tauC' : 0.1/1000, # censored period time (s), to prevent duplicate spikes
+        'use_hill_method' : True, # use hill if 1, else use Llobet et al.
         
         ## Percentage spikes missing parameters
         'compute_time_chunks' : False, # compute fraction refractory period violations and
