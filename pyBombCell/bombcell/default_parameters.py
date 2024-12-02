@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def default_parameters(kilosort_path,
+def get_default_parameters(kilosort_path,
                        raw_dir = None,
                        kilosort_version = None,
                        ephys_meta_dir = None,

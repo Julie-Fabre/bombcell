@@ -10,7 +10,7 @@ import bombcell.loading_utils as led
 import bombcell.default_parameters as pf
 # import matplotlib.pyplot as plt
 import bombcell.quality_metrics as qm
-
+import bombcell.save_utils as su
 
 def show_times(times_spikes_missing_1, times_RPV_1, times_chunks_to_keep, times_spikes_missing_2, times_RPV_2, times_pressence_ratio, times_max_drift, times_waveform_shape):
     print(f'The time the first spikes missing took: {times_spikes_missing_1.sum()}')
@@ -475,7 +475,7 @@ def get_all_quality_metrics(unique_templates, spike_times_seconds, spike_templat
 
     return quality_metrics, times
 
-def run_bombcell(ks_dir, raw_dir, save_path, gain_to_uV, unit_match = False):
+def run_bombcell(ks_dir, raw_dir, save_path, gain_to_uV, param):
     """
     This function runs the entire bombcell pipeline from input data paths
 
@@ -489,9 +489,8 @@ def run_bombcell(ks_dir, raw_dir, save_path, gain_to_uV, unit_match = False):
         The path to the directory to save the bombcell results
     gain_to_uV : float
         The gain if not giving a .meta (or equivalent) file in raw_dir
-    unit_match : bool, optional
-        If True will use parameters for UnitMatch to save two units per session for cross verification
-        , by default False
+    param : dict
+        The param dictionary
 
     Returns
     -------
@@ -501,13 +500,6 @@ def run_bombcell(ks_dir, raw_dir, save_path, gain_to_uV, unit_match = False):
     spike_times_samples, spike_templates, template_waveforms, template_amplitudes, \
             pc_features, pc_features_idx, channel_positions, good_channels = led.load_ephys_data(ks_dir)
 
-    #ephys_raw_data and gain_to_uv will be None if no raw_dir given
-    ephys_raw_data, meta_path, gain_to_uV = manage_if_raw_data(raw_dir)
-
-    if unit_match:
-        param = pf.default_parameters_for_unitmatch(ks_dir, raw_dir = raw_dir, ephys_meta_dir = meta_path)
-    else:
-        param = pf.default_parameters(ks_dir, raw_dir = raw_dir, ephys_meta_dir = meta_path)
 
     # Extract or load in raw waveforms
     if raw_dir != None:
@@ -579,7 +571,12 @@ def run_bombcell(ks_dir, raw_dir, save_path, gain_to_uV, unit_match = False):
                                                         raw_waveforms_full,
                                                         channel_positions,
                                                         template_waveforms, param)
-    return quality_metrics, param, unique_templates, raw_waveforms_full, raw_waveforms_peak_channel
+    
+    unit_type, unit_type_string = qm.get_quality_unit_type(param, quality_metrics) #JF: this should be inside bc.get_all_quality_metrics
+
+    su.save_results(quality_metrics, unit_type_string, unique_templates, param, raw_waveforms_full, raw_waveforms_peak_channel, save_path) #JF: this should be inside bc.get_all_quality_metrics
+
+    return quality_metrics, param, unique_templates, raw_waveforms_full, raw_waveforms_peak_channel, unit_type, unit_type_string
 
 
 def make_qm_table(quality_metrics, param, unique_templates, unit_type):
