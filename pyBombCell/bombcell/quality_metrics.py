@@ -5,7 +5,7 @@ from numba import njit
 
 from scipy.optimize import curve_fit
 from scipy.signal import medfilt, find_peaks
-from scipy.stats import kstest, ks_2samp, norm, chi2
+from scipy.stats import norm, chi2
 
 import matplotlib.pyplot as plt
 
@@ -539,7 +539,7 @@ def time_chunks_to_keep(percent_missing_gaussian, fraction_RPVs, time_chunks, th
 
             chunk_lengths = chunk_ends - chunk_starts + 1
 
-            longest_chunk = np.max(chunk_lengths)
+            longest_chunk = np.max(chunk_lengths)  # JF: i don't think is used
             longest_chunk_idx = np.argmax(chunk_lengths)
 
             longest_chunk_start = use_these_times_temp[chunk_starts[longest_chunk_idx].astype(int)]
@@ -775,7 +775,7 @@ def waveform_shape(template_waveforms, this_unit, max_channels, channel_position
   
 
         #get the main trough, if multiple trough have the same value choose first 
-        main_trough = np.min(this_waveform[trough_locs])
+        main_trough = np.min(this_waveform[trough_locs])  # JF: i don't think is used
         main_trough_idx = np.argmin(this_waveform[trough_locs])
         trough_loc = trough_locs[main_trough_idx]
         troughs = np.abs(this_waveform[trough_locs])
@@ -840,7 +840,7 @@ def waveform_shape(template_waveforms, this_unit, max_channels, channel_position
                     peaks_after_locs += trough_loc
 
             if peaks_after_locs.size == 0:
-                width_after = 0
+                width_after = 0 # JF: i don't think is used
                 peaks_after_locs = np.argmax(this_waveform[trough_loc:]) + trough_loc
 
             
@@ -857,7 +857,7 @@ def waveform_shape(template_waveforms, this_unit, max_channels, channel_position
         peaks_before_locs = np.atleast_1d(np.asarray(peaks_before_locs))
         main_peak_before = np.max(this_waveform[peaks_before_locs])
         main_peak_before_idx = np.argmax(this_waveform[peaks_before_locs])
-        main_peak_before_loc = peaks_before_locs[main_peak_before_idx]
+        main_peak_before_loc = peaks_before_locs[main_peak_before_idx] # JF: i don't think is used
 
         peaks_after_locs = np.atleast_1d(np.asarray(peaks_after_locs))
         main_peak_after = np.max(this_waveform[peaks_after_locs])
@@ -893,7 +893,7 @@ def waveform_shape(template_waveforms, this_unit, max_channels, channel_position
         n_troughs = troughs.size
 
         #waveform peak to trough duration
-        max_waveform_abs_value = np.max(np.abs(this_waveform))
+        max_waveform_abs_value = np.max(np.abs(this_waveform)) # JF: i don't think is used
         max_waveform_location = np.argmax(np.abs(this_waveform))
         max_waveform_value = this_waveform[max_waveform_location] # signed value
         if max_waveform_value > 0: #positive peak
@@ -1078,9 +1078,9 @@ def get_distance_metrics(pc_features, pc_features_idx, this_unit, spike_template
 
     # precompute unique identifiers and allocate space for outputs
     unique_ids = np.unique(spike_templates[spike_templates > 0]) 
-    mahalanobis_distance = np.zeros(unique_ids.size)
-    other_units_double = np.zeros(unique_ids.size)
-    #NOTE the first dimension here maybethe prbolem?
+    mahalanobis_distance = np.zeros(unique_ids.size) # JF: i don't think is used
+    other_units_double = np.zeros(unique_ids.size) # JF: i don't think is used
+    #NOTE the first dimension here maybe the prbolem?
     other_features= np.zeros((pc_features.shape[0], pc_features.shape[1], param['n_channels_iso_dist']))
     other_features_ind = np.full((pc_features.shape[0], param['n_channels_iso_dist']), np.nan)
     n_count = 0 # ML/python difference
@@ -1121,11 +1121,11 @@ def get_distance_metrics(pc_features, pc_features_idx, this_unit, spike_template
     isolation_dist = np.nan
     L_ratio = np.nan
     silhouette_score = np.nan
-    mahal_D = np.nan
-    histrogram_mahal_units_counts = np.nan
-    histrogram_mahal_units_edges = np.nan
-    histrogram_mahal_noise_counts = np.nan
-    histrogram_mahal_noise_edges = np.nan
+    mahal_D = np.nan # JF: I don't think this is used 
+    histogram_mahal_units_counts = np.nan
+    histogram_mahal_units_edges = np.nan
+    histogram_mahal_noise_counts = np.nan
+    histogram_mahal_noise_edges = np.nan
 
     #reshape features for the mahalanobis distance calc if there are other features
     #any other units have spikes at active channels and enough spikes to test
@@ -1143,7 +1143,7 @@ def get_distance_metrics(pc_features, pc_features_idx, this_unit, spike_template
             isolation_dist = mahal_sort[n_spikes]
         
         mahal_self = custom_mahal_loop(these_features, these_features)
-        mahal_self_sort = np.sort(mahal_self)
+        mahal_self_sort = np.sort(mahal_self) # JF: I don't think this is used 
 
     # plt.hist(mahal_self, bins = 50, range = (0, np.quantile(mahal_self, 0.995)), density = True, histtype = 'step', label = 'mahal')
     # plt.hist(mahal_sort, bins = 50, range = (0, np.quantile(mahal_sort, 0.995)), density = True, histtype = 'step', label = 'inter unit mahal')
@@ -1152,8 +1152,8 @@ def get_distance_metrics(pc_features, pc_features_idx, this_unit, spike_template
     # plt.ylabel('probability')
     # plt.legend()
 
-    return isolation_dist, L_ratio, silhouette_score, histrogram_mahal_units_counts, histrogram_mahal_units_edges,\
-           histrogram_mahal_noise_counts, histrogram_mahal_noise_edges
+    return isolation_dist, L_ratio, silhouette_score, histogram_mahal_units_counts, histogram_mahal_units_edges,\
+           histogram_mahal_noise_counts, histogram_mahal_noise_edges
 
 def get_raw_amplitude(this_raw_waveform, gain_to_uV):
     """

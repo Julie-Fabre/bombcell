@@ -7,7 +7,6 @@ from tqdm.auto import tqdm
 
 import bombcell.extract_raw_waveforms as erw
 import bombcell.loading_utils as led
-import bombcell.default_parameters as pf
 # import matplotlib.pyplot as plt
 import bombcell.quality_metrics as qm
 import bombcell.save_utils as su
@@ -85,7 +84,8 @@ def order_good_sites(good_sites, channel_pos):
 
 def nearest_channels(quality_metrics, channel_positions, this_unit, unique_templates):
 
-    unit_id = unique_templates[this_unit]
+    unit_id = unique_templates[this_unit] # JF: this function needs some cleaning up
+
     max_channel = quality_metrics['max_channels'][unit_id].squeeze()
 
 
@@ -137,8 +137,8 @@ def nearest_channels(quality_metrics, channel_positions, this_unit, unique_templ
 
 
 def plot_raw_waveforms(quality_metrics, channel_positions, this_unit, waveform, unique_templates):
-
-    unit_id = unique_templates[this_unit]
+    
+    unit_id = unique_templates[this_unit] # JF: this function needs some cleaning up
 
     fig = Figure(figsize=(4,6), dpi = 100)
     fig.set_tight_layout(False)
@@ -161,7 +161,7 @@ def plot_raw_waveforms(quality_metrics, channel_positions, this_unit, waveform, 
     sub_max_y = np.nanmax(waveform[unit_id,:,good_channels])
 
     # shift each waveform so 0 is at the channel site, 1/9 is width of a y waveform plot
-    waveform_y_offset = (np.abs(sub_max_y) / (np.abs(sub_min_y) + np.abs(sub_max_y)) ) * 1/8
+    waveform_y_offset = (np.abs(sub_max_y) / (np.abs(sub_min_y) + np.abs(sub_max_y)) ) * 1/8 # JF: i don't think is used
 
     #make the main scatter positiose site as scatter with opacity 
     # main_ax.scatter(channel_positions[good_channels,0], channel_positions[good_channels,1], c = 'grey', alpha = 0.3)
@@ -234,7 +234,7 @@ def plot_raw_waveforms(quality_metrics, channel_positions, this_unit, waveform, 
 
 def show_unit(template_waveforms, this_unit, unique_templates, quality_metrics, channel_positions, param, unit_type = None):
     print_unit_qm(quality_metrics, this_unit, param, unit_type = unit_type)
-    unit_id = unique_templates[this_unit]
+    unit_id = unique_templates[this_unit] # JF: i don't think is used
 
     fig = plot_raw_waveforms(quality_metrics, channel_positions, this_unit, template_waveforms, unique_templates)
     return fig
@@ -274,9 +274,9 @@ def create_quality_metrics_dict(n_units, snr = None):
 
     quality_metrics['n_peaks'] = np.full(n_units, np.nan)
     quality_metrics['n_troughs'] = np.full(n_units, np.nan)
-    quality_metrics['is_somatic'] = np.full(n_units, np.nan)
+    quality_metrics['is_somatic'] = np.full(n_units, np.nan) # JF: I don't think we need this?
     quality_metrics['waveform_duration_peak_trough'] = np.full(n_units, np.nan)
-    #quality_metrics['spatial_decay_slope'] = np.zeros(unique_templates.shape[0])
+    #quality_metrics['spatial_decay_slope'] = np.zeros(unique_templates.shape[0]) # JF: Don't we need this? Ah or is it called exp_decay? Can you use the same name as in MATLAB :) ? 
     quality_metrics['waveform_baseline'] = np.full(n_units, np.nan)
     quality_metrics['linear_decay'] = np.full(n_units, np.nan)
     quality_metrics['exp_decay'] = np.full(n_units, np.nan)
@@ -312,9 +312,8 @@ def set_unit_nan(unit_idx, quality_metrics, not_enough_spikes):
         quality_metrics['cumulatve_drift_estimate'][unit_idx] = np.nan
         quality_metrics['n_peaks'][unit_idx] = np.nan
         quality_metrics['n_troughs'][unit_idx] = np.nan
-        #quality_metrics['is_somatic'][unit_idx] = np.nan
         quality_metrics['waveform_duration_peak_trough'][unit_idx] = np.nan
-        #quality_metrics['spatial_decay_slope'][unit_idx] = np.nan
+        #quality_metrics['spatial_decay_slope'][unit_idx] = np.nan # JF: Don't we need this? 
         quality_metrics['waveform_baseline'][unit_idx] = np.nan
         quality_metrics['raw_amplitude'][unit_idx] = np.nan
 
@@ -326,7 +325,7 @@ def set_unit_nan(unit_idx, quality_metrics, not_enough_spikes):
         quality_metrics['width_before'][unit_idx] = np.nan
         quality_metrics['trough_width'][unit_idx] = np.nan
 
-        quality_metrics['is_somatic'][unit_idx] = np.nan
+        quality_metrics['is_somatic'][unit_idx] = np.nan # JF: I don't think we need this?
 
         return quality_metrics, not_enough_spikes
 
@@ -595,7 +594,7 @@ def make_qm_table(quality_metrics, param, unique_templates, unit_type):
 
     ##
     too_shallow_decay = quality_metrics['exp_decay'] > param['min_spatial_decay_slope']
-    to_steap_decay = quality_metrics['exp_decay'] < param['max_spatial_decay_slope']
+    to_steep_decay = quality_metrics['exp_decay'] < param['max_spatial_decay_slope'] # JF: i don't think is used, but it should be?
     # classify as mua
     #ALL or ANY?
 
@@ -608,12 +607,12 @@ def make_qm_table(quality_metrics, param, unique_templates, unit_type):
     too_many_RPVs = quality_metrics['fraction_RPVs']> param['max_RPV']
 
     if param['extract_raw_waveforms']:
-        too_small_amplitude = quality_metrics['raw_amplitude'] < param['min_amplitude'] 
+        too_small_amplitude = quality_metrics['raw_amplitude'] < param['min_amplitude'] # JF: i don't think is used, but it should be?
 
-        too_small_SNR =  quality_metrics['signal_to_noise_ratio'] < param['min_SNR'] 
+        too_small_SNR =  quality_metrics['signal_to_noise_ratio'] < param['min_SNR'] # JF: i don't think is used, but it should be?
 
     if param['compute_drift']:
-        too_large_drift = quality_metrics['max_drift_estimate'] > param['max_drift']
+        too_large_drift = quality_metrics['max_drift_estimate'] > param['max_drift'] # JF: i don't think is used, but it should be?
 
     # determine if ALL unit is somatic or non-somatic
     param['non_somatic_trough_peak_ratio'] = 1.25

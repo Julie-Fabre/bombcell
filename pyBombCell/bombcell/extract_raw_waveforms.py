@@ -251,9 +251,7 @@ def extract_raw_waveforms(param, spike_templates, spike_times, re_extract_wavefo
 
         raw_data = np.memmap(raw_data_path, dtype = 'int16', shape =(int(n_elements / n_channels_rec), n_channels_rec))
 
-        #filter so only spik0se which have a full have width recordedcan be sampled
-        # spike_templates_filt = np.delete(spike_templates, np.logical_or( (spike_times < half_width), ( spike_times > (raw_data.shape[0] - spike_width + half_width))))
-        # spike_times_filt = np.delete(spike_times, np.logical_or( (spike_times < half_width), ( spike_times > (raw_data.shape[0] - spike_width + half_width))))
+        #filter so only spikes which have a full have width recordedcan be sampled
         spike_templates_filt = spike_templates[np.logical_or(half_width < spike_times, spike_times < raw_data.shape[0] - spike_width + half_width)]
         spike_times_filt = spike_times[np.logical_or(half_width < spike_times, spike_times < raw_data.shape[0] - spike_width + half_width)]
 
@@ -285,9 +283,9 @@ def extract_raw_waveforms(param, spike_templates, spike_times, re_extract_wavefo
         raw_waveforms, raw_waveforms_full, raw_waveforms_peak_channel, average_baseline = unpack_dicts(all_waveforms, spike_width, n_clusters, unique_clusters, clus_spike_times,
                   n_channels, n_sync_channels, waveform_baseline_noise)
         
-        #Final processing and saving data
+        # Final processing and saving data
         average_baseline_cat = average_baseline.reshape(-1)
-        #NOTE not +1 !!!
+        # NOTE not +1 !
         average_baseline_idx = np.hstack( [(np.ones(waveform_baseline_noise) * i) for i in range(n_clusters)] )
 
         #save both arrays
@@ -300,8 +298,7 @@ def extract_raw_waveforms(param, spike_templates, spike_times, re_extract_wavefo
         SNR = np.zeros(n_clusters)
         for cid in range(n_clusters):
             max_value = np.max(raw_waveforms_full[cid, raw_waveforms_peak_channel[cid].astype(int),:]) # max value from peak channel
-            #noise_est = np.var(average_baseline_cat[average_baseline_idx == cid]) #variance of the average_baseline
-            #Mean average deaviation
+            #Mean average deviation
             noise_est = np.nanmean(np.abs(average_baseline_cat[average_baseline_idx == cid] - np.nanmean(average_baseline_cat[average_baseline_idx == cid])))
             SNR[cid] = max_value / noise_est
 
