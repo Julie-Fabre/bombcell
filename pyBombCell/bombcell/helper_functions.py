@@ -763,8 +763,7 @@ def run_bombcell(ks_dir, raw_dir, save_path, param):
             (np.min(spike_times_seconds), np.max(spike_times_seconds))
         )
 
-    # Should be got as part of removing duplicate spikes!!!
-    unique_templates = np.unique(spike_templates)
+    unique_templates = non_empty_units
 
     # Initialize quality metrics dictionary
     n_units = unique_templates.size
