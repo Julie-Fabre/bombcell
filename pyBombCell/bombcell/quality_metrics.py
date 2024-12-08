@@ -1359,9 +1359,7 @@ def custom_mahal_loop(test_spike_features, current_spike_features):
     return mahal
 
 
-def get_distance_metrics(
-    pc_features, pc_features_idx, this_unit, spike_templates, param
-):
+def get_distance_metrics(pc_features, pc_features_idx, this_unit, spike_templates, param):
     """
     Generates functional distance based metrics, such as L-ratio mahalanobis distance
 
@@ -1383,117 +1381,51 @@ def get_distance_metrics(
     tuple
         The distance based metrics
     """
-    # get distance metrics
-
     n_pcs = pc_features.shape[1]  # should be 3
+    these_channels = pc_features_idx[this_unit, : param["n_channels_iso_dist"]]
 
-    # get current unit max 'n_chans_to_use' chanels
-    these_channels = pc_features_idx[this_unit, 0 : param["n_channels_iso_dist"]]
-
-    # current units features
     this_unit_idx = spike_templates == this_unit
     n_spikes = this_unit_idx.sum()
-    these_features = np.reshape(
-        pc_features[this_unit_idx.squeeze(), :, : param["n_channels_iso_dist"]],
-        (n_spikes, -1),
-    )
+    these_features = pc_features[this_unit_idx.squeeze(), :, : param["n_channels_iso_dist"]].reshape(n_spikes, -1)
 
-    # precompute unique identifiers and allocate space for outputs
     unique_ids = np.unique(spike_templates[spike_templates > 0])
-    mahalanobis_distance = np.zeros(unique_ids.size)  # JF: i don't think is used
-    other_units_double = np.zeros(unique_ids.size)  # JF: i don't think is used
-    # NOTE the first dimension here maybe the prbolem?
-    other_features = np.zeros(
-        (pc_features.shape[0], pc_features.shape[1], param["n_channels_iso_dist"])
-    )
-    other_features_ind = np.full(
-        (pc_features.shape[0], param["n_channels_iso_dist"]), np.nan
-    )
-    n_count = 0  # ML/python difference
+    other_features = np.zeros((pc_features.shape[0], pc_features.shape[1], param["n_channels_iso_dist"]))
+    other_features_ind = np.full((pc_features.shape[0], param["n_channels_iso_dist"]), np.nan)
+    n_count = 0
 
-    for i, id in enumerate(unique_ids):
+    for id in unique_ids:
         if id == this_unit:
             continue
 
-        # identify channels associated with the current ID
         current_channels = pc_features_idx[id, :]
-        other_spikes = np.squeeze(spike_templates == id)
+        other_spikes = spike_templates == id
 
-        # process channels that are common between current channels and the unit of interest
-        # NOTE This bit could likely be faster.
-        for channel_idx in range(param["n_channels_iso_dist"]):
-            if np.isin(these_channels[channel_idx], current_channels):
-                common_channel_idx = np.argwhere(
-                    current_channels == these_channels[channel_idx]
-                )
-                channel_spikes = pc_features[
-                    other_spikes, :, common_channel_idx
-                ].squeeze()
-                other_features[
-                    n_count : n_count + channel_spikes.shape[0], :, channel_idx
-                ] = channel_spikes
-                other_features_ind[
-                    n_count : n_count + channel_spikes.shape[0], channel_idx
-                ] = id
-                # n_count += channel_spikes.shape[0]
+        for channel_idx, channel in enumerate(these_channels):
+            if channel in current_channels:
+                common_channel_idx = np.argwhere(current_channels == channel).item()
+                channel_spikes = pc_features[other_spikes, :, common_channel_idx]
+                other_features[n_count : n_count + len(channel_spikes), :, channel_idx] = channel_spikes
+                other_features_ind[n_count : n_count + len(channel_spikes), channel_idx] = id
 
-        # NOTE i think n_count shouldnt be in the each channel loop?
-        if np.any(np.isin(these_channels, current_channels)):
-            n_count = n_count + channel_spikes.shape[0]
+        if np.isin(these_channels, current_channels).any():
+            n_count += len(channel_spikes)
 
-        # #calculate mahalanobis distance if applicable
-        # if np.any(np.isin(these_channels, current_channels)):
-        #     row_indicies = np.argwhere(other_features_ind == id)[:,0]
-        #     if np.logical_and(these_features.shape[0] > these_features.shape[1], row_indicies.size > these_features.shape[1]):
-        #         other_features_reshaped = np.reshape(other_features[row_indicies], (row_indicies.size, n_pcs * param['n_channels_iso_dist']))
-        #         #NOTE try using different functions
-        #         mahalanobis_distance[i] = np.nanmean(custom_mahal_loop(other_features_reshaped, these_features))
-
-    # predefine outputs
-    isolation_dist = np.nan
-    L_ratio = np.nan
-    silhouette_score = np.nan
-    mahal_D = np.nan  # JF: I don't think this is used
-    histogram_mahal_units_counts = np.nan
-    histogram_mahal_units_edges = np.nan
-    histogram_mahal_noise_counts = np.nan
-    histogram_mahal_noise_edges = np.nan
-
-    # reshape features for the mahalanobis distance calc if there are other features
-    # any other units have spikes at active channels and enough spikes to test
     other_features = other_features[~np.isnan(other_features_ind[:, 0]), :, :]
     other_features_ind = other_features_ind[~np.isnan(other_features_ind)]
-    #####FROM HERE !!!!
-    if np.logical_and(
-        np.any(~np.isnan(other_features_ind)),
-        n_spikes > param["n_channels_iso_dist"] * n_pcs,
-    ):
-        other_features = np.reshape(other_features, (other_features.shape[0], -1))
+
+    isolation_dist = L_ratio = silhouette_score = np.nan
+
+    if np.any(~np.isnan(other_features_ind)) and n_spikes > param["n_channels_iso_dist"] * n_pcs:
+        other_features = other_features.reshape(other_features.shape[0], -1)
 
         mahal_sort = np.sort(custom_mahal_loop(other_features, these_features))
         L = np.sum(1 - chi2.cdf(mahal_sort, n_pcs * param["n_channels_iso_dist"]))
         L_ratio = L / n_spikes
 
-        if np.logical_and(
-            n_count > n_spikes, n_spikes > n_pcs * param["n_channels_iso_dist"]
-        ):
+        if n_count > n_spikes > n_pcs * param["n_channels_iso_dist"]:
             isolation_dist = mahal_sort[n_spikes]
 
-        mahal_self = custom_mahal_loop(these_features, these_features)
-        mahal_self_sort = np.sort(mahal_self)  # JF: I don't think this is used
-
-    # plt.hist(mahal_self, bins = 50, range = (0, np.quantile(mahal_self, 0.995)), density = True, histtype = 'step', label = 'mahal')
-    # plt.hist(mahal_sort, bins = 50, range = (0, np.quantile(mahal_sort, 0.995)), density = True, histtype = 'step', label = 'inter unit mahal')
-    # plt.title(f' L-ratio = {L_ratio:.4f}')
-    # plt.xlabel('mahalanobis_distance')
-    # plt.ylabel('probability')
-    # plt.legend()
-
-    return (
-        isolation_dist,
-        L_ratio,
-        silhouette_score,
-    )
+    return isolation_dist, L_ratio, silhouette_score
 
 
 def get_raw_amplitude(this_raw_waveform, gain_to_uV):
@@ -1561,10 +1493,10 @@ def get_quality_unit_type(param, quality_metrics):
         quality_metrics["waveform_baseline_flatness"] > param["max_wv_baseline_fraction"]
     ] = 0
     if param["sp_decay_lin_fit"]:
+        unit_type[quality_metrics["spatial_decay_slope"] < param["min_spatial_decay_slope"]] = 0
+    else:
         unit_type[quality_metrics["spatial_decay_slope"] < param["min_spatial_decay_slope_exp"]] = 0
         unit_type[quality_metrics["spatial_decay_slope"] > param["max_spatial_decay_slope_exp"]] = 0
-    else:
-        unit_type[quality_metrics["spatial_decay_slope"] < param["min_spatial_decay_slope"]] = 0
 
     unit_type[quality_metrics["scnd_peak_to_trough_ratio"] > param["max_scnd_peak_to_trough_ratio_noise"]] = 0
     # classify non-somatic 
