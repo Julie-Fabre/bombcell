@@ -10,6 +10,8 @@ function plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, temp
 
 % 1. multi-venn diagram of units classified as noise/mua by each quality metric
 if param.plotGlobal
+% check quality metric and apram names
+[qMetric, param] = bc.qm.prettify_names(qMetric, param);
 
     %% plot summary of unit categorization
 
@@ -43,18 +45,20 @@ if param.plotGlobal
     %% plot distributions of unit quality metric values for each quality metric
 
     figure('Position', [100, 100, 1500, 900], 'Color', 'w');
-    try
+   
 
-        
-        qMetric.scndPeakToTroughRatio = abs(qMetric.mainPeak_after_size./qMetric.mainTrough_size);
-        invalid_peaks = ((max([qMetric.mainPeak_before_size, qMetric.mainPeak_after_size], [], 2)./ qMetric.mainTrough_size) > param.minMainPeakToTroughRatio | ...
-            qMetric.mainPeak_before_width > param.minWidthFirstPeak | ...
-            qMetric.mainTrough_width > param.minWidthMainTrough);
-        peak1_2_ratio = (abs(qMetric.mainPeak_before_size./qMetric.mainPeak_after_size));
+        % check if quality ,metric non somatic + noise ratios are present 
+    if ~ismember('mainPeakToTroughRatio', qMetric.Properties.VariableNames)
+        qMetric.scndPeakToTroughRatio = abs(qMetric.mainPeak_after_size./qMetric.mainTrough_size); ...
+        qMetric.peak1ToPeak2Ratio = abs(qMetric.mainPeak_before_size./qMetric.mainPeak_after_size);
+        qMetric.mainPeakToTroughRatio = max([qMetric.mainPeak_before_size, qMetric.mainPeak_after_size], [], 2)./ qMetric.mainTrough_size;
+        qMetric.troughToPeak2Ratio = abs(qMetric.mainTrough_size./qMetric.mainPeak_before_size);
+    end 
 
-        qMetric.peak1ToPeak2Ratio = peak1_2_ratio;
-        qMetric.peak1ToPeak2Ratio(invalid_peaks) = 0;
-        qMetric.mainPeakToTroughRatio = abs(max([qMetric.mainPeak_before_size, qMetric.mainPeak_after_size], [], 2)./qMetric.mainTrough_size);
+        invalid_peaks = (qMetric.troughToPeak2Ratio > param.minTroughToPeak2Ratio_nonSomatic &...
+            qMetric.mainPeak_before_width < param.minWidthFirstPeak_nonSomatic &...
+            qMetric.mainTrough_width < param.minWidthMainTrough_nonSomatic);
+            qMetric.peak1ToPeak2Ratio(invalid_peaks) = 0;
         % Define metrics, thresholds, and plot conditions
         [metricNames, metricThresh1, metricThresh2, plotConditions, metricNames_SHORT, metricLineCols] = defineMetrics(param);
 
@@ -146,9 +150,7 @@ if param.plotGlobal
                 currentSubplot = currentSubplot + 1;
             end
         end
-    catch
-        warning('could not plot global plots')
-    end
+ 
 
 
 end
@@ -165,24 +167,23 @@ end
             'waveform duration', 'baseline flatness', 'presence ratio', 'SNR', ...
             'maximum drift', 'cum. drift', 'isolation dist.', 'L-ratio'};
 
-
         if param.spDecayLinFit
-            metricThresh1 = [param.maxNPeaks, param.maxNTroughs, param.minTroughToPeakRatio, param.firstPeakRatio, param.minTroughToPeakRatio, ...
+            metricThresh1 = [param.maxNPeaks, param.maxNTroughs, param.maxScndPeakToTroughRatio_noise, param.maxPeak1ToPeak2Ratio_nonSomatic, param.maxMainPeakToTroughRatio_nonSomatic, ...
                 param.maxRPVviolations, NaN, param.maxPercSpikesMissing, NaN, NaN, NaN, param.minSpatialDecaySlope, ...
                 param.minWvDuration, param.maxWvBaselineFraction, NaN, NaN, ...
                 param.maxDrift, NaN, param.isoDmin, NaN];
 
-            metricThresh2 = [NaN, NaN, param.minTroughToPeakRatio, NaN, NaN, ...
+            metricThresh2 = [NaN, NaN, NaN, NaN, NaN, ...
                 NaN, NaN, NaN, NaN, param.minNumSpikes, param.minAmplitude, NaN, ...
                 param.maxWvDuration, NaN, param.minPresenceRatio, param.minSNR, ...
                 NaN, NaN, NaN, param.lratioMax];
         else
-            metricThresh1 = [param.maxNPeaks, param.maxNTroughs, param.minTroughToPeakRatio, param.firstPeakRatio, param.minTroughToPeakRatio, ...
+            metricThresh1 = [param.maxNPeaks, param.maxNTroughs, param.maxScndPeakToTroughRatio_noise, param.maxPeak1ToPeak2Ratio_nonSomatic, param.maxMainPeakToTroughRatio_nonSomatic, ...
                 param.maxRPVviolations, NaN, param.maxPercSpikesMissing, NaN, NaN, NaN, param.minSpatialDecaySlopeExp, ...
                 param.minWvDuration, param.maxWvBaselineFraction, NaN, NaN, ...
                 param.maxDrift, NaN, param.isoDmin, NaN];
 
-            metricThresh2 = [NaN, NaN, param.minTroughToPeakRatio, NaN, NaN, ...
+            metricThresh2 = [NaN, NaN, NaN, NaN, NaN, ...
                 NaN, NaN, NaN, NaN, param.minNumSpikes, param.minAmplitude, param.maxSpatialDecaySlopeExp, ...
                 param.maxWvDuration, NaN, param.minPresenceRatio, param.minSNR, ...
                 NaN, NaN, NaN, param.lratioMax];

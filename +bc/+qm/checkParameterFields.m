@@ -42,22 +42,24 @@ defaultValues.splitGoodAndMua_NonSomatic = 0;
 % refactory period violations
 defaultValues.hillOrLlobetMethod = 1;
 
-% waveforms: first peak (before trough) to second peak (after trough) ratio
-defaultValues.firstPeakRatio = 0; % if units have an initial peak before the trough,
-    % it must be at least firstPeakRatio times larger than the peak after
-    % the trough to qualify as a non-somatic unit. 0 means this value is
-    % not used.
+% waveform - noise
 defaultValues.normalizeSpDecay = 0;% whether to normalize spatial decay points relative to 
 % maximum - this makes the spatrial decay slop calculation more invariant to the 
 % spike-sorting algorithm used
-defaultValues.minWidthFirstPeak = 0; % in samples
-defaultValues.minMainPeakToTroughRatio = Inf;
-defaultValues.minWidthMainTrough = 0; % in samples
-defaultValues.minWidthMainTrough = 0; % in samples
-defaultValues.minTroughToPeakRatio = -Inf; % peak must be less
 defaultValues.spDecayLinFit = 1;
 defaultValues.minSpatialDecaySlopeExp = 0.01; % in a.u./um
 defaultValues.maxSpatialDecaySlopeExp = 0.1; % in a.u./um
+defaultValues.maxScndPeakToTroughRatio_noise = 0.8; % peak must be less than this x the trough 
+
+% waveform - non-somatic
+defaultValues.maxMainPeakToTroughRatio_nonSomatic = 0.8; % peak must be less than this x the trough 
+defaultValues.minWidthFirstPeak_nonSomatic = 0; % in samples 
+defaultValues.minWidthMainTrough_nonSomatic = 0; % in samples
+defaultValues.minTroughToPeak2Ratio_nonSomatic = 0; % trough should be min 5 x bigger than 1rst peak to count as non-somatic 
+defaultValues.maxPeak1ToPeak2Ratio_nonSomatic = Inf; % if units have an initial peak before the trough,
+    % it must be at least firstPeakRatio times larger than the peak after
+    % the trough to qualify as a non-somatic unit. 0 means this value is
+    % not used.
 
 %% Check for missing fields and add them with default value
 [param_complete, missingFields] = bc.qm.addMissingFieldsWithDefault(param, defaultValues);

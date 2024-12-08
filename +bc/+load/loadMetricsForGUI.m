@@ -1,3 +1,6 @@
+% check quality metric and apram names
+[qMetric, param] = bc.qm.prettify_names(qMetric, param);
+
 %get memmap
 
 if exist('loadRawTraces', 'var') 
