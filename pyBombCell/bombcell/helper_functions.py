@@ -970,7 +970,7 @@ def manage_if_raw_data(raw_dir, gain_to_uv):
     tuple
         The raw data path the meta directory path and the gain if applicable
     """
-    if raw_dir is not  None:
+    if raw_dir != None:
         ephys_raw_data, meta_path = erw.manage_data_compression(
             raw_dir, decompressed_data_local=raw_dir
         )
