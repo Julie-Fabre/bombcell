@@ -371,6 +371,13 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
 
         these_amplitudes_here = these_amplitudes[chunk_idx]
         
+        if these_amplitudes_here.size == 0:
+            percent_missing_gaussian[time_chunk_idx] = np.nan
+            percent_missing_symmetric[time_chunk_idx] = np.nan
+            amp_bin_gaussian = np.nan
+            spike_counts_per_amp_bin_gaussian = np.nan
+            gaussian_fit = np.nan
+            continue
         # check for extreme outliers (see https://github.com/Julie-Fabre/bombcell/issues/179)
         # flagging for now but should we remove them entirely? have a separate function to this effect?
         iqr_threshold = 10

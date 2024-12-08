@@ -429,7 +429,7 @@ def get_all_quality_metrics(
 
     not_enough_spikes = np.zeros(unique_templates.size)
     bad_units = 0
-    bar_description = "Computing BombCell quality metrics: {percentage:3.0f}%|{bar:10}| {n}/{total} units"
+    bar_description = "Computing bombcell quality metrics: {percentage:3.0f}%|{bar:10}| {n}/{total} units"
     for unit_idx in tqdm(range(unique_templates.size), bar_format=bar_description):
         this_unit = unique_templates[unit_idx]
         quality_metrics["phy_cluster_id"][unit_idx] = this_unit
@@ -442,7 +442,7 @@ def get_all_quality_metrics(
         quality_metrics["n_spikes"][unit_idx] = these_spike_times.shape[0]
 
         # Ignoring for the moment as need to find a way to get the same shape as actual results for percent_missings
-        # and fraction RPVs
+        # and fraction RPVs # JF: what?
         if these_spike_times.size < 50:
             quality_metrics, not_enough_spikes = set_unit_nan(
                 unit_idx, quality_metrics, not_enough_spikes
