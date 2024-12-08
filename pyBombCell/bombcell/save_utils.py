@@ -3,7 +3,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
+from typing import Dict, Tuple, List
+from numpy.typing import NDArray
 
 def path_handler(path: str) -> None:
     path = Path(path).expanduser()
@@ -11,132 +12,186 @@ def path_handler(path: str) -> None:
     path.mkdir(exist_ok=True)
     return path
 
+def get_metric_keys():
+    return [
+            "use_these_times_start",
+            "use_these_times_stop",
+            "RPV_use_tauR_est",
+            "percent_missing_gaussian",
+            "percent_missing_symmetric",
+            "fraction_RPVs",
+            "max_drift_estimate",
+            "cumulative_drift_estimate",
+            "presence_ratio",
+            "n_peaks",
+            "n_troughs",
+            "is_somatic",
+            "waveform_duration_peak_trough",
+            "spatial_decay_slope",
+            "waveform_baseline_flatness",
+            "trough",
+            "main_peak_before",
+            "main_peak_after",
+            "peak_before_width",
+            "trough_width",
+            "raw_amplitude",
+            "isolation_dist",
+            "l_ratio",
+            "silhouette_score",
+            "signal_to_noise_ratio",
+            "scnd_peak_to_trough_ratio",
+            "peak1_to_peak2_ratio",
+            "main_peak_to_trough_ratio",
+            "trough_to_peak2_ratio",
+            ]
 
-def save_qmetric_tsv(metric, unique_templates, save_path, file_name, column_titles):
+
+
+def save_quality_metric_tsv(
+    metric_data: NDArray,
+    template_ids: NDArray,
+    output_dir: str,
+    filename: str,
+    column_names: Tuple[str, str]
+) -> None:
     """
-    This function save and array (a quality metric) as a .tsv file
+    Save a quality metric array as a TSV file.
 
     Parameters
     ----------
-    metric : ndarray
-        A quality metric
-    unique_templates : ndarray
-        The array of the IDs of the units
-    save_path : str
-        The path to the save directory
-    file_name : str
-        The name of the file
-    column_titles : tuple
-        A tuple whihc contains the column title for the tsv file
+    metric_data : numpy.ndarray
+        The quality metric data to save
+    template_ids : numpy.ndarray
+        Array of unit template IDs
+    output_dir : str
+        Directory path for saving the file
+    filename : str
+        Name of the output file
+    column_names : tuple[str, str]
+        Column headers for the TSV file (template ID column, metric column)
     """
-    # Create save_path if it does not exist
-    save_path = path_handler(save_path)
+    # Ensure output directory exists
+    os.makedirs(output_dir, exist_ok=True)
 
-    file_path = os.path.join(save_path, file_name)
-    data_to_save = pd.DataFrame(
-        data=np.array((unique_templates, metric)).T, columns=column_titles
+    # Construct full file path
+    file_path = os.path.join(output_dir, filename)
+
+    # Create DataFrame and save as TSV
+    df = pd.DataFrame(
+        data=np.array((template_ids, metric_data)).T,
+        columns=column_names
     )
-    data_to_save.to_csv(file_path, sep="\t", index=False)
+    df.to_csv(file_path, sep="\t", index=False)
 
-
-def save_quality_metrics_as_tsvs(
-    quality_metrics, unit_type_string, unique_templates, save_path
-):
+def save_quality_metric_tsv(metric_data, template_ids, output_dir, filename, column_names):
     """
-    This function saves the most used quality metrics as a .tsv file
+    Save a quality metric array as a TSV file.
+
+    Parameters
+    ----------
+    metric_data : array
+        The quality metric data to save
+    template_ids : array
+        Array of unit template IDs
+    output_dir : str
+        Directory path for saving the file
+    filename : str
+        Name of the output file
+    column_names : tuple
+        Column headers for the TSV file (template ID column, metric column)
+    """
+    # Ensure output directory exists
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Construct full file path
+    file_path = os.path.join(output_dir, filename)
+
+    # Create DataFrame and save as TSV
+    df = pd.DataFrame(
+        data=np.array((template_ids, metric_data)).T,
+        columns=column_names
+    )
+    df.to_csv(file_path, sep="\t", index=False)
+
+def save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_dir):
+    """
+    Save all quality metrics as separate TSV files.
 
     Parameters
     ----------
     quality_metrics : dict
-        The quality metrics dictionary
-    unit_type_string : ndarray
-        The array which contains the units labels
-    unique_templates : ndarray
-        The array of the IDs of the units
-    save_path : str
-        The path to the save directory
+        Dictionary containing various quality metrics arrays
+    unit_types : array
+        Array containing unit type labels
+    template_ids : array
+        Array of unit template IDs
+    output_dir : str
+        Directory path for saving the files
     """
-    # Create save_path if it does not exist
-    save_path = path_handler(save_path)
+    # Ensure output directory exists
+    os.makedirs(output_dir, exist_ok=True)
 
-    save_qmetric_tsv(
-        unit_type_string,
-        unique_templates,
-        save_path,
-        r"cluster_bc_unitType.tsv",
-        ("cluster_id", "bc_unitType"),
-    )
-    save_qmetric_tsv(
-        quality_metrics["fraction_RPVs"],
-        unique_templates,
-        save_path,
-        r"cluster_frac_RPVs.tsv",
-        ("cluster_id", "frac_RPVs"),
+    # Save unit types first
+    save_quality_metric_tsv(
+        unit_types,
+        template_ids,
+        output_dir,
+        "cluster_bc_unitType.tsv",
+        ("cluster_id", "bc_unitType")
     )
 
-    save_qmetric_tsv(
-        quality_metrics["max_drift_estimate"],
-        unique_templates,
-        save_path,
-        r"cluster_max_drift.tsv",
-        ("cluster_id", "max_drift"),
-    )
-    save_qmetric_tsv(
-        quality_metrics["n_peaks"],
-        unique_templates,
-        save_path,
-        r"cluster_n_peaks.tsv",
-        ("cluster_id", "n_peaks"),
-    )
-    save_qmetric_tsv(
-        quality_metrics["n_troughs"],
-        unique_templates,
-        save_path,
-        r"cluster_n_troughs.tsv",
-        ("cluster_id", "n_troughs"),
-    )
-    save_qmetric_tsv(
-        quality_metrics["percent_missing_gaussian"],
-        unique_templates,
-        save_path,
-        r"cluster_percentageSpikesMissing_gaussian.tsv",
-        ("cluster_id", "percentageSpikesMissing_gaussian"),
-    )
-    save_qmetric_tsv(
-        quality_metrics["presence_ratio"],
-        unique_templates,
-        save_path,
-        r"cluster_presence_ratio.tsv",
-        ("cluster_id", "presence_ratio"),
-    )
-    save_qmetric_tsv(
-        quality_metrics["signal_to_noise_ratio"],
-        unique_templates,
-        save_path,
-        r"cluster_SNR.tsv",
-        ("cluster_id", "SNR"),
-    )
-    save_qmetric_tsv(
-        quality_metrics["spatial_decay_slope"],
-        unique_templates,
-        save_path,
-        r"cluster_spatial_decay_slope.tsv",
-        ("cluster_id", "spatial_decay_slope"),
-    )
-    save_qmetric_tsv(
-        quality_metrics["waveform_duration_peak_trough"],
-        unique_templates,
-        save_path,
-        r"cluster_waveform_dur.tsv",
-        ("cluster_id", "waveform_dur"),
-    )
-    save_qmetric_tsv(
-        quality_metrics["waveform_baseline_flatness"],
-        unique_templates,
-        save_path,
-        r"cluster_wv_baseline_flatness.tsv",
-        ("cluster_id", "wv_baseline_flatness"),
-    )
+    # Get all metric keys
+    metric_keys = get_metric_keys()
+
+    # Generate filename and column headers for each metric
+    for metric_name in metric_keys:
+        if metric_name in quality_metrics:
+            # Convert metric name to filename format
+            filename = f"cluster_{metric_name}.tsv"
+            
+            # Create column headers
+            column_names = ("cluster_id", metric_name)
+            
+            # Save the metric
+            save_quality_metric_tsv(
+                quality_metrics[metric_name],
+                template_ids,
+                output_dir,
+                filename,
+                column_names
+            )
+        else:
+            print(f"Warning: Metric '{metric_name}' not found in quality_metrics dictionary")
+
+def save_quality_metrics_and_verify(quality_metrics, unit_types, template_ids, output_dir):
+    """
+    Save all quality metrics and verify that all expected metrics were saved.
+
+    Parameters
+    ----------
+    quality_metrics : dict
+        Dictionary containing various quality metrics arrays
+    unit_types : array
+        Array containing unit type labels
+    template_ids : array
+        Array of unit template IDs
+    output_dir : str
+        Directory path for saving the files
+    """
+    # Save all metrics
+    save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_dir)
+    
+    # Verify all metrics were saved
+    expected_metrics = set(get_metric_keys())
+    saved_metrics = set(quality_metrics.keys())
+    missing_metrics = expected_metrics - saved_metrics
+    
+    if missing_metrics:
+        print("Warning: The following metrics were not found in the quality_metrics dictionary:")
+        for metric in sorted(missing_metrics):
+            print(f"  - {metric}")
+    else:
+        print("All expected metrics were successfully saved.")
 
 
 def save_quality_metrics_as_parquet(
@@ -250,9 +305,8 @@ def save_results(
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
-    save_quality_metrics_as_tsvs(
-        quality_metrics, unit_type_string, unique_templates, save_path
-    )
+    save_quality_metrics_and_verify(quality_metrics, unit_type_string, unique_templates, save_path)
+
     save_quality_metrics_as_parquet(
         quality_metrics, save_path, file_name="templates._bc_qMetrics.parquet"
     )
