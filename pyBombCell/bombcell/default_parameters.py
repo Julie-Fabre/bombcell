@@ -9,6 +9,8 @@ def get_default_parameters(
     gain_to_uV=None,
 ):
     param = {
+        # quality metric computation and display parameters
+        ## general 
         "show_detail_plots": False,  # show step-by-step plots
         "show_summary_plots": True,  # Summary plots of quality metrics
         "verbose": True,  # If True will update user on progress
@@ -17,11 +19,13 @@ def get_default_parameters(
         "unit_type_for_phy": True,  # save a unit_type .tsv file for phy
         "ephys_kilosort_path": kilosort_path,  # path to the KiloSort directory
         "save_mat_file": False,  # TODO use scipy to save .mat file?
+
         ## Duplicate spike parameters
         "remove_duplicate_spike": True,
         "duplicate_spikes_window_s": 0.00001,  # in seconds
         "save_spike_without_duplicates": True,
         "recompute_duplicate_spike": False,
+
         ## Amplitude / raw waveform parameters
         "detrend_waveform": True,  # If True will linearly de-trend over time
         "n_raw_spikes_to_extract": 500,  # Number of raw spikes per unit
@@ -31,6 +35,7 @@ def get_default_parameters(
         "probe_type": 1,  # If you are using spikeGLX and your meta files does not
         # contain information on your probe type specify it here
         # '1' for 1.0 (3Bs) and '2' for 2.0 (single or 4-shanks)
+
         ## Refractory period parameters
         "tauR_values_min": 2 / 1000,  # refractory period time (s), usually 0.002 s
         "tauR_values_max": 2 / 1000,  # refractory period time (s)
@@ -40,49 +45,64 @@ def get_default_parameters(
         # tauR_values_steps
         "tauC": 0.1 / 1000,  # censored period time (s), to prevent duplicate spikes
         "use_hill_method": True,  # use hill if 1, else use Llobet et al.
+
         ## Percentage spikes missing parameters
         "compute_time_chunks": True,  # compute fraction refractory period violations and
         # percent spikes missing for different time chunks
         "delta_time_chunk": 360,  # time in seconds
-        ## presence  ration
+
+        ## Presence  ratio
         "presence_ratio_bin_size": 60,  # in seconds
+
         ## Drift estimate
         "drift_bin_size": 60,  # in seconds
         "compute_drift": False,  # If True computes drift per unit
+
         ## Waveform parameters
-        "min_thresh_detect_peaks_troughs": 0.2,  # this is multiples by the max vale in a units
+        "min_thresh_detect_peaks_troughs": 0.2,  # this is multiples by the max value in a units
         # waveform to give the minimum prominence to detect peaks
-        "first_peak_ratio": 1.1,  # if units have an initial peak before the trough,
+
         # it must be at least this many times larger than the peak after the trough
         # to qualify as a non-somatic unit
         "normalize_spatial_decay": True,  # If True, will normalize spatial decay points relative to maximum
         # this makes the spatial decay more invariant to the spike-sorting
-        "min_width_first_peak": 4,  # in samples
-        "min_main_peak_to_trough_ratio": 10,
-        "min_width_main_trough": 5,  # in samples
+        "sp_decay_lin_fit": False, # if True, use a linear fit for spatial decay. If false, use exponential (preferred)
+        "max_scnd_peak_to_trough_ratio_noise": 0.8,
+        "min_trough_to_peak2_ratio_non_somatic": 5,
+        "min_width_first_peak_non_somatic": 4,
+        "min_width_main_trough_non_somatic": 5,
+        "max_peak1_to_peak2_ratio_non_somatic": 3,
+        "max_main_peak_to_trough_ratio_non_somatic": 0.8,
+
         ## Recording parameters
         "ephys_sample_rate": 30000,  # samples per second
         "n_channels": 385,  # Number of recorded channels (including any sync channels) recorded in raw data
         "n_sync_channels": 1,
+
         ## Distance metric parameters
         "compute_distance_metrics": False,  # If True computes distance metics NOTE is slow in ML
         "n_channels_iso_dist": 4,  # Number of nearby channels to use in distance metric computation
-        ## Classifying units into good/mua/noise parameters
+
+        # Quality metric classification parameters
         "split_good_and_mua_non_somatic": False,  # whether to classify non-somatic units
-        # waveform
+        ## Waveform-based
         "max_n_peaks": 2,  # maximum number of peaks
         "max_n_troughs": 1,  # maximum number of troughs
         "keep_only_somatic": True,  # keep only somatic units
-        "min_wave_duration": 100,  # in us
-        "max_wave_duration": 800,  # in us
+        "min_wv_duration": 100,  # in us
+        "max_wv_duration": 800,  # in us
         "min_spatial_decay_slope": -0.01,  # in a.u / um
         "max_spatial_decay_slope": -0.1,  # in a.u / um
-        "max_wave_baseline_fraction": 0.3,  # maximum absolute value in waveform baseline should not
+        "max_wv_baseline_fraction": 0.3,  # maximum absolute value in waveform baseline should not
         # exceed this fraction of the waveforms's absolute peak
-        # determine if ALL unit is somatic or non-somatic
-        "non_somatic_trough_peak_ratio": 1.25,
-        "non_somatic_peak_before_to_after_ratio": 1.2,
-        ##Distance metrics
+        "max_second_peak_to_trough_ratio_noise": 0.8, 
+        "min_trough_to_peak2_ratio_non_somatic": 5,
+        "min_width_first_peak_non_somatic": 4,
+        "min_width_main_trough_non_somatic": 5,
+        "max_peak1_to_peak2_ratio_non_somatic": 3,
+        "max_main_peak_to_trough_ratio_non_somatic": 0.8,
+
+        ## Distance metrics
         "iso_d_min": 20,  # minimum isolation distance value
         "lratio_max": 0.1,  # maximum l-ratio value
         "ss_min": np.nan,  # minimum silhouette score

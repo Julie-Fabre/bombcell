@@ -73,13 +73,7 @@ def save_quality_metrics_as_tsvs(
         r"cluster_frac_RPVs.tsv",
         ("cluster_id", "frac_RPVs"),
     )
-    save_qmetric_tsv(
-        quality_metrics["is_somatic"],
-        unique_templates,
-        save_path,
-        r"cluster_is_somatic.tsv",
-        ("cluster_id", "is_somatic"),
-    )
+
     save_qmetric_tsv(
         quality_metrics["max_drift_estimate"],
         unique_templates,
@@ -123,7 +117,7 @@ def save_quality_metrics_as_tsvs(
         ("cluster_id", "SNR"),
     )
     save_qmetric_tsv(
-        quality_metrics["exp_decay"],
+        quality_metrics["spatial_decay_slope"],
         unique_templates,
         save_path,
         r"cluster_spatial_decay_slope.tsv",
@@ -137,7 +131,7 @@ def save_quality_metrics_as_tsvs(
         ("cluster_id", "waveform_dur"),
     )
     save_qmetric_tsv(
-        quality_metrics["waveform_baseline"],
+        quality_metrics["waveform_baseline_flatness"],
         unique_templates,
         save_path,
         r"cluster_wv_baseline_flatness.tsv",

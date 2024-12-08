@@ -516,10 +516,7 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
     #         plt.axvline(time_chunk, ls = '--')
     return (
         percent_missing_gaussian,
-        percent_missing_symmetric,
-        amp_bin_gaussian,
-        spike_counts_per_amp_bin_gaussian,
-        gaussian_fit,
+        percent_missing_symmetric
     )
 
 
@@ -912,11 +909,11 @@ def max_drift_estimate(
             ]
         )
     max_drift_estimate = np.nanmax(median_spike_depth) - np.nanmin(median_spike_depth)
-    cumulatve_drift_estimate = np.sum(
+    cumulative_drift_estimate = np.sum(
         np.abs(np.diff(median_spike_depth[~np.isnan(median_spike_depth)]))
     )
 
-    return max_drift_estimate, cumulatve_drift_estimate
+    return max_drift_estimate, cumulative_drift_estimate
 
 
 def linear_fit(x, m, c):
@@ -1050,9 +1047,9 @@ def waveform_shape(
                 max_peak = np.argmax(
                     peaks_before_dict["prominences"]
                 )  # prominence is +ve even though is trough
-                width_before = peaks_before_dict["widths"][max_peak]
+                peak_before_width = peaks_before_dict["widths"][max_peak]
             else:
-                width_before = peaks_before_dict["widths"]
+                peak_before_width = peaks_before_dict["widths"]
         else:
             peaks_before_locs = np.array(())
 
@@ -1087,9 +1084,9 @@ def waveform_shape(
                         peaks_before_dict["prominences"]
                     )  # prominence is +ve even though is trough
                     peaks_before_locs = peaks_before_locs[max_peak]
-                    width_before = peaks_before_dict["widths"][max_peak]
+                    peak_before_width = peaks_before_dict["widths"][max_peak]
                 else:
-                    width_before = peaks_before_dict["widths"]
+                    peak_before_width = np.nan # set to nan if there is no peak before
             else:
                 peaks_before_locs = np.array(())
 
@@ -1116,8 +1113,7 @@ def waveform_shape(
                     peaks_after_locs = peaks_after_locs[max_peak] + trough_loc
                     width_after = peaks_after_dict["widths"][max_peak]
                 else:
-                    width_after = peaks_after_dict["widths"]
-                    peaks_after_locs += trough_loc
+                    peaks_after_widths = np.nan
 
             if peaks_after_locs.size == 0:
                 width_after = 0  # JF: i don't think is used
@@ -1156,27 +1152,6 @@ def waveform_shape(
             peak_locs = np.hstack((peaks_before_locs, peaks_after_locs))
             peaks = this_waveform[peak_locs]
 
-        # determine if the unit is somatic or non-somatic
-        param["non_somatic_trough_peak_ratio"] = 0.8
-        param["non_somatic_peak_before_to_after_ratio"] = 1.2
-        if (np.max(troughs) * param["non_somatic_trough_peak_ratio"]) < np.max(peaks):
-            is_somatic = False
-        elif used_max_before & (
-            (param["non_somatic_peak_before_to_after_ratio"] * main_peak_after)
-            < main_peak_before
-        ):
-            is_somatic = False
-        elif (
-            (main_peak_before * param["first_peak_ratio"] > main_peak_after)
-            & (width_before < param["min_width_first_peak"])
-            & (used_max_before == False)
-            & (main_peak_before * param["min_main_peak_to_trough_ratio"] > max(troughs))
-            & (trough_width < param["min_width_main_trough"])
-        ):
-            is_somatic = False
-        else:
-            is_somatic = True
-
         n_peaks = peaks.size
         n_troughs = troughs.size
 
@@ -1206,22 +1181,19 @@ def waveform_shape(
             / param["ephys_sample_rate"]
         )
 
+        # waveform ratios
+        # waveform ratios
+        scnd_peak_to_trough_ratio = abs(main_peak_after / main_trough)
+        peak1_to_peak2_ratio = abs(main_peak_before / main_peak_after)
+        main_peak_to_trough_ratio = max(main_peak_before, main_peak_after) / abs(main_trough) 
+        trough_to_peak2_ratio = abs(main_trough / main_peak_before)
+
         # get waveforms spatial decay across channels
         # DECIDE which fit
         # linear_fit = True
         max_channel = max_channels[this_unit]
 
-        # channels_with_same_x = np.argwhere(np.logical_and(channel_positions[:,0] <= channel_positions[max_channel, 0] +33,
-        #                                 channel_positions[:,0] >= channel_positions[max_channel, 0] -33)) #4 shank probe
-
-        # current_max_channel = channel_positions[max_channel, :]
-        # distance_to_current_channel = np.square(channel_positions - current_max_channel)
-        # sum_euclid = np.sum(distance_to_current_channel, axis = 1)
-        # #find nearest x channels
-        # near_x_channels = np.argwhere(distance_to_current_channel[:,0] <= np.sort(distance_to_current_channel[:,0])[25]).squeeze()
-        # #from these near x channel find the nearest y channels
-        # use_these_channels = near_x_channels[np.argwhere(distance_to_current_channel[near_x_channels,1] <= np.sort(distance_to_current_channel[near_x_channels,1])[6])].squeeze()
-        # Change to
+        
         x, y = channel_positions[max_channel, :]
         current_max_channel = channel_positions[max_channel, :]
 
@@ -1336,20 +1308,15 @@ def waveform_shape(
     return (
         n_peaks,
         n_troughs,
-        peak_locs,
-        trough_locs,
         waveform_duration_peak_trough,
-        spatial_decay_points,
-        linear_spatial_decay,
-        exp_spaital_decay,
+        spatial_decay_slope,
         waveform_baseline,
-        this_waveform,
-        trough,
-        main_peak_before,
-        main_peak_after,
-        width_before,
+        scnd_peak_to_trough_ratio,
+        peak1_to_peak2_ratio,
+        main_peak_to_trough_ratio,
+        trough_to_peak2_ratio,
+        peak_before_width,
         trough_width,
-        is_somatic,
     )
 
 
@@ -1526,10 +1493,6 @@ def get_distance_metrics(
         isolation_dist,
         L_ratio,
         silhouette_score,
-        histogram_mahal_units_counts,
-        histogram_mahal_units_edges,
-        histogram_mahal_noise_counts,
-        histogram_mahal_noise_edges,
     )
 
 
@@ -1581,52 +1544,6 @@ def get_quality_unit_type(param, quality_metrics):
         Two array of the unit types one as number the other as strings
     """
 
-    # converting dataframes to dictionary of numpy arrays
-    # quality_metrics = dict(zip(quality_metrics.columns, quality_metrics.values.T))
-    # param = dict(zip(param.columns, param.values.T))
-
-    # Testing for non-somatic waveforms
-    is_non_somatic = np.zeros(quality_metrics["n_peaks"].shape[0])
-
-    is_non_somatic[
-        (
-            quality_metrics["trough"]
-            / np.max(
-                (
-                    quality_metrics["main_peak_before"],
-                    quality_metrics["main_peak_after"],
-                ),
-                axis=0,
-            )
-        )
-        < param["non_somatic_trough_peak_ratio"]
-    ] = 1
-
-    is_non_somatic[
-        (quality_metrics["main_peak_before"] / quality_metrics["main_peak_after"])
-        > param["non_somatic_peak_before_to_after_ratio"]
-    ] = 1
-
-    is_non_somatic[
-        (
-            quality_metrics["main_peak_before"] * param["first_peak_ratio"]
-            > quality_metrics["main_peak_after"]
-        )
-        & (quality_metrics["width_before"] < param["min_width_first_peak"])
-        & (
-            quality_metrics["main_peak_before"] * param["min_main_peak_to_trough_ratio"]
-            > quality_metrics["trough"]
-        )
-        & (quality_metrics["trough_width"] < param["min_width_main_trough"])
-    ] = 1
-
-    # Test all quality metrics
-    ## categorise units
-    # unit_type == 0 all noise units
-    # unit_type == 1 all good units
-    # unit_type == 2 all mua units
-    # unit_type == 3 all non-somatic units (if split somatic units its good non-somatic units)
-    # unit_type == 4 (if split somatic units its mua non-somatic units)
 
     unit_type = np.full(quality_metrics["n_peaks"].shape[0], np.nan)
 
@@ -1635,18 +1552,27 @@ def get_quality_unit_type(param, quality_metrics):
     unit_type[quality_metrics["n_peaks"] > param["max_n_peaks"]] = 0
     unit_type[quality_metrics["n_troughs"] > param["max_n_troughs"]] = 0
     unit_type[
-        quality_metrics["waveform_duration_peak_trough"] < param["min_wave_duration"]
+        quality_metrics["waveform_duration_peak_trough"] < param["min_wv_duration"]
     ] = 0
     unit_type[
-        quality_metrics["waveform_duration_peak_trough"] > param["max_wave_duration"]
+        quality_metrics["waveform_duration_peak_trough"] > param["max_wv_duration"]
     ] = 0
     unit_type[
-        quality_metrics["waveform_baseline"] > param["max_wave_baseline_fraction"]
+        quality_metrics["waveform_baseline_flatness"] > param["max_wv_baseline_fraction"]
     ] = 0
-    unit_type[quality_metrics["exp_decay"] > param["min_spatial_decay_slope"]] = 0
-    unit_type[quality_metrics["exp_decay"] < param["max_spatial_decay_slope"]] = 0
+    unit_type[quality_metrics["spatial_decay_slope"] > param["min_spatial_decay_slope"]] = 0
+    unit_type[quality_metrics["spatial_decay_slope"] < param["max_spatial_decay_slope"]] = 0
+    # classify non-somatic 
 
-    # classify as mua
+    is_non_somatic = (
+    (quality_metrics["trough_to_peak2_ratio"] < param["min_trough_to_peak2_ratio_non_somatic"]) &
+    (quality_metrics["peak_before_width"] < param["min_width_first_peak_non_somatic"]) &
+    (quality_metrics["trough_width"] < param["min_width_main_trough_non_somatic"]) &
+    (quality_metrics["peak1_to_peak2_ratio"] > param["max_peak1_to_peak2_ratio_non_somatic"])
+    ) | (quality_metrics["main_peak_to_trough_ratio"] > param["max_main_peak_to_trough_ratio_non_somatic"])
+    
+
+    # classify MUA
     # ALL or ANY?
     unit_type[
         np.logical_and(
