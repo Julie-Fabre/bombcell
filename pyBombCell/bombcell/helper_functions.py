@@ -769,8 +769,6 @@ def run_bombcell(ks_dir, raw_dir, save_path, param):
     n_units = unique_templates.size
     quality_metrics = create_quality_metrics_dict(n_units, snr=SNR)
     quality_metrics["max_channels"] = max_channels
-    param["use_hill_method"] = True  # use the old method for RPVs
-    param["compute_time_chunks"] = False
 
     # Complete with remaining quality metrics
     quality_metrics, times = get_all_quality_metrics(
