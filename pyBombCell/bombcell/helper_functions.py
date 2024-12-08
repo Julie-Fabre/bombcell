@@ -104,10 +104,10 @@ def print_qm_thresholds(param):
         f'max_n_peaks = {param["max_n_peaks"]}, max_n_troughs = {param["max_n_troughs"]}'
     )
     print(
-        f'min_wave_duration = {param["min_wave_duration"]}, max_wave_duration = {param["max_wave_duration"]}'
+        f'min_wv_duration = {param["min_wv_duration"]}, max_wv_duration = {param["max_wv_duration"]}'
     )
     print(
-        f'max_wave_baseline_fraction = {param["max_wave_baseline_fraction"]}, min_spatial_decay_slope = {param["min_spatial_decay_slope"]}'
+        f'max_wv_baseline_fraction = {param["max_wv_baseline_fraction"]}, min_spatial_decay_slope = {param["min_spatial_decay_slope"]}'
     )
     print(
         f'max_perc_spikes_missing = {param["max_perc_spikes_missing"]}, min_num_spikes_total = {param["min_num_spikes_total"]}'
@@ -772,9 +772,6 @@ def run_bombcell(ks_dir, raw_dir, save_path, param):
     return (
         quality_metrics,
         param,
-        unique_templates,
-        raw_waveforms_full,
-        raw_waveforms_peak_channel,
         unit_type,
         unit_type_string,
     )
@@ -789,15 +786,15 @@ def make_qm_table(quality_metrics, param, unique_templates, unit_type):
     too_many_troughs = quality_metrics["n_troughs"] > param["max_n_troughs"]
 
     too_short_waveform = (
-        quality_metrics["waveform_duration_peak_trough"] < param["min_wave_duration"]
+        quality_metrics["waveform_duration_peak_trough"] < param["min_wv_duration"]
     )
 
     too_long_waveform = (
-        quality_metrics["waveform_duration_peak_trough"] > param["max_wave_duration"]
+        quality_metrics["waveform_duration_peak_trough"] > param["max_wv_duration"]
     )
 
     too_noisy_baseline = (
-        quality_metrics["waveform_baseline"] > param["max_wave_baseline_fraction"]
+        quality_metrics["waveform_baseline"] > param["max_wv_baseline_fraction"]
     )
 
     ##
