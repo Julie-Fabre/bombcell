@@ -637,10 +637,9 @@ def get_all_quality_metrics(
         times_waveform_shape[unit_idx] = time.time() - time_tmp
 
         # amplitude
-        gain_to_uV = 1
         if raw_waveforms_full is not None and param["extract_raw_waveforms"]:
             quality_metrics["raw_amplitude"][unit_idx] = qm.get_raw_amplitude(
-                raw_waveforms_full[unit_idx], gain_to_uV
+                raw_waveforms_full[unit_idx], param["gain_to_uV"]
             )
         else:
             quality_metrics["raw_amplitude"][unit_idx] = np.nan
@@ -677,7 +676,7 @@ def get_all_quality_metrics(
     return quality_metrics, times
 
 
-def run_bombcell(ks_dir, raw_dir, save_path, gain_to_uV, param):
+def run_bombcell(ks_dir, raw_dir, save_path, param):
     """
     This function runs the entire bombcell pipeline from input data paths
 
@@ -689,8 +688,6 @@ def run_bombcell(ks_dir, raw_dir, save_path, gain_to_uV, param):
         The path to the raw data directory
     save_path : string
         The path to the directory to save the bombcell results
-    gain_to_uV : float
-        The gain if not giving a .meta (or equivalent) file in raw_dir
     param : dict
         The param dictionary
 
