@@ -10,40 +10,9 @@ import bombcell.loading_utils as led
 
 # import matplotlib.pyplot as plt
 import bombcell.quality_metrics as qm
-import bombcell.save_utils as su
+from bombcell.save_utils import get_metric_keys, save_results
 
-def get_metric_keys():
-    return [
-            "use_these_times_start",
-            "use_these_times_stop",
-            "RPV_use_tauR_est",
-            "percent_missing_gaussian",
-            "percent_missing_symmetric",
-            "fraction_RPVs",
-            "max_drift_estimate",
-            "cumulative_drift_estimate",
-            "presence_ratio",
-            "n_peaks",
-            "n_troughs",
-            "is_somatic",
-            "waveform_duration_peak_trough",
-            "spatial_decay_slope",
-            "waveform_baseline_flatness",
-            "trough",
-            "main_peak_before",
-            "main_peak_after",
-            "peak_before_width",
-            "trough_width",
-            "raw_amplitude",
-            "isolation_dist",
-            "l_ratio",
-            "silhouette_score",
-            "signal_to_noise_ratio",
-            "scnd_peak_to_trough_ratio",
-            "peak1_to_peak2_ratio",
-            "main_peak_to_trough_ratio",
-            "trough_to_peak2_ratio",
-            ]
+
 
 def show_times(
     times_spikes_missing_1,
@@ -759,7 +728,7 @@ def run_bombcell(ks_dir, raw_dir, save_path, param):
         param, quality_metrics
     )  # JF: this should be inside bc.get_all_quality_metrics
 
-    su.save_results(
+    save_results(
         quality_metrics,
         unit_type_string,
         unique_templates,
