@@ -520,13 +520,11 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
     )
 
 
-# NOTE ML needs these_amplitudes only for a plot!
 def fraction_RP_violations(
     these_spike_times, these_amplitudes, time_chunks, param, use_this_tauR=None
 ):
     """
     This function estimates the fraction of refractory period violations for a given unit.
-    #NOTE this function/method could likely be improved (To many units have more than 1 fraction RPVs)
 
     Parameters
     ----------
@@ -583,68 +581,70 @@ def fraction_RP_violations(
 
         duration_chunk = time_chunks[time_chunk_idx + 1] - time_chunks[time_chunk_idx]
         # total times at which refractory period violation can occur
-        for i, tauR in enumerate(tauR_window):
+        for i_tau_r, tauR in enumerate(tauR_window):
             if param["use_hill_method"]:
                 ## equivalent to the old code!
-                a = (
+                k = (
                     2
                     * (tauR - tauC)
                     * n_chunk**2
-                    / (time_chunks[time_chunk_idx + 1] - time_chunks[time_chunk_idx])
                 )
+                T = (time_chunks[time_chunk_idx + 1] - time_chunks[time_chunk_idx])
 
-                num_violations[time_chunk_idx, i] = np.sum(
+                num_violations[time_chunk_idx, i_tau_r] = np.sum(
                     np.diff(chunk_spike_times) <= tauR
                 )
 
                 if (
-                    num_violations[time_chunk_idx, i] == 0
+                    num_violations[time_chunk_idx, i_tau_r] == 0
                 ):  # NO observed refractory period violations
                     # this might be due to having no/few spikes in the region, use presence ratio
-                    fraction_RPVs[time_chunk_idx, i] = 0
-                    overestimate_bool[time_chunk_idx, i] = 0
+                    fraction_RPVs[time_chunk_idx, i_tau_r] = 0
+                    overestimate_bool[time_chunk_idx, i_tau_r] = 0
                 else:  # solve the eqn above
-                    rts = np.roots((-1, 1, -num_violations[time_chunk_idx, i] / a))
+                    rts = np.roots((-k, k, -num_violations[time_chunk_idx, i_tau_r] * T))
 
                     if ~np.all(np.iscomplex(rts)):
-                        fraction_RPVs[time_chunk_idx, i] = np.min(rts)
-                        overestimate_bool[time_chunk_idx, i] = 0
+                        fraction_RPVs[time_chunk_idx, i_tau_r] = np.min(rts)
+                        overestimate_bool[time_chunk_idx, i_tau_r] = 0
 
                     # function returns imaginary number if r is too high: over-estimate number
                     else:
-                        overestimate_bool[time_chunk_idx, i] = 1
                         if (
-                            num_violations[time_chunk_idx, i] < n_chunk
+                            num_violations[time_chunk_idx, i_tau_r] < n_chunk
                         ):  # to not get a negative number or a 0
-                            fraction_RPVs[time_chunk_idx, i] = num_violations[
-                                time_chunk_idx, i
+                            fraction_RPVs[time_chunk_idx, i_tau_r] = num_violations[
+                                time_chunk_idx, i_tau_r
                             ] / (
                                 2
                                 * (tauR - tauC)
-                                * (n_chunk - num_violations[time_chunk_idx, i])
+                                * (n_chunk - num_violations[time_chunk_idx, i_tau_r])
                             )
                             # fraction_RPVs[time_chunk_idx, i] = num_violations[time_chunk_idx, i] / ((n_chunk - num_violations[time_chunk_idx, i]))
                         else:
-                            fraction_RPVs[time_chunk_idx, i] = 1
+                            fraction_RPVs[time_chunk_idx, i_tau_r] = 1
+                            overestimate_bool[time_chunk_idx, i_tau_r] = 1
 
                     if (
-                        fraction_RPVs[time_chunk_idx, i] > 1
+                        fraction_RPVs[time_chunk_idx, i_tau_r] > 1
                     ):  # A value above 1 makes no sense, the assumptions are failing
-                        fraction_RPVs[time_chunk_idx, i] = 1
+                        fraction_RPVs[time_chunk_idx, i_tau_r] = 1
             else:
-                num_violations = np.sum(
-                    np.logical_and(chunk_ISIs <= tauR, chunk_ISIs > tauC)
-                )  # number of violations
+            
+                N = len(chunk_spike_times)
+                isi_violations_sum = 0
 
-                under_root_value = 1 - num_violations * duration_chunk / (
-                    n_chunk**2 * (tauR - tauC)
-                )
+                for i in range(N):
+                    for j in range(i+1, N):
+                        isi = chunk_spike_times[j] - chunk_spike_times[i]
+                        if isi <= tauR and isi >= param.tauC:
+                            isi_violations_sum += 1
 
-                if under_root_value >= 0:
-                    fraction_RPVs[time_chunk_idx, i] = 1 - np.sqrt(under_root_value)
+                underRoot = 1 - (isi_violations_sum * (duration_chunk - 2 * N * tauC)) / (N **2 * (tauR - tauC))
+                if underRoot >= 0:
+                    fraction_RPVs[time_chunk_idx, i_tau_r] = 1 - np.sqrt(underRoot)
                 else:
-                    # assumptions have broken down
-                    fraction_RPVs[time_chunk_idx, i] = 1
+                    fraction_RPVs[time_chunk_idx, i_tau_r] = 1
 
     return fraction_RPVs, num_violations
 
