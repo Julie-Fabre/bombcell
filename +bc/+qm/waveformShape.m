@@ -1,7 +1,9 @@
-function [nPeaks, nTroughs, mainPeak_before_size, mainPeak_after_size, mainTrough_size,...
-    mainPeak_before_width, mainPeak_after_width, mainTrough_width, peakLocs, troughLocs, waveformDuration_peakTrough, ...
-    spatialDecayPoints, spatialDecaySlope, waveformBaseline, thisWaveform, spatialDecayPoints_loc, spatialDecayFit_1] = waveformShape(templateWaveforms, ...
+function [nPeaks, nTroughs, spatialDecaySlope, waveformBaseline, scndPeakToTroughRatio, mainPeakToTroughRatio, peak1ToPeak2Ratio,...
+    troughToPeak2Ratio, mainPeak_before_width, mainPeak_after_width, mainTrough_width, peakLocs, troughLocs, waveformDuration_peakTrough, ...
+    spatialDecayPoints, thisWaveform, spatialDecayPoints_loc, spatialDecayFit_1] = waveformShape(templateWaveforms, ...
     thisUnit, maxChannel, param, channelPositions, waveformBaselineWindow)
+
+
 % JF
 % Get the number of troughs and peaks for each waveform,
 % determine whether waveform is likely axonal/dendritic (biggest peak before
@@ -146,6 +148,13 @@ else
     else
         waveformDuration_peakTrough = NaN;
     end
+    
+    % store quality metric ratios
+    scndPeakToTroughRatio = abs(mainPeak_after_size./mainTrough_size); ...
+    peak1ToPeak2Ratio = abs(mainPeak_before_size./mainPeak_after_size);
+    mainPeakToTroughRatio = max([mainPeak_before_size, mainPeak_after_size], [], 2)./ mainTrough_size;
+    troughToPeak2Ratio = abs(mainTrough_size./mainPeak_before_size);
+
 
     % (get waveform spatial decay accross channels)
     linearFit = param.spDecayLinFit;
@@ -155,8 +164,9 @@ else
        if linearFit
             spatialDecayFit_1 = spatialDecayFit(end);
        else
-        spatialDecayFit_1 = spatialDecayFit(1);
+            spatialDecayFit_1 = spatialDecayFit(1);
        end
+
     % (get waveform baseline fraction)
     if ~isnan(waveformBaselineWindow(1))
         waveformBaseline = max(abs(thisWaveform(waveformBaselineWindow(1): ...

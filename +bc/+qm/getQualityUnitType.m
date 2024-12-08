@@ -40,12 +40,25 @@ end
 % Initialize unitType array
 unitType = nan(length(qMetric.percentageSpikesMissing_gaussian), 1);
 
+% check quality metric and apram names
+[qMetric, param] = bc.qm.prettify_names(qMetric, param);
+
 %% Classify units
 % Classify noise units
 unitType(isnan(qMetric.nPeaks) | qMetric.nPeaks > param.maxNPeaks | qMetric.nTroughs > param.maxNTroughs | ...
     qMetric.waveformDuration_peakTrough < param.minWvDuration | ...
     qMetric.waveformDuration_peakTrough > param.maxWvDuration | qMetric.waveformBaselineFlatness > param.maxWvBaselineFraction |...
-    abs( qMetric.mainPeak_after_size./ qMetric.mainTrough_size) > param.minTroughToPeakRatio) = 0; % NOISE
+    qMetric.scndPeakToTroughRatio > param.maxScndPeakToTroughRatio_noise) = 0; % NOISE
+
+param.maxScndPeakToTroughRatio_noise = 0.8; % peak must be less. this is actually for a repolarization_peak to trough ratio - the name here is misleading. 
+
+% waveform - non-somatic
+param.maxPeak1ToPeak2Ratio_nonSomatic = 3; % if units have an initial peak before the trough,
+    % it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit. 
+param.minMainPeakToTroughRatio_nonSomatic_nonSomatic = 0.8;
+param.minWidthFirstPeak_nonSomatic_nonSomatic = 4; % in samples 
+param.minWidthMainTrough_nonSomatic_nonSomatic = 5; % in samples
+param.minTroughToPeak2Ratio_nonSomatic = 5; % trough should be min 5 x bigger than 1rst peak to count as non-somatic 
 
 if param.computeSpatialDecay == 1 && param.spDecayLinFit == 1
     unitType(qMetric.spatialDecaySlope > param.minSpatialDecaySlope) = 0; % NOISE
@@ -86,11 +99,11 @@ if isfield(qMetric, 'isSomatic') % old pre 09/2024 method
     end
 else
 
-   isNonSomatic = (abs(qMetric.mainTrough_size ./ qMetric.mainPeak_before_size) < param.minMainPeakToTroughRatio &...
-        qMetric.mainPeak_before_width < param.minWidthFirstPeak &...
-        qMetric.mainTrough_width < param.minWidthMainTrough &...
-        abs(qMetric.mainPeak_before_size./qMetric.mainPeak_after_size) > param.firstPeakRatio) | ...
-        abs(max([qMetric.mainPeak_before_size, qMetric.mainPeak_after_size], [], 2)./ qMetric.mainTrough_size) > param.minTroughToPeakRatio;
+   isNonSomatic = (qMetric.troughToPeak2Ratio < param.minTroughToPeak2Ratio_nonSomatic &...
+        qMetric.mainPeak_before_width < param.minWidthFirstPeak_nonSomatic &...
+        qMetric.mainTrough_width < param.minWidthMainTrough_nonSomatic &...
+        qMetric.peak1ToPeak2Ratio > param.maxPeak1ToPeak2Ratio_nonSomatic) | ...
+        qMetric.mainPeakToTroughRatio > param.maxMainPeakToTroughRatio_nonSomatic;
     if param.splitGoodAndMua_NonSomatic
         unitType(isNonSomatic & unitType == 1) = 3; % GOOD NON-SOMATIC
         unitType(isNonSomatic & unitType == 2) = 4; % MUA NON-SOMATIC

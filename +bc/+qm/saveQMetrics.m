@@ -15,21 +15,19 @@ function qMetric = saveQMetrics(param, qMetric, forGUI, savePath, medianSpikeDep
 % ------
 % ephysProperties: reformated ephysProperties structure into a table array
 
+% check quality metric and apram names
+[qMetric, param] = bc.qm.prettify_names(qMetric, param);
+
 % Save full drift information
 if param.computeDrift
     parquetwrite([fullfile(savePath, 'templates._bc_medianSpikeDepth.parquet')], array2table(medianSpikeDepth))
     parquetwrite([fullfile(savePath, 'time_chunks._bc_medianSpikeDepth.parquet')], array2table(timeBins))
 end
 % Get ratios
-qMetric.scndPeakToTroughRatio = abs(qMetric.mainPeak_after_size./qMetric.mainTrough_size);
-invalid_peaks = (abs(qMetric.mainTrough_size./qMetric.mainPeak_before_size) > param.minMainPeakToTroughRatio | ...
-                            qMetric.mainPeak_before_width > param.minWidthFirstPeak | ...
-                            qMetric.mainTrough_width > param.minWidthMainTrough);
-peak1_2_ratio = (abs(qMetric.mainPeak_before_size./qMetric.mainPeak_after_size));
-
-qMetric.peak1ToPeak2Ratio = peak1_2_ratio;
+invalid_peaks = (qMetric.troughToPeak2Ratio> param.minTroughToPeak2Ratio_nonSomatic | ...
+                            qMetric.mainPeak_before_width > param.minWidthFirstPeak_nonSomatic | ...
+                            qMetric.mainTrough_width > param.minWidthMainTrough_nonSomatic);
 qMetric.peak1ToPeak2Ratio(invalid_peaks) = 0;
-qMetric.mainPeakToTroughRatio = abs(max([qMetric.mainPeak_before_size, qMetric.mainPeak_after_size], [], 2)./qMetric.mainTrough_size);
 
 if ~exist(savePath, 'dir')
     mkdir(fullfile(savePath))
@@ -52,15 +50,10 @@ if param.saveMatFileForGUI
 end
 
 % compute the waveform ratios 
-qMetric.secndPeakToTroughRatio = abs(qMetric.mainPeak_after_size./qMetric.mainTrough_size);
-invalid_peaks = (abs(qMetric.mainTrough_size./qMetric.mainPeak_before_size) > param.minMainPeakToTroughRatio | ...
-                            qMetric.mainPeak_before_width > param.minWidthFirstPeak | ...
-                            qMetric.mainTrough_width > param.minWidthMainTrough);
-peak1_2_ratio = (abs(qMetric.mainPeak_before_size./qMetric.mainPeak_after_size));
-
-qMetric.peak1ToPeak2Ratio = peak1_2_ratio;
+invalid_peaks = (qMetric.troughToPeak2Ratio > param.minTroughToPeak2Ratio_nonSomatic | ...
+                            qMetric.mainPeak_before_width > param.minWidthFirstPeak_nonSomatic | ...
+                            qMetric.mainTrough_width > param.minWidthMainTrough_nonSomatic);
 qMetric.peak1ToPeak2Ratio(invalid_peaks) = 0;
-qMetric.mainPeakToTroughRatio = abs(max([qMetric.mainPeak_before_size, qMetric.mainPeak_after_size], [], 2)./qMetric.mainTrough_size);
 
 % save fraction refractory period violations for all different tauR times
 parquetwrite([fullfile(savePath, 'templates._bc_fractionRefractoryPeriodViolationsPerTauR.parquet')], array2table(qMetric.fractionRPVs))

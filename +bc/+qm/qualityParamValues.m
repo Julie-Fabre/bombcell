@@ -160,14 +160,15 @@ param.minSpatialDecaySlopeExp = 0.01; % in a.u./um
 param.maxSpatialDecaySlopeExp = 0.1; % in a.u./um
 param.maxWvBaselineFraction = 0.3; % maximum absolute value in waveform baseline
     % should not exceed this fraction of the waveform's abolute peak value
-param.minTroughToPeakRatio = 0.8; % peak must be less. this is actually for a repolarization_peak to trough ratio - the name here is misleading. 
+param.maxScndPeakToTroughRatio_noise = 0.8; % peak must be less than this x the trough 
 
 % waveform - non-somatic
-param.firstPeakRatio = 3; % if units have an initial peak before the trough,
+param.maxPeak1ToPeak2Ratio_nonSomatic = 3; % if units have an initial peak before the trough,
     % it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit. 
-param.minWidthFirstPeak = 4; % in samples
-param.minMainPeakToTroughRatio = 5; % trough should be min 5 x bigger than 1rst peak to count as non-somatic 
-param.minWidthMainTrough = 5; % in samples
+param.maxMainPeakToTroughRatio_nonSomatic = 0.8; % peak must be less than this x the trough 
+param.minWidthFirstPeak_nonSomatic = 4; % in samples 
+param.minWidthMainTrough_nonSomatic = 5; % in samples
+param.minTroughToPeak2Ratio_nonSomatic = 5; % trough should be min 5 x bigger than 1rst peak to count as non-somatic 
 
 % distance metrics
 param.isoDmin = 20; % minimum isolation distance value

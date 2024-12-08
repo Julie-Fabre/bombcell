@@ -37,6 +37,7 @@ if param.plotDetails
     figure('Color', 'none');
 end
 
+
 for iTimeChunk = 1:numel(timeChunks) - 1
 
     theseAmplitudes_here = theseAmplitudes(theseSpikeTimes >= timeChunks(iTimeChunk) & ...
@@ -81,7 +82,7 @@ for iTimeChunk = 1:numel(timeChunks) - 1
 
     %% symmetric
     % mirror the unit's amplitudes
-    % median smooth ti get more accurate peak ]
+    % median smooth to get more accurate peak 
     spikeCountsPerAmpliBin_smooth = smoothdata(spikeCountsPerAmpliBin, 'movmedian', 5);
     maxAmpli_val_smooth = find(spikeCountsPerAmpliBin_smooth == max(spikeCountsPerAmpliBin_smooth), 1);
 
