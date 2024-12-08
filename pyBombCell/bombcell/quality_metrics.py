@@ -1560,8 +1560,13 @@ def get_quality_unit_type(param, quality_metrics):
     unit_type[
         quality_metrics["waveform_baseline_flatness"] > param["max_wv_baseline_fraction"]
     ] = 0
-    unit_type[quality_metrics["spatial_decay_slope"] > param["min_spatial_decay_slope"]] = 0
-    unit_type[quality_metrics["spatial_decay_slope"] < param["max_spatial_decay_slope"]] = 0
+    if param["sp_decay_lin_fit"]:
+        unit_type[quality_metrics["spatial_decay_slope"] < param["min_spatial_decay_slope_exp"]] = 0
+        unit_type[quality_metrics["spatial_decay_slope"] > param["max_spatial_decay_slope_exp"]] = 0
+    else:
+        unit_type[quality_metrics["spatial_decay_slope"] < param["min_spatial_decay_slope"]] = 0
+
+    unit_type[quality_metrics["scnd_peak_to_trough_ratio"] > param["max_scnd_peak_to_trough_ratio_noise"]] = 0
     # classify non-somatic 
 
     is_non_somatic = (
