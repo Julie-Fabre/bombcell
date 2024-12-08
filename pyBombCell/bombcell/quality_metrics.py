@@ -1000,9 +1000,13 @@ def waveform_shape(
     this_waveform = template_waveforms[this_unit, :, peak_channels[this_unit]]
 
     if param["sp_decay_lin_fit"]:
-        num_points_spatial_decay_fit = 6
+        CHANNEL_TOLERANCE = 33 # need to make more restricive. for most geometries, this includes all the channels.
+        MIN_CHANNELS_FOR_FIT = 5
+        NUM_CHANNELS_FOR_FIT = 6
     else:
-        num_points_spatial_decay_fit = 10
+        CHANNEL_TOLERANCE = 33
+        MIN_CHANNELS_FOR_FIT = 8
+        NUM_CHANNELS_FOR_FIT = 10
         
     if np.any(np.isnan(this_waveform)):
         n_peaks = np.nan
@@ -1011,7 +1015,7 @@ def waveform_shape(
         peak_locs = np.nan
         trough_locs = np.nan
         waveform_duration_peak_trough = np.nan
-        spatial_decay_points = np.full((1, num_points_spatial_decay_fit), np.nan)
+        spatial_decay_points = np.full((1, NUM_CHANNELS_FOR_FIT), np.nan)
         spatial_decay_slope = np.nan
         waveform_baseline = np.nan
     else:
@@ -1214,86 +1218,81 @@ def waveform_shape(
         y_dist[not_these_x] = (
             y_dist.max()
         )  # set the bad x_to max y, this keeps the shape of the array
-        # CHOOSE HOW MANY POINT
 
-        use_these_channels = np.argsort(y_dist)[:num_points_spatial_decay_fit]  # Doing 12?
+        if param["sp_decay_lin_fit"]:
+            use_these_channels = np.argsort(y_dist)[:NUM_CHANNELS_FOR_FIT] 
 
-        # Distance fomr the main channels
-        channel_distances = np.sqrt(
-            np.sum(
-                np.square(channel_positions[use_these_channels] - current_max_channel),
-                axis=1,
+            # Distance fomr the main channels
+            channel_distances = np.sqrt(
+                np.sum(
+                    np.square(channel_positions[use_these_channels] - current_max_channel),
+                    axis=1,
+                )
             )
-        )
 
-        spatial_decay_points = np.max(
-            np.abs(template_waveforms[this_unit, :, use_these_channels]), axis=1
-        )
-
-        sort_idx = np.argsort(channel_distances)
-        channel_distances = channel_distances[sort_idx]
-        spatial_decay_points = spatial_decay_points[sort_idx]
-
-        if param["normalize_spatial_decay"]:
-            spatial_decay_points = spatial_decay_points / np.max(spatial_decay_points)
-
-        # estimate initial paramters
-        intercept = np.max(
-            spatial_decay_points
-        )  # Take the max value of the max channel
-        grad = (spatial_decay_points[1] - spatial_decay_points[0]) / (
-            channel_distances[1] - channel_distances[0]
-        )
-
-        # Can add p0 to linear params, but not needed as easier to fit linear curve
-        out_linear = curve_fit(linear_fit, channel_distances, spatial_decay_points)[
-            0
-        ]  #
-
-        # NOTE code is duplicated as linear and exponential need a different number of channels
-        use_these_channels = np.argsort(y_dist)[:num_points_spatial_decay_fit]  # Doing 12?
-
-        # Distance fomr the main channels
-        channel_distances = np.sqrt(
-            np.sum(
-                np.square(channel_positions[use_these_channels] - current_max_channel),
-                axis=1,
+            spatial_decay_points = np.max(
+                np.abs(template_waveforms[this_unit, :, use_these_channels]), axis=1
             )
-        )
 
-        spatial_decay_points = np.max(
-            np.abs(template_waveforms[this_unit, :, use_these_channels]), axis=1
-        )
+            sort_idx = np.argsort(channel_distances)
+            channel_distances = channel_distances[sort_idx]
+            spatial_decay_points = spatial_decay_points[sort_idx]
 
-        sort_idx = np.argsort(channel_distances)
-        channel_distances = channel_distances[sort_idx]
-        spatial_decay_points = spatial_decay_points[sort_idx]
+            if param["normalize_spatial_decay"]:
+                spatial_decay_points = spatial_decay_points / np.max(spatial_decay_points)
 
-        if param["normalize_spatial_decay"]:
-            spatial_decay_points = spatial_decay_points / np.max(spatial_decay_points)
+            # estimate initial paramters
+            intercept = np.max(
+                spatial_decay_points
+            )  # Take the max value of the max channel
+            grad = (spatial_decay_points[1] - spatial_decay_points[0]) / (
+                channel_distances[1] - channel_distances[0]
+            )
 
-        # estimate initial paramters
-        intercept = np.max(
-            spatial_decay_points
-        )  # Take the max value of the max channel
-        grad = (spatial_decay_points[1] - spatial_decay_points[0]) / (
-            channel_distances[1] - channel_distances[0]
-        )
+            # Can add p0 to linear params, but not needed as easier to fit linear curve
+            out_linear = curve_fit(linear_fit, channel_distances, spatial_decay_points)[
+                0
+            ]  #
+            spatial_decay_slope = out_linear[0]
+        else:
+            use_these_channels = np.argsort(y_dist)[:NUM_CHANNELS_FOR_FIT]  
 
-        out_exp = curve_fit(
-            exp_fit,
-            channel_distances,
-            spatial_decay_points,
-            p0=(grad, intercept),
-            maxfev=2000,
-        )[0]
+            # Distance fomr the main channels
+            channel_distances = np.sqrt(
+                np.sum(
+                    np.square(channel_positions[use_these_channels] - current_max_channel),
+                    axis=1,
+                )
+            )
 
-        linear_spatial_decay = out_linear[0]
-        exp_spaital_decay = out_exp[0]
-        # CURRENTLY just use linear
-        spatial_decay_slope = out_linear[0]
-        # TRYING EXP
-        spatial_decay_slope = out_exp[0]
+            spatial_decay_points = np.max(
+                np.abs(template_waveforms[this_unit, :, use_these_channels]), axis=1
+            )
+
+            sort_idx = np.argsort(channel_distances)
+            channel_distances = channel_distances[sort_idx]
+            spatial_decay_points = spatial_decay_points[sort_idx]
+
+            if param["normalize_spatial_decay"]:
+                spatial_decay_points = spatial_decay_points / np.max(spatial_decay_points)
+
+            # estimate initial paramters
+            intercept = np.max(
+                spatial_decay_points
+            )  # Take the max value of the max channel
+            grad = (spatial_decay_points[1] - spatial_decay_points[0]) / (
+                channel_distances[1] - channel_distances[0]
+            )
+
+            out_exp = curve_fit(
+                exp_fit,
+                channel_distances,
+                spatial_decay_points,
+                p0=(grad, intercept),
+                maxfev=2000,
+            )[0]
+        
+            spatial_decay_slope = out_exp[0]
 
         # get waveform baseline fraction
         if ~np.isnan(waveform_baseline_window)[0]:
