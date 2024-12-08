@@ -1,0 +1,28 @@
+# macOS system files
+.DS_Store
+pyBombCell/.DS_Store
+
+# Python package files
+pyBombCell/pyBombCell.egg-info/
+
+# Common Python files to ignore
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
