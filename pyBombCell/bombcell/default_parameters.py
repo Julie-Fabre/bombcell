@@ -9,7 +9,7 @@ def get_default_parameters(
     gain_to_uV=None,
 ):
     param = {
-        # quality metric computation and display parameters
+        # Quality metric computation and display parameters
         ## general 
         "show_detail_plots": False,  # show step-by-step plots
         "show_summary_plots": True,  # Summary plots of quality metrics
@@ -91,8 +91,9 @@ def get_default_parameters(
         "keep_only_somatic": True,  # keep only somatic units
         "min_wv_duration": 100,  # in us
         "max_wv_duration": 800,  # in us
-        "min_spatial_decay_slope": -0.01,  # in a.u / um
-        "max_spatial_decay_slope": -0.1,  # in a.u / um
+        "minSpatialDecaySlope": -0.008,
+        "min_spatial_decay_slope_exp": -0.01,  # in a.u / um
+        "max_spatial_decay_slope_exp": -0.1,  # in a.u / um
         "max_wv_baseline_fraction": 0.3,  # maximum absolute value in waveform baseline should not
         # exceed this fraction of the waveforms's absolute peak
         "max_second_peak_to_trough_ratio_noise": 0.8, 
@@ -118,7 +119,10 @@ def get_default_parameters(
 
     if ephys_meta_dir is not None:
         param["ephys_meta_file"] = ephys_meta_dir
-        param["gain_to_uV"] = np.NaN
+        if gain_to_uV is not None and not np.isnan(gain_to_uV):
+            param["gain_to_uV"] = gain_to_uV
+        else:
+            param["gain_to_uV"] = np.NaN
     else:
         param["ephys_meta_file"] = None
         param["gain_to_uV"] = gain_to_uV
@@ -221,7 +225,7 @@ def default_parameters_for_unitmatch(
         "max_wave_duration": 800,  # in us
         "min_spatial_decay_slope": -0.01,  # in a.u / um
         "max_spatial_decay_slope": -0.1,  # in a.u / um
-        "max_wave_baseline_fraction": 0.3,  # maximum absolute value in waveform baseline should not
+        "max_wv_baseline_fraction": 0.3,  # maximum absolute value in waveform baseline should not
         # exceed this fraction of the waveforms's absolute peak
         # determine if ALL unit is somatic or non-somatic
         "non_somatic_trough_peak_ratio": 1.25,
