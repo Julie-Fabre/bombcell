@@ -999,7 +999,11 @@ def waveform_shape(
 
     this_waveform = template_waveforms[this_unit, :, peak_channels[this_unit]]
 
-    # NOTE if using raw waveforms may need to change this !!
+    if param["sp_decay_lin_fit"]:
+        num_points_spatial_decay_fit = 6
+    else:
+        num_points_spatial_decay_fit = 10
+        
     if np.any(np.isnan(this_waveform)):
         n_peaks = np.nan
         n_troughs = np.nan
@@ -1007,7 +1011,7 @@ def waveform_shape(
         peak_locs = np.nan
         trough_locs = np.nan
         waveform_duration_peak_trough = np.nan
-        spatial_decay_points = np.full((1, 6), np.nan)
+        spatial_decay_points = np.full((1, num_points_spatial_decay_fit), np.nan)
         spatial_decay_slope = np.nan
         waveform_baseline = np.nan
     else:
@@ -1212,7 +1216,7 @@ def waveform_shape(
         )  # set the bad x_to max y, this keeps the shape of the array
         # CHOOSE HOW MANY POINT
 
-        use_these_channels = np.argsort(y_dist)[:6]  # Doing 12?
+        use_these_channels = np.argsort(y_dist)[:num_points_spatial_decay_fit]  # Doing 12?
 
         # Distance fomr the main channels
         channel_distances = np.sqrt(
@@ -1247,7 +1251,7 @@ def waveform_shape(
         ]  #
 
         # NOTE code is duplicated as linear and exponential need a different number of channels
-        use_these_channels = np.argsort(y_dist)[:12]  # Doing 12?
+        use_these_channels = np.argsort(y_dist)[:num_points_spatial_decay_fit]  # Doing 12?
 
         # Distance fomr the main channels
         channel_distances = np.sqrt(
