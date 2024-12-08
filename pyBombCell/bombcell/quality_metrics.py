@@ -39,9 +39,9 @@ def get_waveform_peak_channel(template_waveforms):
 @njit(cache=True)
 def remove_duplicates(
     batch_spike_times_samples,
-    batch_spike_templates,
+    batch_spike_clusters,
     batch_template_amplitudes,
-    batch_spike_templates_flat,
+    batch_spike_clusters_flat,
     peak_channels,
     duplicate_spike_window_samples,
 ):
@@ -53,11 +53,11 @@ def remove_duplicates(
     ----------
     batch_spike_times_samples : ndarray
         A batch of spike times in samples
-    batch_spike_templates : ndarray
+    batch_spike_clusters : ndarray
         A batch of spike templates
     batch_template_amplitudes : ndarray
         A batch of spike template amplitudes
-    batch_spike_templates_flat : ndarray
+    batch_spike_clusters_flat : ndarray
         A batch of the flattened spike templates
     peak_channels : ndarray
         The max channel for each unit
@@ -73,7 +73,7 @@ def remove_duplicates(
     num_spikes = batch_spike_times_samples.shape[0]
     remove_idx = np.zeros(num_spikes)
     # spike counts for the batch
-    unit_spike_counts = np.bincount(batch_spike_templates[:, 0])
+    unit_spike_counts = np.bincount(batch_spike_clusters[:, 0])
 
     # go through each spike in the batch
     for spike_idx1 in range(num_spikes):
@@ -89,12 +89,12 @@ def remove_duplicates(
                 continue
 
             if (
-                peak_channels[batch_spike_templates_flat[spike_idx1]]
-                != peak_channels[batch_spike_templates_flat[spike_idx2]]
+                peak_channels[batch_spike_clusters_flat[spike_idx1]]
+                != peak_channels[batch_spike_clusters_flat[spike_idx2]]
             ):
                 continue
             # intra-unit removal
-            if batch_spike_templates[spike_idx1] == batch_spike_templates[spike_idx2]:
+            if batch_spike_clusters[spike_idx1] == batch_spike_clusters[spike_idx2]:
                 if (
                     np.abs(
                         batch_spike_times_samples[spike_idx1]
@@ -114,7 +114,7 @@ def remove_duplicates(
                         remove_idx[spike_idx2] = 1
 
             # inter-unit removal
-            if batch_spike_templates[spike_idx1] != batch_spike_templates[spike_idx2]:
+            if batch_spike_clusters[spike_idx1] != batch_spike_clusters[spike_idx2]:
                 if (
                     np.abs(
                         batch_spike_times_samples[spike_idx1]
@@ -124,8 +124,8 @@ def remove_duplicates(
                 ):
                     # keep spike from unit with less spikes
                     if (
-                        unit_spike_counts[batch_spike_templates[spike_idx1]]
-                        < unit_spike_counts[batch_spike_templates[spike_idx2]]
+                        unit_spike_counts[batch_spike_clusters[spike_idx1]]
+                        < unit_spike_counts[batch_spike_clusters[spike_idx2]]
                     ):
                         batch_spike_times_samples[spike_idx1] = np.nan
                         remove_idx[spike_idx1] = 1
@@ -138,7 +138,7 @@ def remove_duplicates(
 
 def remove_duplicate_spikes(
     spike_times_samples,
-    spike_templates,
+    spike_clusters,
     template_amplitudes,
     peak_channels,
     save_path,
@@ -156,7 +156,7 @@ def remove_duplicate_spikes(
     ----------
     spike_times_samples : ndarray
         The array of spike times in samples
-    spike_templates : ndarray
+    spike_clusters : ndarray
         The array which assigns each spike a id
     template_amplitudes : ndarray
         The array of amplitudes for each spike
@@ -202,11 +202,11 @@ def remove_duplicate_spikes(
             duplicate_spike_idx = np.zeros(num_spikes_full)
 
             # rename the spike templates according to the remaining templates
-            good_templates_idx = np.unique(spike_templates)
+            good_templates_idx = np.unique(spike_clusters)
             new_spike_idx = np.full(max(good_templates_idx) + 1, np.nan)
             new_spike_idx[good_templates_idx] = np.arange(good_templates_idx.shape[0])
-            spike_templates_flat = (
-                new_spike_idx[spike_templates].squeeze().astype(np.int32)
+            spike_clusters_flat = (
+                new_spike_idx[spike_clusters].squeeze().astype(np.int32)
             )
 
             # check for duplicate spikes in batches
@@ -219,15 +219,15 @@ def remove_duplicate_spikes(
                 batch_spike_times_samples = spike_times_samples[
                     start_idx:end_idx
                 ].astype(np.float32)
-                batch_spike_templates = spike_templates[start_idx:end_idx]
+                batch_spike_clusters = spike_clusters[start_idx:end_idx]
                 batch_template_amplitudes = template_amplitudes[start_idx:end_idx]
-                batch_spike_templates_flat = spike_templates_flat[start_idx:end_idx]
+                batch_spike_clusters_flat = spike_clusters_flat[start_idx:end_idx]
 
                 batch_remove_idx = remove_duplicates(
                     batch_spike_times_samples,
-                    batch_spike_templates,
+                    batch_spike_clusters,
                     batch_template_amplitudes,
-                    batch_spike_templates_flat,
+                    batch_spike_clusters_flat,
                     peak_channels,
                     duplicate_spike_window_samples,
                 )
@@ -245,13 +245,13 @@ def remove_duplicate_spikes(
             )
 
         # check if there are any empty units
-        unique_templates = np.unique(spike_templates)
-        non_empty_units = np.unique(spike_templates[duplicate_spike_idx == 0])
+        unique_templates = np.unique(spike_clusters)
+        non_empty_units = np.unique(spike_clusters[duplicate_spike_idx == 0])
         empty_unit_idx = np.isin(unique_templates, non_empty_units, invert=True)
 
         # remove any empty units and duplicate spikes
         spike_times_samples = spike_times_samples[np.argwhere(duplicate_spike_idx == 0)]
-        spike_templates = spike_templates[np.argwhere(duplicate_spike_idx == 0)]
+        spike_clusters = spike_clusters[np.argwhere(duplicate_spike_idx == 0)]
         template_amplitudes = template_amplitudes[np.argwhere(duplicate_spike_idx == 0)]
 
         if pc_features is not None:
@@ -272,7 +272,7 @@ def remove_duplicate_spikes(
             non_empty_units,
             duplicate_spike_idx,
             spike_times_samples,
-            spike_templates,
+            spike_clusters,
             template_amplitudes,
             pc_features,
             raw_waveforms_full,
@@ -655,7 +655,7 @@ def time_chunks_to_keep(
     time_chunks,
     these_spike_times,
     these_amplitudes,
-    spike_templates,
+    spike_clusters,
     spike_times_seconds,
     param,
 ):
@@ -674,7 +674,7 @@ def time_chunks_to_keep(
         The spike times of this unit
     these_amplitudes : ndarray
         The spike amplitudes of this unit
-    spike_templates : ndarray
+    spike_clusters : ndarray
         The template waveforms of this unit
     spike_times_seconds : ndarray
         The spike times in seconds
@@ -753,8 +753,8 @@ def time_chunks_to_keep(
             these_spike_times <= use_these_times[-1],
         )
     ]
-    these_spike_templates = spike_templates.copy().astype(np.int32)
-    these_spike_templates[
+    these_spike_clusters = spike_clusters.copy().astype(np.int32)
+    these_spike_clusters[
         np.logical_or(
             spike_times_seconds < use_these_times[0],
             spike_times_seconds > use_these_times[-1],
@@ -774,7 +774,7 @@ def time_chunks_to_keep(
     return (
         these_spike_times,
         these_amplitudes,
-        these_spike_templates,
+        these_spike_clusters,
         use_this_time_start,
         use_this_time_end,
         use_tauR,
@@ -832,7 +832,7 @@ def presence_ratio(these_spike_times, use_this_time_start, use_this_time_end, pa
 def max_drift_estimate(
     pc_features,
     pc_features_idx,
-    spike_templates,
+    spike_clusters,
     these_spike_times,
     this_unit,
     channel_positions,
@@ -847,7 +847,7 @@ def max_drift_estimate(
         The top 3 PC features for the 32 most active channels for each unit
     pc_features_idx : ndarray
         Which channels are used for each unit
-    spike_templates : ndarray
+    spike_clusters : ndarray
         The array which assigns each spike to a unit
     these_spike_times : ndarray
         The spike times for the current unit
@@ -866,20 +866,20 @@ def max_drift_estimate(
     channel_positions_z = channel_positions[:, 1]
     drift_bin_size = param["drift_bin_size"]
 
-    # good_times_spikes = np.ones_like(spike_templates)
-    # good_times_spikes[spike_templates == -1] = 0
+    # good_times_spikes = np.ones_like(spike_clusters)
+    # good_times_spikes[spike_clusters == -1] = 0
     # pc_features_drift = pc_features[good_times_spikes.squeeze() == 1, :, :]
-    # spike_templates_current = spike_templates[good_times_spikes == 1].astype(np.int32)
+    # spike_clusters_current = spike_clusters[good_times_spikes == 1].astype(np.int32)
 
-    # pc_features_pc1 = pc_features_drift[spike_templates_current.squeeze() == this_unit, 0, :]
+    # pc_features_pc1 = pc_features_drift[spike_clusters_current.squeeze() == this_unit, 0, :]
     # pc_features_pc1[pc_features_pc1 < 0] = 0 # remove negative entries
 
-    pc_features_pc1 = pc_features[spike_templates.squeeze() == this_unit, 0, :]
+    pc_features_pc1 = pc_features[spike_clusters.squeeze() == this_unit, 0, :]
     pc_features_pc1[pc_features_pc1 < 0] = 0  # remove negative entries
 
     # NOTE test with and without only getting this units pc feature idx here
     # this is just several thousand copies of the same 32/ n_pce_feature array
-    # spike_pc_feature = pc_features_idx[spike_templates[spike_templates == this_unit].squeeze(), :] # get channel for each spike
+    # spike_pc_feature = pc_features_idx[spike_clusters[spike_clusters == this_unit].squeeze(), :] # get channel for each spike
     spike_pc_feature = pc_features_idx[this_unit, :]
 
     pc_channel_pos_weights = channel_positions_z[spike_pc_feature]
@@ -1360,7 +1360,7 @@ def custom_mahal_loop(test_spike_features, current_spike_features):
 
 
 def get_distance_metrics(
-    pc_features, pc_features_idx, this_unit, spike_templates, param
+    pc_features, pc_features_idx, this_unit, spike_clusters, param
 ):
     """
     Generates functional distance based metrics, such as L-ratio mahalanobis distance
@@ -1373,7 +1373,7 @@ def get_distance_metrics(
         Which channels are used for each unit
     this_unit : int
         The current unit id
-    spike_templates : ndarray
+    spike_clusters : ndarray
         The array which assigns each spike to a unit
     param : dict
         The param dictionary
@@ -1391,7 +1391,7 @@ def get_distance_metrics(
     these_channels = pc_features_idx[this_unit, 0 : param["n_channels_iso_dist"]]
 
     # current units features
-    this_unit_idx = spike_templates == this_unit
+    this_unit_idx = spike_clusters == this_unit
     n_spikes = this_unit_idx.sum()
     these_features = np.reshape(
         pc_features[this_unit_idx.squeeze(), :, : param["n_channels_iso_dist"]],
@@ -1399,7 +1399,7 @@ def get_distance_metrics(
     )
 
     # precompute unique identifiers and allocate space for outputs
-    unique_ids = np.unique(spike_templates[spike_templates > 0])
+    unique_ids = np.unique(spike_clusters[spike_clusters > 0])
     mahalanobis_distance = np.zeros(unique_ids.size)  # JF: i don't think is used
     other_units_double = np.zeros(unique_ids.size)  # JF: i don't think is used
     # NOTE the first dimension here maybe the prbolem?
@@ -1417,7 +1417,7 @@ def get_distance_metrics(
 
         # identify channels associated with the current ID
         current_channels = pc_features_idx[id, :]
-        other_spikes = np.squeeze(spike_templates == id)
+        other_spikes = np.squeeze(spike_clusters == id)
 
         # process channels that are common between current channels and the unit of interest
         # NOTE This bit could likely be faster.

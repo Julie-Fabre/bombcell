@@ -129,7 +129,7 @@ def nearest_channels(quality_metrics, channel_positions, this_unit, unique_templ
 
     unit_id = unique_templates[this_unit]  # JF: this function needs some cleaning up
 
-    max_channel = quality_metrics["max_channels"][unit_id].squeeze()
+    max_channel = quality_metrics["peak_channels"][unit_id].squeeze()
 
     x, y = channel_positions[max_channel, :]
 
@@ -370,7 +370,7 @@ def set_unit_nan(unit_idx, quality_metrics, not_enough_spikes):
 def get_all_quality_metrics(
     unique_templates,
     spike_times_seconds,
-    spike_templates,
+    spike_clusters,
     template_amplitudes,
     time_chunks,
     pc_features,
@@ -390,7 +390,7 @@ def get_all_quality_metrics(
         An of unique id for each unit
     spike_times_seconds : ndarray
         The times of spikes in seconds
-    spike_templates : ndarray
+    spike_clusters : ndarray
         The id of each spike
     template_amplitudes : ndarray
         The amplitude for each spike
@@ -435,8 +435,8 @@ def get_all_quality_metrics(
         quality_metrics["phy_cluster_id"][unit_idx] = this_unit
         quality_metrics["cluster_id"][unit_idx] = this_unit
 
-        these_spike_times = spike_times_seconds[spike_templates == this_unit]
-        these_amplitudes = template_amplitudes[spike_templates == this_unit]
+        these_spike_times = spike_times_seconds[spike_clusters == this_unit]
+        these_amplitudes = template_amplitudes[spike_clusters == this_unit]
 
         # number of spikes
         quality_metrics["n_spikes"][unit_idx] = these_spike_times.shape[0]
@@ -472,7 +472,7 @@ def get_all_quality_metrics(
         (
             these_spike_times,
             these_amplitudes,
-            these_spike_templates,
+            these_spike_clusters,
             quality_metrics["use_these_times_start"][unit_idx],
             quality_metrics["use_these_times_stop"][unit_idx],
             quality_metrics["RPV_use_tauR_est"][unit_idx],
@@ -482,7 +482,7 @@ def get_all_quality_metrics(
             time_chunks,
             these_spike_times,
             these_amplitudes,
-            spike_templates,
+            spike_clusters,
             spike_times_seconds,
             param,
         )
@@ -536,7 +536,7 @@ def get_all_quality_metrics(
         ) = qm.max_drift_estimate(
             pc_features,
             pc_features_idx,
-            these_spike_templates,
+            these_spike_clusters,
             these_spike_times,
             this_unit,
             channel_positions,
@@ -571,7 +571,7 @@ def get_all_quality_metrics(
         ) = qm.waveform_shape(
             template_waveforms,
             this_unit,
-            quality_metrics["max_channels"],
+            quality_metrics["peak_channels"],
             channel_positions,
             waveform_baseline_window,
             param,
@@ -593,7 +593,7 @@ def get_all_quality_metrics(
                 quality_metrics["l_ratio"][unit_idx],
                 quality_metrics["silhouette_score"][unit_idx],
             ) = qm.get_distance_metrics(
-                pc_features, pc_features_idx, this_unit, spike_templates, param
+                pc_features, pc_features_idx, this_unit, spike_clusters, param
             )
         time_dist_metrics = time.time() - time_tmp
 
@@ -636,7 +636,7 @@ def run_bombcell(ks_dir, raw_dir, save_path, param):
     """
     (
         spike_times_samples,
-        spike_templates,
+        spike_clusters,
         template_waveforms,
         template_amplitudes,
         pc_features,
@@ -649,7 +649,7 @@ def run_bombcell(ks_dir, raw_dir, save_path, param):
     if raw_dir != None:
         raw_waveforms_full, raw_waveforms_peak_channel, SNR = erw.extract_raw_waveforms(
             param,
-            spike_templates.squeeze(),
+            spike_clusters.squeeze(),
             spike_times_samples.squeeze(),
             param["re_extract_raw"],
             save_path,
@@ -661,25 +661,25 @@ def run_bombcell(ks_dir, raw_dir, save_path, param):
         param["extract_raw_waveforms"] = False  # No waveforms to extract!
 
     # pre-load peak channels
-    max_channels = qm.get_waveform_max_channel(template_waveforms)
+    peak_channels = qm.get_waveform_max_channel(template_waveforms)
 
     # Remove duplicate spikes
     (
         non_empty_units,
         duplicate_spike_idx,
         spike_times_samples,
-        spike_templates,
+        spike_clusters,
         template_amplitudes,
         pc_features,
         raw_waveforms_full,
         raw_waveforms_peak_channel,
         signal_to_noise_ratio,
-        max_channels,
+        peak_channels,
     ) = qm.remove_duplicate_spikes(
         spike_times_samples,
-        spike_templates,
+        spike_clusters,
         template_amplitudes,
-        max_channels,
+        peak_channels,
         save_path,
         param,
         pc_features=pc_features,
@@ -706,13 +706,13 @@ def run_bombcell(ks_dir, raw_dir, save_path, param):
     # Initialize quality metrics dictionary
     n_units = unique_templates.size
     quality_metrics = create_quality_metrics_dict(n_units, snr=SNR)
-    quality_metrics["max_channels"] = max_channels
+    quality_metrics["peak_channels"] = peak_channels
 
     # Complete with remaining quality metrics
     quality_metrics, times = get_all_quality_metrics(
         unique_templates,
         spike_times_seconds,
-        spike_templates,
+        spike_clusters,
         template_amplitudes,
         time_chunks,
         pc_features,

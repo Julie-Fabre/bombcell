@@ -214,7 +214,7 @@ def save_quality_metrics_as_parquet(
 
     file_path = os.path.join(save_path, file_name)
     quality_metrics_save = quality_metrics.copy()
-    quality_metrics_save["max_channels"] = quality_metrics["max_channels"][
+    quality_metrics_save["peak_channels"] = quality_metrics["peak_channels"][
         quality_metrics["cluster_id"].astype(int)
     ]
     quality_metrics_df = pd.DataFrame.from_dict(quality_metrics_save)
