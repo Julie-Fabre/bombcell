@@ -956,7 +956,7 @@ def make_qm_table(quality_metrics, param, unique_templates, unit_type):
     return qm_table
 
 
-def manage_if_raw_data(raw_dir):
+def manage_if_raw_data(raw_dir, gain_to_uv):
     """
     This function handles the decompression of raw data and extraction of gain if a raw_dir is given
 
@@ -970,11 +970,14 @@ def manage_if_raw_data(raw_dir):
     tuple
         The raw data path the meta directory path and the gain if applicable
     """
-    if raw_dir != None:
+    if raw_dir is not  None:
         ephys_raw_data, meta_path = erw.manage_data_compression(
             raw_dir, decompressed_data_local=raw_dir
         )
-        gain_to_uV = erw.get_gain_spikeglx(meta_path)
+        if gain_to_uV is not None and not np.isnan(gain_to_uV):
+            gain_to_uV = erw.get_gain_spikeglx(meta_path)
+        else:
+            gain_to_uV = np.nan
         return ephys_raw_data, meta_path, gain_to_uV
     else:
         return None, None, None

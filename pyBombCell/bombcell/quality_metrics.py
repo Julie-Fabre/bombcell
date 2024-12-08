@@ -1157,8 +1157,6 @@ def waveform_shape(
             peaks = this_waveform[peak_locs]
 
         # determine if the unit is somatic or non-somatic
-        param["non_somatic_trough_peak_ratio"] = 0.8
-        param["non_somatic_peak_before_to_after_ratio"] = 1.2
         if (np.max(troughs) * param["non_somatic_trough_peak_ratio"]) < np.max(peaks):
             is_somatic = False
         elif used_max_before & (
