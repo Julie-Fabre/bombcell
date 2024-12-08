@@ -55,7 +55,7 @@ param.maxScndPeakToTroughRatio_noise = 0.8; % peak must be less. this is actuall
 % waveform - non-somatic
 param.maxPeak1ToPeak2Ratio_nonSomatic = 3; % if units have an initial peak before the trough,
     % it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit. 
-param.minMainPeakToTroughRatio_nonSomatic_nonSomatic = 0.8;
+param.minMainPeakToTroughRatio_nonSomatic = 0.8;
 param.minWidthFirstPeak_nonSomatic_nonSomatic = 4; % in samples 
 param.minWidthMainTrough_nonSomatic_nonSomatic = 5; % in samples
 param.minTroughToPeak2Ratio_nonSomatic = 5; % trough should be min 5 x bigger than 1rst peak to count as non-somatic 
