@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from bombcell.save_utils import path_handler
 
 
-def get_waveform_max_channel(template_waveforms):
+def get_waveform_peak_channel(template_waveforms):
     """
     Get the max channel for all templates (channel with largest amplitude)
 
@@ -31,9 +31,9 @@ def get_waveform_max_channel(template_waveforms):
     """
     max_value = np.max(template_waveforms, axis=1)
     min_value = np.min(template_waveforms, axis=1)
-    max_channels = np.argmax(max_value - min_value, axis=1)
+    peak_channels = np.argmax(max_value - min_value, axis=1)
 
-    return max_channels
+    return peak_channels
 
 
 @njit(cache=True)
@@ -42,7 +42,7 @@ def remove_duplicates(
     batch_spike_templates,
     batch_template_amplitudes,
     batch_spike_templates_flat,
-    max_channels,
+    peak_channels,
     duplicate_spike_window_samples,
 ):
     """
@@ -59,7 +59,7 @@ def remove_duplicates(
         A batch of spike template amplitudes
     batch_spike_templates_flat : ndarray
         A batch of the flattened spike templates
-    max_channels : ndarray
+    peak_channels : ndarray
         The max channel for each unit
     duplicate_spike_window_samples : int
         The length of time in samples which marks a pair of overlapping spike
@@ -89,8 +89,8 @@ def remove_duplicates(
                 continue
 
             if (
-                max_channels[batch_spike_templates_flat[spike_idx1]]
-                != max_channels[batch_spike_templates_flat[spike_idx2]]
+                peak_channels[batch_spike_templates_flat[spike_idx1]]
+                != peak_channels[batch_spike_templates_flat[spike_idx2]]
             ):
                 continue
             # intra-unit removal
@@ -140,7 +140,7 @@ def remove_duplicate_spikes(
     spike_times_samples,
     spike_templates,
     template_amplitudes,
-    max_channels,
+    peak_channels,
     save_path,
     param,
     pc_features=None,
@@ -160,7 +160,7 @@ def remove_duplicate_spikes(
         The array which assigns each spike a id
     template_amplitudes : ndarray
         The array of amplitudes for each spike
-    max_channels : ndarray
+    peak_channels : ndarray
         The max channel for each spike
     save_path : str
         The path to the save directory
@@ -228,7 +228,7 @@ def remove_duplicate_spikes(
                     batch_spike_templates,
                     batch_template_amplitudes,
                     batch_spike_templates_flat,
-                    max_channels,
+                    peak_channels,
                     duplicate_spike_window_samples,
                 )
                 duplicate_spike_idx[start_idx:end_idx] = batch_remove_idx
@@ -278,7 +278,7 @@ def remove_duplicate_spikes(
             raw_waveforms_full,
             raw_waveforms_peak_channel,
             signal_to_noise_ratio,
-            max_channels,
+            peak_channels,
         )
 
 
@@ -637,7 +637,7 @@ def fraction_RP_violations(
                 for i in range(N):
                     for j in range(i+1, N):
                         isi = chunk_spike_times[j] - chunk_spike_times[i]
-                        if isi <= tauR and isi >= param.tauC:
+                        if isi <= tauR and isi >= tauC:
                             isi_violations_sum += 1
 
                 underRoot = 1 - (isi_violations_sum * (duration_chunk - 2 * N * tauC)) / (N **2 * (tauR - tauC))
@@ -961,7 +961,7 @@ def exp_fit(x, m, A):
 def waveform_shape(
     template_waveforms,
     this_unit,
-    max_channels,
+    peak_channels,
     channel_positions,
     waveform_baseline_window,
     param,
@@ -975,7 +975,7 @@ def waveform_shape(
         The template waveforms
     this_unit : int
         The current unit ID
-    max_channels : ndarray
+    peak_channels : ndarray
         The max channel for each unit
     channel_positions : ndarray
         The (x,y) positions of each channel
@@ -993,7 +993,7 @@ def waveform_shape(
     # waveform_base_line_window, min_thresh_detect_peaks_trough, first_peak_ratio, normalize_sp_decay, plothis
     min_thresh_detect_peaks_troughs = param["min_thresh_detect_peaks_troughs"]
 
-    this_waveform = template_waveforms[this_unit, :, max_channels[this_unit]]
+    this_waveform = template_waveforms[this_unit, :, peak_channels[this_unit]]
 
     # NOTE if using raw waveforms may need to change this !!
     if np.any(np.isnan(this_waveform)):
@@ -1191,7 +1191,7 @@ def waveform_shape(
         # get waveforms spatial decay across channels
         # DECIDE which fit
         # linear_fit = True
-        max_channel = max_channels[this_unit]
+        max_channel = peak_channels[this_unit]
 
         
         x, y = channel_positions[max_channel, :]
