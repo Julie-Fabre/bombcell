@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from bombcell.save_utils import path_handler
 
 
-def get_waveform_max_channel(template_waveforms):
+def get_waveform_peak_channel(template_waveforms):
     """
     Get the max channel for all templates (channel with largest amplitude)
 
@@ -31,18 +31,18 @@ def get_waveform_max_channel(template_waveforms):
     """
     max_value = np.max(template_waveforms, axis=1)
     min_value = np.min(template_waveforms, axis=1)
-    max_channels = np.argmax(max_value - min_value, axis=1)
+    peak_channels = np.argmax(max_value - min_value, axis=1)
 
-    return max_channels
+    return peak_channels
 
 
 @njit(cache=True)
 def remove_duplicates(
     batch_spike_times_samples,
-    batch_spike_templates,
+    batch_spike_clusters,
     batch_template_amplitudes,
-    batch_spike_templates_flat,
-    max_channels,
+    batch_spike_clusters_flat,
+    peak_channels,
     duplicate_spike_window_samples,
 ):
     """
@@ -53,13 +53,13 @@ def remove_duplicates(
     ----------
     batch_spike_times_samples : ndarray
         A batch of spike times in samples
-    batch_spike_templates : ndarray
+    batch_spike_clusters : ndarray
         A batch of spike templates
     batch_template_amplitudes : ndarray
         A batch of spike template amplitudes
-    batch_spike_templates_flat : ndarray
+    batch_spike_clusters_flat : ndarray
         A batch of the flattened spike templates
-    max_channels : ndarray
+    peak_channels : ndarray
         The max channel for each unit
     duplicate_spike_window_samples : int
         The length of time in samples which marks a pair of overlapping spike
@@ -73,7 +73,7 @@ def remove_duplicates(
     num_spikes = batch_spike_times_samples.shape[0]
     remove_idx = np.zeros(num_spikes)
     # spike counts for the batch
-    unit_spike_counts = np.bincount(batch_spike_templates[:, 0])
+    unit_spike_counts = np.bincount(batch_spike_clusters[:, 0])
 
     # go through each spike in the batch
     for spike_idx1 in range(num_spikes):
@@ -89,12 +89,12 @@ def remove_duplicates(
                 continue
 
             if (
-                max_channels[batch_spike_templates_flat[spike_idx1]]
-                != max_channels[batch_spike_templates_flat[spike_idx2]]
+                peak_channels[batch_spike_clusters_flat[spike_idx1]]
+                != peak_channels[batch_spike_clusters_flat[spike_idx2]]
             ):
                 continue
             # intra-unit removal
-            if batch_spike_templates[spike_idx1] == batch_spike_templates[spike_idx2]:
+            if batch_spike_clusters[spike_idx1] == batch_spike_clusters[spike_idx2]:
                 if (
                     np.abs(
                         batch_spike_times_samples[spike_idx1]
@@ -114,7 +114,7 @@ def remove_duplicates(
                         remove_idx[spike_idx2] = 1
 
             # inter-unit removal
-            if batch_spike_templates[spike_idx1] != batch_spike_templates[spike_idx2]:
+            if batch_spike_clusters[spike_idx1] != batch_spike_clusters[spike_idx2]:
                 if (
                     np.abs(
                         batch_spike_times_samples[spike_idx1]
@@ -124,8 +124,8 @@ def remove_duplicates(
                 ):
                     # keep spike from unit with less spikes
                     if (
-                        unit_spike_counts[batch_spike_templates[spike_idx1]]
-                        < unit_spike_counts[batch_spike_templates[spike_idx2]]
+                        unit_spike_counts[batch_spike_clusters[spike_idx1]]
+                        < unit_spike_counts[batch_spike_clusters[spike_idx2]]
                     ):
                         batch_spike_times_samples[spike_idx1] = np.nan
                         remove_idx[spike_idx1] = 1
@@ -138,9 +138,9 @@ def remove_duplicates(
 
 def remove_duplicate_spikes(
     spike_times_samples,
-    spike_templates,
+    spike_clusters,
     template_amplitudes,
-    max_channels,
+    peak_channels,
     save_path,
     param,
     pc_features=None,
@@ -156,11 +156,11 @@ def remove_duplicate_spikes(
     ----------
     spike_times_samples : ndarray
         The array of spike times in samples
-    spike_templates : ndarray
+    spike_clusters : ndarray
         The array which assigns each spike a id
     template_amplitudes : ndarray
         The array of amplitudes for each spike
-    max_channels : ndarray
+    peak_channels : ndarray
         The max channel for each spike
     save_path : str
         The path to the save directory
@@ -202,11 +202,11 @@ def remove_duplicate_spikes(
             duplicate_spike_idx = np.zeros(num_spikes_full)
 
             # rename the spike templates according to the remaining templates
-            good_templates_idx = np.unique(spike_templates)
+            good_templates_idx = np.unique(spike_clusters)
             new_spike_idx = np.full(max(good_templates_idx) + 1, np.nan)
             new_spike_idx[good_templates_idx] = np.arange(good_templates_idx.shape[0])
-            spike_templates_flat = (
-                new_spike_idx[spike_templates].squeeze().astype(np.int32)
+            spike_clusters_flat = (
+                new_spike_idx[spike_clusters].squeeze().astype(np.int32)
             )
 
             # check for duplicate spikes in batches
@@ -219,16 +219,16 @@ def remove_duplicate_spikes(
                 batch_spike_times_samples = spike_times_samples[
                     start_idx:end_idx
                 ].astype(np.float32)
-                batch_spike_templates = spike_templates[start_idx:end_idx]
+                batch_spike_clusters = spike_clusters[start_idx:end_idx]
                 batch_template_amplitudes = template_amplitudes[start_idx:end_idx]
-                batch_spike_templates_flat = spike_templates_flat[start_idx:end_idx]
+                batch_spike_clusters_flat = spike_clusters_flat[start_idx:end_idx]
 
                 batch_remove_idx = remove_duplicates(
                     batch_spike_times_samples,
-                    batch_spike_templates,
+                    batch_spike_clusters,
                     batch_template_amplitudes,
-                    batch_spike_templates_flat,
-                    max_channels,
+                    batch_spike_clusters_flat,
+                    peak_channels,
                     duplicate_spike_window_samples,
                 )
                 duplicate_spike_idx[start_idx:end_idx] = batch_remove_idx
@@ -245,13 +245,13 @@ def remove_duplicate_spikes(
             )
 
         # check if there are any empty units
-        unique_templates = np.unique(spike_templates)
-        non_empty_units = np.unique(spike_templates[duplicate_spike_idx == 0])
+        unique_templates = np.unique(spike_clusters)
+        non_empty_units = np.unique(spike_clusters[duplicate_spike_idx == 0])
         empty_unit_idx = np.isin(unique_templates, non_empty_units, invert=True)
 
         # remove any empty units and duplicate spikes
         spike_times_samples = spike_times_samples[np.argwhere(duplicate_spike_idx == 0)]
-        spike_templates = spike_templates[np.argwhere(duplicate_spike_idx == 0)]
+        spike_clusters = spike_clusters[np.argwhere(duplicate_spike_idx == 0)]
         template_amplitudes = template_amplitudes[np.argwhere(duplicate_spike_idx == 0)]
 
         if pc_features is not None:
@@ -272,13 +272,13 @@ def remove_duplicate_spikes(
             non_empty_units,
             duplicate_spike_idx,
             spike_times_samples,
-            spike_templates,
+            spike_clusters,
             template_amplitudes,
             pc_features,
             raw_waveforms_full,
             raw_waveforms_peak_channel,
             signal_to_noise_ratio,
-            max_channels,
+            peak_channels,
         )
 
 
@@ -369,8 +369,25 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
             these_spike_times < time_chunks[time_chunk_idx + 1],
         )
 
+        these_amplitudes_here = these_amplitudes[chunk_idx]
+        
+        if these_amplitudes_here.size == 0:
+            percent_missing_gaussian[time_chunk_idx] = np.nan
+            percent_missing_symmetric[time_chunk_idx] = np.nan
+            amp_bin_gaussian = np.nan
+            spike_counts_per_amp_bin_gaussian = np.nan
+            gaussian_fit = np.nan
+            continue
+        # check for extreme outliers (see https://github.com/Julie-Fabre/bombcell/issues/179)
+        # flagging for now but should we remove them entirely? have a separate function to this effect?
+        iqr_threshold = 10
+        quantiles = np.percentile(these_amplitudes_here, [1, 99])
+        iqr = quantiles[1] - quantiles[0]
+        outliers_iqr = these_amplitudes_here > (quantiles[1] + iqr_threshold * iqr)
+        these_amplitudes_here = these_amplitudes_here[~outliers_iqr]
+
         spike_counts_per_amp_bin, bins = np.histogram(
-            these_amplitudes[chunk_idx == 1], bins=n_bins
+            these_amplitudes_here, bins=n_bins
         )
         if np.sum(spike_counts_per_amp_bin) > 5:  # at least 5 spikes in time bin
             max_amp_bin = np.argwhere(
@@ -426,9 +443,6 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
 
             percent_missing_symmetric[time_chunk_idx] = p_missing
 
-            # NOTE currently not doing KS test
-            ## KS test, currently is skipped
-
             ## Gaussian
             # make it cover all values from 0
             amp_bin_gaussian = bins[:-1] + bin_step / 2
@@ -453,8 +467,8 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
                     (
                         np.max(spike_counts_per_amp_bin_gaussian),
                         mode_seed,
-                        np.nanstd(these_amplitudes),
-                        np.percentile(these_amplitudes, 1),
+                        np.nanstd(these_amplitudes_here),
+                        np.percentile(these_amplitudes_here, 1),
                     )
                 )
                 fit_params = curve_fit(
@@ -504,29 +518,17 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
                 plt.ylabel("amplitude")
                 plt.legend()
                 plt.show()
-
-    # #NOT done for each time chunk
-    # if param['show_detail_plots']:
-    #     plt.scatter(these_spike_times, these_amplitudes, s = 10)
-    #     plt.xlim((0,these_spike_times.max()))
-    #     plt.ylim((0, these_amplitudes.max()))
-    #     plt.xlabel('time (s)')
-    #     plt.ylabel('amplitude scaling')
-    #     for time_chunk in time_chunks:
-    #         plt.axvline(time_chunk, ls = '--')
     return (
         percent_missing_gaussian,
         percent_missing_symmetric
     )
 
 
-# NOTE ML needs these_amplitudes only for a plot!
 def fraction_RP_violations(
     these_spike_times, these_amplitudes, time_chunks, param, use_this_tauR=None
 ):
     """
     This function estimates the fraction of refractory period violations for a given unit.
-    #NOTE this function/method could likely be improved (To many units have more than 1 fraction RPVs)
 
     Parameters
     ----------
@@ -583,68 +585,70 @@ def fraction_RP_violations(
 
         duration_chunk = time_chunks[time_chunk_idx + 1] - time_chunks[time_chunk_idx]
         # total times at which refractory period violation can occur
-        for i, tauR in enumerate(tauR_window):
+        for i_tau_r, tauR in enumerate(tauR_window):
             if param["use_hill_method"]:
                 ## equivalent to the old code!
-                a = (
+                k = (
                     2
                     * (tauR - tauC)
                     * n_chunk**2
-                    / (time_chunks[time_chunk_idx + 1] - time_chunks[time_chunk_idx])
                 )
+                T = (time_chunks[time_chunk_idx + 1] - time_chunks[time_chunk_idx])
 
-                num_violations[time_chunk_idx, i] = np.sum(
+                num_violations[time_chunk_idx, i_tau_r] = np.sum(
                     np.diff(chunk_spike_times) <= tauR
                 )
 
                 if (
-                    num_violations[time_chunk_idx, i] == 0
+                    num_violations[time_chunk_idx, i_tau_r] == 0
                 ):  # NO observed refractory period violations
                     # this might be due to having no/few spikes in the region, use presence ratio
-                    fraction_RPVs[time_chunk_idx, i] = 0
-                    overestimate_bool[time_chunk_idx, i] = 0
+                    fraction_RPVs[time_chunk_idx, i_tau_r] = 0
+                    overestimate_bool[time_chunk_idx, i_tau_r] = 0
                 else:  # solve the eqn above
-                    rts = np.roots((-1, 1, -num_violations[time_chunk_idx, i] / a))
+                    rts = np.roots((-k, k, -num_violations[time_chunk_idx, i_tau_r] * T))
 
                     if ~np.all(np.iscomplex(rts)):
-                        fraction_RPVs[time_chunk_idx, i] = np.min(rts)
-                        overestimate_bool[time_chunk_idx, i] = 0
+                        fraction_RPVs[time_chunk_idx, i_tau_r] = np.min(rts)
+                        overestimate_bool[time_chunk_idx, i_tau_r] = 0
 
                     # function returns imaginary number if r is too high: over-estimate number
                     else:
-                        overestimate_bool[time_chunk_idx, i] = 1
                         if (
-                            num_violations[time_chunk_idx, i] < n_chunk
+                            num_violations[time_chunk_idx, i_tau_r] < n_chunk
                         ):  # to not get a negative number or a 0
-                            fraction_RPVs[time_chunk_idx, i] = num_violations[
-                                time_chunk_idx, i
+                            fraction_RPVs[time_chunk_idx, i_tau_r] = num_violations[
+                                time_chunk_idx, i_tau_r
                             ] / (
                                 2
                                 * (tauR - tauC)
-                                * (n_chunk - num_violations[time_chunk_idx, i])
+                                * (n_chunk - num_violations[time_chunk_idx, i_tau_r])
                             )
                             # fraction_RPVs[time_chunk_idx, i] = num_violations[time_chunk_idx, i] / ((n_chunk - num_violations[time_chunk_idx, i]))
                         else:
-                            fraction_RPVs[time_chunk_idx, i] = 1
+                            fraction_RPVs[time_chunk_idx, i_tau_r] = 1
+                            overestimate_bool[time_chunk_idx, i_tau_r] = 1
 
                     if (
-                        fraction_RPVs[time_chunk_idx, i] > 1
+                        fraction_RPVs[time_chunk_idx, i_tau_r] > 1
                     ):  # A value above 1 makes no sense, the assumptions are failing
-                        fraction_RPVs[time_chunk_idx, i] = 1
+                        fraction_RPVs[time_chunk_idx, i_tau_r] = 1
             else:
-                num_violations = np.sum(
-                    np.logical_and(chunk_ISIs <= tauR, chunk_ISIs > tauC)
-                )  # number of violations
+            
+                N = len(chunk_spike_times)
+                isi_violations_sum = 0
 
-                under_root_value = 1 - num_violations * duration_chunk / (
-                    n_chunk**2 * (tauR - tauC)
-                )
+                for i in range(N):
+                    for j in range(i+1, N):
+                        isi = chunk_spike_times[j] - chunk_spike_times[i]
+                        if isi <= tauR and isi >= tauC:
+                            isi_violations_sum += 1
 
-                if under_root_value >= 0:
-                    fraction_RPVs[time_chunk_idx, i] = 1 - np.sqrt(under_root_value)
+                underRoot = 1 - (isi_violations_sum * (duration_chunk - 2 * N * tauC)) / (N **2 * (tauR - tauC))
+                if underRoot >= 0:
+                    fraction_RPVs[time_chunk_idx, i_tau_r] = 1 - np.sqrt(underRoot)
                 else:
-                    # assumptions have broken down
-                    fraction_RPVs[time_chunk_idx, i] = 1
+                    fraction_RPVs[time_chunk_idx, i_tau_r] = 1
 
     return fraction_RPVs, num_violations
 
@@ -655,7 +659,7 @@ def time_chunks_to_keep(
     time_chunks,
     these_spike_times,
     these_amplitudes,
-    spike_templates,
+    spike_clusters,
     spike_times_seconds,
     param,
 ):
@@ -674,7 +678,7 @@ def time_chunks_to_keep(
         The spike times of this unit
     these_amplitudes : ndarray
         The spike amplitudes of this unit
-    spike_templates : ndarray
+    spike_clusters : ndarray
         The template waveforms of this unit
     spike_times_seconds : ndarray
         The spike times in seconds
@@ -753,8 +757,8 @@ def time_chunks_to_keep(
             these_spike_times <= use_these_times[-1],
         )
     ]
-    these_spike_templates = spike_templates.copy().astype(np.int32)
-    these_spike_templates[
+    these_spike_clusters = spike_clusters.copy().astype(np.int32)
+    these_spike_clusters[
         np.logical_or(
             spike_times_seconds < use_these_times[0],
             spike_times_seconds > use_these_times[-1],
@@ -774,7 +778,7 @@ def time_chunks_to_keep(
     return (
         these_spike_times,
         these_amplitudes,
-        these_spike_templates,
+        these_spike_clusters,
         use_this_time_start,
         use_this_time_end,
         use_tauR,
@@ -832,7 +836,7 @@ def presence_ratio(these_spike_times, use_this_time_start, use_this_time_end, pa
 def max_drift_estimate(
     pc_features,
     pc_features_idx,
-    spike_templates,
+    spike_clusters,
     these_spike_times,
     this_unit,
     channel_positions,
@@ -847,7 +851,7 @@ def max_drift_estimate(
         The top 3 PC features for the 32 most active channels for each unit
     pc_features_idx : ndarray
         Which channels are used for each unit
-    spike_templates : ndarray
+    spike_clusters : ndarray
         The array which assigns each spike to a unit
     these_spike_times : ndarray
         The spike times for the current unit
@@ -866,20 +870,20 @@ def max_drift_estimate(
     channel_positions_z = channel_positions[:, 1]
     drift_bin_size = param["drift_bin_size"]
 
-    # good_times_spikes = np.ones_like(spike_templates)
-    # good_times_spikes[spike_templates == -1] = 0
+    # good_times_spikes = np.ones_like(spike_clusters)
+    # good_times_spikes[spike_clusters == -1] = 0
     # pc_features_drift = pc_features[good_times_spikes.squeeze() == 1, :, :]
-    # spike_templates_current = spike_templates[good_times_spikes == 1].astype(np.int32)
+    # spike_clusters_current = spike_clusters[good_times_spikes == 1].astype(np.int32)
 
-    # pc_features_pc1 = pc_features_drift[spike_templates_current.squeeze() == this_unit, 0, :]
+    # pc_features_pc1 = pc_features_drift[spike_clusters_current.squeeze() == this_unit, 0, :]
     # pc_features_pc1[pc_features_pc1 < 0] = 0 # remove negative entries
 
-    pc_features_pc1 = pc_features[spike_templates.squeeze() == this_unit, 0, :]
+    pc_features_pc1 = pc_features[spike_clusters.squeeze() == this_unit, 0, :]
     pc_features_pc1[pc_features_pc1 < 0] = 0  # remove negative entries
 
     # NOTE test with and without only getting this units pc feature idx here
     # this is just several thousand copies of the same 32/ n_pce_feature array
-    # spike_pc_feature = pc_features_idx[spike_templates[spike_templates == this_unit].squeeze(), :] # get channel for each spike
+    # spike_pc_feature = pc_features_idx[spike_clusters[spike_clusters == this_unit].squeeze(), :] # get channel for each spike
     spike_pc_feature = pc_features_idx[this_unit, :]
 
     pc_channel_pos_weights = channel_positions_z[spike_pc_feature]
@@ -961,7 +965,7 @@ def exp_fit(x, m, A):
 def waveform_shape(
     template_waveforms,
     this_unit,
-    max_channels,
+    peak_channels,
     channel_positions,
     waveform_baseline_window,
     param,
@@ -975,7 +979,7 @@ def waveform_shape(
         The template waveforms
     this_unit : int
         The current unit ID
-    max_channels : ndarray
+    peak_channels : ndarray
         The max channel for each unit
     channel_positions : ndarray
         The (x,y) positions of each channel
@@ -993,9 +997,13 @@ def waveform_shape(
     # waveform_base_line_window, min_thresh_detect_peaks_trough, first_peak_ratio, normalize_sp_decay, plothis
     min_thresh_detect_peaks_troughs = param["min_thresh_detect_peaks_troughs"]
 
-    this_waveform = template_waveforms[this_unit, :, max_channels[this_unit]]
+    this_waveform = template_waveforms[this_unit, :, peak_channels[this_unit]]
 
-    # NOTE if using raw waveforms may need to change this !!
+    if param["sp_decay_lin_fit"]:
+        num_points_spatial_decay_fit = 6
+    else:
+        num_points_spatial_decay_fit = 10
+        
     if np.any(np.isnan(this_waveform)):
         n_peaks = np.nan
         n_troughs = np.nan
@@ -1003,7 +1011,7 @@ def waveform_shape(
         peak_locs = np.nan
         trough_locs = np.nan
         waveform_duration_peak_trough = np.nan
-        spatial_decay_points = np.full((1, 6), np.nan)
+        spatial_decay_points = np.full((1, num_points_spatial_decay_fit), np.nan)
         spatial_decay_slope = np.nan
         waveform_baseline = np.nan
     else:
@@ -1191,7 +1199,7 @@ def waveform_shape(
         # get waveforms spatial decay across channels
         # DECIDE which fit
         # linear_fit = True
-        max_channel = max_channels[this_unit]
+        max_channel = peak_channels[this_unit]
 
         
         x, y = channel_positions[max_channel, :]
@@ -1208,7 +1216,7 @@ def waveform_shape(
         )  # set the bad x_to max y, this keeps the shape of the array
         # CHOOSE HOW MANY POINT
 
-        use_these_channels = np.argsort(y_dist)[:6]  # Doing 12?
+        use_these_channels = np.argsort(y_dist)[:num_points_spatial_decay_fit]  # Doing 12?
 
         # Distance fomr the main channels
         channel_distances = np.sqrt(
@@ -1243,7 +1251,7 @@ def waveform_shape(
         ]  #
 
         # NOTE code is duplicated as linear and exponential need a different number of channels
-        use_these_channels = np.argsort(y_dist)[:12]  # Doing 12?
+        use_these_channels = np.argsort(y_dist)[:num_points_spatial_decay_fit]  # Doing 12?
 
         # Distance fomr the main channels
         channel_distances = np.sqrt(
@@ -1360,7 +1368,7 @@ def custom_mahal_loop(test_spike_features, current_spike_features):
 
 
 def get_distance_metrics(
-    pc_features, pc_features_idx, this_unit, spike_templates, param
+    pc_features, pc_features_idx, this_unit, spike_clusters, param
 ):
     """
     Generates functional distance based metrics, such as L-ratio mahalanobis distance
@@ -1373,7 +1381,7 @@ def get_distance_metrics(
         Which channels are used for each unit
     this_unit : int
         The current unit id
-    spike_templates : ndarray
+    spike_clusters : ndarray
         The array which assigns each spike to a unit
     param : dict
         The param dictionary
@@ -1391,7 +1399,7 @@ def get_distance_metrics(
     these_channels = pc_features_idx[this_unit, 0 : param["n_channels_iso_dist"]]
 
     # current units features
-    this_unit_idx = spike_templates == this_unit
+    this_unit_idx = spike_clusters == this_unit
     n_spikes = this_unit_idx.sum()
     these_features = np.reshape(
         pc_features[this_unit_idx.squeeze(), :, : param["n_channels_iso_dist"]],
@@ -1399,7 +1407,7 @@ def get_distance_metrics(
     )
 
     # precompute unique identifiers and allocate space for outputs
-    unique_ids = np.unique(spike_templates[spike_templates > 0])
+    unique_ids = np.unique(spike_clusters[spike_clusters > 0])
     mahalanobis_distance = np.zeros(unique_ids.size)  # JF: i don't think is used
     other_units_double = np.zeros(unique_ids.size)  # JF: i don't think is used
     # NOTE the first dimension here maybe the prbolem?
@@ -1417,7 +1425,7 @@ def get_distance_metrics(
 
         # identify channels associated with the current ID
         current_channels = pc_features_idx[id, :]
-        other_spikes = np.squeeze(spike_templates == id)
+        other_spikes = np.squeeze(spike_clusters == id)
 
         # process channels that are common between current channels and the unit of interest
         # NOTE This bit could likely be faster.
