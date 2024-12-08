@@ -319,7 +319,7 @@ def extract_raw_waveforms(
             shape=(int(n_elements / n_channels_rec), n_channels_rec),
         )
 
-        # filter so only spikes which have a full have width recordedcan be sampled
+        # filter so only spikes which have a full width recorded can be sampled
         spike_templates_filt = spike_templates[
             np.logical_or(
                 half_width < spike_times,

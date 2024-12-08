@@ -7,13 +7,13 @@ import pandas as pd
 import bombcell.extract_raw_waveforms as erw
 
 
-def load_ephys_data(ehpys_path):
+def load_ephys_data(ephys_path):
     """
     This function loads the necessary data from the spike sorting to run BombCell
 
     Parameters
     ----------
-    ehpys_path : str
+    ephys_path : str
         The path to the KiloSorted output file
 
     Returns
@@ -35,43 +35,39 @@ def load_ephys_data(ehpys_path):
         spike sorting
     """
     # in the ML version there is +1 which are not needed in python due to 0/1 indexing
-    # load spike templaes
-    if os.path.exists(os.path.join(ehpys_path, "spike_templates.npy")):
-        spike_templates = np.load(os.path.join(ehpys_path, "spike_templates.npy"))
-    else:
-        spike_templates = np.load(os.path.join(ehpys_path, "spike_clusters.npy"))
-        # templates = clusters < KS4, templates ~=clusters KS4
+    # load spike templates
+    spike_templates = np.load(os.path.join(ephys_path, "spike_clusters.npy"))
 
     # load in spike times
-    if os.path.exists(os.path.join(ehpys_path, "spike_times_corrected.npy")):
+    if os.path.exists(os.path.join(ephys_path, "spike_times_corrected.npy")):
         spike_times_samples = np.load(
-            os.path.join(ehpys_path, "spike_times_corrected.npy")
+            os.path.join(ephys_path, "spike_times_corrected.npy")
         )
     else:
-        spike_times_samples = np.load(os.path.join(ehpys_path, "spike_times.npy"))
+        spike_times_samples = np.load(os.path.join(ephys_path, "spike_times.npy"))
 
-    template_amplitudes = np.load(os.path.join(ehpys_path, "amplitudes.npy")).astype(
+    template_amplitudes = np.load(os.path.join(ephys_path, "amplitudes.npy")).astype(
         np.float64
     )
 
     # load and unwhiten templates
-    templates_waveforms_whitened = np.load(os.path.join(ehpys_path, "templates.npy"))
-    winv = np.load(os.path.join(ehpys_path, "whitening_mat_inv.npy"))
+    templates_waveforms_whitened = np.load(os.path.join(ephys_path, "templates.npy"))
+    winv = np.load(os.path.join(ephys_path, "whitening_mat_inv.npy"))
     templates_waveforms = np.zeros_like(templates_waveforms_whitened)
     for t in range(templates_waveforms.shape[0]):
         templates_waveforms[t, :, :] = (
             templates_waveforms_whitened[t, :, :].squeeze() @ winv
         )
 
-    if os.path.exists(os.path.join(ehpys_path, "pc_features.npy")):
-        pc_features = np.load(os.path.join(ehpys_path, "pc_features.npy")).squeeze()
-        pc_features_idx = np.load(os.path.join(ehpys_path, "pc_feature_ind.npy"))
+    if os.path.exists(os.path.join(ephys_path, "pc_features.npy")):
+        pc_features = np.load(os.path.join(ephys_path, "pc_features.npy")).squeeze()
+        pc_features_idx = np.load(os.path.join(ephys_path, "pc_feature_ind.npy"))
     else:
         pc_features = np.nan
         pc_features_idx = np.nan
 
-    channel_positions = np.load(os.path.join(ehpys_path, "channel_positions.npy"))
-    good_channels = np.load(os.path.join(ehpys_path, "channel_map.npy"))
+    channel_positions = np.load(os.path.join(ephys_path, "channel_positions.npy"))
+    good_channels = np.load(os.path.join(ephys_path, "channel_map.npy"))
 
     return (
         spike_times_samples,
