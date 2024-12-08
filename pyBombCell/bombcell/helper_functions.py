@@ -12,6 +12,38 @@ import bombcell.loading_utils as led
 import bombcell.quality_metrics as qm
 import bombcell.save_utils as su
 
+def get_metric_keys():
+    return [
+            "use_these_times_start",
+            "use_these_times_stop",
+            "RPV_use_tauR_est",
+            "percent_missing_gaussian",
+            "percent_missing_symmetric",
+            "fraction_RPVs",
+            "max_drift_estimate",
+            "cumulative_drift_estimate",
+            "presence_ratio",
+            "n_peaks",
+            "n_troughs",
+            "is_somatic",
+            "waveform_duration_peak_trough",
+            "spatial_decay_slope",
+            "waveform_baseline_flatness",
+            "trough",
+            "main_peak_before",
+            "main_peak_after",
+            "peak_before_width",
+            "trough_width",
+            "raw_amplitude",
+            "isolation_dist",
+            "l_ratio",
+            "silhouette_score",
+            "signal_to_noise_ratio",
+            "scnd_peak_to_trough_ratio",
+            "peak1_to_peak2_ratio",
+            "main_peak_to_trough_ratio",
+            "trough_to_peak2_ratio",
+            ]
 
 def show_times(
     times_spikes_missing_1,
@@ -19,7 +51,7 @@ def show_times(
     times_chunks_to_keep,
     times_spikes_missing_2,
     times_RPV_2,
-    times_pressence_ratio,
+    times_presence_ratio,
     times_max_drift,
     times_waveform_shape,
 ):
@@ -28,7 +60,7 @@ def show_times(
     print(f"The time the time chunks took: {times_chunks_to_keep.sum()}")
     print(f"The time the second spikes missing took: {times_spikes_missing_2.sum()}")
     print(f"The time the second RPV took: {times_RPV_2.sum()}")
-    print(f"The time the presence ratio took: {times_pressence_ratio.sum()}")
+    print(f"The time the presence ratio took: {times_presence_ratio.sum()}")
     print(f"The time the max drift took: {times_max_drift.sum()}")
     print(f"The time the waveform shapes took: {times_waveform_shape.sum()}")
 
@@ -336,84 +368,35 @@ def create_quality_metrics_dict(n_units, snr=None):
     dict
         The quality metrics dictionary
     """
+    init_keys = [
+        "phy_cluster_id",
+        "cluster_id",
+        "n_spikes"
+        ] + get_metric_keys()
 
     quality_metrics = {}
-    quality_metrics["phy_cluster_id"] = np.full(n_units, np.nan)
-    quality_metrics["cluster_id"] = np.full(n_units, np.nan)
-    quality_metrics["use_these_times_start"] = np.full(n_units, np.nan)
-    quality_metrics["use_these_times_stop"] = np.full(n_units, np.nan)
-    quality_metrics["RPV_use_tauR_est"] = np.full(n_units, np.nan)
+    for k in init_keys:
+        quality_metrics[k] = np.full(n_units, np.nan)
 
-    quality_metrics["percent_missing_gaussian"] = np.full(n_units, np.nan)
-    quality_metrics["percent_missing_symmetric"] = np.full(n_units, np.nan)
-    quality_metrics["fraction_RPVs"] = np.full(n_units, np.nan)
-    quality_metrics["max_drift_estimate"] = np.full(n_units, np.nan)
-    quality_metrics["cumulatve_drift_estimate"] = np.full(n_units, np.nan)
-    quality_metrics["n_spikes"] = np.full(n_units, np.nan)
-    quality_metrics["presence_ratio"] = np.full(n_units, np.nan)
-
-    quality_metrics["n_peaks"] = np.full(n_units, np.nan)
-    quality_metrics["n_troughs"] = np.full(n_units, np.nan)
-    quality_metrics["is_somatic"] = np.full(
-        n_units, np.nan
-    )  # JF: I don't think we need this?
-    quality_metrics["waveform_duration_peak_trough"] = np.full(n_units, np.nan)
-    # quality_metrics['spatial_decay_slope'] = np.zeros(unique_templates.shape[0]) # JF: Don't we need this? Ah or is it called exp_decay? Can you use the same name as in MATLAB :) ?
-    quality_metrics["waveform_baseline"] = np.full(n_units, np.nan)
-    quality_metrics["linear_decay"] = np.full(n_units, np.nan)
-    quality_metrics["exp_decay"] = np.full(n_units, np.nan)
-    quality_metrics["waveform_baseline"] = np.full(n_units, np.nan)
-    quality_metrics["trough"] = np.full(n_units, np.nan)
-    quality_metrics["main_peak_before"] = np.full(n_units, np.nan)
-    quality_metrics["main_peak_after"] = np.full(n_units, np.nan)
-    quality_metrics["width_before"] = np.full(n_units, np.nan)
-    quality_metrics["trough_width"] = np.full(n_units, np.nan)
-
-    quality_metrics["raw_amplitude"] = np.full(n_units, np.nan)
-
-    quality_metrics["isolation_dist"] = np.full(n_units, np.nan)
-    quality_metrics["l_ratio"] = np.full(n_units, np.nan)
-    quality_metrics["silhouette_score"] = np.full(n_units, np.nan)
-
+    # Use passed snr values if found
     if isinstance(snr, np.ndarray):
         quality_metrics["signal_to_noise_ratio"] = snr
-    else:
-        quality_metrics["signal_to_noise_ratio"] = np.full(
-            n_units, np.nan
-        )  # leave as array of NaN
 
     return quality_metrics
 
 
 def set_unit_nan(unit_idx, quality_metrics, not_enough_spikes):
+    """
+    Set quality metrics to NaN for units with too few spikes.
+    """
+    metrics_keys = get_metric_keys()
+    
+    for k in metrics_keys:
+        quality_metrics[k][unit_idx] = np.nan
+    
     not_enough_spikes[unit_idx] = 1
-    quality_metrics["use_these_times_start"][unit_idx] = np.nan
-    quality_metrics["use_these_times_stop"][unit_idx] = np.nan
-    quality_metrics["RPV_use_tauR_est"][unit_idx] = np.nan
-    quality_metrics["percent_missing_gaussian"][unit_idx] = np.nan
-    quality_metrics["percent_missing_symmetric"][unit_idx] = np.nan
-    quality_metrics["fraction_RPVs"][unit_idx] = np.nan
-    quality_metrics["max_drift_estimate"][unit_idx] = np.nan
-    quality_metrics["cumulatve_drift_estimate"][unit_idx] = np.nan
-    quality_metrics["n_peaks"][unit_idx] = np.nan
-    quality_metrics["n_troughs"][unit_idx] = np.nan
-    quality_metrics["waveform_duration_peak_trough"][unit_idx] = np.nan
-    # quality_metrics['spatial_decay_slope'][unit_idx] = np.nan # JF: Don't we need this?
-    quality_metrics["waveform_baseline"][unit_idx] = np.nan
-    quality_metrics["raw_amplitude"][unit_idx] = np.nan
-
-    quality_metrics["linear_decay"][unit_idx] = np.nan
-    quality_metrics["exp_decay"][unit_idx] = np.nan
-    quality_metrics["trough"][unit_idx] = np.nan
-    quality_metrics["main_peak_before"][unit_idx] = np.nan
-    quality_metrics["main_peak_after"][unit_idx] = np.nan
-    quality_metrics["width_before"][unit_idx] = np.nan
-    quality_metrics["trough_width"][unit_idx] = np.nan
-
-    quality_metrics["is_somatic"][unit_idx] = np.nan  # JF: I don't think we need this?
 
     return quality_metrics, not_enough_spikes
-
 
 def get_all_quality_metrics(
     unique_templates,
@@ -470,7 +453,7 @@ def get_all_quality_metrics(
     times_chunks_to_keep = np.zeros(unique_templates.shape[0])
     times_spikes_missing_2 = np.zeros(unique_templates.shape[0])
     times_RPV_2 = np.zeros(unique_templates.shape[0])
-    times_pressence_ratio = np.zeros(unique_templates.shape[0])
+    times_presence_ratio = np.zeros(unique_templates.shape[0])
     times_max_drift = np.zeros(unique_templates.shape[0])
     times_waveform_shape = np.zeros(unique_templates.shape[0])
     time_dist_metrics = np.zeros(unique_templates.shape[0])
@@ -503,9 +486,6 @@ def get_all_quality_metrics(
         (
             percent_missing_gaussian,
             percent_missing_symmetric,
-            amp_bin_gaussian,
-            spike_counts_per_amp_bin_gaussian,
-            gaussian_fit,
         ) = qm.perc_spikes_missing(
             these_amplitudes, these_spike_times, time_chunks, param
         )
@@ -550,9 +530,6 @@ def get_all_quality_metrics(
         (
             quality_metrics["percent_missing_gaussian"][unit_idx],
             quality_metrics["percent_missing_symmetric"][unit_idx],
-            amp_bin_gaussian,
-            spike_counts_per_amp_bin_gaussian,
-            gaussian_fit,
         ) = qm.perc_spikes_missing(
             these_amplitudes, these_spike_times, use_these_times, param
         )
@@ -580,13 +557,13 @@ def get_all_quality_metrics(
             quality_metrics["use_these_times_stop"][unit_idx],
             param,
         )
-        times_pressence_ratio[unit_idx] = time.time() - time_tmp
+        times_presence_ratio[unit_idx] = time.time() - time_tmp
 
         # maximum cumulative drift estimate
         time_tmp = time.time()
         (
             quality_metrics["max_drift_estimate"][unit_idx],
-            quality_metrics["cumulatve_drift_estimate"][unit_idx],
+            quality_metrics["cumulative_drift_estimate"][unit_idx],
         ) = qm.max_drift_estimate(
             pc_features,
             pc_features_idx,
@@ -609,23 +586,19 @@ def get_all_quality_metrics(
                 param["waveform_baseline_window_stop"],
             )
         )
+
         (
             quality_metrics["n_peaks"][unit_idx],
             quality_metrics["n_troughs"][unit_idx],
-            peak_locs,
-            trough_locs,
             quality_metrics["waveform_duration_peak_trough"][unit_idx],
-            spatial_decay_points,
-            quality_metrics["linear_decay"][unit_idx],
-            quality_metrics["exp_decay"][unit_idx],
-            quality_metrics["waveform_baseline"][unit_idx],
-            this_waveform,
-            quality_metrics["trough"][unit_idx],
-            quality_metrics["main_peak_before"][unit_idx],
-            quality_metrics["main_peak_after"][unit_idx],
-            quality_metrics["width_before"][unit_idx],
+            quality_metrics["spatial_decay_slope"][unit_idx],
+            quality_metrics["waveform_baseline_flatness"][unit_idx],
+            quality_metrics["scnd_peak_to_trough_ratio"][unit_idx],
+            quality_metrics["peak1_to_peak2_ratio"][unit_idx],
+            quality_metrics["main_peak_to_trough_ratio"][unit_idx],
+            quality_metrics["trough_to_peak2_ratio"][unit_idx],
+            quality_metrics["peak_before_width"][unit_idx],
             quality_metrics["trough_width"][unit_idx],
-            quality_metrics["is_somatic"][unit_idx],
         ) = qm.waveform_shape(
             template_waveforms,
             this_unit,
@@ -650,22 +623,18 @@ def get_all_quality_metrics(
                 quality_metrics["isolation_dist"][unit_idx],
                 quality_metrics["l_ratio"][unit_idx],
                 quality_metrics["silhouette_score"][unit_idx],
-                histrogram_mahal_units_counts,
-                histrogram_mahal_units_edges,
-                histrogram_mahal_noise_counts,
-                histrogram_mahal_noise_edges,
             ) = qm.get_distance_metrics(
                 pc_features, pc_features_idx, this_unit, spike_templates, param
             )
         time_dist_metrics = time.time() - time_tmp
 
     times = {
-        "times_spikes_missing_1": times_spikes_missing_1,
+        "times_spikes_missing_1": times_spikes_missing_1, # JF: what is this?
         "times_RPV_1": times_RPV_1,
         "times_chunks_to_keep": times_chunks_to_keep,
         "times_spikes_missing_2": times_spikes_missing_2,
         "times_RPV_2": times_RPV_2,
-        "times_pressence_ratio": times_pressence_ratio,
+        "times_presence_ratio": times_presence_ratio,
         "times_max_drift": times_max_drift,
         "times_waveform_shape": times_waveform_shape,
     }
