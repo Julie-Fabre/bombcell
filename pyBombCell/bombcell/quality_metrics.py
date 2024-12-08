@@ -369,8 +369,18 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
             these_spike_times < time_chunks[time_chunk_idx + 1],
         )
 
+        these_amplitudes_here = these_amplitudes[chunk_idx]
+        
+        # check for extreme outliers (see https://github.com/Julie-Fabre/bombcell/issues/179)
+        # flagging for now but should we remove them entirely? have a separate function to this effect?
+        iqr_threshold = 10
+        quantiles = np.percentile(these_amplitudes_here, [1, 99])
+        iqr = quantiles[1] - quantiles[0]
+        outliers_iqr = these_amplitudes_here > (quantiles[1] + iqr_threshold * iqr)
+        these_amplitudes_here = these_amplitudes_here[~outliers_iqr]
+
         spike_counts_per_amp_bin, bins = np.histogram(
-            these_amplitudes[chunk_idx == 1], bins=n_bins
+            these_amplitudes_here, bins=n_bins
         )
         if np.sum(spike_counts_per_amp_bin) > 5:  # at least 5 spikes in time bin
             max_amp_bin = np.argwhere(
@@ -426,9 +436,6 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
 
             percent_missing_symmetric[time_chunk_idx] = p_missing
 
-            # NOTE currently not doing KS test
-            ## KS test, currently is skipped
-
             ## Gaussian
             # make it cover all values from 0
             amp_bin_gaussian = bins[:-1] + bin_step / 2
@@ -453,8 +460,8 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
                     (
                         np.max(spike_counts_per_amp_bin_gaussian),
                         mode_seed,
-                        np.nanstd(these_amplitudes),
-                        np.percentile(these_amplitudes, 1),
+                        np.nanstd(these_amplitudes_here),
+                        np.percentile(these_amplitudes_here, 1),
                     )
                 )
                 fit_params = curve_fit(
@@ -504,16 +511,6 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
                 plt.ylabel("amplitude")
                 plt.legend()
                 plt.show()
-
-    # #NOT done for each time chunk
-    # if param['show_detail_plots']:
-    #     plt.scatter(these_spike_times, these_amplitudes, s = 10)
-    #     plt.xlim((0,these_spike_times.max()))
-    #     plt.ylim((0, these_amplitudes.max()))
-    #     plt.xlabel('time (s)')
-    #     plt.ylabel('amplitude scaling')
-    #     for time_chunk in time_chunks:
-    #         plt.axvline(time_chunk, ls = '--')
     return (
         percent_missing_gaussian,
         percent_missing_symmetric

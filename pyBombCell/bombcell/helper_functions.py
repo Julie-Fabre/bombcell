@@ -661,7 +661,7 @@ def run_bombcell(ks_dir, raw_dir, save_path, param):
         param["extract_raw_waveforms"] = False  # No waveforms to extract!
 
     # pre-load peak channels
-    peak_channels = qm.get_waveform_max_channel(template_waveforms)
+    peak_channels = qm.get_waveform_peak_channel(template_waveforms)
 
     # Remove duplicate spikes
     (
