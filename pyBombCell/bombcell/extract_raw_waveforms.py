@@ -274,7 +274,7 @@ def extract_raw_waveforms(
     max_cluster_id = unique_clusters[-1]
 
     # Get necessary info from param
-    raw_data_path = param["raw_data_dir"]
+    raw_data_file = param["raw_data_file"]
     meta_path = Path(param["ephys_meta_file"])
     n_channels = param["n_channels"]
     n_sync_channels = param["n_sync_channels"]
@@ -299,6 +299,8 @@ def extract_raw_waveforms(
         # assumes that raw_waveforms_full has empty rows for jumps in unit indices
         if raw_waveforms_full.shape[0] != max_cluster_id:
             recompute = True
+    else:
+        recompute = True
 
     # Extract the raw waveforms
     if recompute:
@@ -315,7 +317,7 @@ def extract_raw_waveforms(
         param["n_channels_rec"] = n_channels_rec
 
         raw_data = np.memmap(
-            raw_data_path,
+            raw_data_file,
             dtype="int16",
             shape=(int(n_elements / n_channels_rec), n_channels_rec),
         )

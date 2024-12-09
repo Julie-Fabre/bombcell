@@ -1,4 +1,5 @@
 import time
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from matplotlib.figure import Figure
@@ -614,7 +615,7 @@ def get_all_quality_metrics(
     return quality_metrics, times
 
 
-def run_bombcell(ks_dir, raw_dir, save_path, param):
+def run_bombcell(ks_dir, raw_file, save_path, param):
     """
     This function runs the entire bombcell pipeline from input data paths
 
@@ -622,8 +623,8 @@ def run_bombcell(ks_dir, raw_dir, save_path, param):
     ----------
     ks_dir : string
         The path to the KiloSort (or equivalent) save directory
-    raw_dir : string
-        The path to the raw data directory
+    raw_file : string
+        The path to the raw data file
     save_path : string
         The path to the directory to save the bombcell results
     param : dict
@@ -646,7 +647,7 @@ def run_bombcell(ks_dir, raw_dir, save_path, param):
     ) = load_ephys_data(ks_dir)
 
     # Extract or load in raw waveforms
-    if raw_dir != None:
+    if raw_file != None:
         raw_waveforms_full, raw_waveforms_peak_channel, SNR = extract_raw_waveforms(
             param,
             spike_clusters.squeeze(),
@@ -885,23 +886,23 @@ def make_qm_table(quality_metrics, param, unique_templates, unit_type):
     return qm_table
 
 
-def manage_if_raw_data(raw_dir, gain_to_uV):
+def manage_if_raw_data(raw_file, gain_to_uV):
     """
-    This function handles the decompression of raw data and extraction of gain if a raw_dir is given
+    This function handles the decompression of raw data and extraction of gain if a raw_file is given
 
     Parameters
     ----------
-    raw_dir : str / None
-        Either a string with the path to the raw data directory or None
+    raw_file : str / None
+        Either a string with the path to the raw data file or None
 
     Returns
     -------
     tuple
         The raw data path the meta directory path and the gain if applicable
     """
-    if raw_dir != None:
+    if raw_file != None:
         ephys_raw_data, meta_path = manage_data_compression(
-            raw_dir, decompressed_data_local=raw_dir
+            Path(raw_file).parent, decompressed_data_local=raw_file
         )
         if gain_to_uV is not None and not np.isnan(gain_to_uV):
             gain_to_uV = get_gain_spikeglx(meta_path)

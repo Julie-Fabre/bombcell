@@ -20,7 +20,7 @@ def load_ephys_data(ephys_path):
     -------
     spike_times_samples : ndarray (n_spikes,)
         The array which gives each spike time in samples (*not* seconds)
-    spike_templates : ndarray (n_spikes,)
+    spike_clusters : ndarray (n_spikes,)
         The array which assigns a spike to a cluster
     template_waveforms : ndarray (m_templates, n_time_points, n_channels)
         The array of template waveforms for each templates and channel
@@ -36,7 +36,7 @@ def load_ephys_data(ephys_path):
     """
     # in the ML version there is +1 which are not needed in python due to 0/1 indexing
     # load spike templates
-    spike_templates = np.load(os.path.join(ephys_path, "spike_clusters.npy"))
+    spike_clusters = np.load(os.path.join(ephys_path, "spike_clusters.npy")).squeeze()
 
     # load in spike times
     if os.path.exists(os.path.join(ephys_path, "spike_times_corrected.npy")):
@@ -71,7 +71,7 @@ def load_ephys_data(ephys_path):
 
     return (
         spike_times_samples,
-        spike_templates,
+        spike_clusters,
         templates_waveforms,
         template_amplitudes,
         pc_features,

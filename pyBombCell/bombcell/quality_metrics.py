@@ -73,7 +73,7 @@ def remove_duplicates(
     num_spikes = batch_spike_times_samples.shape[0]
     remove_idx = np.zeros(num_spikes)
     # spike counts for the batch
-    unit_spike_counts = np.bincount(batch_spike_clusters[:, 0])
+    unit_spike_counts = np.bincount(batch_spike_clusters)
 
     # go through each spike in the batch
     for spike_idx1 in range(num_spikes):
@@ -760,8 +760,8 @@ def time_chunks_to_keep(
     these_spike_clusters = spike_clusters.copy().astype(np.int32)
     these_spike_clusters[
         np.logical_or(
-            spike_times_seconds < use_these_times[0],
-            spike_times_seconds > use_these_times[-1],
+            spike_times_seconds.squeeze() < use_these_times[0], # TODO jf move squeezing to loader
+            spike_times_seconds.squeeze() > use_these_times[-1],
         )
     ] = -1  # set to -1 for bad times
 
