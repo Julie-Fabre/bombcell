@@ -5,8 +5,8 @@ from matplotlib.figure import Figure
 
 from tqdm.auto import tqdm
 
-import bombcell.extract_raw_waveforms as erw
-import bombcell.loading_utils as led
+from bombcell.extract_raw_waveforms import manage_data_compression, extract_raw_waveforms
+from bombcell.loading_utils import get_gain_spikeglx, load_ephys_data
 
 # import matplotlib.pyplot as plt
 import bombcell.quality_metrics as qm
@@ -643,11 +643,11 @@ def run_bombcell(ks_dir, raw_dir, save_path, param):
         pc_features_idx,
         channel_positions,
         good_channels,
-    ) = led.load_ephys_data(ks_dir)
+    ) = load_ephys_data(ks_dir)
 
     # Extract or load in raw waveforms
     if raw_dir != None:
-        raw_waveforms_full, raw_waveforms_peak_channel, SNR = erw.extract_raw_waveforms(
+        raw_waveforms_full, raw_waveforms_peak_channel, SNR = extract_raw_waveforms(
             param,
             spike_clusters.squeeze(),
             spike_times_samples.squeeze(),
@@ -885,7 +885,7 @@ def make_qm_table(quality_metrics, param, unique_templates, unit_type):
     return qm_table
 
 
-def manage_if_raw_data(raw_dir, gain_to_uv):
+def manage_if_raw_data(raw_dir, gain_to_uV):
     """
     This function handles the decompression of raw data and extraction of gain if a raw_dir is given
 
@@ -900,11 +900,11 @@ def manage_if_raw_data(raw_dir, gain_to_uv):
         The raw data path the meta directory path and the gain if applicable
     """
     if raw_dir != None:
-        ephys_raw_data, meta_path = erw.manage_data_compression(
+        ephys_raw_data, meta_path = manage_data_compression(
             raw_dir, decompressed_data_local=raw_dir
         )
         if gain_to_uV is not None and not np.isnan(gain_to_uV):
-            gain_to_uV = erw.get_gain_spikeglx(meta_path)
+            gain_to_uV = get_gain_spikeglx(meta_path)
         else:
             gain_to_uV = np.nan
         return ephys_raw_data, meta_path, gain_to_uV
