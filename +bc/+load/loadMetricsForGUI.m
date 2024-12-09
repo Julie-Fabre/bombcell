@@ -2,7 +2,7 @@
 [qMetric, param] = bc.qm.prettify_names(qMetric, param);
 
 %get memmap
-
+loadRawTraces = 0; %hard coded for now - we can't currently load in chunks of raw data & it was not that useful 
 if exist('loadRawTraces', 'var') 
     if loadRawTraces 
         bc.viz.getRawMemMap;

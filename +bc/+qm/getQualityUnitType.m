@@ -50,16 +50,6 @@ unitType(isnan(qMetric.nPeaks) | qMetric.nPeaks > param.maxNPeaks | qMetric.nTro
     qMetric.waveformDuration_peakTrough > param.maxWvDuration | qMetric.waveformBaselineFlatness > param.maxWvBaselineFraction |...
     qMetric.scndPeakToTroughRatio > param.maxScndPeakToTroughRatio_noise) = 0; % NOISE
 
-param.maxScndPeakToTroughRatio_noise = 0.8; % peak must be less. this is actually for a repolarization_peak to trough ratio - the name here is misleading. 
-
-% waveform - non-somatic
-param.maxPeak1ToPeak2Ratio_nonSomatic = 3; % if units have an initial peak before the trough,
-    % it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit. 
-param.minMainPeakToTroughRatio_nonSomatic = 0.8;
-param.minWidthFirstPeak_nonSomatic_nonSomatic = 4; % in samples 
-param.minWidthMainTrough_nonSomatic_nonSomatic = 5; % in samples
-param.minTroughToPeak2Ratio_nonSomatic = 5; % trough should be min 5 x bigger than 1rst peak to count as non-somatic 
-
 if param.computeSpatialDecay == 1 && param.spDecayLinFit == 1
     unitType(qMetric.spatialDecaySlope > param.minSpatialDecaySlope) = 0; % NOISE
 else
