@@ -1285,22 +1285,21 @@ def waveform_shape(
                     if param["normalize_spatial_decay"]:
                         spatial_decay_points = spatial_decay_points / np.max(spatial_decay_points)
 
-                    # estimate initial paramters
-                    intercept = np.max(
-                        spatial_decay_points
-                    )  # Take the max value of the max channel
-                    grad = (spatial_decay_points[1] - spatial_decay_points[0]) / (
-                        channel_distances[1] - channel_distances[0]
-                    )
+                    # Initial parameters matching MATLAB
+                    initial_guess = [1.0, 0.1]  # [A, b]
 
+                    # Ensure inputs are float64 (equivalent to MATLAB double)
+                    channel_distances = np.float64(channel_distances)
+                    spatial_decay_points = np.float64(spatial_decay_points)
+
+                    # Curve fit with same initial parameters as MATLAB
                     out_exp = curve_fit(
                         exp_fit,
                         channel_distances,
                         spatial_decay_points,
-                        p0=(grad, intercept),
-                        maxfev=2000,
+                        p0=initial_guess,
+                        maxfev=5000
                     )[0]
-                
                     spatial_decay_slope = out_exp[0]
 
         # get waveform baseline fraction
