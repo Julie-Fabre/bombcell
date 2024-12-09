@@ -3,7 +3,7 @@ import numpy as np
 
 def get_default_parameters(
     kilosort_path,
-    raw_dir=None,
+    raw_file=None,
     kilosort_version=None,
     ephys_meta_dir=None,
     gain_to_uV=None,
@@ -127,8 +127,8 @@ def get_default_parameters(
         param["ephys_meta_file"] = None
         param["gain_to_uV"] = gain_to_uV
 
-    if raw_dir != None:
-        param["raw_data_dir"] = raw_dir
+    if raw_file != None:
+        param["raw_data_file"] = raw_file
 
     if kilosort_version == 4:
         param["spike_width"] = (61,)  # width of spike in samples
@@ -150,7 +150,7 @@ def get_default_parameters(
 
 def default_parameters_for_unitmatch(
     kilosort_path,
-    raw_dir=None,
+    raw_file=None,
     kilosort_version=None,
     ephys_meta_dir=None,
     gain_to_uV=None,
@@ -158,7 +158,7 @@ def default_parameters_for_unitmatch(
 
     param = get_default_parameters(
     kilosort_path,
-    raw_dir=None,
+    raw_file=None,
     kilosort_version=None,
     ephys_meta_dir=None,
     gain_to_uV=None,
