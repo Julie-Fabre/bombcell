@@ -582,7 +582,7 @@ def get_all_quality_metrics(
         # amplitude
         if raw_waveforms_full is not None and param["extract_raw_waveforms"]:
             quality_metrics["raw_amplitude"][unit_idx] = qm.get_raw_amplitude(
-                raw_waveforms_full[unit_idx], param["gain_to_uV"]
+                raw_waveforms_full[this_unit], param["gain_to_uV"]
             )
         else:
             quality_metrics["raw_amplitude"][unit_idx] = np.nan
@@ -650,7 +650,7 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
     if raw_file != None:
         raw_waveforms_full, raw_waveforms_peak_channel, SNR = extract_raw_waveforms(
             param,
-            spike_clusters.squeeze(),
+            spike_clusters,
             spike_times_samples.squeeze(),
             param["re_extract_raw"],
             save_path,
@@ -747,7 +747,7 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
     )
 
 
-def make_qm_table(quality_metrics, param, unique_templates, unit_type):
+def make_qm_table(quality_metrics, param, unit_type):
     # classify noise
     nan_result = np.isnan(quality_metrics["n_peaks"])
 
