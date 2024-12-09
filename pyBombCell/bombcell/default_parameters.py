@@ -67,6 +67,7 @@ def get_default_parameters(
         "normalize_spatial_decay": True,  # If True, will normalize spatial decay points relative to maximum
         # this makes the spatial decay more invariant to the spike-sorting
         "sp_decay_lin_fit": False, # if True, use a linear fit for spatial decay. If false, use exponential (preferred)
+        "compute_spatial_decay": True,
         "max_scnd_peak_to_trough_ratio_noise": 0.8,
         "min_trough_to_peak2_ratio_non_somatic": 5,
         "min_width_first_peak_non_somatic": 4,

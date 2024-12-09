@@ -46,43 +46,6 @@ def get_metric_keys():
             ]
 
 
-
-def save_quality_metric_tsv(
-    metric_data: NDArray,
-    template_ids: NDArray,
-    output_dir: str,
-    filename: str,
-    column_names: Tuple[str, str]
-) -> None:
-    """
-    Save a quality metric array as a TSV file.
-
-    Parameters
-    ----------
-    metric_data : numpy.ndarray
-        The quality metric data to save
-    template_ids : numpy.ndarray
-        Array of unit template IDs
-    output_dir : str
-        Directory path for saving the file
-    filename : str
-        Name of the output file
-    column_names : tuple[str, str]
-        Column headers for the TSV file (template ID column, metric column)
-    """
-    # Ensure output directory exists
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Construct full file path
-    file_path = os.path.join(output_dir, filename)
-
-    # Create DataFrame and save as TSV
-    df = pd.DataFrame(
-        data=np.array((template_ids, metric_data)).T,
-        columns=column_names
-    )
-    df.to_csv(file_path, sep="\t", index=False)
-
 def save_quality_metric_tsv(metric_data, template_ids, output_dir, filename, column_names):
     """
     Save a quality metric array as a TSV file.

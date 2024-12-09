@@ -1193,111 +1193,114 @@ def waveform_shape(
             / param["ephys_sample_rate"]
         )
 
-        # waveform ratios
-        scnd_peak_to_trough_ratio = abs(main_peak_after / main_trough)
-        peak1_to_peak2_ratio = abs(main_peak_before / main_peak_after)
-        main_peak_to_trough_ratio = max(main_peak_before, main_peak_after) / abs(main_trough) 
-        trough_to_peak2_ratio = abs(main_trough / main_peak_before)
+        # waveform ratios   
+        scnd_peak_to_trough_ratio = get_ratio(main_peak_after, main_trough)
+        peak1_to_peak2_ratio = get_ratio(main_peak_before, main_peak_after)
+        main_peak_to_trough_ratio = get_ratio(max(main_peak_before or 0, main_peak_after or 0), main_trough)
+        trough_to_peak2_ratio = get_ratio(main_trough, main_peak_before)
 
-        # get waveforms spatial decay across channels
-        # DECIDE which fit
-        # linear_fit = True
-        max_channel = peak_channels[this_unit]
-
-        
-        x, y = channel_positions[max_channel, :]
-        current_max_channel = channel_positions[max_channel, :]
-
-        # Calculate distances from peak channel in x dimension
-        x_dist = np.abs(channel_positions[:, 0] - x)
-
-        # Find channels that are within CHANNEL_TOLERANCE distance in x
-        valid_x_channels = np.argwhere(x_dist <= CHANNEL_TOLERANCE).flatten()
-
-        if len(valid_x_channels) < MIN_CHANNELS_FOR_FIT:
-            spatial_decay_slope = np.nan
-        else: # Skip to next iteration if not enough channels
-
-            # Calculate y distances only for channels that passed x distance check
-            y_dist = np.abs(channel_positions[:, 1] - y)
-
-            # Set y distances to max for channels that didn't pass x distance check
-            y_dist[~np.isin(np.arange(len(y_dist)), valid_x_channels)] = y_dist.max()
-
-            if param["sp_decay_lin_fit"]:
-                use_these_channels = np.argsort(y_dist)[:NUM_CHANNELS_FOR_FIT] 
-
-                # Distance fomr the main channels
-                channel_distances = np.sqrt(
-                    np.sum(
-                        np.square(channel_positions[use_these_channels] - current_max_channel),
-                        axis=1,
-                    )
-                )
-
-                spatial_decay_points = np.max(
-                    np.abs(template_waveforms[this_unit, :, use_these_channels]), axis=1
-                )
-
-                sort_idx = np.argsort(channel_distances)
-                channel_distances = channel_distances[sort_idx]
-                spatial_decay_points = spatial_decay_points[sort_idx]
-
-                if param["normalize_spatial_decay"]:
-                    spatial_decay_points = spatial_decay_points / np.max(spatial_decay_points)
-
-                # estimate initial paramters
-                intercept = np.max(
-                    spatial_decay_points
-                )  # Take the max value of the max channel
-                grad = (spatial_decay_points[1] - spatial_decay_points[0]) / (
-                    channel_distances[1] - channel_distances[0]
-                )
-
-                # Can add p0 to linear params, but not needed as easier to fit linear curve
-                out_linear = curve_fit(linear_fit, channel_distances, spatial_decay_points)[
-                    0
-                ]  #
-                spatial_decay_slope = out_linear[0]
+        if param["compute_spatial_decay"]:
+            if np.min(np.diff(np.unique(channel_positions[:, 1]))) < 30:
+                param["compute_spatial_decay"] = True
             else:
-                use_these_channels = np.argsort(y_dist)[:NUM_CHANNELS_FOR_FIT]  
+                param["compute_spatial_decay"] = False
+        if param["compute_spatial_decay"]:
+            # get waveforms spatial decay across channels
+            max_channel = peak_channels[this_unit]
 
-                # Distance fomr the main channels
-                channel_distances = np.sqrt(
-                    np.sum(
-                        np.square(channel_positions[use_these_channels] - current_max_channel),
-                        axis=1,
-                    )
-                )
-
-                spatial_decay_points = np.max(
-                    np.abs(template_waveforms[this_unit, :, use_these_channels]), axis=1
-                )
-
-                sort_idx = np.argsort(channel_distances)
-                channel_distances = channel_distances[sort_idx]
-                spatial_decay_points = spatial_decay_points[sort_idx]
-
-                if param["normalize_spatial_decay"]:
-                    spatial_decay_points = spatial_decay_points / np.max(spatial_decay_points)
-
-                # estimate initial paramters
-                intercept = np.max(
-                    spatial_decay_points
-                )  # Take the max value of the max channel
-                grad = (spatial_decay_points[1] - spatial_decay_points[0]) / (
-                    channel_distances[1] - channel_distances[0]
-                )
-
-                out_exp = curve_fit(
-                    exp_fit,
-                    channel_distances,
-                    spatial_decay_points,
-                    p0=(grad, intercept),
-                    maxfev=2000,
-                )[0]
             
-                spatial_decay_slope = out_exp[0]
+            x, y = channel_positions[max_channel, :]
+            current_max_channel = channel_positions[max_channel, :]
+
+            # Calculate distances from peak channel in x dimension
+            x_dist = np.abs(channel_positions[:, 0] - x)
+
+            # Find channels that are within CHANNEL_TOLERANCE distance in x
+            valid_x_channels = np.argwhere(x_dist <= CHANNEL_TOLERANCE).flatten()
+
+            if len(valid_x_channels) < MIN_CHANNELS_FOR_FIT:
+                spatial_decay_slope = np.nan
+            else: # Skip to next iteration if not enough channels
+
+                # Calculate y distances only for channels that passed x distance check
+                y_dist = np.abs(channel_positions[:, 1] - y)
+
+                # Set y distances to max for channels that didn't pass x distance check
+                y_dist[~np.isin(np.arange(len(y_dist)), valid_x_channels)] = y_dist.max()
+
+                if param["sp_decay_lin_fit"]:
+                    use_these_channels = np.argsort(y_dist)[:NUM_CHANNELS_FOR_FIT] 
+
+                    # Distance fomr the main channels
+                    channel_distances = np.sqrt(
+                        np.sum(
+                            np.square(channel_positions[use_these_channels] - current_max_channel),
+                            axis=1,
+                        )
+                    )
+
+                    spatial_decay_points = np.max(
+                        np.abs(template_waveforms[this_unit, :, use_these_channels]), axis=1
+                    )
+
+                    sort_idx = np.argsort(channel_distances)
+                    channel_distances = channel_distances[sort_idx]
+                    spatial_decay_points = spatial_decay_points[sort_idx]
+
+                    if param["normalize_spatial_decay"]:
+                        spatial_decay_points = spatial_decay_points / np.max(spatial_decay_points)
+
+                    # estimate initial paramters
+                    intercept = np.max(
+                        spatial_decay_points
+                    )  # Take the max value of the max channel
+                    grad = (spatial_decay_points[1] - spatial_decay_points[0]) / (
+                        channel_distances[1] - channel_distances[0]
+                    )
+
+                    # Can add p0 to linear params, but not needed as easier to fit linear curve
+                    out_linear = curve_fit(linear_fit, channel_distances, spatial_decay_points)[
+                        0
+                    ]  #
+                    spatial_decay_slope = out_linear[0]
+                else:
+                    use_these_channels = np.argsort(y_dist)[:NUM_CHANNELS_FOR_FIT]  
+
+                    # Distance fomr the main channels
+                    channel_distances = np.sqrt(
+                        np.sum(
+                            np.square(channel_positions[use_these_channels] - current_max_channel),
+                            axis=1,
+                        )
+                    )
+
+                    spatial_decay_points = np.max(
+                        np.abs(template_waveforms[this_unit, :, use_these_channels]), axis=1
+                    )
+
+                    sort_idx = np.argsort(channel_distances)
+                    channel_distances = channel_distances[sort_idx]
+                    spatial_decay_points = spatial_decay_points[sort_idx]
+
+                    if param["normalize_spatial_decay"]:
+                        spatial_decay_points = spatial_decay_points / np.max(spatial_decay_points)
+
+                    # Initial parameters matching MATLAB
+                    initial_guess = [1.0, 0.1]  # [A, b]
+
+                    # Ensure inputs are float64 (equivalent to MATLAB double)
+                    channel_distances = np.float64(channel_distances)
+                    spatial_decay_points = np.float64(spatial_decay_points)
+
+                    # Curve fit with same initial parameters as MATLAB
+                    out_exp = curve_fit(
+                        exp_fit,
+                        channel_distances,
+                        spatial_decay_points,
+                        p0=initial_guess,
+                        maxfev=5000
+                    )[0]
+                    spatial_decay_slope = out_exp[0]
 
         # get waveform baseline fraction
         if ~np.isnan(waveform_baseline_window)[0]:
@@ -1329,8 +1332,13 @@ def waveform_shape(
         trough_to_peak2_ratio,
         peak_before_width,
         trough_width,
+        param,
     )
 
+def get_ratio(numerator, denominator):
+   if denominator == 0: return float('inf')
+   if numerator in (None, 0): return 0.0
+   return abs(numerator / denominator)
 
 @njit(cache=True)
 def custom_mahal_loop(test_spike_features, current_spike_features):
@@ -1535,146 +1543,90 @@ def get_raw_amplitude(this_raw_waveform, gain_to_uV):
 
 def get_quality_unit_type(param, quality_metrics):
     """
-    Assign each unit a type based of its' quality metrics.
-    unit_type == 0 all noise units
-    unit_type == 1 all good units
-    unit_type == 2 all mua units
-    unit_type == 3 all non-somatic units (if split somatic units its good non-somatic units)
-    unit_type == 4 (if split somatic units its mua non-somatic units)
-
-
-    Parameters
-    ----------
-    param : df
-        The param dataframe from ML BombCell
-    quality_metrics : df
-        The quality metrics dataframefrom ML BombCell
-
-    Returns
-    -------
-    tuple (np array, np array)
-        Two array of the unit types one as number the other as strings
-    """
-
-
-    unit_type = np.full(quality_metrics["n_peaks"].shape[0], np.nan)
-
-    # classify noise
-    unit_type[np.isnan(quality_metrics["n_peaks"])] = 0
-    unit_type[quality_metrics["n_peaks"] > param["max_n_peaks"]] = 0
-    unit_type[quality_metrics["n_troughs"] > param["max_n_troughs"]] = 0
-    unit_type[
-        quality_metrics["waveform_duration_peak_trough"] < param["min_wv_duration"]
-    ] = 0
-    unit_type[
-        quality_metrics["waveform_duration_peak_trough"] > param["max_wv_duration"]
-    ] = 0
-    unit_type[
-        quality_metrics["waveform_baseline_flatness"] > param["max_wv_baseline_fraction"]
-    ] = 0
-    if param["sp_decay_lin_fit"]:
-        unit_type[quality_metrics["spatial_decay_slope"] < param["min_spatial_decay_slope"]] = 0
-    else:
-        unit_type[quality_metrics["spatial_decay_slope"] < param["min_spatial_decay_slope_exp"]] = 0
-        unit_type[quality_metrics["spatial_decay_slope"] > param["max_spatial_decay_slope_exp"]] = 0
-
-    unit_type[quality_metrics["scnd_peak_to_trough_ratio"] > param["max_scnd_peak_to_trough_ratio_noise"]] = 0
-    # classify non-somatic 
-
-    is_non_somatic = (
-    (quality_metrics["trough_to_peak2_ratio"] < param["min_trough_to_peak2_ratio_non_somatic"]) &
-    (quality_metrics["peak_before_width"] < param["min_width_first_peak_non_somatic"]) &
-    (quality_metrics["trough_width"] < param["min_width_main_trough_non_somatic"]) &
-    (quality_metrics["peak1_to_peak2_ratio"] > param["max_peak1_to_peak2_ratio_non_somatic"])
-    ) | (quality_metrics["main_peak_to_trough_ratio"] > param["max_main_peak_to_trough_ratio_non_somatic"])
+    Classifies neural units based on quality metrics.
     
+    Unit Types:
+    0: Noise units
+    1: Good units
+    2: MUA (Multi-Unit Activity)
+    3: Non-somatic units (good if split)
+    4: Non-somatic MUA (if split)
+    """
+    n_units = len(quality_metrics["n_peaks"])
+    unit_type = np.full(n_units, np.nan)
+    
+    # Noise classification
+    noise_mask = (
+        np.isnan(quality_metrics["n_peaks"]) |
+        (quality_metrics["n_peaks"] > param["max_n_peaks"]) |
+        (quality_metrics["n_troughs"] > param["max_n_troughs"]) |
+        (quality_metrics["waveform_duration_peak_trough"] < param["min_wv_duration"]) |
+        (quality_metrics["waveform_duration_peak_trough"] > param["max_wv_duration"]) |
+        (quality_metrics["waveform_baseline_flatness"] > param["max_wv_baseline_fraction"]) |
+        (quality_metrics["scnd_peak_to_trough_ratio"] > param["max_scnd_peak_to_trough_ratio_noise"])
+    )
 
-    # classify MUA
-    # ALL or ANY?
-    unit_type[
-        np.logical_and(
-            quality_metrics["percent_missing_gaussian"]
-            > param["max_perc_spikes_missing"],
-            np.isnan(unit_type),
+    if param["compute_spatial_decay"] & param["sp_decay_lin_fit"]:
+        noise_mask |= (quality_metrics["spatial_decay_slope"] < param["min_spatial_decay_slope"])
+    elif param["compute_spatial_decay"]:
+        noise_mask |= (
+            (quality_metrics["spatial_decay_slope"] < param["min_spatial_decay_slope_exp"]) |
+            (quality_metrics["spatial_decay_slope"] > param["max_spatial_decay_slope_exp"])
         )
-    ] = 2
-    unit_type[
-        np.logical_and(
-            quality_metrics["n_spikes"] < param["min_num_spikes_total"],
-            np.isnan(unit_type),
-        )
-    ] = 2
-    unit_type[
-        np.logical_and(
-            quality_metrics["fraction_RPVs"] > param["max_RPV"], np.isnan(unit_type)
-        )
-    ] = 2
-    unit_type[
-        np.logical_and(
-            quality_metrics["presence_ratio"] < param["min_presence_ratio"],
-            np.isnan(unit_type),
-        )
-    ] = 2
-
+    
+    unit_type[noise_mask] = 0
+    
+    # Non-somatic classification
+    is_non_somatic = (
+        (quality_metrics["trough_to_peak2_ratio"] < param["min_trough_to_peak2_ratio_non_somatic"]) &
+        (quality_metrics["peak_before_width"] < param["min_width_first_peak_non_somatic"]) &
+        (quality_metrics["trough_width"] < param["min_width_main_trough_non_somatic"]) &
+        (quality_metrics["peak1_to_peak2_ratio"] > param["max_peak1_to_peak2_ratio_non_somatic"]) |
+        (quality_metrics["main_peak_to_trough_ratio"] > param["max_main_peak_to_trough_ratio_non_somatic"])
+    )
+    
+    # MUA classification
+    mua_mask = np.isnan(unit_type) & (
+        (quality_metrics["percent_missing_gaussian"] > param["max_perc_spikes_missing"]) |
+        (quality_metrics["n_spikes"] < param["min_num_spikes_total"]) |
+        (quality_metrics["fraction_RPVs"] > param["max_RPV"]) |
+        (quality_metrics["presence_ratio"] < param["min_presence_ratio"])
+    )
+    
     if param["extract_raw_waveforms"]:
-        unit_type[
-            np.logical_and(
-                quality_metrics["raw_amplitude"] < param["min_amplitude"],
-                np.isnan(unit_type),
-            )
-        ] = 2
-        unit_type[
-            np.logical_and(
-                quality_metrics["signal_to_noise_ratio"] < param["min_SNR"],
-                np.isnan(unit_type),
-            )
-        ] = 2
-
+        mua_mask |= np.isnan(unit_type) & (
+            (quality_metrics["raw_amplitude"] < param["min_amplitude"]) |
+            (quality_metrics["signal_to_noise_ratio"] < param["min_SNR"])
+        )
+    
     if param["compute_drift"]:
-        unit_type[
-            np.logical_and(
-                quality_metrics["max_drift_estimate"] > param["max_drift"],
-                np.isnan(unit_type),
-            )
-        ] = 2
-
+        mua_mask |= np.isnan(unit_type) & (quality_metrics["max_drift_estimate"] > param["max_drift"])
+    
     if param["compute_distance_metrics"]:
-        unit_type[
-            np.logical_and(
-                quality_metrics["isolation_dist"] > param["iso_d_min"],
-                np.isnan(unit_type),
-            )
-        ] = 2
-        unit_type[
-            np.logical_and(
-                quality_metrics["l_ratio"] > param["lratio_max"], np.isnan(unit_type)
-            )
-        ] = 2
-
-    unit_type[np.isnan(unit_type)] = 1  # SINGLE SEXY UNIT
-
+        mua_mask |= np.isnan(unit_type) & (
+            (quality_metrics["isolation_dist"] > param["iso_d_min"]) |
+            (quality_metrics["l_ratio"] > param["lratio_max"])
+        )
+    
+    unit_type[mua_mask] = 2
+    unit_type[np.isnan(unit_type)] = 1
+    
+    # Handle non-somatic classifications
     if param["split_good_and_mua_non_somatic"]:
-        unit_type[np.logical_and(is_non_somatic == 1, unit_type == 1)] = (
-            3  # Good non-somatic
-        )
-        unit_type[np.logical_and(is_non_somatic == 1, unit_type == 2)] = (
-            4  # MUA non-somatic
-        )
+        good_non_somatic = (unit_type == 1) & is_non_somatic
+        mua_non_somatic = (unit_type == 2) & is_non_somatic
+        unit_type[good_non_somatic] = 3
+        unit_type[mua_non_somatic] = 4
     else:
-        unit_type[np.logical_and(is_non_somatic == 1, unit_type != 0)] = (
-            3  # Good non-somatic
-        )
-
-    # Have unit types as strings as well
-    unit_type_string = np.full(unit_type.size, "", dtype=object)
-    unit_type_string[unit_type == 0] = "NOISE"
-    unit_type_string[unit_type == 1] = "GOOD"
-    unit_type_string[unit_type == 2] = "MUA"
-
-    if param["split_good_and_mua_non_somatic"]:
-        unit_type_string[unit_type == 3] = "NON-SOMA GOOD"
-        unit_type_string[unit_type == 4] = "NON-SOMA MUA"
-    else:
-        unit_type_string[unit_type == 3] = "NON-SOMA"
-
+        unit_type[(unit_type != 0) & is_non_somatic] = 3
+    
+    # Create string labels
+    labels = {0: "NOISE", 1: "GOOD", 2: "MUA", 
+             3: "NON-SOMA GOOD" if param["split_good_and_mua_non_somatic"] else "NON-SOMA",
+             4: "NON-SOMA MUA"}
+    
+    unit_type_string = np.full(n_units, "", dtype=object)
+    for code, label in labels.items():
+        unit_type_string[unit_type == code] = label
+    
     return unit_type, unit_type_string
