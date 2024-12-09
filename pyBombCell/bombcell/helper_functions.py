@@ -569,6 +569,7 @@ def get_all_quality_metrics(
             quality_metrics["trough_to_peak2_ratio"][unit_idx],
             quality_metrics["peak_before_width"][unit_idx],
             quality_metrics["trough_width"][unit_idx],
+            param,
         ) = qm.waveform_shape(
             template_waveforms,
             this_unit,

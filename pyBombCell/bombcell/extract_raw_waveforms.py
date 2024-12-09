@@ -7,6 +7,7 @@ import numpy as np
 from mtscomp import Reader
 from scipy.signal import detrend
 from scipy.ndimage import gaussian_filter
+from tqdm.auto import tqdm
 
 from bombcell.save_utils import path_handler
 
@@ -289,15 +290,19 @@ def extract_raw_waveforms(
     if raw_waveforms_file.exists() and not recompute:
 
         assert raw_waveforms_peak_channel_file.exists() and snr_noise_file.exists() and snr_noise_idx_file.exists()
+        print(f"Loading file {raw_waveforms_file}...", end='', flush=True)
+
 
         raw_waveforms_full = np.load(raw_waveforms_file)
         raw_waveforms_peak_channel = np.load(raw_waveforms_peak_channel_file)
         baseline_noise = np.load(snr_noise_file)
         baseline_noise_idx = np.load(snr_noise_idx_file)
+        print("\rLoading file {raw_waveforms_file}... Done!") 
 
         # Check whether number of clusters changed
         # assumes that raw_waveforms_full has empty rows for jumps in unit indices
         if raw_waveforms_full.shape[0] != max_cluster_id:
+            print("\rSome units' raw waveforms are not extracted. Extracting now ...") 
             recompute = True
     else:
         recompute = True
@@ -340,7 +345,8 @@ def extract_raw_waveforms(
         all_spikes_idxs = np.zeros((n_clusters, n_spikes_to_extract))
         clus_spike_times = []
         # Process ALL unit
-        for i, idx in enumerate(unique_clusters):
+        bar_description = "Extracting raw waveforms: {percentage:3.0f}%|{bar:10}| {n}/{total} units"
+        for i, idx in tqdm(enumerate(unique_clusters), bar_format=bar_description):
             clus_spike_times.append(spike_times_filt[spike_clusters_filt == idx])
             if n_spikes_to_extract < len(clus_spike_times[i]):
                 # -1 so can't index out of region
