@@ -288,7 +288,7 @@ def extract_raw_waveforms(
     recompute = re_extract_waveforms
     if raw_waveforms_file.exists() and not recompute:
 
-        assert raw_waveforms_peak_channel.exists() and snr_noise_file.exists() and snr_noise_idx_file.exists()
+        assert raw_waveforms_peak_channel_file.exists() and snr_noise_file.exists() and snr_noise_idx_file.exists()
 
         raw_waveforms_full = np.load(raw_waveforms_file)
         raw_waveforms_peak_channel = np.load(raw_waveforms_peak_channel_file)
