@@ -42,6 +42,9 @@ defaultValues.splitGoodAndMua_NonSomatic = 0;
 % refactory period violations
 defaultValues.hillOrLlobetMethod = 1;
 
+% perce spikes missing 
+defaultValues.removeOutliersAmplitude = 0;
+
 % waveform - noise
 defaultValues.normalizeSpDecay = 0;% whether to normalize spatial decay points relative to 
 % maximum - this makes the spatrial decay slop calculation more invariant to the 

@@ -173,7 +173,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
 
     %% amplitude
     if param.extractRaw
-        qMetric.rawAmplitude(iUnit) = bc.qm.getRawAmplitude(rawWaveformsFull(thisUnit,  rawWaveformsPeakChan(thisUnit), :), ...
+        iso(iUnit) = bc.qm.getRawAmplitude(rawWaveformsFull(thisUnit,  rawWaveformsPeakChan(thisUnit), :), ...
             rawWaveformsPeakChan(thisUnit), scalingFactors);
     else
         qMetric.rawAmplitude(iUnit) = NaN;
