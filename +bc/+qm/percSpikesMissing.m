@@ -42,16 +42,16 @@ for iTimeChunk = 1:numel(timeChunks) - 1
 
     theseAmplitudes_here = theseAmplitudes(theseSpikeTimes >= timeChunks(iTimeChunk) & ...
         theseSpikeTimes < timeChunks(iTimeChunk+1));
-    if param.removeOutliersAmplitude
-        % check for extreme outliers (see https://github.com/Julie-Fabre/bombcell/issues/179) 
-        % flagging for now but should we remove them entirely? have a seperate function to this effect? 
-        iqr_threshold = 10;
-        quantiles = prctile(theseAmplitudes_here, [1 99]);
-        iqr = quantiles(2) - quantiles(1);
-        outliers_iqr = theseAmplitudes_here > (quantiles(2) + iqr_threshold*iqr);
-    
-        theseAmplitudes_here = theseAmplitudes_here(~outliers_iqr);
-    end
+
+    % check for extreme outliers (see https://github.com/Julie-Fabre/bombcell/issues/179) 
+    % flagging for now but should we remove them entirely? have a seperate function to this effect? 
+    iqr_threshold = 10;
+    quantiles = prctile(theseAmplitudes_here, [1 99]);
+    iqr = quantiles(2) - quantiles(1);
+    outliers_iqr = theseAmplitudes_here > (quantiles(2) + iqr_threshold*iqr);
+
+    theseAmplitudes_here = theseAmplitudes_here(~outliers_iqr);
+  
     % amplitude histogram
     nBins = 50;
 
