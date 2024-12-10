@@ -100,9 +100,7 @@ param.hillOrLlobetMethod = 1; % 1 to use Hill et al method; 0 to use Llobet et a
 param.computeTimeChunks = 0; % compute fraction refractory period violations 
     % and percent spikes missing for different time chunks 
 param.deltaTimeChunk = 360; %time in seconds 
-param.removeOutliersAmplitude = 0; % if you have  extreme outliers (see https://github.com/Julie-Fabre/bombcell/issues/179) 
-    % enable this (set to 1/true)
-    
+
 % presence ratio 
 param.presenceRatioBinSize = 60; % in seconds 
 
