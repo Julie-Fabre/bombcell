@@ -1,6 +1,6 @@
 function paramBC = qualityParamValuesForUnitMatch(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV, kilosortVersion)
 % defaults 
-paramBC = qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV, kilosortVersion);
+paramBC = bc.qm.qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV, kilosortVersion);
 
 % unit match specific
 paramBC.detrendWaveform = 0; % If this is set to 1, each raw extracted spike is
