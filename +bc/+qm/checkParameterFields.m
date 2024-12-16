@@ -14,7 +14,8 @@ function param_complete = checkParameterFields(param)
 % ------
 % - param_complete 
 
-
+%% Name changes
+[~, param] = bc.qm.prettify_names([], param); % some names were changed for added clarity
 
 %% Default values for fields
 % duplicate spikes
