@@ -9,24 +9,27 @@ newNames = {'maxScndPeakToTroughRatio_noise', 'maxPeak1ToPeak2Ratio_nonSomatic',
     'maxMainPeakToTroughRatio_nonSomatic', 'minWidthFirstPeak_nonSomatic', ...
     'minWidthMainTrough_nonSomatic'};
 
-% Handle param input
-if istable(param)
-    % For table format
-    for i = 1:length(oldNames)
-        if ismember(oldNames{i}, param.Properties.VariableNames)
-            param.Properties.VariableNames(strcmp(param.Properties.VariableNames, oldNames{i})) = newNames(i);
+if ~isempty(param)
+    % Handle param input
+    if istable(param)
+        % For table format
+        for i = 1:length(oldNames)
+            if ismember(oldNames{i}, param.Properties.VariableNames)
+                param.Properties.VariableNames(strcmp(param.Properties.VariableNames, oldNames{i})) = newNames(i);
+            end
         end
-    end
-else
-    % For struct format
-    for i = 1:length(oldNames)
-        if isfield(param, oldNames{i})
-            param.(newNames{i}) = param.(oldNames{i});
-            param = rmfield(param, oldNames{i});
+    else
+        % For struct format
+        for i = 1:length(oldNames)
+            if isfield(param, oldNames{i})
+                param.(newNames{i}) = param.(oldNames{i});
+                param = rmfield(param, oldNames{i});
+            end
         end
     end
 end
 
+if ~isempty(qMetric)
 % Handle qMetric input
     if istable(qMetric)
         % Compute additional metrics if mainPeakToTroughRatio doesn't exist
@@ -60,7 +63,7 @@ end
             end
         end
     end
-
+end
 
 
 end
