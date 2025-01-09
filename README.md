@@ -11,6 +11,8 @@
 
 Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem, evaluating the quality of recorded units and extracting essential electrophysiological properties. Bombcell can replace manual curation or can be used as a tool to aid manual curation. See [this talk](https://youtu.be/CvXUtGzkXIY?si=lHkLN885OCb4WJEv) at the annual Neuropixels course about quality control.
 
+📢 We working on a Python version - it's expected to be ready for release in February 📢
+
 Please star the project to support us, using the top-right "⭐ Star" button.
 
 ### 📔 Bombcell wiki
