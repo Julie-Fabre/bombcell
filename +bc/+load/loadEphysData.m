@@ -65,9 +65,9 @@ channelPositions = readNPY([ephys_path, filesep, 'channel_positions.npy']);
 % templates & pc_features
 if exist(fullfile([ephys_path, filesep, 'spike_clusters.npy']))
     spike_clusters_0idx = readNPY([ephys_path, filesep, 'spike_clusters.npy']); % already manually-curated
-    spikeClusters = spike_clusters_0idx + 1;
+    spikeClusters = int32(spike_clusters_0idx) + 1;
 
-    newTemplates = unique(spikeClusters(~ismember(uint32(spikeClusters), uint32(spikeTemplates))));
+    newTemplates = unique(spikeClusters(~ismember(spikeClusters, int32(spikeTemplates))));
 
     if ~isempty(newTemplates)
         % initialize templates and pc features
