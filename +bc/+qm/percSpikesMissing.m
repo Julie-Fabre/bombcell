@@ -88,7 +88,7 @@ for iTimeChunk = 1:numel(timeChunks) - 1
 
     surrogate_amplitudes = [spikeCountsPerAmpliBin_smooth(end:-1:maxAmpli_val_smooth), fliplr(spikeCountsPerAmpliBin_smooth(end:-1:maxAmpli_val_smooth+1))];
     surrogate_bins = [fliplr(bins(maxAmpli_val_smooth)-bin_steps:-bin_steps:bins(maxAmpli_val_smooth)-bin_steps*floor(size(surrogate_amplitudes, 2)/2)), ...
-        bins(maxAmpli_val:end)];
+        bins(maxAmpli_val(1):end)];
 
     % remove any bins where the amplitudes would be < 0, that doesn't make any sense
     surrogate_amplitudes(surrogate_bins < 0) = [];
