@@ -26,7 +26,7 @@ def get_waveform_peak_channel(template_waveforms):
 
     Returns
     -------
-    ndarray (n_templates)
+    peak_channels : ndarray (n_templates)
         The channel with maximum amplitude for each template
     """
     max_value = np.max(template_waveforms, axis=1)
@@ -66,7 +66,7 @@ def remove_duplicates(
 
     Returns
     -------
-    ndarray
+    remove_idx : ndarray
         An array which if 1 states that spike should be removed
     """
 
@@ -177,10 +177,25 @@ def remove_duplicate_spikes(
 
     Returns
     -------
-    tuple
-        All of the arrays with duplicate spikes removed
+    non_empty_units : ndarray
+        Units which are not empty
+    spike_times_samples : ndarray
+        The array of spike times in samples
+    spike_clusters : ndarray
+        The array which assigns each spike a id
+    template_amplitudes : ndarray
+        The array of amplitudes for each spike
+    pc_features : ndarray, optional
+        The pc features array, by default None
+    raw_waveforms_full : ndarray, optional
+        The array wth extracted raw waveforms, by default None
+    raw_waveforms_peak_channel : ndarray, optional
+        The peak channel for each extracted raw waveform, by default None
+    signal_to_noise_ratio : ndarray, optional
+        The signal to noise ratio, by default None
+    peak_channels : ndarray
+        The max channel for each spike
     """
-
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
@@ -301,8 +316,8 @@ def gaussian_cut(bin_centers, A, u, s, c):
 
     Returns
     -------
-    ndarray
-        The cutoff gaussian
+    F : ndarray
+        The cutoff gaussian as an array
     """
     F = A * np.exp(-((bin_centers - u) ** 2) / (2 * s**2))
     F[bin_centers < c] = 0
@@ -321,7 +336,7 @@ def is_peak_cutoff(spike_counts_per_amp_bin_gaussian):
 
     Returns
     -------
-    bool
+    not_cutoff : bool
         False if the is amplitude distribution has a peak
     """
     # get max value
@@ -352,8 +367,10 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
 
     Returns
     -------
-    tuple
-        The estimates of percentage missing spikes and the amplitude distributions
+    percent_missing_gaussian : float
+        The estimated percentage of spikes missing when sing a gaussian approximation
+    percent_missing_symmetric : float
+        The estimated percentage of spikes missing when sing a gaussian approximation
     """
 
     percent_missing_gaussian = np.zeros(time_chunks.shape[0] - 1)
@@ -545,8 +562,10 @@ def fraction_RP_violations(
 
     Returns
     -------
-    tuple
-        The fraction of refractory period violations and the number of violations
+    fraction_RPVs : ndarray 
+        The fraction of refractory period violations for the unit
+    num_violations : ndarray
+        The number of refractory period violations for the unit
     """
 
     tauR_min = param["tauR_values_min"]
@@ -687,8 +706,18 @@ def time_chunks_to_keep(
 
     Returns
     -------
-    tuple
-        The values to use for the different arrays
+    these_spike_times : ndarray
+        Good time chunks to use
+    these_amplitudes : ndarray
+        The amplitudes for the good time chunks
+    these_spike_clusters : ndarray
+        The spike times for these good time chunks
+    use_this_time_start : float
+        The start of the good time chunk
+    use_this_time_end : float
+        The end of the good time chunk
+    use_tauR : float
+        The index of the tau_R which has the smallest contamination
     """
     max_RPVs = param["max_RPV"]
     max_perc_spikes_missing = param["max_perc_spikes_missing"]
@@ -802,7 +831,7 @@ def presence_ratio(these_spike_times, use_this_time_start, use_this_time_end, pa
 
     Returns
     -------
-    float
+    presence_ratio : float
         The presence ratio for the unit
     """
 
@@ -864,8 +893,10 @@ def max_drift_estimate(
 
     Returns
     -------
-    tuple
-        The max and the cumulative drift estimates
+    max_drift_estimate : float
+        The maximum drift estimated from the unit 
+    cumulative_drift_estimate : float
+        The cumulative drift estimated over the recording session
     """
     channel_positions_z = channel_positions[:, 1]
     drift_bin_size = param["drift_bin_size"]
@@ -935,7 +966,7 @@ def linear_fit(x, m, c):
 
     Returns
     -------
-    ndarray
+    y : ndarray
         The y-values
     """
     return m * x + c
@@ -956,7 +987,7 @@ def exp_fit(x, m, A):
 
     Returns
     -------
-    ndarray
+    y : ndarray
         The y-values
     """
     return A * np.exp(m * x)
@@ -990,8 +1021,30 @@ def waveform_shape(
 
     Returns
     -------
-    tuple
-        Waveform shape based metrics
+    n_peaks : int
+        The number of peaks 
+    n_troughs : int
+        The number of troughs
+    waveform_duration_peak_trough : float
+        The time from peak to trough
+    spatial_decay_slope : float
+        The spatial decay of the waveforms amplitude over space
+    waveform_baseline : float
+        A measure of noise in the waveforms starting values
+    scnd_peak_to_trough_ratio : float
+        The ratio of the second peak to the trough
+    peak1_to_peak2_ratio : float
+        The ratio of the first peak to the second peak
+    main_peak_to_trough_ratio : float
+        The ratio of the first peak to the trough
+    trough_to_peak2_ratio : float
+        The ratio of the trough to the first peak ratio #TODO check this
+    peak_before_width : float
+        The width of the first peak
+    trough_width : float
+        The width of the trough
+    param : dict
+        The parameters 
     """
     # neemd template_waveforms this_unit max_channel, ephys_sample_rate, channel_positions, baseline_thresh
     # waveform_base_line_window, min_thresh_detect_peaks_trough, first_peak_ratio, normalize_sp_decay, plothis
@@ -1356,7 +1409,7 @@ def custom_mahal_loop(test_spike_features, current_spike_features):
 
     Returns
     -------
-    ndarray (n_spikes_other)
+    mahal : ndarray (n_spikes_other)
         The mahal score for the test units against the current unit distribution
     """
     # inv covarriance metric from the current spike
@@ -1400,8 +1453,12 @@ def get_distance_metrics(
 
     Returns
     -------
-    tuple
-        The distance based metrics
+    isolation_dist : float
+        The isolation distance
+    L_ratio : float
+        The L ratio
+    silhouette_score : float
+        The silhouette score
     """
     # get distance metrics
 
@@ -1529,7 +1586,7 @@ def get_raw_amplitude(this_raw_waveform, gain_to_uV):
 
     Returns
     -------
-    float
+    raw_ampltitude : float
         The actual raw amplitude
     """
 
@@ -1551,6 +1608,20 @@ def get_quality_unit_type(param, quality_metrics):
     2: MUA (Multi-Unit Activity)
     3: Non-somatic units (good if split)
     4: Non-somatic MUA (if split)
+
+    Parameters
+    ----------
+    param : dict
+        The parameters
+    quality_metrics : dict
+        The quality metrics
+    
+    Returns
+    -------
+    unit_type : ndarray
+        The unit type classifaction as a number
+    unit_type_string : ndarray
+        The unit type classification as a string
     """
     n_units = len(quality_metrics["n_peaks"])
     unit_type = np.full(n_units, np.nan)
