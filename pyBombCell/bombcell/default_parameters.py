@@ -8,6 +8,27 @@ def get_default_parameters(
     ephys_meta_dir=None,
     gain_to_uV=None,
 ):
+    """
+    Creates the parameters dictionary
+
+    Parameters
+    ----------
+    kilosort_path : str
+        The path to the KiloSort directory
+    raw_file : str, optional
+        The path to the raw data, by default None
+    kilosort_version : int, optional
+        Changes parameters based on if KS4 or earlier version were used, by default None
+    ephys_meta_dir : str, optional
+        The path to the meta file of the raw recording, by default None
+    gain_to_uV : float, optional
+        The gain to micro volts if needed to give manually, by default None
+
+    Returns
+    -------
+    param : dictionary
+        The full param dictionary need to run BombCell
+    """
     param = {
         # Quality metric computation and display parameters
         ## general 
@@ -156,6 +177,27 @@ def default_parameters_for_unitmatch(
     ephys_meta_dir=None,
     gain_to_uV=None,
 ):
+    """
+    Creates the parameters dictionary
+
+    Parameters
+    ----------
+    kilosort_path : str
+        The path to the KiloSort directory
+    raw_file : str, optional
+        The path to the raw data, by default None
+    kilosort_version : int, optional
+        Changes parameters based on if KS4 or earlier version were used, by default None
+    ephys_meta_dir : str, optional
+        The path to the meta file of the raw recording, by default None
+    gain_to_uV : float, optional
+        The gain to micro volts if needed to give manually, by default None
+
+    Returns
+    -------
+    param : dictionary
+        The full param dictionary need to run BombCell
+    """
 
     param = get_default_parameters(
     kilosort_path,
