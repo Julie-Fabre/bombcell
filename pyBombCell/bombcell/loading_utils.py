@@ -92,7 +92,7 @@ def get_gain_spikeglx(meta_path):
 
     Returns
     -------
-    float
+    scaling_factor : float
         The scaling factor for the probe
 
     Raises
@@ -161,8 +161,12 @@ def load_bc_results(bc_path):
 
     Returns
     -------
-    tuple (df, df, df)
-        The data frames of hte BombCell results
+    param : dict
+        The parameters which were used to run BombCell
+    quality_metrics : dict
+        The quality metrics extracted
+    fraction_RPVs_all_taur : dict
+        All of the values fro refractory period violations for each tau_R and each unit
     """
     # Files
     # BombCell params ML
@@ -170,7 +174,7 @@ def load_bc_results(bc_path):
     if os.path.exists(param_path):
         param = pd.read_parquet(param_path)
     else:
-        print("Paramater file not found")
+        print("Parameter file not found")
 
     # BombCell quality metrics
     quality_metrics_path = os.path.join(bc_path, "templates._bc_qMetrics.parquet")
