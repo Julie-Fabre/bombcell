@@ -20,6 +20,11 @@ def read_meta(meta_path):
     ----------
     meta_path : path
         The path to the .meta file
+    
+     Returns
+    -------
+    meta_dict : dict
+        The meta file opened as a dictionary
     """
     meta_dict = {}
     with meta_path.open() as f:
@@ -58,11 +63,11 @@ def process_a_unit(
     raw_data : memmap
         The numpy memmap of the raw data
     spike_width : int
-        The total numple of samples to take per unit
+        The total number of samples to take per unit
     half_width : int
         The number of samples before the spike starts
     all_spikes_idxs : ndarray (n_spike_to_extract)
-        All of the spikes idnexs of spike to extract for the unit
+        All of the spikes indexes of spike to extract for the unit
     n_channels_rec : int
         The total number of channels in the recording
     n_channels : int
@@ -72,18 +77,18 @@ def process_a_unit(
     cid : int
         The id of the cluster
     detrend_waveforms : bool
-        If True will lineraly detrend the waveforms over time
+        If True will linearly de-trend the waveforms over time
     save_multiple_raw : bool
-        If true will prepare and save wavefrosm suitable for UnitMatch
+        If true will prepare and save waveforms suitable for UnitMatch
     waveform_baseline_noise : int
-        The number of samples before the waveform which are nosie
+        The number of samples before the waveform which are noise
     save_directory : pathlib.Path
         The path to the directory to save the UnitMatch data
 
     Returns
     -------
-    cluster_raw_waveforms
-        A dictionary of the necessary infomation extract from the raw data
+    cluster_raw_waveforms : ndarray
+        A dictionary of the necessary information extract from the raw data for a unit
     """
 
     cluster_raw_waveforms = {}
@@ -181,30 +186,30 @@ def unpack_dicts(
     all_waveforms : list of dictionaries
         The result of the parallel extraction and processing of the raw data.
     spike_width : int
-        The nymber of sampples in an extracted spike.
+        The nymber of samples in an extracted spike.
     n_clusters : int
         The number of unique clusters extracted
     unique_clusters : ndarray (n_clusters)
-        The idxs of the clusters.
+        The indexes of the clusters.
     clus_spike_times : ndarray (n_clusters, n_spikes_to_extract)
-        All of the idxs of all of the spikes which were extracted.
+        All of the indexes of all of the spikes which were extracted.
     n_channels : int
         The number of good recording channels (e.g non-sync channels)
     n_sync_channels : int
         The number of sync channel in the recording
     waveform_baseline_noise : int
-        The number of samples before the waveform which are nosie
+        The number of samples before the waveform which are noise
 
     Returns
     -------
     raw_waveforms : dictionary
         A nested dicitonary which contains a dictionary of waveform properties for each cluster.
     raw_waveforms_full : ndarray (n_clusters, n_channles, spike_width)
-        All extracted average wavefroms
+        All extracted average waveforms
     raw_waveforms_peak_channels : ndarray (n_clusters)
         The peak channel for each cluster
-    average_baseline : ndarray (n_clusters, wavefroms_baseline_noise)
-        The averge value for each clusters of the time samples before the signal
+    average_baseline : ndarray (n_clusters, waveforms_baseline_noise)
+        The average value for each clusters of the time samples before the signal
 
     """
     raw_waveforms = {}
@@ -257,6 +262,15 @@ def extract_raw_waveforms(
         If True will re-extract waveforms if there are waveforms saved
     save_path : str
         The path to the directory where results will be saved
+
+    Returns
+    -------
+    raw_waveforms_full : ndarray (n_clusters, n_channles, spike_width)
+        All extracted average waveforms
+    raw_waveforms_peak_channels : ndarray (n_clusters)
+        The peak channel for each cluster
+    SNR : ndarray (n_clusters)
+        The signal to noise ratio for each unit
     """
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
@@ -431,8 +445,10 @@ def manage_data_compression(ephys_raw_dir, decompressed_data_local=None):
 
     Returns
     -------
-    tuple
-        The path to the decompressed raw data and the meta file
+    ephys_raw_data : str
+        The path to the raw data file
+    meta_path : str
+        The path to the meta data file
 
     Raises
     ------
@@ -507,6 +523,25 @@ def decompress_data(
     decompressed_data_local,
     check_after_decompress=False,
 ):
+    """
+    Decompresses compressed raw recordings to disk for further processing
+
+    Parameters
+    ----------
+    compressed_data : str
+        The path to compressed data file
+    compressed_ch : str
+        The path to the .ch file
+    decompressed_data_local : str
+        he path to the directory to save the decompressed data
+    check_after_decompress : bool, optional
+        If True will go through the mtscomp extra checks , by default False
+
+    Returns
+    -------
+    decompressed_data_path : str
+        The path to the decompressed data
+    """
     decompressed_data_path = os.path.join(
         decompressed_data_local, "_bc_decompressed.bin"
     )
