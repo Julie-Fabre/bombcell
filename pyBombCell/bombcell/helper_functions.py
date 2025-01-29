@@ -14,28 +14,64 @@ import bombcell.quality_metrics as qm
 from bombcell.save_utils import get_metric_keys, save_results
 
 
-
+##TODO can add runtimes to optional steps here
 def show_times(
-    times_spikes_missing_1,
-    times_RPV_1,
-    times_chunks_to_keep,
-    times_spikes_missing_2,
-    times_RPV_2,
-    times_presence_ratio,
-    times_max_drift,
-    times_waveform_shape,
+    runtimes_spikes_missing_1,
+    runtimes_RPV_1,
+    runtimes_chunks_to_keep,
+    runtimes_spikes_missing_2,
+    runtimes_RPV_2,
+    runtimes_presence_ratio,
+    runtimes_max_drift,
+    runtimes_waveform_shape,
 ):
-    print(f"The time the first spikes missing took: {times_spikes_missing_1.sum()}")
-    print(f"The time the first RPV took: {times_RPV_1.sum()}")
-    print(f"The time the time chunks took: {times_chunks_to_keep.sum()}")
-    print(f"The time the second spikes missing took: {times_spikes_missing_2.sum()}")
-    print(f"The time the second RPV took: {times_RPV_2.sum()}")
-    print(f"The time the presence ratio took: {times_presence_ratio.sum()}")
-    print(f"The time the max drift took: {times_max_drift.sum()}")
-    print(f"The time the waveform shapes took: {times_waveform_shape.sum()}")
+    """
+    Prints all the gathered run times for each step of the BombCell pipeline
+
+    Parameters
+    ----------
+    runtimes_spikes_missing_1 : ndarray
+        Spikes missing runtime for first call
+    runtimes_RPV_1 : ndarray
+        RPV runtime for first call
+    runtimes_chunks_to_keep : ndarray
+        Chunks to keep runtime
+    runtimes_spikes_missing_2 : ndarray
+        Spikes missing runtime for the second call
+    runtimes_RPV_2 : ndarray
+        RPV runtime for the second call
+    runtimes_presence_ratio : ndarray
+        Presence ratio runtime
+    runtimes_max_drift : ndarray
+        Drift runtime
+    runtimes_waveform_shape : ndarray
+        Waveforms shape runtime
+    """
+    print(f"The time the first spikes missing took: {runtimes_spikes_missing_1.sum()}")
+    print(f"The time the first RPV took: {runtimes_RPV_1.sum()}")
+    print(f"The time the time chunks took: {runtimes_chunks_to_keep.sum()}")
+    print(f"The time the second spikes missing took: {runtimes_spikes_missing_2.sum()}")
+    print(f"The time the second RPV took: {runtimes_RPV_2.sum()}")
+    print(f"The time the presence ratio took: {runtimes_presence_ratio.sum()}")
+    print(f"The time the max drift took: {runtimes_max_drift.sum()}")
+    print(f"The time the waveform shapes took: {runtimes_waveform_shape.sum()}")
 
 
-def print_unit_qm(quality_metrics, unit_idx, param, unit_type=None):
+def print_unit_qm(quality_metrics, unit_idx, param, unit_type = None):
+    """
+    Prints all of the extracted quality metrics for a unit
+
+    Parameters
+    ----------
+    quality_metrics : dict
+        The full quality metrics dictionary
+    unit_idx : int
+        The id of the unit to look at 
+    param : dict
+        The param dictionary
+    unit_type : ndarray, optional
+        The array which contains what cell type every unit is classed as, by default None
+    """
     print(f"For unit {unit_idx}:")
     print(
         f'n_peaks : {quality_metrics["n_peaks"][unit_idx]}, n_troughs : {quality_metrics["n_troughs"][unit_idx]}'
@@ -69,6 +105,14 @@ def print_unit_qm(quality_metrics, unit_idx, param, unit_type=None):
 
 
 def print_qm_thresholds(param):
+    """
+    This function prints all of the thresholds used
+
+    Parameters
+    ----------
+    param : dict
+        The param dictionary
+    """
     print("Current threshold params:")
     print(
         f'max_n_peaks = {param["max_n_peaks"]}, max_n_troughs = {param["max_n_troughs"]}'
@@ -93,22 +137,39 @@ def print_qm_thresholds(param):
         print(f'max_drift = {param["max_drift"]}')
 
 
-def show_somatic(quality_metrics, unit, is1, is2, is3):
-    print(f'The max trough is {quality_metrics["trough"][unit]}')
-    print(f'The main peak before is {quality_metrics["main_peak_before"][unit]}')
-    print(f'The main peak after is {quality_metrics["main_peak_after"][unit]}')
-    print(f'The first peak width is {quality_metrics["width_before"][unit]}')
-    print(f'The trough_width is {quality_metrics["trough_width"][unit]}')
+def show_somatic(quality_metrics, unit_idx):
+    """
+    This function shows all of the information related to somatic/non-somatic classification
 
-    if is1[unit] == 0:
-        print("The trough is to small rel to peaks")
-    if is2[unit] == 0:
-        print("The first peak is too big")
-    if is3[unit] == 0:
-        print("The peak size to width is wrong")
-
+    Parameters
+    ----------
+    quality_metrics : dict
+        The full quality metrics dictionary
+    unit_idx : int
+        The index of the unit to look at
+    """
+    print(f'The max trough is {quality_metrics["trough"][unit_idx]}')
+    print(f'The main peak before is {quality_metrics["main_peak_before"][unit_idx]}')
+    print(f'The main peak after is {quality_metrics["main_peak_after"][unit_idx]}')
+    print(f'The first peak width is {quality_metrics["width_before"][unit_idx]}')
+    print(f'The trough_width is {quality_metrics["trough_width"][unit_idx]}')
 
 def order_good_sites(good_sites, channel_pos):
+    """
+    Reorder channel positions so they are ordered from smallest to biggest
+
+    Parameters
+    ----------
+    good_sites : ndarray
+        The indexes of the good sites
+    channel_pos : ndarray
+        The channel positions
+
+    Returns
+    -------
+    reordered_good_sites : ndarray
+        The good sites indexes in order
+    """
     # make it so it goes from biggest to smallest
     reordered_idx = np.argsort(-channel_pos[good_sites, 1].squeeze())
     reordered_good_sites = good_sites[reordered_idx]
@@ -127,6 +188,25 @@ def order_good_sites(good_sites, channel_pos):
 
 
 def nearest_channels(quality_metrics, channel_positions, this_unit, unique_templates):
+    """
+    Finds the nearest 16 channels for plotting waveforms
+
+    Parameters
+    ----------
+    quality_metrics : dict
+        The quality metrics dictionary
+    channel_positions : ndarray
+        The channel positions 
+    this_unit : int
+        The index of the unit to look at
+    unique_templates : ndarray
+        The array which converts bombcell id to kilosort id
+
+    Returns
+    -------
+    reordered_good_sites : ndarray
+        The indexes of the nearest channels
+    """
 
     unit_id = unique_templates[this_unit]  # JF: this function needs some cleaning up
 
@@ -134,6 +214,7 @@ def nearest_channels(quality_metrics, channel_positions, this_unit, unique_templ
 
     x, y = channel_positions[max_channel, :]
 
+    #Includes adjacent columns 
     x_dist = np.abs(channel_positions[:, 0] - x)
     near_x_dist = np.min(x_dist[x_dist != 0])
 
@@ -145,38 +226,7 @@ def nearest_channels(quality_metrics, channel_positions, this_unit, unique_templ
     )  # set the bad x_to max y, this keeps the shape of the array
     good_sites = np.argsort(y_dist)[:16]
 
-    ####
-    # x, y = channel_positions[max_channel,:]
-
-    # x_dist = np.abs(channel_positions[:,0] - x)
-    # near_x = np.argmin(x_dist)
-
-    # good_x_sites = np.argwhere( np.logical_and((x-50 < channel_positions[:,0]) == True, (channel_positions[:,0] < x+50) == True))
-    # y_values = channel_positions[good_x_sites,1]
-
-    # y_dist_to_max_site = np.abs(y_values - channel_positions[max_channel,1])
-    # good_sites = np.argsort(y_dist_to_max_site,axis = 0 )[:16]
-    # good_sites = good_x_sites[good_sites]
-
     reordered_good_sites = order_good_sites(good_sites, channel_positions)
-
-    # ###
-    # channels_with_same_x = np.argwhere(np.logical_and(channel_positions[:,0] <= channel_positions[max_channel, 0] +33,
-    #                                 channel_positions[:,0] >= channel_positions[max_channel, 0] -33)) #4 shank probe
-
-    # current_max_channel = channel_positions[max_channel, :]
-    # distance_to_current_channel = np.square(channel_positions - current_max_channel)
-    # sum_euclid = np.sum(distance_to_current_channel, axis = 1)
-
-    # #find nearest x channels
-    # near_x_channels = np.argwhere(distance_to_current_channel[:,0] <= np.sort(distance_to_current_channel[:,0])[50]).squeeze()
-
-    # #from these enar x channel find the nearest y channels
-
-    # use_these_channels = near_x_channels[np.argwhere(distance_to_current_channel[near_x_channels,1] <= np.sort(distance_to_current_channel[near_x_channels,1])[16])].squeeze()
-
-    # #reordered_good_sites = order_good_sites(use_these_channels, channel_positions)
-    # re_ordered_good_sites = use_these_channels
 
     return reordered_good_sites
 
@@ -184,8 +234,29 @@ def nearest_channels(quality_metrics, channel_positions, this_unit, unique_templ
 def plot_raw_waveforms(
     quality_metrics, channel_positions, this_unit, waveform, unique_templates
 ):
+    """
+    Plots the raw waveforms of the unit on the max channel and nearby channels
 
-    unit_id = unique_templates[this_unit]  # JF: this function needs some cleaning up
+    Parameters
+    ----------
+    quality_metrics : dict
+        The quality metrics dictionary
+    channel_positions : ndarray
+        The channel positions
+    this_unit : int
+        The unit index
+    waveform : ndarray
+        The waveforms for each unit and channel 
+    unique_templates : ndarray
+        The array which converts bombcell id to kilosort id
+
+    Returns
+    -------
+    fig : plot
+        The plot of the waveforms
+    """
+
+    unit_id = unique_templates[this_unit]  
 
     fig = Figure(figsize=(4, 6), dpi=100)
     fig.set_tight_layout(False)
@@ -204,43 +275,14 @@ def plot_raw_waveforms(
     delta_y = (maxy - min_y) / 18
 
     # may want to change so it find this for both units and selects the most extreme arguments
-    # however i dont think tis will be necessary
+    # however i dont think this will be necessary
     sub_min_y = np.nanmin(waveform[unit_id, :, good_channels])
     sub_max_y = np.nanmax(waveform[unit_id, :, good_channels])
 
     # shift each waveform so 0 is at the channel site, 1/9 is width of a y waveform plot
     waveform_y_offset = (
         (np.abs(sub_max_y) / (np.abs(sub_min_y) + np.abs(sub_max_y))) * 1 / 8
-    )  # JF: i don't think is used
-
-    # make the main scatter positiose site as scatter with opacity
-    # main_ax.scatter(channel_positions[good_channels,0], channel_positions[good_channels,1], c = 'grey', alpha = 0.3)
-    # main_ax.set_xlim(min_x - delta_x, max_x + delta_x)
-    # main_ax.set_ylim(min_y - delta_y, maxy + delta_y)
-
-    # rel_channel_positions = (channel_positions - channel_positions[good_channels].squeeze().min(axis = 0))/ (channel_positions[good_channels.squeeze()].max(axis = 0)  - channel_positions[good_channels].squeeze().min(axis = 0)) * 0.8
-    # rel_channel_positions += main_ax_offset
-    # for i in range(9):
-    #     for j in range(2):
-    #         #may need to change this positioning if units sizes are irregular
-    #         # if j == 0:
-    #         #     #The peak in the waveform is not half way, so maths says the x axis should be starting at
-    #         #     #0.1 and 0.6 so the middle is at 0.25/0.76 however chosen these values so it loks better by eye
-    #         #     ax =  fig.add_axes([main_ax_offset + main_ax_scale*0.25, main_ax_offset + main_ax_scale*(i/9 - 1/18 + waveform_y_offset), main_ax_scale*0.25, main_ax_scale*1/9])
-    #         # if j == 1:
-    #         #     ax = fig.add_axes([main_ax_offset + main_ax_scale*0.75, main_ax_offset + main_ax_scale*(i/9 - 1/18 + waveform_y_offset), main_ax_scale*0.25, main_ax_scale*1/9])
-
-    #         if j == 0:
-    #             #The peak in the waveform is not half way, so maths says the x axis should be starting at
-    #             #0.1 and 0.6 so the middle is at 0.25/0.76 however chosen these values so it loks better by eye
-    #             ax =  fig.add_axes([rel_channel_positions[good_channels,0][i*2 + j],rel_channel_positions[good_channels,1][i*2 + j], main_ax_scale*0.2, main_ax_scale*1/9])
-    #         if j == 1:
-    #             ax = fig.add_axes([rel_channel_positions[good_channels,0][i*2 + j],rel_channel_positions[good_channels,1][i*2 + j], main_ax_scale*0.22, main_ax_scale*1/9])
-
-    #         ax.plot(waveform[unit_id,:,good_channels[i*2 + j]].squeeze(), color = 'g')
-
-    #         ax.set_ylim(sub_min_y,sub_max_y)
-    #         ax.set_axis_off()
+    )  
 
     main_ax.set_xlim(min_x - delta_x, max_x + delta_x)
     main_ax.set_ylim(min_y - delta_y, maxy + delta_y)
@@ -259,14 +301,14 @@ def plot_raw_waveforms(
             # may need to change this positioning if units sizes are irregular
             # if j == 0:
             #     #The peak in the waveform is not half way, so maths says the x axis should be starting at
-            #     #0.1 and 0.6 so the middle is at 0.25/0.76 however chosen these values so it loks better by eye
+            #     #0.1 and 0.6 so the middle is at 0.25/0.76 however chosen these values so it looks better by eye
             #     ax =  fig.add_axes([main_ax_offset + main_ax_scale*0.25, main_ax_offset + main_ax_scale*(i/9 - 1/18 + waveform_y_offset), main_ax_scale*0.25, main_ax_scale*1/9])
             # if j == 1:
             #     ax = fig.add_axes([main_ax_offset + main_ax_scale*0.75, main_ax_offset + main_ax_scale*(i/9 - 1/18 + waveform_y_offset), main_ax_scale*0.25, main_ax_scale*1/9])
 
             if j == 0:
                 # The peak in the waveform is not half way, so maths says the x axis should be starting at
-                # 0.1 and 0.6 so the middle is at 0.25/0.76 however chosen these values so it loks better by eye
+                # 0.1 and 0.6 so the middle is at 0.25/0.76 however chosen these values so it looks better by eye
                 ax = fig.add_axes(
                     [
                         rel_channel_positions[good_channels, 0][i * 2 + j],
@@ -308,8 +350,32 @@ def show_unit(
     param,
     unit_type=None,
 ):
+    """
+    Shows the qualitymetrics and waveforms of a unit
+
+    Parameters
+    ----------
+    template_waveforms : ndarray
+        The waveforms for each unit and channel
+    this_unit : int
+        The id for the unit to look at
+    unique_templates : ndarray
+        The array which converts bombcell id to kilosort id
+    quality_metrics : dict
+        The quality metrics dictionary
+    channel_positions : ndarray
+        The channel positions
+    param : dict
+        The param dictionary
+    unit_type : ndarray, optional
+        The array which contains what cell type every unit is classed as, by default None
+
+    Returns
+    -------
+    fig : plot
+        The plot of the waveforms
+    """
     print_unit_qm(quality_metrics, this_unit, param, unit_type=unit_type)
-    unit_id = unique_templates[this_unit]  # JF: i don't think is used
 
     fig = plot_raw_waveforms(
         quality_metrics,
@@ -335,7 +401,7 @@ def create_quality_metrics_dict(n_units, snr=None):
 
     Returns
     -------
-    dict
+    quality_metrics : dict
         The quality metrics dictionary
     """
     init_keys = [
@@ -388,7 +454,7 @@ def get_all_quality_metrics(
     Parameters
     ----------
     unique_templates : ndarray
-        An of unique id for each unit
+        The array which converts bombcell id to kilosort id
     spike_times_seconds : ndarray
         The times of spikes in seconds
     spike_clusters : ndarray
@@ -414,19 +480,21 @@ def get_all_quality_metrics(
 
     Returns
     -------
-    (dict, dict)
-        The quality_metrics dictionary and the times taken for each section
+    quality_metrics : dict
+        The quality metrics for every unit
+    runtimes : dict
+        The runtimes for each sections
     """
     # Collect the time it takes to run each section
-    times_spikes_missing_1 = np.zeros(unique_templates.shape[0])
-    times_RPV_1 = np.zeros(unique_templates.shape[0])
-    times_chunks_to_keep = np.zeros(unique_templates.shape[0])
-    times_spikes_missing_2 = np.zeros(unique_templates.shape[0])
-    times_RPV_2 = np.zeros(unique_templates.shape[0])
-    times_presence_ratio = np.zeros(unique_templates.shape[0])
-    times_max_drift = np.zeros(unique_templates.shape[0])
-    times_waveform_shape = np.zeros(unique_templates.shape[0])
-    time_dist_metrics = np.zeros(unique_templates.shape[0])
+    runtimes_spikes_missing_1 = np.zeros(unique_templates.shape[0])
+    runtimes_RPV_1 = np.zeros(unique_templates.shape[0])
+    runtimes_chunks_to_keep = np.zeros(unique_templates.shape[0])
+    runtimes_spikes_missing_2 = np.zeros(unique_templates.shape[0])
+    runtimes_RPV_2 = np.zeros(unique_templates.shape[0])
+    runtimes_presence_ratio = np.zeros(unique_templates.shape[0])
+    runtimes_max_drift = np.zeros(unique_templates.shape[0])
+    runtimes_waveform_shape = np.zeros(unique_templates.shape[0])
+    runtime_dist_metrics = np.zeros(unique_templates.shape[0])
 
     not_enough_spikes = np.zeros(unique_templates.size)
     bad_units = 0
@@ -459,14 +527,14 @@ def get_all_quality_metrics(
         ) = qm.perc_spikes_missing(
             these_amplitudes, these_spike_times, time_chunks, param
         )
-        times_spikes_missing_1[unit_idx] = time.time() - time_tmp
+        runtimes_spikes_missing_1[unit_idx] = time.time() - time_tmp
 
         # fraction contamination
         time_tmp = time.time()
         fraction_RPVs, num_violations = qm.fraction_RP_violations(
             these_spike_times, these_amplitudes, time_chunks, param
         )
-        times_RPV_1[unit_idx] = time.time() - time_tmp
+        runtimes_RPV_1[unit_idx] = time.time() - time_tmp
 
         # get time chunks to keep
         time_tmp = time.time()
@@ -487,7 +555,7 @@ def get_all_quality_metrics(
             spike_times_seconds,
             param,
         )
-        times_chunks_to_keep[unit_idx] = time.time() - time_tmp
+        runtimes_chunks_to_keep[unit_idx] = time.time() - time_tmp
 
         use_these_times = np.array(
             (
@@ -503,7 +571,7 @@ def get_all_quality_metrics(
         ) = qm.perc_spikes_missing(
             these_amplitudes, these_spike_times, use_these_times, param
         )
-        times_spikes_missing_2[unit_idx] = time.time() - time_tmp
+        runtimes_spikes_missing_2[unit_idx] = time.time() - time_tmp
 
         time_tmp = time.time()
         fraction_RPVs, num_violations = qm.fraction_RP_violations(
@@ -513,7 +581,7 @@ def get_all_quality_metrics(
             param,
             use_this_tauR=quality_metrics["RPV_use_tauR_est"][unit_idx],
         )
-        times_RPV_2[unit_idx] = time.time() - time_tmp
+        runtimes_RPV_2[unit_idx] = time.time() - time_tmp
 
         quality_metrics["fraction_RPVs"][unit_idx] = fraction_RPVs[
             quality_metrics["RPV_use_tauR_est"][unit_idx].astype(int)
@@ -527,7 +595,7 @@ def get_all_quality_metrics(
             quality_metrics["use_these_times_stop"][unit_idx],
             param,
         )
-        times_presence_ratio[unit_idx] = time.time() - time_tmp
+        runtimes_presence_ratio[unit_idx] = time.time() - time_tmp
 
         # maximum cumulative drift estimate
         time_tmp = time.time()
@@ -543,7 +611,7 @@ def get_all_quality_metrics(
             channel_positions,
             param,
         )
-        times_max_drift[unit_idx] = time.time() - time_tmp
+        runtimes_max_drift[unit_idx] = time.time() - time_tmp
 
         # number of spikes
         quality_metrics["n_spikes"][unit_idx] = these_spike_times.shape[0]
@@ -578,7 +646,7 @@ def get_all_quality_metrics(
             waveform_baseline_window,
             param,
         )
-        times_waveform_shape[unit_idx] = time.time() - time_tmp
+        runtimes_waveform_shape[unit_idx] = time.time() - time_tmp
 
         # amplitude
         if raw_waveforms_full is not None and param["extract_raw_waveforms"]:
@@ -597,23 +665,23 @@ def get_all_quality_metrics(
             ) = qm.get_distance_metrics(
                 pc_features, pc_features_idx, this_unit, spike_clusters, param
             )
-        time_dist_metrics = time.time() - time_tmp
+        runtime_dist_metrics = time.time() - time_tmp
 
-    times = {
-        "times_spikes_missing_1": times_spikes_missing_1, # JF: what is this?
-        "times_RPV_1": times_RPV_1,
-        "times_chunks_to_keep": times_chunks_to_keep,
-        "times_spikes_missing_2": times_spikes_missing_2,
-        "times_RPV_2": times_RPV_2,
-        "times_presence_ratio": times_presence_ratio,
-        "times_max_drift": times_max_drift,
-        "times_waveform_shape": times_waveform_shape,
+    runtimes = {
+        "times_spikes_missing_1": runtimes_spikes_missing_1, # JF: what is this?
+        "times_RPV_1": runtimes_RPV_1,
+        "times_chunks_to_keep": runtimes_chunks_to_keep,
+        "times_spikes_missing_2": runtimes_spikes_missing_2,
+        "times_RPV_2": runtimes_RPV_2,
+        "times_presence_ratio": runtimes_presence_ratio,
+        "times_max_drift": runtimes_max_drift,
+        "times_waveform_shape": runtimes_waveform_shape,
     }
 
     if param["compute_distance_metrics"]:
-        times["time_dist_metrics"] = time_dist_metrics
+        runtimes["time_dist_metrics"] = runtime_dist_metrics
 
-    return quality_metrics, times
+    return quality_metrics, runtimes
 
 
 def run_bombcell(ks_dir, raw_file, save_path, param):
@@ -633,8 +701,14 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
 
     Returns
     -------
-    _type_
-        _description_
+    quality_metrics : dict
+        The quality metrics for each unit
+    param : dict
+        The parameters 
+    unit_type : ndarray
+        The unit classifications as numbers 
+    unit_type_string: ndarray
+        The unit classifications as names
     """
     (
         spike_times_samples,
@@ -748,7 +822,26 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
     )
 
 
-def make_qm_table(quality_metrics, param, unit_type):
+def make_qm_table(quality_metrics, param, unit_type, unique_templates):
+    """
+    Makes a table out of the qualit ymetrics 
+
+    Parameters
+    ----------
+    quality_metrics : dict
+        The quality metrics for each unit
+    param : dict
+        The parameters
+    unit_type : ndarray
+        The cell type classifications for each unit
+    unique_templates : ndarray
+        The array which converts bombcell id to kilosort id
+
+    Returns
+    -------
+    qm_table : DataFrame
+        The quality metrics information and as pandas dataframe
+    """
     # classify noise
     nan_result = np.isnan(quality_metrics["n_peaks"])
 
@@ -895,11 +988,17 @@ def manage_if_raw_data(raw_file, gain_to_uV):
     ----------
     raw_file : str / None
         Either a string with the path to the raw data file or None
+    gain_to_uV : float / None
+        The gain to micro volts if given or None
 
     Returns
     -------
-    tuple
-        The raw data path the meta directory path and the gain if applicable
+    ephys_rae_data : str
+        The path to the raw data file
+    meta_path : str
+        The path to the meta file
+    gain_to_uV : float
+        The gain to micro volts
     """
     if raw_file != None:
         ephys_raw_data, meta_path = manage_data_compression(
