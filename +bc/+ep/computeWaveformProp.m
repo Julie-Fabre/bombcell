@@ -23,6 +23,7 @@ wvTime = 1e3 * ((0:size(thisWaveform, 2) - 1) / param.ephys_sample_rate);
 % Compute Half-Width
 troughAmplitude = thisWaveform(troughLocs(1));
 
+
 halfAmplitude = troughAmplitude / 2;
 aboveHalfIndices = find(thisWaveform >= halfAmplitude);
 halfWidthStartIndex = aboveHalfIndices(find(aboveHalfIndices < peakLocs(end), 1, 'last'));
