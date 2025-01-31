@@ -87,16 +87,15 @@ for iTimeChunk = 1:numel(timeChunks) - 1
     maxAmpli_val_smooth = find(spikeCountsPerAmpliBin_smooth == max(spikeCountsPerAmpliBin_smooth), 1);
 
     surrogate_amplitudes = [spikeCountsPerAmpliBin_smooth(end:-1:maxAmpli_val_smooth), fliplr(spikeCountsPerAmpliBin_smooth(end:-1:maxAmpli_val_smooth+1))];
+
     % First part: Create descending sequence
-start_val = bins(maxAmpli_val_smooth) - bin_steps;
-num_steps = floor(size(surrogate_amplitudes, 2)/2);
-descending_seq = start_val:-bin_steps:(start_val - bin_steps*(num_steps-1));
+    start_val = bins(maxAmpli_val_smooth) - bin_steps;
+    num_steps = floor(size(surrogate_amplitudes, 2)/2);
+    descending_seq = start_val:-bin_steps:(start_val - bin_steps*(num_steps-1));
+    remaining_bins = bins(maxAmpli_val(1):end);
 
-remaining_bins = bins(maxAmpli_val(1):end);
-
-
-% Combine both parts
-surrogate_bins = [fliplr(descending_seq), remaining_bins];
+    % Combine both parts
+    surrogate_bins = [fliplr(descending_seq), remaining_bins];
 
     % remove any bins where the amplitudes would be < 0, that doesn't make any sense
     surrogate_amplitudes(surrogate_bins < 0) = [];

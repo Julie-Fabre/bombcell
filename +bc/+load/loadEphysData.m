@@ -67,7 +67,9 @@ if exist(fullfile([ephys_path, filesep, 'spike_clusters.npy']))
     spike_clusters_0idx = readNPY([ephys_path, filesep, 'spike_clusters.npy']); % already manually-curated
     spikeClusters = int32(spike_clusters_0idx) + 1;
 
-    newTemplates = unique(spikeClusters(~ismember(int32(spikeClusters), int32(spikeTemplates))));
+
+    newTemplates = unique(spikeClusters(~ismember(spikeClusters, int32(spikeTemplates))));
+
 
     if ~isempty(newTemplates)
         % initialize templates and pc features
