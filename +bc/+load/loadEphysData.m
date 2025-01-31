@@ -65,13 +65,17 @@ channelPositions = readNPY([ephys_path, filesep, 'channel_positions.npy']);
 % templates & pc_features
 if exist(fullfile([ephys_path, filesep, 'spike_clusters.npy']))
     spike_clusters_0idx = readNPY([ephys_path, filesep, 'spike_clusters.npy']); % already manually-curated
-    spikeClusters = spike_clusters_0idx + 1;
+    spikeClusters = int32(spike_clusters_0idx) + 1;
 
-    newTemplates = unique(spikeClusters(~ismember(uint32(spikeClusters), uint32(spikeTemplates))));
+    newTemplates = unique(spikeClusters(~ismember(int32(spikeClusters), int32(spikeTemplates))));
 
     if ~isempty(newTemplates)
         % initialize templates and pc features
+        try
         templateWaveforms = [templateWaveforms; zeros(max(newTemplates)-size(templateWaveforms, 1), size(templateWaveforms, 2), size(templateWaveforms, 3))];
+        catch
+            keyboard
+        end
         pcFeatureIdx = [pcFeatureIdx; zeros(max(newTemplates)-size(pcFeatureIdx, 1), size(pcFeatureIdx, 2))];
         for iNewTemplate = newTemplates'
             % find corresponding pre merge/split templates and PCs
