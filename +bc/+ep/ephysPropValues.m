@@ -47,7 +47,7 @@ end
 paramEP.rawFile = rawFile;
 
 % duplicate spikes parameters 
-paramEP.removeDuplicateSpikes = 1;
+paramEP.removeDuplicateSpikes = 0;
 paramEP.duplicateSpikeWindow_s = 0.00001; % in seconds 
 paramEP.saveSpikes_withoutDuplicates = 1;
 paramEP.recomputeDuplicateSpikes = 0;
