@@ -62,7 +62,8 @@ function [nPeaks, nTroughs, spatialDecaySlope, waveformBaseline, scndPeakToTroug
 % (find peaks and troughs using MATLAB's built-in function)
 thisWaveform = templateWaveforms(thisUnit, :, maxChannel);
 nChannels_to_eval = 1;
-if any(isnan(thisWaveform)) % kilosort can sometimes return all NaNs in a waveform, we classify these units as noise
+if any(isnan(thisWaveform)) || all(thisWaveform == 0) % kilosort can sometimes 
+    % return all NaNs or zeros in a waveform (not sure why), we classify these units as noise
     nPeaks = NaN;
     nTroughs = NaN;
     mainPeak_before_size = nan(1,nChannels_to_eval);
@@ -74,7 +75,7 @@ if any(isnan(thisWaveform)) % kilosort can sometimes return all NaNs in a wavefo
     peakLocs = NaN;
     troughLocs = NaN;
     waveformDuration_peakTrough = NaN;
-    if param. param.spDecayLinFit
+    if param.spDecayLinFit
         num_buff = 6;
     else
         num_buff = 10;
@@ -84,11 +85,16 @@ if any(isnan(thisWaveform)) % kilosort can sometimes return all NaNs in a wavefo
     waveformBaseline = NaN;
     spatialDecayPoints_loc = nan(1, num_buff); 
     spatialDecayFit_1 = NaN;
+    scndPeakToTroughRatio = NaN;
+    mainPeakToTroughRatio = NaN;
+    peak1ToPeak2Ratio = NaN;
+    troughToPeak2Ratio = NaN;
+    
 else
     % get waveform peaks, troughs locations, sizes and widths for top 17
     % channels 
     theseChannels = maxChannel; % - 8 : maxChannel + 8;
-    for iChannel = 1%:17 % evaluate peak and trough sizes and widths for top 17 channels
+    for iChannel = 1%:17 % evaluate peak and trough sizes and widths for top 17 channels (To do - only 1 channel for now)
         if theseChannels(iChannel) > 0 && theseChannels(iChannel) <= size(templateWaveforms,3)
             if theseChannels(iChannel) == maxChannel
                 thisWaveform = templateWaveforms(thisUnit, :, theseChannels(iChannel));
