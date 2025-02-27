@@ -1,10 +1,10 @@
 from . import (
-    helper_functions,
     default_parameters,
     extract_raw_waveforms,
     quality_metrics,
     save_utils,
     loading_utils,
+    helper_functions,
 )
 
 from .default_parameters import *

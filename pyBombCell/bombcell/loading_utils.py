@@ -42,13 +42,13 @@ def load_ephys_data(ephys_path):
     if os.path.exists(os.path.join(ephys_path, "spike_times_corrected.npy")):
         spike_times_samples = np.load(
             os.path.join(ephys_path, "spike_times_corrected.npy")
-        )
+        ).squeeze()
     else:
-        spike_times_samples = np.load(os.path.join(ephys_path, "spike_times.npy"))
+        spike_times_samples = np.load(os.path.join(ephys_path, "spike_times.npy")).squeeze()
 
     template_amplitudes = np.load(os.path.join(ephys_path, "amplitudes.npy")).astype(
         np.float64
-    )
+    ).squeeze()
 
     # load and unwhiten templates
     templates_waveforms_whitened = np.load(os.path.join(ephys_path, "templates.npy"))
@@ -61,13 +61,13 @@ def load_ephys_data(ephys_path):
 
     if os.path.exists(os.path.join(ephys_path, "pc_features.npy")):
         pc_features = np.load(os.path.join(ephys_path, "pc_features.npy")).squeeze()
-        pc_features_idx = np.load(os.path.join(ephys_path, "pc_feature_ind.npy"))
+        pc_features_idx = np.load(os.path.join(ephys_path, "pc_feature_ind.npy")).squeeze()
     else:
         pc_features = np.nan
         pc_features_idx = np.nan
 
-    channel_positions = np.load(os.path.join(ephys_path, "channel_positions.npy"))
-    good_channels = np.load(os.path.join(ephys_path, "channel_map.npy"))
+    channel_positions = np.load(os.path.join(ephys_path, "channel_positions.npy")).squeeze()
+    good_channels = np.load(os.path.join(ephys_path, "channel_map.npy")).squeeze()
 
     return (
         spike_times_samples,

@@ -171,7 +171,7 @@ def order_good_sites(good_sites, channel_pos):
         The good sites indexes in order
     """
     # make it so it goes from biggest to smallest
-    reordered_idx = np.argsort(-channel_pos[good_sites, 1].squeeze())
+    reordered_idx = np.argsort(-channel_pos[good_sites, 1])
     reordered_good_sites = good_sites[reordered_idx]
 
     # re-arange x-axis so it goes (smaller x, bigger x)
@@ -210,7 +210,7 @@ def nearest_channels(quality_metrics, channel_positions, this_unit, unique_templ
 
     unit_id = unique_templates[this_unit]  # JF: this function needs some cleaning up
 
-    max_channel = quality_metrics["peak_channels"][unit_id].squeeze()
+    max_channel = quality_metrics["peak_channels"][unit_id]
 
     x, y = channel_positions[max_channel, :]
 
@@ -269,8 +269,8 @@ def plot_raw_waveforms(
         quality_metrics, channel_positions, this_unit, unique_templates
     ).squeeze()
 
-    min_x, min_y = channel_positions[good_channels[-2], [0, 1]].squeeze()
-    max_x, maxy = channel_positions[good_channels[1], [0, 1]].squeeze()
+    min_x, min_y = channel_positions[good_channels[-2], [0, 1]]
+    max_x, maxy = channel_positions[good_channels[1], [0, 1]]
     delta_x = (max_x - min_x) / 2
     delta_y = (maxy - min_y) / 18
 
@@ -288,10 +288,10 @@ def plot_raw_waveforms(
     main_ax.set_ylim(min_y - delta_y, maxy + delta_y)
 
     rel_channel_positions = (
-        (channel_positions - channel_positions[good_channels].squeeze().min(axis=0))
+        (channel_positions - channel_positions[good_channels].min(axis=0))
         / (
-            channel_positions[good_channels.squeeze()].max(axis=0)
-            - channel_positions[good_channels].squeeze().min(axis=0)
+            channel_positions[good_channels].max(axis=0)
+            - channel_positions[good_channels].min(axis=0)
         )
         * 0.8
     )
@@ -327,7 +327,7 @@ def plot_raw_waveforms(
                     ]
                 )
 
-            ax.plot(waveform[unit_id, :, good_channels[i * 2 + j]].squeeze(), color="g")
+            ax.plot(waveform[unit_id, :, good_channels[i * 2 + j]], color="g")
 
             ax.set_ylim(sub_min_y, sub_max_y)
             ax.set_axis_off()
@@ -518,7 +518,7 @@ def get_all_quality_metrics(
             )
             bad_units += 1
             continue
-
+        print(unit_idx)
         # percentage spikes missing
         time_tmp = time.time()
         (
@@ -723,10 +723,10 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
 
     # Extract or load in raw waveforms
     if raw_file != None:
-        raw_waveforms_full, raw_waveforms_peak_channel, SNR = extract_raw_waveforms(
+        raw_waveforms_full, raw_waveforms_peak_channel, SNR, raw_waveforms_id_match = extract_raw_waveforms(
             param,
             spike_clusters,
-            spike_times_samples.squeeze(),
+            spike_times_samples,
             param["re_extract_raw"],
             save_path,
         )
@@ -811,6 +811,7 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
         param,
         raw_waveforms_full,
         raw_waveforms_peak_channel,
+        raw_waveforms_id_match,
         save_path,
     )  # JF: this should be inside bc.get_all_quality_metrics
 
@@ -824,7 +825,7 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
 
 def make_qm_table(quality_metrics, param, unit_type, unique_templates):
     """
-    Makes a table out of the qualit ymetrics 
+    Makes a table out of the quality metrics 
 
     Parameters
     ----------

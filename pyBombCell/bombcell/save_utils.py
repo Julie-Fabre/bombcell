@@ -6,11 +6,7 @@ import pandas as pd
 from typing import Dict, Tuple, List
 from numpy.typing import NDArray
 
-def path_handler(path: str) -> None:
-    path = Path(path).expanduser()
-    assert path.parent.exists(), f"{str(path.parent)} must exist to create {str(path)}."
-    path.mkdir(exist_ok=True)
-    return path
+
 
 def get_metric_keys():
     return [
@@ -211,7 +207,7 @@ def save_params_as_parquet(
     param_df.to_parquet(file_path)
 
 
-def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, save_path):
+def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, raw_waveforms_id_match, save_path):
     """
     This function saves the raw waveform information as npy arrays
 
@@ -235,6 +231,9 @@ def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, save_p
     )
     np.save(file_path_peak_channels, raw_waveforms_peak_channel)
 
+    file_path_raw_waveforms_id_match = os.path.join(save_path, "_bc_rawWaveforms_kilosort_format")
+    np.save(file_path_raw_waveforms_id_match, raw_waveforms_id_match)
+
 
 def save_results(
     quality_metrics,
@@ -243,6 +242,7 @@ def save_results(
     param,
     raw_waveforms_full,
     raw_waveforms_peak_channel,
+    raw_waveforms_id_match,
     save_path,
 ):
     """
@@ -276,4 +276,4 @@ def save_results(
     save_params_as_parquet(
         param, save_path, file_name="_bc_parameters._bc_qMetrics.parquet"
     )
-    save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, save_path)
+    save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, raw_waveforms_id_match, save_path)

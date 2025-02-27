@@ -153,17 +153,14 @@ def get_default_parameters(
         param["raw_data_file"] = raw_file
 
     if kilosort_version == 4:
-        param["spike_width"] = (61,)  # width of spike in samples
-        param["waveform_baseline_noise_window"] = (
-            10  # time in samples at the beginning, with no signal
-        )
+        param["spike_width"] = 61 # width of spike in samples
+        param["waveform_baseline_noise_window"] = 10  # time in samples at the beginning, with no signal
         param["waveform_baseline_window_start"] = 0  # in samples
         param["waveform_baseline_window_stop"] = 10  # in samples
+
     else:
-        param["spike_width"] = (82,)  # width of spike in samples
-        param["waveform_baseline_noise_window"] = (
-            20  # time in samples at the beginning, with no signal
-        )
+        param["spike_width"] = 82 # width of spike in samples
+        param["waveform_baseline_noise_window"] = 20  # time in samples at the beginning, with no signal
         param["waveform_baseline_window_start"] = 21  # in samples
         param["waveform_baseline_window_stop"] = 31  # in samples
 

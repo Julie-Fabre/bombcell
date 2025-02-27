@@ -9,8 +9,11 @@ from scipy.signal import detrend
 from scipy.ndimage import gaussian_filter
 from tqdm.auto import tqdm
 
-from bombcell.save_utils import path_handler
-
+def path_handler(path: str) -> None:
+    path = Path(path).expanduser()
+    assert path.parent.exists(), f"{str(path.parent)} must exist to create {str(path)}."
+    path.mkdir(exist_ok=True)
+    return path
 
 def read_meta(meta_path):
     """
@@ -171,7 +174,7 @@ def process_a_unit(
 def unpack_dicts(
     all_waveforms,
     spike_width,
-    max_cluster_id,
+    n_clusters,
     unique_clusters,
     clus_spike_times,
     n_channels,
@@ -214,27 +217,26 @@ def unpack_dicts(
     """
     raw_waveforms = {}
     raw_waveforms_full = np.full(
-        (max_cluster_id, n_channels - n_sync_channels, spike_width), np.nan
+        (n_clusters, n_channels - n_sync_channels, spike_width), np.nan
     )
-    raw_waveforms_peak_channel = np.full((max_cluster_id), np.nan)
-    average_baseline = np.full((max_cluster_id, waveform_baseline_noise), np.nan)
+    raw_waveforms_peak_channel = np.full((n_clusters), np.nan)
+    average_baseline = np.full((n_clusters, waveform_baseline_noise), np.nan)
 
-    # Unconventional convention: arrays axis 0 is max_cluster_id long,
-    # so arrays have empty rows where cluster IDs are jumped.
-    for i, cid in enumerate(unique_clusters):
-        raw_waveforms[f"cluster_{cid}"] = {}
-        raw_waveforms[f"cluster_{cid}"]["spike_map_mean"] = all_waveforms[i][
+
+    for i in range(unique_clusters.shape[0]):
+        raw_waveforms[f"cluster_{i}"] = {}
+        raw_waveforms[f"cluster_{i}"]["spike_map_mean"] = all_waveforms[i][
             "spike_map_mean"
         ]
-        raw_waveforms[f"cluster_{cid}"]["spike_idx_sampled"] = all_waveforms[i][
+        raw_waveforms[f"cluster_{i}"]["spike_idx_sampled"] = all_waveforms[i][
             "spike_idxs"
         ]
-        raw_waveforms[f"cluster_{cid}"]["Cluster_idx"] = cid
-        raw_waveforms[f"cluster_{cid}"]["spike_idxs"] = clus_spike_times[i]
+        raw_waveforms[f"cluster_{i}"]["Cluster_idx"] = i
+        raw_waveforms[f"cluster_{i}"]["spike_idxs"] = clus_spike_times[i]
 
-        raw_waveforms_full[cid, :, :] = all_waveforms[i]["raw_waveforms_full"]
-        raw_waveforms_peak_channel[cid] = all_waveforms[i]["raw_waveforms_peak_channel"]
-        average_baseline[cid] = all_waveforms[i]["average_baseline"]
+        raw_waveforms_full[i, :, :] = all_waveforms[i]["raw_waveforms_full"]
+        raw_waveforms_peak_channel[i] = all_waveforms[i]["raw_waveforms_peak_channel"]
+        average_baseline[i] = all_waveforms[i]["average_baseline"]
 
     return (
         raw_waveforms,
@@ -282,6 +284,7 @@ def extract_raw_waveforms(
     raw_waveforms_peak_channel_file = save_path / "templates._bc_rawWaveformPeakChannels.npy"
     snr_noise_file = save_path / "templates._bc_baselineNoiseAmplitude.npy"
     snr_noise_idx_file = save_path / "templates._bc_baselineNoiseAmplitudeIndex.npy"
+    raw_waveforms_id_match_file = save_path / "_bc_rawWaveforms_kilosort_format"
 
     # Cluster ids
     unique_clusters = np.unique(spike_clusters)
@@ -303,21 +306,24 @@ def extract_raw_waveforms(
     recompute = re_extract_waveforms
     if raw_waveforms_file.exists() and not recompute:
 
-        assert raw_waveforms_peak_channel_file.exists() and snr_noise_file.exists() and snr_noise_idx_file.exists()
-        print(f"Loading file {raw_waveforms_file}...", end='', flush=True)
+        if raw_waveforms_peak_channel_file.exists() and snr_noise_file.exists() and snr_noise_idx_file.exists():
+            print(f"Loading file {raw_waveforms_file}...", end='', flush=True)
 
+            raw_waveforms_full = np.load(raw_waveforms_file)
+            raw_waveforms_peak_channel = np.load(raw_waveforms_peak_channel_file)
+            raw_waveforms_id_match = np.load(raw_waveforms_id_match_file)
+            baseline_noise_all = np.load(snr_noise_file)
+            baseline_noise_idx = np.load(snr_noise_idx_file)
+            print("\rLoading file {raw_waveforms_file}... Done!") 
 
-        raw_waveforms_full = np.load(raw_waveforms_file)
-        raw_waveforms_peak_channel = np.load(raw_waveforms_peak_channel_file)
-        baseline_noise = np.load(snr_noise_file)
-        baseline_noise_idx = np.load(snr_noise_idx_file)
-        print("\rLoading file {raw_waveforms_file}... Done!") 
+            raw_waveforms_id_match, raw_waveforms_peak_channel, raw_waveforms_full, baseline_noise_all, baseline_noise_idx = \
+                check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel, spike_clusters, spike_times, param)
 
-        # Check whether number of clusters changed
-        # assumes that raw_waveforms_full has empty rows for jumps in unit indices
-        if raw_waveforms_full.shape[0] != max_cluster_id:
-            print("\rSome units' raw waveforms are not extracted. Extracting now ...") 
-            recompute = True
+            # Check whether number of clusters changed
+            # assumes that raw_waveforms_full has empty rows for jumps in unit indices
+            if raw_waveforms_full.shape[0] != n_clusters:
+                print("\rSome units' raw waveforms are not extracted. Extracting now ...") 
+                recompute = True
     else:
         recompute = True
 
@@ -325,7 +331,7 @@ def extract_raw_waveforms(
     if recompute:
         # half_width is the number of sample before spike_time which are recorded,
         # then will take spike_width - half_width after
-        if spike_width == 81: # kilosort < 4, baseline 0:41
+        if spike_width == 82: # kilosort < 4, baseline 0:41
             half_width = spike_width / 2
         elif spike_width == 61: # kilosort = 4, baseline 0:20
             half_width = 20
@@ -359,8 +365,7 @@ def extract_raw_waveforms(
         all_spikes_idxs = np.zeros((n_clusters, n_spikes_to_extract))
         clus_spike_times = []
         # Process ALL unit
-        bar_description = "Extracting raw waveforms: {percentage:3.0f}%|{bar:10}| {n}/{total} units"
-        for i, idx in tqdm(enumerate(unique_clusters), bar_format=bar_description):
+        for i, idx in enumerate(unique_clusters):
             clus_spike_times.append(spike_times_filt[spike_clusters_filt == idx])
             if n_spikes_to_extract < len(clus_spike_times[i]):
                 # -1 so can't index out of region
@@ -391,45 +396,47 @@ def extract_raw_waveforms(
             for i, cid in enumerate(unique_clusters)
         )
 
-        # Unconventional convention: raw_waveforms_full axis 0
-        # has length max_cluster_id, not n_clusters
+
         (raw_waveforms,
          raw_waveforms_full,
          raw_waveforms_peak_channel,
-         baseline_noise) = unpack_dicts(
+         baseline_noise_all) = unpack_dicts(
                             all_waveforms,
                             spike_width,
-                            max_cluster_id,
+                            n_clusters,
                             unique_clusters,
                             clus_spike_times,
                             n_channels,
                             n_sync_channels,
                             waveform_baseline_noise)
-
         # Final processing and saving data
         # NOTE not +1 !
-        baseline_noise = baseline_noise.reshape(-1)
+        baseline_noise_all = baseline_noise_all.reshape(-1)
         baseline_noise_idx = np.hstack([(np.ones(waveform_baseline_noise) * cid) for cid in unique_clusters])
-
         # save baseline noise arrays
-        np.save(snr_noise_file, baseline_noise)
+        np.save(snr_noise_file, baseline_noise_all)
         np.save(snr_noise_idx_file, baseline_noise_idx)
 
     # Compute SNR
     SNR = np.zeros(n_clusters)
-    for cid in unique_clusters:
+    for i, cid in enumerate(unique_clusters):
 
         # signal: from peak channel
-        peak_waveform = raw_waveforms_full[cid, raw_waveforms_peak_channel[cid].astype(int), :]
+        peak_waveform = raw_waveforms_full[i, raw_waveforms_peak_channel[i].astype(int), :]
         s = np.max(np.abs(peak_waveform))
 
         # noise: mean average deviation
-        baseline_noise = baseline_noise[baseline_noise_idx == cid]
+        baseline_noise = baseline_noise_all[baseline_noise_idx == cid]
         n = np.median(np.abs(baseline_noise)) / 0.6745
 
-        SNR[cid] = s / n
+        SNR[i] = s / n
 
-    return raw_waveforms_full, raw_waveforms_peak_channel, SNR
+    #Save a copy of the waveforms were the row number matches the cluster index
+    raw_waveforms_id_match = np.full((max_cluster_id + 1, n_channels - n_sync_channels, spike_width), np.nan)
+    for i, idx in enumerate(unique_clusters):
+        raw_waveforms_id_match[idx] = raw_waveforms_full[i]
+
+    return raw_waveforms_full, raw_waveforms_peak_channel, SNR, raw_waveforms_id_match
 
 
 def manage_data_compression(ephys_raw_dir, decompressed_data_local=None):
@@ -554,3 +561,125 @@ def decompress_data(
     r.close()
 
     return decompressed_data_path
+
+def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel, spike_clusters, spike_times, baseline_noise_all, param):
+
+    # get the current and old cluster indexes
+    unique_id_new = np.unique(spike_clusters)
+    unique_id_extracted = np.argwhere(np.isnan(raw_waveforms_id_match[:,0,0]) == False).squeeze()
+
+    if unique_id_new == unique_id_extracted:
+        print('No splits/merges detected')
+        return raw_waveforms_id_match
+    else:
+        #find the different indexes
+        new_indexes_to_get = unique_id_new[np.argwhere(np.isin(unique_id_new, unique_id_extracted) == False)]
+        old_indexes_to_remove = unique_id_extracted[np.argwhere(np.isin(unique_id_extracted, unique_id_extracted) == False)]
+
+        #create new waveforms array for the new indexes and remove old indexes
+        n_new_clusters = unique_id_new[-1] - unique_id_extracted[-1]
+        new_raw_waveforms_matching_ids = np.pad(raw_waveforms_id_match, ((0,n_new_clusters),(0,0),(0,0)))
+        new_raw_waveforms_matching_ids[old_indexes_to_remove] = np.nan
+
+        #create baseline 
+        baseline_id_match = np.zeros(np.max(unique_id_extracted)+1)
+        for i, idx in enumerate(unique_id_extracted):
+            baseline_id_match[idx] = baseline_noise_all[i]
+        new_baseline = np.pad(baseline_id_match, ((0,n_new_clusters),(0,0),(0,0)))
+        new_baseline[old_indexes_to_remove] = np.nan
+
+        new_baseline_noise_idx = np.hstack([(np.ones(waveform_baseline_noise) * cid) for cid in unique_id_new])
+
+        #create array for peak channels with mathcing row to id 
+        peak_channels_id_match = np.zeros(np.max(unique_id_extracted)+1)
+        for i, idx in enumerate(unique_id_extracted):
+            peak_channels_id_match[idx] = raw_waveforms_peak_channel[i]
+
+        new_peak_channels_matching_ids = np.pad(peak_channels_id_match, ((0,n_new_clusters),(0,0),(0,0)))
+        new_peak_channels_matching_ids[old_indexes_to_remove] = np.nan
+
+        print(f'Extracting unit index(s) {new_indexes_to_get}.. from detected splits')
+
+        ##NOTE code here is repeated from extracting all units
+        n_clusters = unique_id_new.size
+        # Get necessary info from param
+        raw_data_file = param["raw_data_file"]
+        meta_path = Path(param["ephys_meta_file"])
+        n_channels = param["n_channels"]
+        n_sync_channels = param["n_sync_channels"]
+        n_spikes_to_extract = param["n_raw_spikes_to_extract"]
+        detrend_waveforms = param["detrend_waveform"]
+        waveform_baseline_noise = param.get("waveform_baseline_noise", 20)
+        spike_width = param["spike_width"]
+
+        # half_width is the number of sample before spike_time which are recorded,
+        # then will take spike_width - half_width after
+        if spike_width == 81: # kilosort < 4, baseline 0:41
+            half_width = spike_width / 2
+        elif spike_width == 61: # kilosort = 4, baseline 0:20
+            half_width = 20
+
+        meta_dict = read_meta(meta_path)
+        n_elements = (int(meta_dict["fileSizeBytes"]) / 2)  # int16 so 2 bytes per data point
+        n_channels_rec = int(meta_dict["nSavedChans"])
+        param["n_channels_rec"] = n_channels_rec
+
+        raw_data = np.memmap(
+            raw_data_file,
+            dtype="int16",
+            shape=(int(n_elements / n_channels_rec), n_channels_rec),
+        )
+
+        # filter so only spikes which have a full width recorded can be sampled
+        spike_clusters_filt = spike_clusters[
+            np.logical_or(
+                half_width < spike_times,
+                spike_times < raw_data.shape[0] - spike_width + half_width,
+            )
+        ]
+        spike_times_filt = spike_times[
+            np.logical_or(
+                half_width < spike_times,
+                spike_times < raw_data.shape[0] - spike_width + half_width,
+            )
+        ]
+
+        # calculate all the spikes to sample
+        all_spikes_idxs = np.zeros((n_clusters, n_spikes_to_extract))
+        clus_spike_times = []
+        # Process ALL unit
+        bar_description = "Extracting raw waveforms: {percentage:3.0f}%|{bar:10}| {n}/{total} units"
+        for i, idx in tqdm(enumerate(unique_id_new), bar_format=bar_description):
+            clus_spike_times.append(spike_times_filt[spike_clusters_filt == idx])
+            if n_spikes_to_extract < len(clus_spike_times[i]):
+                # -1 so can't index out of region
+                all_spikes_idxs[i, :] = clus_spike_times[i][
+                    np.linspace(
+                        0, len(clus_spike_times[i]) - 1, n_spikes_to_extract, dtype=int
+                    )
+                ]
+            else:
+                all_spikes_idxs[i, : len(clus_spike_times[i])] = clus_spike_times[i]
+                all_spikes_idxs[i, len(clus_spike_times[i]) :] = np.nan
+
+        for id in new_indexes_to_get:
+            tmp_raw_waveform_info = process_a_unit(
+                raw_data,
+                spike_width,
+                half_width,
+                all_spikes_idxs,
+                n_channels_rec,
+                n_channels,
+                n_sync_channels,
+                id,
+                detrend_waveforms,
+                False,
+                waveform_baseline_noise,
+                None,
+            )
+            new_raw_waveforms_matching_ids[id] = tmp_raw_waveform_info['raw_waveform_full']
+            new_peak_channels_matching_ids[id] = tmp_raw_waveform_info['raw_waveforms_peak_channel']
+
+        #remove all empty rows
+        new_raw_waveform_full = new_raw_waveforms_matching_ids[~np.isnan(new_raw_waveforms_matching_ids).all(axis=(1,2)),:,:]
+    return new_raw_waveforms_matching_ids, new_peak_channels_matching_ids, new_raw_waveform_full, new_baseline, new_baseline_noise_idx

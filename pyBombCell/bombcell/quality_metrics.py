@@ -9,10 +9,7 @@ from scipy.stats import norm, chi2
 
 import matplotlib.pyplot as plt
 
-# import bombcell.extract_raw_waveforms as erw
-# import bombcell.loading_utils as led
-# import bombcell.default_parameters as params
-from bombcell.save_utils import path_handler
+from bombcell.extract_raw_waveforms import path_handler
 
 
 def get_waveform_peak_channel(template_waveforms):
@@ -221,7 +218,7 @@ def remove_duplicate_spikes(
             new_spike_idx = np.full(max(good_templates_idx) + 1, np.nan)
             new_spike_idx[good_templates_idx] = np.arange(good_templates_idx.shape[0])
             spike_clusters_flat = (
-                new_spike_idx[spike_clusters].squeeze().astype(np.int32)
+                new_spike_idx[spike_clusters].astype(np.int32)
             )
 
             # check for duplicate spikes in batches
@@ -272,7 +269,7 @@ def remove_duplicate_spikes(
         if pc_features is not None:
             pc_features = pc_features[
                 [np.argwhere(duplicate_spike_idx == 0)], :, :
-            ].squeeze()
+            ]
 
         if raw_waveforms_full is not None:
             raw_waveforms_full = raw_waveforms_full[empty_unit_idx == False, :, :]
@@ -482,7 +479,7 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
                 # Testing for cut-off solves all of these issues
                 p0 = np.array(
                     (
-                        np.max(spike_counts_per_amp_bin_gaussian),
+                        np.percentile(spike_counts_per_amp_bin_gaussian, 99),
                         mode_seed,
                         np.nanstd(these_amplitudes_here),
                         np.percentile(these_amplitudes_here, 1),
@@ -789,8 +786,8 @@ def time_chunks_to_keep(
     these_spike_clusters = spike_clusters.copy().astype(np.int32)
     these_spike_clusters[
         np.logical_or(
-            spike_times_seconds.squeeze() < use_these_times[0], # TODO jf move squeezing to loader
-            spike_times_seconds.squeeze() > use_these_times[-1],
+            spike_times_seconds < use_these_times[0], 
+            spike_times_seconds > use_these_times[-1],
         )
     ] = -1  # set to -1 for bad times
 
@@ -903,18 +900,18 @@ def max_drift_estimate(
 
     # good_times_spikes = np.ones_like(spike_clusters)
     # good_times_spikes[spike_clusters == -1] = 0
-    # pc_features_drift = pc_features[good_times_spikes.squeeze() == 1, :, :]
+    # pc_features_drift = pc_features[good_times_spikes == 1, :, :]
     # spike_clusters_current = spike_clusters[good_times_spikes == 1].astype(np.int32)
 
-    # pc_features_pc1 = pc_features_drift[spike_clusters_current.squeeze() == this_unit, 0, :]
+    # pc_features_pc1 = pc_features_drift[spike_clusters_current == this_unit, 0, :]
     # pc_features_pc1[pc_features_pc1 < 0] = 0 # remove negative entries
 
-    pc_features_pc1 = pc_features[spike_clusters.squeeze() == this_unit, 0, :]
+    pc_features_pc1 = pc_features[spike_clusters == this_unit, 0, :]
     pc_features_pc1[pc_features_pc1 < 0] = 0  # remove negative entries
 
     # NOTE test with and without only getting this units pc feature idx here
     # this is just several thousand copies of the same 32/ n_pce_feature array
-    # spike_pc_feature = pc_features_idx[spike_clusters[spike_clusters == this_unit].squeeze(), :] # get channel for each spike
+    # spike_pc_feature = pc_features_idx[spike_clusters[spike_clusters == this_unit], :] # get channel for each spike
     spike_pc_feature = pc_features_idx[this_unit, :]
 
     pc_channel_pos_weights = channel_positions_z[spike_pc_feature]
@@ -1046,14 +1043,12 @@ def waveform_shape(
     param : dict
         The parameters 
     """
-    # neemd template_waveforms this_unit max_channel, ephys_sample_rate, channel_positions, baseline_thresh
-    # waveform_base_line_window, min_thresh_detect_peaks_trough, first_peak_ratio, normalize_sp_decay, plothis
     min_thresh_detect_peaks_troughs = param["min_thresh_detect_peaks_troughs"]
 
     this_waveform = template_waveforms[this_unit, :, peak_channels[this_unit]]
 
     if param["sp_decay_lin_fit"]:
-        CHANNEL_TOLERANCE = 33 # need to make more restricive. for most geometries, this includes all the channels.
+        CHANNEL_TOLERANCE = 33 # need to make more restrictive. for most geometries, this includes all the channels.
         MIN_CHANNELS_FOR_FIT = 5
         NUM_CHANNELS_FOR_FIT = 6
     else:
@@ -1471,7 +1466,7 @@ def get_distance_metrics(
     this_unit_idx = spike_clusters == this_unit
     n_spikes = this_unit_idx.sum()
     these_features = np.reshape(
-        pc_features[this_unit_idx.squeeze(), :, : param["n_channels_iso_dist"]],
+        pc_features[this_unit_idx, :, : param["n_channels_iso_dist"]],
         (n_spikes, -1),
     )
 
@@ -1505,7 +1500,7 @@ def get_distance_metrics(
                 )
                 channel_spikes = pc_features[
                     other_spikes, :, common_channel_idx
-                ].squeeze()
+                ]
                 other_features[
                     n_count : n_count + channel_spikes.shape[0], :, channel_idx
                 ] = channel_spikes
