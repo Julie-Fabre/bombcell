@@ -10,6 +10,7 @@ from scipy.stats import norm, chi2
 import matplotlib.pyplot as plt
 
 from bombcell.extract_raw_waveforms import path_handler
+from scipy.special import erf
 
 
 def get_waveform_peak_channel(template_waveforms):
@@ -260,15 +261,16 @@ def remove_duplicate_spikes(
         unique_templates = np.unique(spike_clusters)
         non_empty_units = np.unique(spike_clusters[duplicate_spike_idx == 0])
         empty_unit_idx = np.isin(unique_templates, non_empty_units, invert=True)
+        spike_idx_to_remove = np.argwhere(duplicate_spike_idx == 0).squeeze()
 
         # remove any empty units and duplicate spikes
-        spike_times_samples = spike_times_samples[np.argwhere(duplicate_spike_idx == 0)]
-        spike_clusters = spike_clusters[np.argwhere(duplicate_spike_idx == 0)]
-        template_amplitudes = template_amplitudes[np.argwhere(duplicate_spike_idx == 0)]
+        spike_times_samples = spike_times_samples[spike_idx_to_remove]
+        spike_clusters = spike_clusters[spike_idx_to_remove]
+        template_amplitudes = template_amplitudes[spike_idx_to_remove]
 
         if pc_features is not None:
             pc_features = pc_features[
-                [np.argwhere(duplicate_spike_idx == 0)], :, :
+                spike_idx_to_remove, :, :
             ]
 
         if raw_waveforms_full is not None:
@@ -316,8 +318,9 @@ def gaussian_cut(bin_centers, A, u, s, c):
     F : ndarray
         The cutoff gaussian as an array
     """
-    F = A * np.exp(-((bin_centers - u) ** 2) / (2 * s**2))
-    F[bin_centers < c] = 0
+    F = A * np.exp(-((bin_centers - u) ** 2) / (2 * s**2)) * erf(bin_centers - c)
+    
+    # F[bin_centers < c] = 0
     return F
 
 
@@ -347,7 +350,7 @@ def is_peak_cutoff(spike_counts_per_amp_bin_gaussian):
     return not_cutoff
 
 
-def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param):
+def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param, metric = False):
     """
     This function estimates the percentage of spike missing from a unit.
 
@@ -361,6 +364,8 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
         The time chunks to consider
     param : dict
         The param dictionary
+    metric : bool, optional
+    If True will return the average percent spikes missing, by default False
 
     Returns
     -------
@@ -448,10 +453,13 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
             surrogate_area = np.sum(surrogate_amplitudes) * bin_step
 
             # estimate the percentage of missing spikes
-            p_missing = (
-                (surrogate_area - np.sum(spike_counts_per_amp_bin) * bin_step)
-                / surrogate_area
-            ) * 100
+            if surrogate_area == 0:
+                p_missing = 0
+            else:
+                p_missing = (
+                    (surrogate_area - np.sum(spike_counts_per_amp_bin) * bin_step)
+                    / (surrogate_area) 
+                ) * 100
             if p_missing < 0:  # If p_missing is -ve, the distribution is not symmetric
                 p_missing = 0
 
@@ -493,6 +501,7 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
                     ftol=1e-3,
                     xtol=1e-3,
                     maxfev=10000,
+                    method = 'trf'
                 )[0]
                 gaussian_fit = gaussian_cut(
                     amp_bin_gaussian, fit_params[0], fit_params[1], fit_params[2], p0[3]
@@ -502,10 +511,9 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
                     (fit_params[1] - fit_params[3]) / np.abs(fit_params[2])
                 )
                 fit_params_save.append(fit_params)
-                test[time_chunk_idx] = (fit_params[1] - fit_params[3]) / fit_params[2]
                 percent_missing_gaussian[time_chunk_idx] = 100 * (1 - norm_area)
             else:
-                percent_missing_gaussian[time_chunk_idx] = 1  # Use one as a fail here
+                percent_missing_gaussian[time_chunk_idx] = 100  # Use one as a fail here
                 gaussian_fit = np.nan
         else:
             percent_missing_gaussian[time_chunk_idx] = np.nan
@@ -532,6 +540,11 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
                 plt.ylabel("amplitude")
                 plt.legend()
                 plt.show()
+    
+    if metric:
+        percent_missing_gaussian = np.mean(percent_missing_gaussian)
+        percent_missing_symmetric = np.mean(percent_missing_symmetric)
+
     return (
         percent_missing_gaussian,
         percent_missing_symmetric
@@ -918,7 +931,7 @@ def max_drift_estimate(
 
     spike_depth_in_channels = np.sum(
         pc_channel_pos_weights[np.newaxis, :] * pc_features_pc1**2, axis=1
-    ) / np.nansum(pc_features_pc1**2, axis=1)
+    ) / (np.nansum(pc_features_pc1**2, axis=1) + 1e-3) #adding small value to stop dividing by zero
 
     # estimate cumulative drift
 
@@ -932,14 +945,16 @@ def max_drift_estimate(
 
     median_spike_depth = np.zeros(time_bins.shape[0] - 1)
     for i, time_bin_start in enumerate(time_bins[:-1]):
-        median_spike_depth[i] = np.nanmedian(
-            spike_depth_in_channels[
+        all_spike_depths = spike_depth_in_channels[
                 np.logical_and(
                     these_spike_times >= time_bin_start,
                     these_spike_times < (time_bin_start + drift_bin_size),
                 )
             ]
-        )
+        if all_spike_depths.size > 0:
+            median_spike_depth[i] = np.nanmedian(all_spike_depths)
+        else:
+            median_spike_depth[i] = np.nan
     max_drift_estimate = np.nanmax(median_spike_depth) - np.nanmin(median_spike_depth)
     cumulative_drift_estimate = np.sum(
         np.abs(np.diff(median_spike_depth[~np.isnan(median_spike_depth)]))
@@ -1079,9 +1094,9 @@ def waveform_shape(
             max_trough_idx = np.argmax(
                 trough_dict["prominences"]
             )  # prominence is =ve even though is trough
-            trough_width = trough_dict["widths"][max_trough_idx]
+            trough_width = trough_dict["widths"][max_trough_idx].squeeze()
         elif trough_locs.size == 1:
-            trough_width = trough_dict["widths"]
+            trough_width = trough_dict["widths"].squeeze()
             trough_locs = np.atleast_1d(trough_locs)
 
         if trough_locs.size == 0:
@@ -1107,9 +1122,9 @@ def waveform_shape(
                 max_peak = np.argmax(
                     peaks_before_dict["prominences"]
                 )  # prominence is +ve even though is trough
-                peak_before_width = peaks_before_dict["widths"][max_peak]
+                peak_before_width = peaks_before_dict["widths"][max_peak].squeeze()
             else:
-                peak_before_width = peaks_before_dict["widths"]
+                peak_before_width = peaks_before_dict["widths"].squeeze()
         else:
             peaks_before_locs = np.array(())
 
@@ -1143,8 +1158,8 @@ def waveform_shape(
                     max_peak = np.argmax(
                         peaks_before_dict["prominences"]
                     )  # prominence is +ve even though is trough
-                    peaks_before_locs = peaks_before_locs[max_peak]
-                    peak_before_width = peaks_before_dict["widths"][max_peak]
+                    peaks_before_locs = peaks_before_locs[max_peak].squeeze()
+                    peak_before_width = peaks_before_dict["widths"][max_peak].squeeze()
                 else:
                     peak_before_width = np.nan # set to nan if there is no peak before
             else:
@@ -1215,10 +1230,6 @@ def waveform_shape(
         n_peaks = peaks.size
         n_troughs = troughs.size
 
-        # waveform peak to trough duration
-        max_waveform_abs_value = np.max(
-            np.abs(this_waveform)
-        )  # JF: i don't think is used
         max_waveform_location = np.argmax(np.abs(this_waveform))
         max_waveform_value = this_waveform[max_waveform_location]  # signed value
         if max_waveform_value > 0:  # positive peak
@@ -1314,7 +1325,7 @@ def waveform_shape(
                 else:
                     use_these_channels = np.argsort(y_dist)[:NUM_CHANNELS_FOR_FIT]  
 
-                    # Distance fomr the main channels
+                    # Distance from the main channels
                     channel_distances = np.sqrt(
                         np.sum(
                             np.square(channel_positions[use_these_channels] - current_max_channel),
@@ -1334,7 +1345,7 @@ def waveform_shape(
                         spatial_decay_points = spatial_decay_points / np.max(spatial_decay_points)
 
                     # Initial parameters matching MATLAB
-                    initial_guess = [1.0, 0.1]  # [A, b]
+                    initial_guess = [0.1, 1]  # [A, b]
 
                     # Ensure inputs are float64 (equivalent to MATLAB double)
                     channel_distances = np.float64(channel_distances)
@@ -1584,11 +1595,14 @@ def get_raw_amplitude(this_raw_waveform, gain_to_uV):
     raw_ampltitude : float
         The actual raw amplitude
     """
-
-    this_raw_waveform *= gain_to_uV
-    raw_amplitude = np.abs(np.max(this_raw_waveform)) + np.abs(
-        np.min(this_raw_waveform)
-    )
+    this_raw_waveform_tmp = this_raw_waveform.copy()
+    if ~np.isnan(gain_to_uV):
+        this_raw_waveform_tmp *= gain_to_uV
+        raw_amplitude = np.abs(np.nanmax(this_raw_waveform_tmp)) + np.abs(
+            np.nanmin(this_raw_waveform_tmp)
+        )
+    else:
+        raw_amplitude = np.nan
 
     return raw_amplitude
 
@@ -1636,8 +1650,9 @@ def get_quality_unit_type(param, quality_metrics):
         noise_mask |= (quality_metrics["spatial_decay_slope"] < param["min_spatial_decay_slope"])
     elif param["compute_spatial_decay"]:
         noise_mask |= (
-            (quality_metrics["spatial_decay_slope"] < param["min_spatial_decay_slope_exp"]) |
-            (quality_metrics["spatial_decay_slope"] > param["max_spatial_decay_slope_exp"])
+            #Inequalities "wrong" way round due to -ve sign
+            (quality_metrics["spatial_decay_slope"] > param["min_spatial_decay_slope_exp"]) |
+            (quality_metrics["spatial_decay_slope"] < param["max_spatial_decay_slope_exp"])
         )
     
     unit_type[noise_mask] = 0
@@ -1659,7 +1674,7 @@ def get_quality_unit_type(param, quality_metrics):
         (quality_metrics["presence_ratio"] < param["min_presence_ratio"])
     )
     
-    if param["extract_raw_waveforms"]:
+    if param["extract_raw_waveforms"] and np.all(~np.isnan(quality_metrics['raw_amplitude'])):
         mua_mask |= np.isnan(unit_type) & (
             (quality_metrics["raw_amplitude"] < param["min_amplitude"]) |
             (quality_metrics["signal_to_noise_ratio"] < param["min_SNR"])
@@ -1670,7 +1685,7 @@ def get_quality_unit_type(param, quality_metrics):
     
     if param["compute_distance_metrics"]:
         mua_mask |= np.isnan(unit_type) & (
-            (quality_metrics["isolation_dist"] > param["iso_d_min"]) |
+            (quality_metrics["isolation_dist"] < param["iso_d_min"]) |
             (quality_metrics["l_ratio"] > param["lratio_max"])
         )
     

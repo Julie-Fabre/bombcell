@@ -7,6 +7,11 @@ from typing import Dict, Tuple, List
 from numpy.typing import NDArray
 
 
+def path_handler(path: str) -> None:
+    path = Path(path).expanduser()
+    assert path.parent.exists(), f"{str(path.parent)} must exist to create {str(path)}."
+    path.mkdir(exist_ok=True)
+    return path
 
 def get_metric_keys():
     return [
@@ -200,10 +205,12 @@ def save_params_as_parquet(
 
     # PyArrow cant save Path type objects as a parquet
     param_save = param.copy()
-    param_save["ephys_kilosort_path"] = str(param["ephys_kilosort_path"])
+    for key, value in param.items():
+        if type(value) == Path:
+            param_save[key] = str(value)
 
     file_path = os.path.join(save_path, file_name)
-    param_df = pd.DataFrame.from_dict(param_save)
+    param_df = pd.DataFrame.from_dict([param_save])
     param_df.to_parquet(file_path)
 
 

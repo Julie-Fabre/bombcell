@@ -12,6 +12,7 @@ from bombcell.loading_utils import get_gain_spikeglx, load_ephys_data
 # import matplotlib.pyplot as plt
 import bombcell.quality_metrics as qm
 from bombcell.save_utils import get_metric_keys, save_results
+from bombcell.plot_functions import *
 
 
 ##TODO can add runtimes to optional steps here
@@ -518,7 +519,7 @@ def get_all_quality_metrics(
             )
             bad_units += 1
             continue
-        print(unit_idx)
+
         # percentage spikes missing
         time_tmp = time.time()
         (
@@ -569,7 +570,7 @@ def get_all_quality_metrics(
             quality_metrics["percent_missing_gaussian"][unit_idx],
             quality_metrics["percent_missing_symmetric"][unit_idx],
         ) = qm.perc_spikes_missing(
-            these_amplitudes, these_spike_times, use_these_times, param
+            these_amplitudes, these_spike_times, use_these_times, param, metric = True
         )
         runtimes_spikes_missing_2[unit_idx] = time.time() - time_tmp
 
@@ -585,7 +586,7 @@ def get_all_quality_metrics(
 
         quality_metrics["fraction_RPVs"][unit_idx] = fraction_RPVs[
             quality_metrics["RPV_use_tauR_est"][unit_idx].astype(int)
-        ]
+        ].squeeze()
 
         # get presence ratio
         time_tmp = time.time()
@@ -649,9 +650,9 @@ def get_all_quality_metrics(
         runtimes_waveform_shape[unit_idx] = time.time() - time_tmp
 
         # amplitude
-        if raw_waveforms_full is not None and param["extract_raw_waveforms"]:
+        if raw_waveforms_full is not None and param["extract_raw_waveforms"] and param['gain_to_uV'] is not None:
             quality_metrics["raw_amplitude"][unit_idx] = qm.get_raw_amplitude(
-                raw_waveforms_full[this_unit], param["gain_to_uV"]
+                raw_waveforms_full[unit_idx], param["gain_to_uV"]
             )
         else:
             quality_metrics["raw_amplitude"][unit_idx] = np.nan
@@ -778,6 +779,7 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
         )
 
     unique_templates = non_empty_units
+    param['unique_templates'] = unique_templates
 
     # Initialize quality metrics dictionary
     n_units = unique_templates.size
@@ -804,6 +806,8 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
         param, quality_metrics
     )  # JF: this should be inside bc.get_all_quality_metrics
 
+    plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_string, param)
+
     save_results(
         quality_metrics,
         unit_type_string,
@@ -823,7 +827,7 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
     )
 
 
-def make_qm_table(quality_metrics, param, unit_type, unique_templates):
+def make_qm_table(quality_metrics, param, unit_type_string):
     """
     Makes a table out of the quality metrics 
 
@@ -843,140 +847,100 @@ def make_qm_table(quality_metrics, param, unit_type, unique_templates):
     qm_table : DataFrame
         The quality metrics information and as pandas dataframe
     """
-    # classify noise
+    unique_templates = param['unique_templates']
+
+    qm_table_list = [unit_type_string, unique_templates]
+    qm_table_names = ["unit_type", "Original ID"]
+
     nan_result = np.isnan(quality_metrics["n_peaks"])
 
     too_many_peaks = quality_metrics["n_peaks"] > param["max_n_peaks"]
-
     too_many_troughs = quality_metrics["n_troughs"] > param["max_n_troughs"]
-
     too_short_waveform = (
         quality_metrics["waveform_duration_peak_trough"] < param["min_wv_duration"]
     )
-
     too_long_waveform = (
         quality_metrics["waveform_duration_peak_trough"] > param["max_wv_duration"]
     )
-
+    duration = np.logical_or(too_short_waveform, too_long_waveform).squeeze()
     too_noisy_baseline = (
-        quality_metrics["waveform_baseline"] > param["max_wv_baseline_fraction"]
+        quality_metrics["waveform_baseline_flatness"] > param["max_wv_baseline_fraction"]
     )
+    peak2_to_trough = quality_metrics["scnd_peak_to_trough_ratio"] > param["max_scnd_peak_to_trough_ratio_noise"]
 
-    ##
-    too_shallow_decay = quality_metrics["exp_decay"] > param["min_spatial_decay_slope"]
-    to_steep_decay = (
-        quality_metrics["exp_decay"] < param["max_spatial_decay_slope"]
-    )  # JF: i don't think is used, but it should be?
+    qm_table_list.extend([nan_result, too_many_peaks, too_many_troughs, duration, too_noisy_baseline, peak2_to_trough])
+    qm_table_names.extend(["NaN result", "# peaks", "# troughs", "duration", "baseline flatness", "peak2 / trough"])
+
+    if param["compute_spatial_decay"]:
+        if param["compute_spatial_decay"] & param["sp_decay_lin_fit"]:
+            bad_spatial_decay = quality_metrics['spatial_decay_slope'] > param['min_spatial_decay_slope']
+        elif param["compute_spatial_decay"]:
+            too_shallow_decay = quality_metrics["spatial_decay_slope"] > param["min_spatial_decay_slope_exp"]
+            too_steep_decay = (
+                quality_metrics["spatial_decay_slope"] < param["max_spatial_decay_slope_exp"]
+            )  
+            bad_spatial_decay = np.logical_or(too_shallow_decay, too_steep_decay).squeeze()
+        
+        qm_table_list.append(bad_spatial_decay)
+        qm_table_names.append("spatial decay")
     # classify as mua
     # ALL or ANY?
 
     too_few_total_spikes = quality_metrics["n_spikes"] < param["min_num_spikes_total"]
-
     too_many_spikes_missing = (
         quality_metrics["percent_missing_gaussian"] > param["max_perc_spikes_missing"]
     )
-
     too_low_presence_ratio = (
         quality_metrics["presence_ratio"] < param["min_presence_ratio"]
     )
-
     too_many_RPVs = quality_metrics["fraction_RPVs"] > param["max_RPV"]
+
+    qm_table_list.extend([too_few_total_spikes, too_many_spikes_missing, too_low_presence_ratio, too_many_RPVs])
+    qm_table_names.extend(["# spikes", "% spikes missing", "presence ratio", "fraction RPVs"])
 
     if param["extract_raw_waveforms"]:
         too_small_amplitude = (
             quality_metrics["raw_amplitude"] < param["min_amplitude"]
-        )  # JF: i don't think is used, but it should be?
-
+        ) 
         too_small_SNR = (
             quality_metrics["signal_to_noise_ratio"] < param["min_SNR"]
-        )  # JF: i don't think is used, but it should be?
+        )
+        qm_table_list.extend([too_small_amplitude, too_small_SNR])
+        qm_table_names.extend(["amplitude", "SNR"])
 
     if param["compute_drift"]:
         too_large_drift = (
             quality_metrics["max_drift_estimate"] > param["max_drift"]
-        )  # JF: i don't think is used, but it should be?
+        )
+        qm_table_list.append(too_large_drift)
+        qm_table_names.append("drift")
 
     # determine if ALL unit is somatic or non-somatic
-    param["non_somatic_trough_peak_ratio"] = 1.25
-    param["non_somatic_peak_before_to_after_ratio"] = 1.2
-    # somatic == 0, non_somatic == 1
-    is_somatic = np.ones(unique_templates.size)
-
-    is_somatic[
-        (
-            quality_metrics["trough"]
-            / np.max(
-                (
-                    quality_metrics["main_peak_before"],
-                    quality_metrics["main_peak_after"],
-                ),
-                axis=0,
-            )
-        )
-        < param["non_somatic_trough_peak_ratio"]
-    ] = 0
-
-    is_somatic[
-        (quality_metrics["main_peak_before"] / quality_metrics["main_peak_after"])
-        > param["non_somatic_peak_before_to_after_ratio"]
-    ] = 0
-
-    is_somatic[
-        (
-            quality_metrics["main_peak_before"] * param["first_peak_ratio"]
-            > quality_metrics["main_peak_after"]
-        )
-        & (quality_metrics["width_before"] < param["min_width_first_peak"])
-        & (
-            quality_metrics["main_peak_before"] * param["min_main_peak_to_trough_ratio"]
-            > quality_metrics["trough"]
-        )
-        & (quality_metrics["trough_width"] < param["min_width_main_trough"])
-    ] = 0
-
-    # is_somatic[np.isnan(quality_metrics['trough'])] = 0
-    quality_metrics["is_somatic_new"] = is_somatic
-
-    not_somatic = is_somatic == 1
-
-    qm_table_array = np.array(
-        (
-            nan_result,
-            too_many_peaks,
-            too_many_troughs,
-            too_short_waveform,
-            too_long_waveform,
-            too_noisy_baseline,
-            too_shallow_decay,
-            too_few_total_spikes,
-            too_many_spikes_missing,
-            too_many_RPVs,
-            too_low_presence_ratio,
-            not_somatic,
-        )
+    is_non_somatic = (
+        (quality_metrics["trough_to_peak2_ratio"] < param["min_trough_to_peak2_ratio_non_somatic"]) &
+        (quality_metrics["peak_before_width"] < param["min_width_first_peak_non_somatic"]) &
+        (quality_metrics["trough_width"] < param["min_width_main_trough_non_somatic"]) &
+        (quality_metrics["peak1_to_peak2_ratio"] > param["max_peak1_to_peak2_ratio_non_somatic"]) |
+        (quality_metrics["main_peak_to_trough_ratio"] > param["max_main_peak_to_trough_ratio_non_somatic"])
     )
+    peak_main_to_trough = quality_metrics["main_peak_to_trough_ratio"] > param["max_main_peak_to_trough_ratio_non_somatic"]
+    peak1_to_peak2 = quality_metrics["peak1_to_peak2_ratio"] > param["max_peak1_to_peak2_ratio_non_somatic"]
 
-    qm_table_array = np.vstack((qm_table_array, unit_type))
-    qm_table_array = np.vstack((unique_templates, qm_table_array))
+    qm_table_list.extend([is_non_somatic, peak_main_to_trough, peak1_to_peak2])
+    qm_table_names.extend(["non somatic", "peak(main) / trough", "peak1 / peak2"])
+
+
+    if param["compute_distance_metrics"]:
+        too_low_iso_dist = quality_metrics['isolation_dist'] < param["iso_d_min"]
+        too_high_lratio = quality_metrics["l_ratio"] > param["lratio_max"]
+
+        qm_table_list.extend([too_low_iso_dist, too_high_lratio])
+        qm_table_names.extend(["iso dist", "l ratio"])
+
+
     # DO this for the optional params
     qm_table = pd.DataFrame(
-        qm_table_array,
-        index=[
-            "Original ID",
-            "NaN result",
-            "Peaks",
-            "Troughs",
-            "Waveform Min Length",
-            "Waveform Max Length",
-            "Baseline",
-            "Spatial Decay",
-            "Min Spikes",
-            "Missing Spikes",
-            "RPVs",
-            "Presence Ratio",
-            "Somatic",
-            "Good Unit",
-        ],
+        qm_table_list, qm_table_names
     ).T
     return qm_table
 
