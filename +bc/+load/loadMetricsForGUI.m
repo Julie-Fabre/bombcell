@@ -50,9 +50,9 @@ ephysParams = struct;
 plotRaw = 1;
 probeLocation = [];
 
-if exist([fullfile(savePath, 'templates._bc_rawWaveforms_kilosort_format.npy')], 'file')
-    rawWaveforms.average = readNPY([fullfile(savePath, 'templates._bc_rawWaveforms_kilosort_format.npy')]);
-    rawWaveforms.peakChan = readNPY([fullfile(savePath, 'templates._bc_rawWaveformPeakChannels_kilosort_format.npy')]);
+if exist([fullfile(savePath, 'templates._bc_rawWaveforms.npy')], 'file')
+    rawWaveforms.average = readNPY([fullfile(savePath, 'templates._bc_rawWaveforms.npy')]);
+    rawWaveforms.peakChan = readNPY([fullfile(savePath, 'templates._bc_rawWaveformPeakChannels.npy')]);
 else
     rawWaveforms.average = nan(max(ephysData.spike_templates), 82, size(ephysData.templates,3));
     rawWaveforms.peakChan = ones(max(ephysData.spike_templates), 1); 
