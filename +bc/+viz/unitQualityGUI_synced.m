@@ -868,7 +868,10 @@ end
 currTimes = theseSpikeTimes(theseSpikeTimes >= theseSpikeTimes(iChunk)-0.1 & theseSpikeTimes <= theseSpikeTimes(iChunk)+0.1);
 currAmplis = theseAmplis(theseSpikeTimes >= theseSpikeTimes(iChunk)-0.1 & theseSpikeTimes <= theseSpikeTimes(iChunk)+0.1);
 set(guiData.currTempAmpli, 'XData', currTimes, 'YData', currAmplis);
-set(guiData.ampliAx.YAxis(1), 'Limits', [0, round(max(theseAmplis))])
+try
+    set(guiData.ampliAx.YAxis(1), 'Limits', [0, round(nanmax(theseAmplis))])
+catch
+end
 
 binSize = 20;
 timeBins = 0:binSize:ceil(ephysData.spike_times(end));

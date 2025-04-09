@@ -209,5 +209,6 @@ qMetric = bc.qm.saveQMetrics(param, qMetric, forGUI, savePath, medianSpikeDepth,
 fprintf('\n Saved quality metrics from %s to %s \n', param.rawFile, savePath)
 
 unitType = bc.qm.getQualityUnitType(param, qMetric, savePath);
+
 bc.qm.plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
 end
