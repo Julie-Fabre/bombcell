@@ -61,9 +61,9 @@ end
 %% Non-somatic UpSet plot
 
 
-figHandle_nonsoma = figure('Name', 'Non-soma vs soma units', 'Color', 'w', 'Position', [100, 100, 900, 900]);
+figHandle_nonSoma = figure('Name', 'Non-soma vs soma units', 'Color', 'w', 'Position', [100, 100, 900, 900]);
 
-UpSet_data_nonsoma = [ ...
+UpSet_data_nonSoma = [ ...
         (qMetric.troughToPeak2Ratio < param.minTroughToPeak2Ratio_nonSomatic &...
         qMetric.mainPeak_before_width < param.minWidthFirstPeak_nonSomatic &...
         qMetric.mainTrough_width < param.minWidthMainTrough_nonSomatic &...
@@ -72,14 +72,14 @@ UpSet_data_nonsoma = [ ...
         ];
 
 
-UpSet_labels_nonsoma = {'peak_1/peak_2', ...
+UpSet_labels_nonSoma = {'peak_1/peak_2', ...
     'peak_{main}/trough'};
 blue_colors = [; ...
     0.2549, 0.4118, 0.8824; ... % Royal Blue
     0.0000, 0.0000, 0.5020; ... % Navy Blue
     ];
-if sum(UpSet_data_nonsoma, 'all') > 0
-    bc.viz.upSetPlot(UpSet_data_nonsoma, UpSet_labels_nonsoma, figHandle_nonsoma, blue_colors);
+if sum(UpSet_data_nonSoma, 'all') > 0
+    bc.viz.upSetPlot(UpSet_data_nonSoma, UpSet_labels_nonSoma, figHandle_nonSoma, blue_colors);
     hold on;
     sgtitle('Units classified as non-somatic');
 
