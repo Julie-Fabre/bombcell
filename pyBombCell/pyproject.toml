@@ -34,7 +34,8 @@ dependencies = [
     "matplotlib",
     "mtscomp",
     "tqdm",
-    "pyarrow"
+    "pyarrow",
+    "upsetplot"
 ]
 
 [project.urls]
