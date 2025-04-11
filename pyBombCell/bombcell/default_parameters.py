@@ -3,11 +3,32 @@ import numpy as np
 
 def get_default_parameters(
     kilosort_path,
-    raw_dir=None,
+    raw_file=None,
     kilosort_version=None,
     ephys_meta_dir=None,
     gain_to_uV=None,
 ):
+    """
+    Creates the parameters dictionary
+
+    Parameters
+    ----------
+    kilosort_path : str
+        The path to the KiloSort directory
+    raw_file : str, optional
+        The path to the raw data, by default None
+    kilosort_version : int, optional
+        Changes parameters based on if KS4 or earlier version were used, by default None
+    ephys_meta_dir : str, optional
+        The path to the meta file of the raw recording, by default None
+    gain_to_uV : float, optional
+        The gain to micro volts if needed to give manually, by default None
+
+    Returns
+    -------
+    param : dictionary
+        The full param dictionary need to run BombCell
+    """
     param = {
         # Quality metric computation and display parameters
         ## general 
@@ -67,6 +88,7 @@ def get_default_parameters(
         "normalize_spatial_decay": True,  # If True, will normalize spatial decay points relative to maximum
         # this makes the spatial decay more invariant to the spike-sorting
         "sp_decay_lin_fit": False, # if True, use a linear fit for spatial decay. If false, use exponential (preferred)
+        "compute_spatial_decay": True,
         "max_scnd_peak_to_trough_ratio_noise": 0.8,
         "min_trough_to_peak2_ratio_non_somatic": 5,
         "min_width_first_peak_non_somatic": 4,
@@ -127,21 +149,18 @@ def get_default_parameters(
         param["ephys_meta_file"] = None
         param["gain_to_uV"] = gain_to_uV
 
-    if raw_dir != None:
-        param["raw_data_dir"] = raw_dir
+    if raw_file != None:
+        param["raw_data_file"] = raw_file
 
     if kilosort_version == 4:
-        param["spike_width"] = (61,)  # width of spike in samples
-        param["waveform_baseline_noise_window"] = (
-            10  # time in samples at the beginning, with no signal
-        )
+        param["spike_width"] = 61 # width of spike in samples
+        param["waveform_baseline_noise_window"] = 10  # time in samples at the beginning, with no signal
         param["waveform_baseline_window_start"] = 0  # in samples
         param["waveform_baseline_window_stop"] = 10  # in samples
+
     else:
-        param["spike_width"] = (82,)  # width of spike in samples
-        param["waveform_baseline_noise_window"] = (
-            20  # time in samples at the beginning, with no signal
-        )
+        param["spike_width"] = 82 # width of spike in samples
+        param["waveform_baseline_noise_window"] = 20  # time in samples at the beginning, with no signal
         param["waveform_baseline_window_start"] = 21  # in samples
         param["waveform_baseline_window_stop"] = 31  # in samples
 
@@ -150,15 +169,36 @@ def get_default_parameters(
 
 def default_parameters_for_unitmatch(
     kilosort_path,
-    raw_dir=None,
+    raw_file=None,
     kilosort_version=None,
     ephys_meta_dir=None,
     gain_to_uV=None,
 ):
+    """
+    Creates the parameters dictionary
+
+    Parameters
+    ----------
+    kilosort_path : str
+        The path to the KiloSort directory
+    raw_file : str, optional
+        The path to the raw data, by default None
+    kilosort_version : int, optional
+        Changes parameters based on if KS4 or earlier version were used, by default None
+    ephys_meta_dir : str, optional
+        The path to the meta file of the raw recording, by default None
+    gain_to_uV : float, optional
+        The gain to micro volts if needed to give manually, by default None
+
+    Returns
+    -------
+    param : dictionary
+        The full param dictionary need to run BombCell
+    """
 
     param = get_default_parameters(
     kilosort_path,
-    raw_dir=None,
+    raw_file=None,
     kilosort_version=None,
     ephys_meta_dir=None,
     gain_to_uV=None,

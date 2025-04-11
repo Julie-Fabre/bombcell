@@ -6,6 +6,7 @@ import pandas as pd
 from typing import Dict, Tuple, List
 from numpy.typing import NDArray
 
+
 def path_handler(path: str) -> None:
     path = Path(path).expanduser()
     assert path.parent.exists(), f"{str(path.parent)} must exist to create {str(path)}."
@@ -14,74 +15,37 @@ def path_handler(path: str) -> None:
 
 def get_metric_keys():
     return [
-            "use_these_times_start",
-            "use_these_times_stop",
-            "RPV_use_tauR_est",
-            "percent_missing_gaussian",
-            "percent_missing_symmetric",
-            "fraction_RPVs",
-            "max_drift_estimate",
-            "cumulative_drift_estimate",
-            "presence_ratio",
+            # noise metrics
             "n_peaks",
             "n_troughs",
-            "is_somatic",
             "waveform_duration_peak_trough",
             "spatial_decay_slope",
             "waveform_baseline_flatness",
-            "trough",
-            "main_peak_before",
-            "main_peak_after",
+            "scnd_peak_to_trough_ratio",
+            # non-somatic metrics
+            "main_peak_to_trough_ratio",
+            "peak1_to_peak2_ratio",
+            "trough_to_peak2_ratio",
             "peak_before_width",
             "trough_width",
+            # MUA metrics 
+            "percent_missing_gaussian",
+            "percent_missing_symmetric",
+            "RPV_use_tauR_est",
+            "fraction_RPVs",
+            "presence_ratio",
+            "max_drift_estimate",
+            "cumulative_drift_estimate",
             "raw_amplitude",
+            "signal_to_noise_ratio",
             "isolation_dist",
             "l_ratio",
             "silhouette_score",
-            "signal_to_noise_ratio",
-            "scnd_peak_to_trough_ratio",
-            "peak1_to_peak2_ratio",
-            "main_peak_to_trough_ratio",
-            "trough_to_peak2_ratio",
+            # time metrics
+            "use_these_times_start",
+            "use_these_times_stop",
             ]
 
-
-
-def save_quality_metric_tsv(
-    metric_data: NDArray,
-    template_ids: NDArray,
-    output_dir: str,
-    filename: str,
-    column_names: Tuple[str, str]
-) -> None:
-    """
-    Save a quality metric array as a TSV file.
-
-    Parameters
-    ----------
-    metric_data : numpy.ndarray
-        The quality metric data to save
-    template_ids : numpy.ndarray
-        Array of unit template IDs
-    output_dir : str
-        Directory path for saving the file
-    filename : str
-        Name of the output file
-    column_names : tuple[str, str]
-        Column headers for the TSV file (template ID column, metric column)
-    """
-    # Ensure output directory exists
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Construct full file path
-    file_path = os.path.join(output_dir, filename)
-
-    # Create DataFrame and save as TSV
-    df = pd.DataFrame(
-        data=np.array((template_ids, metric_data)).T,
-        columns=column_names
-    )
-    df.to_csv(file_path, sep="\t", index=False)
 
 def save_quality_metric_tsv(metric_data, template_ids, output_dir, filename, column_names):
     """
@@ -241,14 +205,16 @@ def save_params_as_parquet(
 
     # PyArrow cant save Path type objects as a parquet
     param_save = param.copy()
-    param_save["ephys_kilosort_path"] = str(param["ephys_kilosort_path"])
+    for key, value in param.items():
+        if type(value) == Path:
+            param_save[key] = str(value)
 
     file_path = os.path.join(save_path, file_name)
-    param_df = pd.DataFrame.from_dict(param_save)
+    param_df = pd.DataFrame.from_dict([param_save])
     param_df.to_parquet(file_path)
 
 
-def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, save_path):
+def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, raw_waveforms_id_match, save_path):
     """
     This function saves the raw waveform information as npy arrays
 
@@ -272,6 +238,9 @@ def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, save_p
     )
     np.save(file_path_peak_channels, raw_waveforms_peak_channel)
 
+    file_path_raw_waveforms_id_match = os.path.join(save_path, "_bc_rawWaveforms_kilosort_format")
+    np.save(file_path_raw_waveforms_id_match, raw_waveforms_id_match)
+
 
 def save_results(
     quality_metrics,
@@ -280,6 +249,7 @@ def save_results(
     param,
     raw_waveforms_full,
     raw_waveforms_peak_channel,
+    raw_waveforms_id_match,
     save_path,
 ):
     """
@@ -313,4 +283,4 @@ def save_results(
     save_params_as_parquet(
         param, save_path, file_name="_bc_parameters._bc_qMetrics.parquet"
     )
-    save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, save_path)
+    save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, raw_waveforms_id_match, save_path)

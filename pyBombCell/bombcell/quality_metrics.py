@@ -9,10 +9,8 @@ from scipy.stats import norm, chi2
 
 import matplotlib.pyplot as plt
 
-# import bombcell.extract_raw_waveforms as erw
-# import bombcell.loading_utils as led
-# import bombcell.default_parameters as params
-from bombcell.save_utils import path_handler
+from bombcell.extract_raw_waveforms import path_handler
+from scipy.special import erf
 
 
 def get_waveform_peak_channel(template_waveforms):
@@ -26,7 +24,7 @@ def get_waveform_peak_channel(template_waveforms):
 
     Returns
     -------
-    ndarray (n_templates)
+    peak_channels : ndarray (n_templates)
         The channel with maximum amplitude for each template
     """
     max_value = np.max(template_waveforms, axis=1)
@@ -66,14 +64,14 @@ def remove_duplicates(
 
     Returns
     -------
-    ndarray
+    remove_idx : ndarray
         An array which if 1 states that spike should be removed
     """
 
     num_spikes = batch_spike_times_samples.shape[0]
     remove_idx = np.zeros(num_spikes)
     # spike counts for the batch
-    unit_spike_counts = np.bincount(batch_spike_clusters[:, 0])
+    unit_spike_counts = np.bincount(batch_spike_clusters)
 
     # go through each spike in the batch
     for spike_idx1 in range(num_spikes):
@@ -177,10 +175,25 @@ def remove_duplicate_spikes(
 
     Returns
     -------
-    tuple
-        All of the arrays with duplicate spikes removed
+    non_empty_units : ndarray
+        Units which are not empty
+    spike_times_samples : ndarray
+        The array of spike times in samples
+    spike_clusters : ndarray
+        The array which assigns each spike a id
+    template_amplitudes : ndarray
+        The array of amplitudes for each spike
+    pc_features : ndarray, optional
+        The pc features array, by default None
+    raw_waveforms_full : ndarray, optional
+        The array wth extracted raw waveforms, by default None
+    raw_waveforms_peak_channel : ndarray, optional
+        The peak channel for each extracted raw waveform, by default None
+    signal_to_noise_ratio : ndarray, optional
+        The signal to noise ratio, by default None
+    peak_channels : ndarray
+        The max channel for each spike
     """
-
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
@@ -206,7 +219,7 @@ def remove_duplicate_spikes(
             new_spike_idx = np.full(max(good_templates_idx) + 1, np.nan)
             new_spike_idx[good_templates_idx] = np.arange(good_templates_idx.shape[0])
             spike_clusters_flat = (
-                new_spike_idx[spike_clusters].squeeze().astype(np.int32)
+                new_spike_idx[spike_clusters].astype(np.int32)
             )
 
             # check for duplicate spikes in batches
@@ -248,16 +261,17 @@ def remove_duplicate_spikes(
         unique_templates = np.unique(spike_clusters)
         non_empty_units = np.unique(spike_clusters[duplicate_spike_idx == 0])
         empty_unit_idx = np.isin(unique_templates, non_empty_units, invert=True)
+        spike_idx_to_remove = np.argwhere(duplicate_spike_idx == 0).squeeze()
 
         # remove any empty units and duplicate spikes
-        spike_times_samples = spike_times_samples[np.argwhere(duplicate_spike_idx == 0)]
-        spike_clusters = spike_clusters[np.argwhere(duplicate_spike_idx == 0)]
-        template_amplitudes = template_amplitudes[np.argwhere(duplicate_spike_idx == 0)]
+        spike_times_samples = spike_times_samples[spike_idx_to_remove]
+        spike_clusters = spike_clusters[spike_idx_to_remove]
+        template_amplitudes = template_amplitudes[spike_idx_to_remove]
 
         if pc_features is not None:
             pc_features = pc_features[
-                [np.argwhere(duplicate_spike_idx == 0)], :, :
-            ].squeeze()
+                spike_idx_to_remove, :, :
+            ]
 
         if raw_waveforms_full is not None:
             raw_waveforms_full = raw_waveforms_full[empty_unit_idx == False, :, :]
@@ -301,11 +315,12 @@ def gaussian_cut(bin_centers, A, u, s, c):
 
     Returns
     -------
-    ndarray
-        The cutoff gaussian
+    F : ndarray
+        The cutoff gaussian as an array
     """
-    F = A * np.exp(-((bin_centers - u) ** 2) / (2 * s**2))
-    F[bin_centers < c] = 0
+    F = A * np.exp(-((bin_centers - u) ** 2) / (2 * s**2)) * erf(bin_centers - c)
+    
+    # F[bin_centers < c] = 0
     return F
 
 
@@ -321,7 +336,7 @@ def is_peak_cutoff(spike_counts_per_amp_bin_gaussian):
 
     Returns
     -------
-    bool
+    not_cutoff : bool
         False if the is amplitude distribution has a peak
     """
     # get max value
@@ -335,7 +350,7 @@ def is_peak_cutoff(spike_counts_per_amp_bin_gaussian):
     return not_cutoff
 
 
-def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param):
+def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param, metric = False):
     """
     This function estimates the percentage of spike missing from a unit.
 
@@ -349,11 +364,15 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
         The time chunks to consider
     param : dict
         The param dictionary
+    metric : bool, optional
+    If True will return the average percent spikes missing, by default False
 
     Returns
     -------
-    tuple
-        The estimates of percentage missing spikes and the amplitude distributions
+    percent_missing_gaussian : float
+        The estimated percentage of spikes missing when sing a gaussian approximation
+    percent_missing_symmetric : float
+        The estimated percentage of spikes missing when sing a gaussian approximation
     """
 
     percent_missing_gaussian = np.zeros(time_chunks.shape[0] - 1)
@@ -434,10 +453,13 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
             surrogate_area = np.sum(surrogate_amplitudes) * bin_step
 
             # estimate the percentage of missing spikes
-            p_missing = (
-                (surrogate_area - np.sum(spike_counts_per_amp_bin) * bin_step)
-                / surrogate_area
-            ) * 100
+            if surrogate_area == 0:
+                p_missing = 0
+            else:
+                p_missing = (
+                    (surrogate_area - np.sum(spike_counts_per_amp_bin) * bin_step)
+                    / (surrogate_area) 
+                ) * 100
             if p_missing < 0:  # If p_missing is -ve, the distribution is not symmetric
                 p_missing = 0
 
@@ -465,7 +487,7 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
                 # Testing for cut-off solves all of these issues
                 p0 = np.array(
                     (
-                        np.max(spike_counts_per_amp_bin_gaussian),
+                        np.percentile(spike_counts_per_amp_bin_gaussian, 99),
                         mode_seed,
                         np.nanstd(these_amplitudes_here),
                         np.percentile(these_amplitudes_here, 1),
@@ -479,6 +501,7 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
                     ftol=1e-3,
                     xtol=1e-3,
                     maxfev=10000,
+                    method = 'trf'
                 )[0]
                 gaussian_fit = gaussian_cut(
                     amp_bin_gaussian, fit_params[0], fit_params[1], fit_params[2], p0[3]
@@ -488,10 +511,9 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
                     (fit_params[1] - fit_params[3]) / np.abs(fit_params[2])
                 )
                 fit_params_save.append(fit_params)
-                test[time_chunk_idx] = (fit_params[1] - fit_params[3]) / fit_params[2]
                 percent_missing_gaussian[time_chunk_idx] = 100 * (1 - norm_area)
             else:
-                percent_missing_gaussian[time_chunk_idx] = 1  # Use one as a fail here
+                percent_missing_gaussian[time_chunk_idx] = 100  # Use one as a fail here
                 gaussian_fit = np.nan
         else:
             percent_missing_gaussian[time_chunk_idx] = np.nan
@@ -518,6 +540,11 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param)
                 plt.ylabel("amplitude")
                 plt.legend()
                 plt.show()
+    
+    if metric:
+        percent_missing_gaussian = np.mean(percent_missing_gaussian)
+        percent_missing_symmetric = np.mean(percent_missing_symmetric)
+
     return (
         percent_missing_gaussian,
         percent_missing_symmetric
@@ -545,8 +572,10 @@ def fraction_RP_violations(
 
     Returns
     -------
-    tuple
-        The fraction of refractory period violations and the number of violations
+    fraction_RPVs : ndarray 
+        The fraction of refractory period violations for the unit
+    num_violations : ndarray
+        The number of refractory period violations for the unit
     """
 
     tauR_min = param["tauR_values_min"]
@@ -687,8 +716,18 @@ def time_chunks_to_keep(
 
     Returns
     -------
-    tuple
-        The values to use for the different arrays
+    these_spike_times : ndarray
+        Good time chunks to use
+    these_amplitudes : ndarray
+        The amplitudes for the good time chunks
+    these_spike_clusters : ndarray
+        The spike times for these good time chunks
+    use_this_time_start : float
+        The start of the good time chunk
+    use_this_time_end : float
+        The end of the good time chunk
+    use_tauR : float
+        The index of the tau_R which has the smallest contamination
     """
     max_RPVs = param["max_RPV"]
     max_perc_spikes_missing = param["max_perc_spikes_missing"]
@@ -760,7 +799,7 @@ def time_chunks_to_keep(
     these_spike_clusters = spike_clusters.copy().astype(np.int32)
     these_spike_clusters[
         np.logical_or(
-            spike_times_seconds < use_these_times[0],
+            spike_times_seconds < use_these_times[0], 
             spike_times_seconds > use_these_times[-1],
         )
     ] = -1  # set to -1 for bad times
@@ -802,7 +841,7 @@ def presence_ratio(these_spike_times, use_this_time_start, use_this_time_end, pa
 
     Returns
     -------
-    float
+    presence_ratio : float
         The presence ratio for the unit
     """
 
@@ -864,33 +903,35 @@ def max_drift_estimate(
 
     Returns
     -------
-    tuple
-        The max and the cumulative drift estimates
+    max_drift_estimate : float
+        The maximum drift estimated from the unit 
+    cumulative_drift_estimate : float
+        The cumulative drift estimated over the recording session
     """
     channel_positions_z = channel_positions[:, 1]
     drift_bin_size = param["drift_bin_size"]
 
     # good_times_spikes = np.ones_like(spike_clusters)
     # good_times_spikes[spike_clusters == -1] = 0
-    # pc_features_drift = pc_features[good_times_spikes.squeeze() == 1, :, :]
+    # pc_features_drift = pc_features[good_times_spikes == 1, :, :]
     # spike_clusters_current = spike_clusters[good_times_spikes == 1].astype(np.int32)
 
-    # pc_features_pc1 = pc_features_drift[spike_clusters_current.squeeze() == this_unit, 0, :]
+    # pc_features_pc1 = pc_features_drift[spike_clusters_current == this_unit, 0, :]
     # pc_features_pc1[pc_features_pc1 < 0] = 0 # remove negative entries
 
-    pc_features_pc1 = pc_features[spike_clusters.squeeze() == this_unit, 0, :]
+    pc_features_pc1 = pc_features[spike_clusters == this_unit, 0, :]
     pc_features_pc1[pc_features_pc1 < 0] = 0  # remove negative entries
 
     # NOTE test with and without only getting this units pc feature idx here
     # this is just several thousand copies of the same 32/ n_pce_feature array
-    # spike_pc_feature = pc_features_idx[spike_clusters[spike_clusters == this_unit].squeeze(), :] # get channel for each spike
+    # spike_pc_feature = pc_features_idx[spike_clusters[spike_clusters == this_unit], :] # get channel for each spike
     spike_pc_feature = pc_features_idx[this_unit, :]
 
     pc_channel_pos_weights = channel_positions_z[spike_pc_feature]
 
     spike_depth_in_channels = np.sum(
         pc_channel_pos_weights[np.newaxis, :] * pc_features_pc1**2, axis=1
-    ) / np.nansum(pc_features_pc1**2, axis=1)
+    ) / (np.nansum(pc_features_pc1**2, axis=1) + 1e-3) #adding small value to stop dividing by zero
 
     # estimate cumulative drift
 
@@ -904,14 +945,16 @@ def max_drift_estimate(
 
     median_spike_depth = np.zeros(time_bins.shape[0] - 1)
     for i, time_bin_start in enumerate(time_bins[:-1]):
-        median_spike_depth[i] = np.nanmedian(
-            spike_depth_in_channels[
+        all_spike_depths = spike_depth_in_channels[
                 np.logical_and(
                     these_spike_times >= time_bin_start,
                     these_spike_times < (time_bin_start + drift_bin_size),
                 )
             ]
-        )
+        if all_spike_depths.size > 0:
+            median_spike_depth[i] = np.nanmedian(all_spike_depths)
+        else:
+            median_spike_depth[i] = np.nan
     max_drift_estimate = np.nanmax(median_spike_depth) - np.nanmin(median_spike_depth)
     cumulative_drift_estimate = np.sum(
         np.abs(np.diff(median_spike_depth[~np.isnan(median_spike_depth)]))
@@ -935,7 +978,7 @@ def linear_fit(x, m, c):
 
     Returns
     -------
-    ndarray
+    y : ndarray
         The y-values
     """
     return m * x + c
@@ -956,7 +999,7 @@ def exp_fit(x, m, A):
 
     Returns
     -------
-    ndarray
+    y : ndarray
         The y-values
     """
     return A * np.exp(m * x)
@@ -990,17 +1033,37 @@ def waveform_shape(
 
     Returns
     -------
-    tuple
-        Waveform shape based metrics
+    n_peaks : int
+        The number of peaks 
+    n_troughs : int
+        The number of troughs
+    waveform_duration_peak_trough : float
+        The time from peak to trough
+    spatial_decay_slope : float
+        The spatial decay of the waveforms amplitude over space
+    waveform_baseline : float
+        A measure of noise in the waveforms starting values
+    scnd_peak_to_trough_ratio : float
+        The ratio of the second peak to the trough
+    peak1_to_peak2_ratio : float
+        The ratio of the first peak to the second peak
+    main_peak_to_trough_ratio : float
+        The ratio of the first peak to the trough
+    trough_to_peak2_ratio : float
+        The ratio of the trough to the first peak ratio #TODO check this
+    peak_before_width : float
+        The width of the first peak
+    trough_width : float
+        The width of the trough
+    param : dict
+        The parameters 
     """
-    # neemd template_waveforms this_unit max_channel, ephys_sample_rate, channel_positions, baseline_thresh
-    # waveform_base_line_window, min_thresh_detect_peaks_trough, first_peak_ratio, normalize_sp_decay, plothis
     min_thresh_detect_peaks_troughs = param["min_thresh_detect_peaks_troughs"]
 
     this_waveform = template_waveforms[this_unit, :, peak_channels[this_unit]]
 
     if param["sp_decay_lin_fit"]:
-        CHANNEL_TOLERANCE = 33 # need to make more restricive. for most geometries, this includes all the channels.
+        CHANNEL_TOLERANCE = 33 # need to make more restrictive. for most geometries, this includes all the channels.
         MIN_CHANNELS_FOR_FIT = 5
         NUM_CHANNELS_FOR_FIT = 6
     else:
@@ -1031,9 +1094,9 @@ def waveform_shape(
             max_trough_idx = np.argmax(
                 trough_dict["prominences"]
             )  # prominence is =ve even though is trough
-            trough_width = trough_dict["widths"][max_trough_idx]
+            trough_width = trough_dict["widths"][max_trough_idx].squeeze()
         elif trough_locs.size == 1:
-            trough_width = trough_dict["widths"]
+            trough_width = trough_dict["widths"].squeeze()
             trough_locs = np.atleast_1d(trough_locs)
 
         if trough_locs.size == 0:
@@ -1059,9 +1122,9 @@ def waveform_shape(
                 max_peak = np.argmax(
                     peaks_before_dict["prominences"]
                 )  # prominence is +ve even though is trough
-                peak_before_width = peaks_before_dict["widths"][max_peak]
+                peak_before_width = peaks_before_dict["widths"][max_peak].squeeze()
             else:
-                peak_before_width = peaks_before_dict["widths"]
+                peak_before_width = peaks_before_dict["widths"].squeeze()
         else:
             peaks_before_locs = np.array(())
 
@@ -1095,8 +1158,8 @@ def waveform_shape(
                     max_peak = np.argmax(
                         peaks_before_dict["prominences"]
                     )  # prominence is +ve even though is trough
-                    peaks_before_locs = peaks_before_locs[max_peak]
-                    peak_before_width = peaks_before_dict["widths"][max_peak]
+                    peaks_before_locs = peaks_before_locs[max_peak].squeeze()
+                    peak_before_width = peaks_before_dict["widths"][max_peak].squeeze()
                 else:
                     peak_before_width = np.nan # set to nan if there is no peak before
             else:
@@ -1167,10 +1230,6 @@ def waveform_shape(
         n_peaks = peaks.size
         n_troughs = troughs.size
 
-        # waveform peak to trough duration
-        max_waveform_abs_value = np.max(
-            np.abs(this_waveform)
-        )  # JF: i don't think is used
         max_waveform_location = np.argmax(np.abs(this_waveform))
         max_waveform_value = this_waveform[max_waveform_location]  # signed value
         if max_waveform_value > 0:  # positive peak
@@ -1193,106 +1252,114 @@ def waveform_shape(
             / param["ephys_sample_rate"]
         )
 
-        # waveform ratios
-        # waveform ratios
-        scnd_peak_to_trough_ratio = abs(main_peak_after / main_trough)
-        peak1_to_peak2_ratio = abs(main_peak_before / main_peak_after)
-        main_peak_to_trough_ratio = max(main_peak_before, main_peak_after) / abs(main_trough) 
-        trough_to_peak2_ratio = abs(main_trough / main_peak_before)
+        # waveform ratios   
+        scnd_peak_to_trough_ratio = get_ratio(main_peak_after, main_trough)
+        peak1_to_peak2_ratio = get_ratio(main_peak_before, main_peak_after)
+        main_peak_to_trough_ratio = get_ratio(max(main_peak_before or 0, main_peak_after or 0), main_trough)
+        trough_to_peak2_ratio = get_ratio(main_trough, main_peak_before)
 
-        # get waveforms spatial decay across channels
-        # DECIDE which fit
-        # linear_fit = True
-        max_channel = peak_channels[this_unit]
+        if param["compute_spatial_decay"]:
+            if np.min(np.diff(np.unique(channel_positions[:, 1]))) < 30:
+                param["compute_spatial_decay"] = True
+            else:
+                param["compute_spatial_decay"] = False
+        if param["compute_spatial_decay"]:
+            # get waveforms spatial decay across channels
+            max_channel = peak_channels[this_unit]
 
-        
-        x, y = channel_positions[max_channel, :]
-        current_max_channel = channel_positions[max_channel, :]
+            
+            x, y = channel_positions[max_channel, :]
+            current_max_channel = channel_positions[max_channel, :]
 
-        x_dist = np.abs(channel_positions[:, 0] - x)
-        near_x_dist = np.min(x_dist[x_dist != 0])
+            # Calculate distances from peak channel in x dimension
+            x_dist = np.abs(channel_positions[:, 0] - x)
 
-        not_these_x = np.argwhere(x_dist > near_x_dist)
+            # Find channels that are within CHANNEL_TOLERANCE distance in x
+            valid_x_channels = np.argwhere(x_dist <= CHANNEL_TOLERANCE).flatten()
 
-        y_dist = np.abs(channel_positions[:, 1] - y)
-        y_dist[not_these_x] = (
-            y_dist.max()
-        )  # set the bad x_to max y, this keeps the shape of the array
+            if len(valid_x_channels) < MIN_CHANNELS_FOR_FIT:
+                spatial_decay_slope = np.nan
+            else: # Skip to next iteration if not enough channels
 
-        if param["sp_decay_lin_fit"]:
-            use_these_channels = np.argsort(y_dist)[:NUM_CHANNELS_FOR_FIT] 
+                # Calculate y distances only for channels that passed x distance check
+                y_dist = np.abs(channel_positions[:, 1] - y)
 
-            # Distance fomr the main channels
-            channel_distances = np.sqrt(
-                np.sum(
-                    np.square(channel_positions[use_these_channels] - current_max_channel),
-                    axis=1,
-                )
-            )
+                # Set y distances to max for channels that didn't pass x distance check
+                y_dist[~np.isin(np.arange(len(y_dist)), valid_x_channels)] = y_dist.max()
 
-            spatial_decay_points = np.max(
-                np.abs(template_waveforms[this_unit, :, use_these_channels]), axis=1
-            )
+                if param["sp_decay_lin_fit"]:
+                    use_these_channels = np.argsort(y_dist)[:NUM_CHANNELS_FOR_FIT] 
 
-            sort_idx = np.argsort(channel_distances)
-            channel_distances = channel_distances[sort_idx]
-            spatial_decay_points = spatial_decay_points[sort_idx]
+                    # Distance fomr the main channels
+                    channel_distances = np.sqrt(
+                        np.sum(
+                            np.square(channel_positions[use_these_channels] - current_max_channel),
+                            axis=1,
+                        )
+                    )
 
-            if param["normalize_spatial_decay"]:
-                spatial_decay_points = spatial_decay_points / np.max(spatial_decay_points)
+                    spatial_decay_points = np.max(
+                        np.abs(template_waveforms[this_unit, :, use_these_channels]), axis=1
+                    )
 
-            # estimate initial paramters
-            intercept = np.max(
-                spatial_decay_points
-            )  # Take the max value of the max channel
-            grad = (spatial_decay_points[1] - spatial_decay_points[0]) / (
-                channel_distances[1] - channel_distances[0]
-            )
+                    sort_idx = np.argsort(channel_distances)
+                    channel_distances = channel_distances[sort_idx]
+                    spatial_decay_points = spatial_decay_points[sort_idx]
 
-            # Can add p0 to linear params, but not needed as easier to fit linear curve
-            out_linear = curve_fit(linear_fit, channel_distances, spatial_decay_points)[
-                0
-            ]  #
-            spatial_decay_slope = out_linear[0]
-        else:
-            use_these_channels = np.argsort(y_dist)[:NUM_CHANNELS_FOR_FIT]  
+                    if param["normalize_spatial_decay"]:
+                        spatial_decay_points = spatial_decay_points / np.max(spatial_decay_points)
 
-            # Distance fomr the main channels
-            channel_distances = np.sqrt(
-                np.sum(
-                    np.square(channel_positions[use_these_channels] - current_max_channel),
-                    axis=1,
-                )
-            )
+                    # estimate initial paramters
+                    intercept = np.max(
+                        spatial_decay_points
+                    )  # Take the max value of the max channel
+                    grad = (spatial_decay_points[1] - spatial_decay_points[0]) / (
+                        channel_distances[1] - channel_distances[0]
+                    )
 
-            spatial_decay_points = np.max(
-                np.abs(template_waveforms[this_unit, :, use_these_channels]), axis=1
-            )
+                    # Can add p0 to linear params, but not needed as easier to fit linear curve
+                    out_linear = curve_fit(linear_fit, channel_distances, spatial_decay_points)[
+                        0
+                    ]  #
+                    spatial_decay_slope = out_linear[0]
+                else:
+                    use_these_channels = np.argsort(y_dist)[:NUM_CHANNELS_FOR_FIT]  
 
-            sort_idx = np.argsort(channel_distances)
-            channel_distances = channel_distances[sort_idx]
-            spatial_decay_points = spatial_decay_points[sort_idx]
+                    # Distance from the main channels
+                    channel_distances = np.sqrt(
+                        np.sum(
+                            np.square(channel_positions[use_these_channels] - current_max_channel),
+                            axis=1,
+                        )
+                    )
 
-            if param["normalize_spatial_decay"]:
-                spatial_decay_points = spatial_decay_points / np.max(spatial_decay_points)
+                    spatial_decay_points = np.max(
+                        np.abs(template_waveforms[this_unit, :, use_these_channels]), axis=1
+                    )
 
-            # estimate initial paramters
-            intercept = np.max(
-                spatial_decay_points
-            )  # Take the max value of the max channel
-            grad = (spatial_decay_points[1] - spatial_decay_points[0]) / (
-                channel_distances[1] - channel_distances[0]
-            )
+                    sort_idx = np.argsort(channel_distances)
+                    channel_distances = channel_distances[sort_idx]
+                    spatial_decay_points = spatial_decay_points[sort_idx]
 
-            out_exp = curve_fit(
-                exp_fit,
-                channel_distances,
-                spatial_decay_points,
-                p0=(grad, intercept),
-                maxfev=2000,
-            )[0]
-        
-            spatial_decay_slope = out_exp[0]
+                    if param["normalize_spatial_decay"]:
+                        spatial_decay_points = spatial_decay_points / np.max(spatial_decay_points)
+
+                    # Initial parameters matching MATLAB
+                    initial_guess = [0.1, 1]  # [A, b]
+
+                    # Ensure inputs are float64 (equivalent to MATLAB double)
+                    channel_distances = np.float64(channel_distances)
+                    spatial_decay_points = np.float64(spatial_decay_points)
+
+                    # Curve fit with same initial parameters as MATLAB
+                    out_exp = curve_fit(
+                        exp_fit,
+                        channel_distances,
+                        spatial_decay_points,
+                        p0=initial_guess,
+                        maxfev=5000
+                    )[0]
+                    spatial_decay_slope = out_exp[0]
 
         # get waveform baseline fraction
         if ~np.isnan(waveform_baseline_window)[0]:
@@ -1324,8 +1391,13 @@ def waveform_shape(
         trough_to_peak2_ratio,
         peak_before_width,
         trough_width,
+        param,
     )
 
+def get_ratio(numerator, denominator):
+   if denominator == 0: return float('inf')
+   if numerator in (None, 0): return 0.0
+   return abs(numerator / denominator)
 
 @njit(cache=True)
 def custom_mahal_loop(test_spike_features, current_spike_features):
@@ -1343,7 +1415,7 @@ def custom_mahal_loop(test_spike_features, current_spike_features):
 
     Returns
     -------
-    ndarray (n_spikes_other)
+    mahal : ndarray (n_spikes_other)
         The mahal score for the test units against the current unit distribution
     """
     # inv covarriance metric from the current spike
@@ -1387,8 +1459,12 @@ def get_distance_metrics(
 
     Returns
     -------
-    tuple
-        The distance based metrics
+    isolation_dist : float
+        The isolation distance
+    L_ratio : float
+        The L ratio
+    silhouette_score : float
+        The silhouette score
     """
     # get distance metrics
 
@@ -1401,7 +1477,7 @@ def get_distance_metrics(
     this_unit_idx = spike_clusters == this_unit
     n_spikes = this_unit_idx.sum()
     these_features = np.reshape(
-        pc_features[this_unit_idx.squeeze(), :, : param["n_channels_iso_dist"]],
+        pc_features[this_unit_idx, :, : param["n_channels_iso_dist"]],
         (n_spikes, -1),
     )
 
@@ -1435,7 +1511,7 @@ def get_distance_metrics(
                 )
                 channel_spikes = pc_features[
                     other_spikes, :, common_channel_idx
-                ].squeeze()
+                ]
                 other_features[
                     n_count : n_count + channel_spikes.shape[0], :, channel_idx
                 ] = channel_spikes
@@ -1516,160 +1592,122 @@ def get_raw_amplitude(this_raw_waveform, gain_to_uV):
 
     Returns
     -------
-    float
+    raw_ampltitude : float
         The actual raw amplitude
     """
-
-    this_raw_waveform *= gain_to_uV
-    raw_amplitude = np.abs(np.max(this_raw_waveform)) + np.abs(
-        np.min(this_raw_waveform)
-    )
+    this_raw_waveform_tmp = this_raw_waveform.copy()
+    if ~np.isnan(gain_to_uV):
+        this_raw_waveform_tmp *= gain_to_uV
+        raw_amplitude = np.abs(np.nanmax(this_raw_waveform_tmp)) + np.abs(
+            np.nanmin(this_raw_waveform_tmp)
+        )
+    else:
+        raw_amplitude = np.nan
 
     return raw_amplitude
 
 
 def get_quality_unit_type(param, quality_metrics):
     """
-    Assign each unit a type based of its' quality metrics.
-    unit_type == 0 all noise units
-    unit_type == 1 all good units
-    unit_type == 2 all mua units
-    unit_type == 3 all non-somatic units (if split somatic units its good non-somatic units)
-    unit_type == 4 (if split somatic units its mua non-somatic units)
-
+    Classifies neural units based on quality metrics.
+    
+    Unit Types:
+    0: Noise units
+    1: Good units
+    2: MUA (Multi-Unit Activity)
+    3: Non-somatic units (good if split)
+    4: Non-somatic MUA (if split)
 
     Parameters
     ----------
-    param : df
-        The param dataframe from ML BombCell
-    quality_metrics : df
-        The quality metrics dataframefrom ML BombCell
-
+    param : dict
+        The parameters
+    quality_metrics : dict
+        The quality metrics
+    
     Returns
     -------
-    tuple (np array, np array)
-        Two array of the unit types one as number the other as strings
+    unit_type : ndarray
+        The unit type classifaction as a number
+    unit_type_string : ndarray
+        The unit type classification as a string
     """
-
-
-    unit_type = np.full(quality_metrics["n_peaks"].shape[0], np.nan)
-
-    # classify noise
-    unit_type[np.isnan(quality_metrics["n_peaks"])] = 0
-    unit_type[quality_metrics["n_peaks"] > param["max_n_peaks"]] = 0
-    unit_type[quality_metrics["n_troughs"] > param["max_n_troughs"]] = 0
-    unit_type[
-        quality_metrics["waveform_duration_peak_trough"] < param["min_wv_duration"]
-    ] = 0
-    unit_type[
-        quality_metrics["waveform_duration_peak_trough"] > param["max_wv_duration"]
-    ] = 0
-    unit_type[
-        quality_metrics["waveform_baseline_flatness"] > param["max_wv_baseline_fraction"]
-    ] = 0
-    if param["sp_decay_lin_fit"]:
-        unit_type[quality_metrics["spatial_decay_slope"] < param["min_spatial_decay_slope"]] = 0
-    else:
-        unit_type[quality_metrics["spatial_decay_slope"] < param["min_spatial_decay_slope_exp"]] = 0
-        unit_type[quality_metrics["spatial_decay_slope"] > param["max_spatial_decay_slope_exp"]] = 0
-
-    unit_type[quality_metrics["scnd_peak_to_trough_ratio"] > param["max_scnd_peak_to_trough_ratio_noise"]] = 0
-    # classify non-somatic 
-
-    is_non_somatic = (
-    (quality_metrics["trough_to_peak2_ratio"] < param["min_trough_to_peak2_ratio_non_somatic"]) &
-    (quality_metrics["peak_before_width"] < param["min_width_first_peak_non_somatic"]) &
-    (quality_metrics["trough_width"] < param["min_width_main_trough_non_somatic"]) &
-    (quality_metrics["peak1_to_peak2_ratio"] > param["max_peak1_to_peak2_ratio_non_somatic"])
-    ) | (quality_metrics["main_peak_to_trough_ratio"] > param["max_main_peak_to_trough_ratio_non_somatic"])
+    n_units = len(quality_metrics["n_peaks"])
+    unit_type = np.full(n_units, np.nan)
     
+    # Noise classification
+    noise_mask = (
+        np.isnan(quality_metrics["n_peaks"]) |
+        (quality_metrics["n_peaks"] > param["max_n_peaks"]) |
+        (quality_metrics["n_troughs"] > param["max_n_troughs"]) |
+        (quality_metrics["waveform_duration_peak_trough"] < param["min_wv_duration"]) |
+        (quality_metrics["waveform_duration_peak_trough"] > param["max_wv_duration"]) |
+        (quality_metrics["waveform_baseline_flatness"] > param["max_wv_baseline_fraction"]) |
+        (quality_metrics["scnd_peak_to_trough_ratio"] > param["max_scnd_peak_to_trough_ratio_noise"])
+    )
 
-    # classify MUA
-    # ALL or ANY?
-    unit_type[
-        np.logical_and(
-            quality_metrics["percent_missing_gaussian"]
-            > param["max_perc_spikes_missing"],
-            np.isnan(unit_type),
+    if param["compute_spatial_decay"] & param["sp_decay_lin_fit"]:
+        noise_mask |= (quality_metrics["spatial_decay_slope"] < param["min_spatial_decay_slope"])
+    elif param["compute_spatial_decay"]:
+        noise_mask |= (
+            #Inequalities "wrong" way round due to -ve sign
+            (quality_metrics["spatial_decay_slope"] > param["min_spatial_decay_slope_exp"]) |
+            (quality_metrics["spatial_decay_slope"] < param["max_spatial_decay_slope_exp"])
         )
-    ] = 2
-    unit_type[
-        np.logical_and(
-            quality_metrics["n_spikes"] < param["min_num_spikes_total"],
-            np.isnan(unit_type),
+    
+    unit_type[noise_mask] = 0
+    
+    # Non-somatic classification
+    is_non_somatic = (
+        (quality_metrics["trough_to_peak2_ratio"] < param["min_trough_to_peak2_ratio_non_somatic"]) &
+        (quality_metrics["peak_before_width"] < param["min_width_first_peak_non_somatic"]) &
+        (quality_metrics["trough_width"] < param["min_width_main_trough_non_somatic"]) &
+        (quality_metrics["peak1_to_peak2_ratio"] > param["max_peak1_to_peak2_ratio_non_somatic"]) |
+        (quality_metrics["main_peak_to_trough_ratio"] > param["max_main_peak_to_trough_ratio_non_somatic"])
+    )
+    
+    # MUA classification
+    mua_mask = np.isnan(unit_type) & (
+        (quality_metrics["percent_missing_gaussian"] > param["max_perc_spikes_missing"]) |
+        (quality_metrics["n_spikes"] < param["min_num_spikes_total"]) |
+        (quality_metrics["fraction_RPVs"] > param["max_RPV"]) |
+        (quality_metrics["presence_ratio"] < param["min_presence_ratio"])
+    )
+    
+    if param["extract_raw_waveforms"] and np.all(~np.isnan(quality_metrics['raw_amplitude'])):
+        mua_mask |= np.isnan(unit_type) & (
+            (quality_metrics["raw_amplitude"] < param["min_amplitude"]) |
+            (quality_metrics["signal_to_noise_ratio"] < param["min_SNR"])
         )
-    ] = 2
-    unit_type[
-        np.logical_and(
-            quality_metrics["fraction_RPVs"] > param["max_RPV"], np.isnan(unit_type)
-        )
-    ] = 2
-    unit_type[
-        np.logical_and(
-            quality_metrics["presence_ratio"] < param["min_presence_ratio"],
-            np.isnan(unit_type),
-        )
-    ] = 2
-
-    if param["extract_raw_waveforms"]:
-        unit_type[
-            np.logical_and(
-                quality_metrics["raw_amplitude"] < param["min_amplitude"],
-                np.isnan(unit_type),
-            )
-        ] = 2
-        unit_type[
-            np.logical_and(
-                quality_metrics["signal_to_noise_ratio"] < param["min_SNR"],
-                np.isnan(unit_type),
-            )
-        ] = 2
-
+    
     if param["compute_drift"]:
-        unit_type[
-            np.logical_and(
-                quality_metrics["max_drift_estimate"] > param["max_drift"],
-                np.isnan(unit_type),
-            )
-        ] = 2
-
+        mua_mask |= np.isnan(unit_type) & (quality_metrics["max_drift_estimate"] > param["max_drift"])
+    
     if param["compute_distance_metrics"]:
-        unit_type[
-            np.logical_and(
-                quality_metrics["isolation_dist"] > param["iso_d_min"],
-                np.isnan(unit_type),
-            )
-        ] = 2
-        unit_type[
-            np.logical_and(
-                quality_metrics["l_ratio"] > param["lratio_max"], np.isnan(unit_type)
-            )
-        ] = 2
-
-    unit_type[np.isnan(unit_type)] = 1  # SINGLE SEXY UNIT
-
+        mua_mask |= np.isnan(unit_type) & (
+            (quality_metrics["isolation_dist"] < param["iso_d_min"]) |
+            (quality_metrics["l_ratio"] > param["lratio_max"])
+        )
+    
+    unit_type[mua_mask] = 2
+    unit_type[np.isnan(unit_type)] = 1
+    
+    # Handle non-somatic classifications
     if param["split_good_and_mua_non_somatic"]:
-        unit_type[np.logical_and(is_non_somatic == 1, unit_type == 1)] = (
-            3  # Good non-somatic
-        )
-        unit_type[np.logical_and(is_non_somatic == 1, unit_type == 2)] = (
-            4  # MUA non-somatic
-        )
+        good_non_somatic = (unit_type == 1) & is_non_somatic
+        mua_non_somatic = (unit_type == 2) & is_non_somatic
+        unit_type[good_non_somatic] = 3
+        unit_type[mua_non_somatic] = 4
     else:
-        unit_type[np.logical_and(is_non_somatic == 1, unit_type != 0)] = (
-            3  # Good non-somatic
-        )
-
-    # Have unit types as strings as well
-    unit_type_string = np.full(unit_type.size, "", dtype=object)
-    unit_type_string[unit_type == 0] = "NOISE"
-    unit_type_string[unit_type == 1] = "GOOD"
-    unit_type_string[unit_type == 2] = "MUA"
-
-    if param["split_good_and_mua_non_somatic"]:
-        unit_type_string[unit_type == 3] = "NON-SOMA GOOD"
-        unit_type_string[unit_type == 4] = "NON-SOMA MUA"
-    else:
-        unit_type_string[unit_type == 3] = "NON-SOMA"
-
+        unit_type[(unit_type != 0) & is_non_somatic] = 3
+    
+    # Create string labels
+    labels = {0: "NOISE", 1: "GOOD", 2: "MUA", 
+             3: "NON-SOMA GOOD" if param["split_good_and_mua_non_somatic"] else "NON-SOMA",
+             4: "NON-SOMA MUA"}
+    
+    unit_type_string = np.full(n_units, "", dtype=object)
+    for code, label in labels.items():
+        unit_type_string[unit_type == code] = label
+    
     return unit_type, unit_type_string
