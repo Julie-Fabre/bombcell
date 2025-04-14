@@ -144,7 +144,7 @@ def get_default_parameters(
         if gain_to_uV is not None and not np.isnan(gain_to_uV):
             param["gain_to_uV"] = gain_to_uV
         else:
-            param["gain_to_uV"] = np.NaN
+            param["gain_to_uV"] = np.nan
     else:
         param["ephys_meta_file"] = None
         param["gain_to_uV"] = gain_to_uV

@@ -57,6 +57,11 @@ def upset_plots(quality_metrics, unit_type_string, param):
     non_somatic_metrics = ["peak(main) / trough", "peak1 / peak2"]
     mua_metrics = ["SNR", "amplitude", "# spikes", "presence ratio", "% spikes missing", "fraction RPVs"]
 
+    # Eventually filter out uncomputed metrics
+    noise_metrics = [m for m in noise_metrics if m in qm_table.columns]
+    non_somatic_metrics = [m for m in non_somatic_metrics if m in qm_table.columns]
+    mua_metrics = [m for m in mua_metrics if m in qm_table.columns]
+
     # plot noise metrics upset plot
     upset = UpSet(from_indicators(noise_metrics, data = qm_table.astype(bool)), min_degree = 1)
     upset.plot()

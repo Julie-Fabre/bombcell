@@ -713,13 +713,12 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
     """
     (
         spike_times_samples,
-        spike_clusters,
+        spike_clusters, # actually spike_templates, but they're the same in bombcell
         template_waveforms,
         template_amplitudes,
         pc_features,
         pc_features_idx,
         channel_positions,
-        good_channels,
     ) = load_ephys_data(ks_dir)
 
     # Extract or load in raw waveforms
@@ -735,6 +734,7 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
         raw_waveforms_full = None
         raw_waveforms_peak_channel = None
         SNR = None
+        raw_waveforms_id_match = None
         param["extract_raw_waveforms"] = False  # No waveforms to extract!
 
     # pre-load peak channels
@@ -778,7 +778,7 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
             (np.min(spike_times_seconds), np.max(spike_times_seconds))
         )
 
-    unique_templates = non_empty_units
+    unique_templates = non_empty_units # template ids are cluster ids, in bombcell
     param['unique_templates'] = unique_templates
 
     # Initialize quality metrics dictionary
