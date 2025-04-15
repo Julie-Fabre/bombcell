@@ -176,13 +176,13 @@ def save_quality_metrics_as_parquet(
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
-    file_path = os.path.join(save_path, file_name)
+    file_path = save_path / file_name
     quality_metrics_save = quality_metrics.copy()
     quality_metrics_save["peak_channels"] = quality_metrics["peak_channels"][
         quality_metrics["cluster_id"].astype(int)
     ]
     quality_metrics_df = pd.DataFrame.from_dict(quality_metrics_save)
-    quality_metrics_df.to_parquet(file_path)
+    quality_metrics_df.to_parquet(str(file_path))
 
 
 def save_params_as_parquet(
@@ -206,12 +206,14 @@ def save_params_as_parquet(
     # PyArrow cant save Path type objects as a parquet
     param_save = param.copy()
     for key, value in param.items():
+        if key == 'ephys_kilosort_path':
+            param_save[key] = str(value)
         if type(value) == Path:
             param_save[key] = str(value)
 
-    file_path = os.path.join(save_path, file_name)
+    file_path = save_path / file_name
     param_df = pd.DataFrame.from_dict([param_save])
-    param_df.to_parquet(file_path)
+    param_df.to_parquet(str(file_path))
 
 
 def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, raw_waveforms_id_match, save_path):
@@ -230,15 +232,13 @@ def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, raw_wa
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
-    file_path_raw_waveforms = os.path.join(save_path, "templates._bc_rawWaveforms.npy")
+    file_path_raw_waveforms = save_path / "templates._bc_rawWaveforms.npy"
     np.save(file_path_raw_waveforms, raw_waveforms_full)
 
-    file_path_peak_channels = os.path.join(
-        save_path, "templates._bc_rawWaveformsPeakChannels.npy"
-    )
+    file_path_peak_channels = save_path / "templates._bc_rawWaveformsPeakChannels.npy"
     np.save(file_path_peak_channels, raw_waveforms_peak_channel)
 
-    file_path_raw_waveforms_id_match = os.path.join(save_path, "_bc_rawWaveforms_kilosort_format")
+    file_path_raw_waveforms_id_match = save_path / "_bc_rawWaveforms_kilosort_format"
     np.save(file_path_raw_waveforms_id_match, raw_waveforms_id_match)
 
 

@@ -110,7 +110,7 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
         fig, axs = plt.subplots(nrows = 2, ncols=2)
         img_pos = [[0,0], [0,1], [1,0], [1,1]]
         for i in range(4):
-            og_id = unique_templates[np.argwhere(unit_type == i).squeeze()]
+            og_id = unique_templates[unit_type == i]
             n_units_in_cat = og_id.size
             if n_units_in_cat !=0:
                 for id in og_id:
