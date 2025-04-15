@@ -87,7 +87,7 @@ def handle_manual_curation(ephys_path, spike_templates, templates_waveforms, pc_
     found_pc_features = not np.all(np.isnan(pc_features_idx))
 
     if (ephys_path / 'spike_clusters.npy').exists():
-        spike_clusters = np.load(ephys_path / 'spike_clusters.npy')
+        spike_clusters = np.load(ephys_path / 'spike_clusters.npy').squeeze().astype(int)
         new_templates = np.unique(spike_clusters[~np.isin(spike_clusters, spike_templates)])
         n_new_units = len(new_templates)
         
@@ -136,7 +136,7 @@ def handle_manual_curation(ephys_path, spike_templates, templates_waveforms, pc_
     if found_pc_features:
         pc_features_idx = pc_features_idx.astype(int)
 
-    return spike_templates, templates_waveforms, pc_features_idx
+    return spike_clusters, templates_waveforms, pc_features_idx
 
 
 def get_gain_spikeglx(meta_path):

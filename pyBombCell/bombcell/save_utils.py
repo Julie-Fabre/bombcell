@@ -158,8 +158,8 @@ def save_quality_metrics_and_verify(quality_metrics, unit_types, template_ids, o
         print("All expected metrics were successfully saved.")
 
 
-def save_quality_metrics_as_parquet(
-    quality_metrics, save_path, file_name="templates._bc_qMetrics.parquet"
+def save_dict_as_parquet_and_csv(
+    dic, save_path, file_name="templates._bc_qMetrics"
 ):
     """
     This function save the whole quality metrics dictionary as a parquet file
@@ -176,17 +176,14 @@ def save_quality_metrics_as_parquet(
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
-    file_path = save_path / file_name
-    quality_metrics_save = quality_metrics.copy()
-    quality_metrics_save["peak_channels"] = quality_metrics["peak_channels"][
-        quality_metrics["cluster_id"].astype(int)
-    ]
-    quality_metrics_df = pd.DataFrame.from_dict(quality_metrics_save)
-    quality_metrics_df.to_parquet(str(file_path))
+    file_path = str(save_path / file_name)
+    quality_metrics_df = pd.DataFrame.from_dict(dic)
+    quality_metrics_df.to_parquet(file_path + ".parquet")
+    quality_metrics_df.to_csv(file_path + ".csv")
 
 
 def save_params_as_parquet(
-    param, save_path, file_name="_bc_parameters._bc_qMetrics.parquet"
+    param, save_path, file_name="_bc_parameters._bc_qMetrics"
 ):
     """
     This function save the whole param dictionary as a parquet file
@@ -213,7 +210,7 @@ def save_params_as_parquet(
 
     file_path = save_path / file_name
     param_df = pd.DataFrame.from_dict([param_save])
-    param_df.to_parquet(str(file_path))
+    param_df.to_parquet(str(file_path) + ".parquet")
 
 
 def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, raw_waveforms_id_match, save_path):
@@ -277,10 +274,19 @@ def save_results(
 
     save_quality_metrics_and_verify(quality_metrics, unit_type_string, unique_templates, save_path)
 
-    save_quality_metrics_as_parquet(
-        quality_metrics, save_path, file_name="templates._bc_qMetrics.parquet"
+    # Get rid of peak channels of empty rows, which were kept for convenient indexing up to here
+    quality_metrics_save = quality_metrics.copy()
+    quality_metrics_save["peak_channels"] = quality_metrics["peak_channels"][
+        quality_metrics["cluster_id"].astype(int)
+    ]
+
+    # Save full quality metrics table
+    save_dict_as_parquet_and_csv(
+        quality_metrics_save, save_path, file_name="templates._bc_qMetrics"
     )
     save_params_as_parquet(
-        param, save_path, file_name="_bc_parameters._bc_qMetrics.parquet"
+        param, save_path, file_name="_bc_parameters._bc_qMetrics"
     )
+
+    # Save waveforms
     save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, raw_waveforms_id_match, save_path)

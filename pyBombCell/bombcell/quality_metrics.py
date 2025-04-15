@@ -159,7 +159,7 @@ def remove_duplicate_spikes(
     template_amplitudes : ndarray
         The array of amplitudes for each spike
     peak_channels : ndarray
-        The max channel for each spike
+        The max channel for each unit
     save_path : str
         The path to the save directory
     param : dict

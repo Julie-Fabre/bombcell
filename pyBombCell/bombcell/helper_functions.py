@@ -406,14 +406,14 @@ def create_quality_metrics_dict(n_units, snr=None):
         The quality metrics dictionary
     """
     init_keys = [
-        "phy_cluster_id",
-        "cluster_id",
         "n_spikes"
         ] + get_metric_keys()
 
     quality_metrics = {}
+    quality_metrics["cluster_id"] = np.zeros(n_units).astype(int)
     for k in init_keys:
         quality_metrics[k] = np.full(n_units, np.nan)
+    
 
     # Use passed snr values if found
     if isinstance(snr, np.ndarray):
@@ -502,7 +502,6 @@ def get_all_quality_metrics(
     bar_description = "Computing bombcell quality metrics: {percentage:3.0f}%|{bar:10}| {n}/{total} units"
     for unit_idx in tqdm(range(unique_templates.size), bar_format=bar_description):
         this_unit = unique_templates[unit_idx]
-        quality_metrics["phy_cluster_id"][unit_idx] = this_unit
         quality_metrics["cluster_id"][unit_idx] = this_unit
 
         these_spike_times = spike_times_seconds[spike_clusters == this_unit]
