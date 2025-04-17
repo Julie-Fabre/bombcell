@@ -67,24 +67,24 @@ if exist(fullfile([ephys_path, filesep, 'spike_clusters.npy']))
     spike_clusters_0idx = readNPY([ephys_path, filesep, 'spike_clusters.npy']); % already manually-curated
     spikeClusters = int32(spike_clusters_0idx) + 1;
 
-
     newTemplates = unique(spikeClusters(~ismember(spikeClusters, int32(spikeTemplates))));
-
 
     if ~isempty(newTemplates)
         % initialize templates and pc features
-        try
         templateWaveforms = [templateWaveforms; zeros(max(newTemplates)-size(templateWaveforms, 1), size(templateWaveforms, 2), size(templateWaveforms, 3))];
-        catch
-            keyboard
-        end
         pcFeatureIdx = [pcFeatureIdx; zeros(max(newTemplates)-size(pcFeatureIdx, 1), size(pcFeatureIdx, 2))];
         for iNewTemplate = newTemplates'
             % find corresponding pre merge/split templates and PCs
             oldTemplates = spikeTemplates(spikeClusters == iNewTemplate);
-            if length(unique(oldTemplates)) > 1 % average if merge
-                newWaveform = mean(templateWaveforms(unique(oldTemplates), :, :), 1);
-                newPcFeatureIdx = mean(pcFeatureIdx(unique(oldTemplates), :), 1);
+            if length(unique(oldTemplates)) > 1 % use the unit with the most spikes if merge
+                [uniqueValues, ~, idx] = unique(oldTemplates);
+                counts = accumarray(idx, 1);
+                maxTemplate = uniqueValues(counts == max(counts));
+                if length(maxTemplate) > 1 % several templates have exactly the same number of spikes
+                    maxTemplate = maxTemplate(1); % just take the first one
+                end
+                newWaveform = templateWaveforms(maxTemplate, :, :);
+                newPcFeatureIdx = pcFeatureIdx(maxTemplate, :);
             else % just take value if split
                 newWaveform = templateWaveforms(unique(oldTemplates), :, :);
                 newPcFeatureIdx = pcFeatureIdx(unique(oldTemplates), :);
@@ -92,25 +92,16 @@ if exist(fullfile([ephys_path, filesep, 'spike_clusters.npy']))
             templateWaveforms(iNewTemplate, :, :) = newWaveform;
             pcFeatureIdx(iNewTemplate, :) = newPcFeatureIdx;
         end
-        % check raw waveforms 
-        bc.load.checkAndConvertRawWaveforms(savePath, spikeTemplates, spikeClusters)
-
-
-    else
-        spikeClusters = spikeTemplates;
-         % check raw waveforms 
-        bc.load.checkAndConvertRawWaveforms(savePath, spikeTemplates, spikeClusters)
-
     end
 else
     spikeClusters = spikeTemplates;
-     % check raw waveforms 
-     bc.load.checkAndConvertRawWaveforms(savePath, spikeTemplates, spikeClusters)
 end
 
+% check raw waveforms 
+bc.load.checkAndConvertRawWaveforms(savePath, spikeTemplates, spikeClusters)
+  
 %% Only use data set of interest - for unit match
 if nargin > 3 && ~isempty(datasetidx) %- for unit match
-
     spikeTimes_samples = spikeTimes_samples(spikeTimes_datasets == datasetidx);
     spikeTemplates = spikeTemplates(spikeTimes_datasets == datasetidx);
     templateAmplitudes = templateAmplitudes(spikeTimes_datasets == datasetidx);

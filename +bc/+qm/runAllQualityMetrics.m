@@ -187,7 +187,6 @@ for iUnit = 1:size(uniqueTemplates, 1)
             forGUI.unit_mahal_edges{iUnit}] = bc.qm.getDistanceMetrics(pcFeatures, ...
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
             param); 
-
     end
 
     %% display progress
@@ -205,7 +204,9 @@ end
 
 fprintf('\n Finished extracting quality metrics from %s', param.rawFile)
 
+
 qMetric = bc.qm.saveQMetrics(param, qMetric, forGUI, savePath, medianSpikeDepth, timeBins);
+
 fprintf('\n Saved quality metrics from %s to %s \n', param.rawFile, savePath)
 
 unitType = bc.qm.getQualityUnitType(param, qMetric, savePath);
