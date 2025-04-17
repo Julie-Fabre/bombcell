@@ -108,6 +108,7 @@ end
 %% loop through units and get quality metrics
 fprintf('\n Extracting quality metrics from %s ... \n', param.rawFile)
 
+
 for iUnit = 1:size(uniqueTemplates, 1)
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
     % get this unit's attributes

@@ -74,6 +74,9 @@ qMetricTable.Properties.VariableNames = fieldnames(qMetric);
 
 parquetwrite([fullfile(savePath, 'templates._bc_qMetrics.parquet')], qMetricTable)
 
+% Additionally, save all metrics to a single CSV file
+writetable(qMetricTable, fullfile(savePath, 'templates._bc_qMetrics_all.csv'));
+
 % overwrite qMetric with the table, to be consistent with it for next steps
 % of the pipeline
 qMetric = qMetricTable;
