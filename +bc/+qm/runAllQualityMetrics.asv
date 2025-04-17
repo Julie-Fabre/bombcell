@@ -187,7 +187,6 @@ for iUnit = 1:size(uniqueTemplates, 1)
             forGUI.unit_mahal_edges{iUnit}] = bc.qm.getDistanceMetrics(pcFeatures, ...
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
             param); 
-
     end
 
     %% display progress
@@ -204,11 +203,14 @@ if param.extractRaw
 end
 
 fprintf('\n Finished extracting quality metrics from %s', param.rawFile)
-qMetric.signalToNoiseRatio = nan(1,length(qMetric.maxChannels));
-qMetric = bc.qm.saveQMetrics(param, qMetric, forGUI, savePath, medianSpikeDepth, timeBins);
+
+try
+    qMetric = bc.qm.saveQMetrics(param, qMetric, forGUI, savePath, medianSpikeDepth, timeBins);
+catch
+end
 fprintf('\n Saved quality metrics from %s to %s \n', param.rawFile, savePath)
 
 unitType = bc.qm.getQualityUnitType(param, qMetric, savePath);
-ephysData.channel_positions = [1:10:3840,repmat([15;25],192,1)];
+
 bc.qm.plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
 end
