@@ -1,4 +1,4 @@
-function upSetPlot_wrapper(qMetric, param, unitType)
+function figHandles = upSetPlot_wrapper(qMetric, param, unitType, save_path)
 % More info on UpSet plots in the original publication:
 % Alexander Lex, Nils Gehlenborg, Hendrik Strobelt, Romain Vuillemot,
 % Hanspeter Pfister. UpSet: Visualization of Intersecting Sets
@@ -9,10 +9,18 @@ function upSetPlot_wrapper(qMetric, param, unitType)
 % https://uk.mathworks.com/matlabcentral/fileexchange/123695-upset-plot,
 % written by Zhaoxu Liu / slandarer
 
+% Check if save_path is provided
+if nargin < 4
+    save_path = '';
+end
+
+% Array to store figure handles
+figHandles = [];
+
 %% Noise UpSet plot
-
-
 figHandle_noise = figure('Name', 'Noise vs neuronal units', 'Color', 'w', 'Position', [100, 100, 900, 900]);
+figHandles = [figHandles, figHandle_noise];
+
 if param.spDecayLinFit
     UpSet_data_noise = [ ...
         isnan(qMetric.nPeaks) | qMetric.nPeaks > param.maxNPeaks, ...
@@ -54,14 +62,21 @@ if sum(UpSet_data_noise, 'all') > 0
     bc.viz.upSetPlot(UpSet_data_noise, UpSet_labels_noise, figHandle_noise, red_colors);
     hold on;
     sgtitle('Units classified as noise')
+    
+    % Save the figure if save_path is provided
+    if ~isempty(save_path)
+        if ~exist(save_path, 'dir')
+            mkdir(save_path);
+        end
+        saveas(figHandle_noise, fullfile(save_path, 'noise_units_upset.png'));
+    end
 else
     disp('No noise units with current param settings - consider changing your param values')
 end
 
 %% Non-somatic UpSet plot
-
-
 figHandle_nonSoma = figure('Name', 'Non-soma vs soma units', 'Color', 'w', 'Position', [100, 100, 900, 900]);
+figHandles = [figHandles, figHandle_nonSoma];
 
 UpSet_data_nonSoma = [ ...
         (qMetric.troughToPeak2Ratio < param.minTroughToPeak2Ratio_nonSomatic &...
@@ -82,14 +97,18 @@ if sum(UpSet_data_nonSoma, 'all') > 0
     bc.viz.upSetPlot(UpSet_data_nonSoma, UpSet_labels_nonSoma, figHandle_nonSoma, blue_colors);
     hold on;
     sgtitle('Units classified as non-somatic');
-
+    
+    % Save the figure if save_path is provided
+    if ~isempty(save_path)
+        saveas(figHandle_nonSoma, fullfile(save_path, 'nonsomatic_units_upset.png'));
+    end
 else
     disp('No non-somatic units with current param settings - consider changing your param values')
 end
 
 %% MUA UpSet plot
-
 figHandle_mua = figure('Name', 'Multi vs single units', 'Color', 'w', 'Position', [100, 100, 900, 900]);
+figHandles = [figHandles, figHandle_mua];
 
 UpSet_data_mua = [qMetric.percentageSpikesMissing_gaussian > param.maxPercSpikesMissing, ...
     qMetric.nSpikes < param.minNumSpikes, ...
@@ -135,6 +154,11 @@ if sum(UpSet_data_mua, 'all') > 0
     bc.viz.upSetPlot(UpSet_data_mua, UpSet_labels_mua, figHandle_mua, darker_yellow_orange_colors);
     hold on;
     sgtitle('Units classified as MUA');
+    
+    % Save the figure if save_path is provided
+    if ~isempty(save_path)
+        saveas(figHandle_mua, fullfile(save_path, 'mua_units_upset.png'));
+    end
 else
     disp('No MUA or good units with current param settings - consider changing your param values')
 end
@@ -142,6 +166,7 @@ end
 %% Non-somatic MUA UpSet plot
 if param.splitGoodAndMua_NonSomatic
     figHandle_muaNonSoma = figure('Name', 'Non-somatic multi vs single units', 'Color', 'w', 'Position', [100, 100, 900, 900]);
+    figHandles = [figHandles, figHandle_muaNonSoma];
 
     UpSet_data_muaNonSoma = [qMetric.percentageSpikesMissing_gaussian > param.maxPercSpikesMissing, ...
         qMetric.nSpikes < param.minNumSpikes, ...
@@ -171,10 +196,17 @@ if param.splitGoodAndMua_NonSomatic
     end
 
     UpSet_data_muaNonSoma = UpSet_data_muaNonSoma(ismember(unitType, [3, 4]), :); %Keep only non-somatic MUA and single units - remove noise and somatic
-    if sum(UpSet_data_muaNonsoma, 'all') > 0
+    
+    % Fixed typo in variable name from UpSet_data_muaNonsoma to UpSet_data_muaNonSoma
+    if sum(UpSet_data_muaNonSoma, 'all') > 0
         bc.viz.upSetPlot(UpSet_data_muaNonSoma, UpSet_labels_muaNonSoma, figHandle_muaNonSoma, darker_yellow_orange_colors);
         hold on;
         sgtitle('Units classified as non-somatic & MUA');
+        
+        % Save the figure if save_path is provided
+        if ~isempty(save_path)
+            saveas(figHandle_muaNonSoma, fullfile(save_path, 'nonsomatic_mua_units_upset.png'));
+        end
     end
 end
 end

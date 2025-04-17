@@ -104,9 +104,10 @@ if param.computeTimeChunks
 else
     timeChunks = [min(spikeTimes_seconds), max(spikeTimes_seconds)];
 end
-
+[clusterIDs, unitQuality, contaminationRate] = sqKilosort.maskedClusterQualityKilosort(pcFeatures, pcFeatureIdx, spikeClusters ,spikeTemplates);
 %% loop through units and get quality metrics
 fprintf('\n Extracting quality metrics from %s ... \n', param.rawFile)
+
 
 for iUnit = 1:size(uniqueTemplates, 1)
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
@@ -204,10 +205,9 @@ end
 
 fprintf('\n Finished extracting quality metrics from %s', param.rawFile)
 
-try
-    qMetric = bc.qm.saveQMetrics(param, qMetric, forGUI, savePath, medianSpikeDepth, timeBins);
-catch
-end
+
+qMetric = bc.qm.saveQMetrics(param, qMetric, forGUI, savePath, medianSpikeDepth, timeBins);
+
 fprintf('\n Saved quality metrics from %s to %s \n', param.rawFile, savePath)
 
 unitType = bc.qm.getQualityUnitType(param, qMetric, savePath);
