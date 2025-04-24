@@ -75,28 +75,28 @@ def print_unit_qm(quality_metrics, unit_idx, param, unit_type = None):
     """
     print(f"For unit {unit_idx}:")
     print(
-        f'n_peaks : {quality_metrics["n_peaks"][unit_idx]}, n_troughs : {quality_metrics["n_troughs"][unit_idx]}'
+        f'nPeaks : {quality_metrics["nPeaks"][unit_idx]}, nTroughs : {quality_metrics["nTroughs"][unit_idx]}'
     )
     print(
-        f'waveform_duration_peak_trough : {quality_metrics["waveform_duration_peak_trough"][unit_idx]:.3f}'
+        f'waveformDuration_peakTrough : {quality_metrics["waveformDuration_peakTrough"][unit_idx]:.3f}'
     )
     print(
-        f'waveform_baseline : {quality_metrics["waveform_baseline"][unit_idx]}, spatial_decay_slope : {quality_metrics["spatial_decay_slope"][unit_idx]}'
+        f'waveform_baseline : {quality_metrics["waveform_baseline"][unit_idx]}, spatialDecaySlope : {quality_metrics["spatialDecaySlope"][unit_idx]}'
     )
     print(
-        f'percent_missing_gaussian : {quality_metrics["percent_missing_gaussian"][unit_idx]}, n_spikes : {quality_metrics["n_spikes"][unit_idx]}'
+        f'percentageSpikesMissing_gaussian : {quality_metrics["percentageSpikesMissing_gaussian"][unit_idx]}, nSpikes : {quality_metrics["nSpikes"][unit_idx]}'
     )
     print(
-        f'fraction_RPVs : {quality_metrics["fraction_RPVs"][unit_idx]}, presence_ratio : {quality_metrics["presence_ratio"][unit_idx]}'
+        f'fractionRPVs : {quality_metrics["fractionRPVs"][unit_idx]}, presenceRatio : {quality_metrics["presenceRatio"][unit_idx]}'
     )
 
     if param["extract_raw_waveforms"]:
         print(
-            f'raw_amplitude : {quality_metrics["raw_amplitude"][unit_idx]:.3f}, signal_to_noise_ratio : {quality_metrics["signal_to_noise_ratio"][unit_idx]:.3f}'
+            f'rawAmplitude : {quality_metrics["rawAmplitude"][unit_idx]:.3f}, signalToNoiseRatio : {quality_metrics["signalToNoiseRatio"][unit_idx]:.3f}'
         )
     if param["compute_distance_metrics"]:
         print(
-            f'max_drift_estimate : {quality_metrics["max_drift_estimate"][unit_idx]:.3f}'
+            f'maxDriftEstimate : {quality_metrics["maxDriftEstimate"][unit_idx]:.3f}'
         )
 
     print(f'Waveform IS somatic = {1 == quality_metrics["is_somatic"][unit_idx]}')
@@ -153,7 +153,7 @@ def show_somatic(quality_metrics, unit_idx):
     print(f'The main peak before is {quality_metrics["main_peak_before"][unit_idx]}')
     print(f'The main peak after is {quality_metrics["main_peak_after"][unit_idx]}')
     print(f'The first peak width is {quality_metrics["width_before"][unit_idx]}')
-    print(f'The trough_width is {quality_metrics["trough_width"][unit_idx]}')
+    print(f'The trough_width is {quality_metrics["mainTrough_width"][unit_idx]}')
 
 def order_good_sites(good_sites, channel_pos):
     """
@@ -406,18 +406,18 @@ def create_quality_metrics_dict(n_units, snr=None):
         The quality metrics dictionary
     """
     init_keys = [
-        "n_spikes"
+        "nSpikes"
         ] + get_metric_keys()
 
     quality_metrics = {}
-    quality_metrics["cluster_id"] = np.zeros(n_units).astype(int)
+    quality_metrics["phy_clusterID"] = np.zeros(n_units).astype(int)
     for k in init_keys:
         quality_metrics[k] = np.full(n_units, np.nan)
     
 
     # Use passed snr values if found
     if isinstance(snr, np.ndarray):
-        quality_metrics["signal_to_noise_ratio"] = snr
+        quality_metrics["signalToNoiseRatio"] = snr
 
     return quality_metrics
 
@@ -502,13 +502,13 @@ def get_all_quality_metrics(
     bar_description = "Computing bombcell quality metrics: {percentage:3.0f}%|{bar:10}| {n}/{total} units"
     for unit_idx in tqdm(range(unique_templates.size), bar_format=bar_description):
         this_unit = unique_templates[unit_idx]
-        quality_metrics["cluster_id"][unit_idx] = this_unit
+        quality_metrics["phy_clusterID"][unit_idx] = this_unit
 
         these_spike_times = spike_times_seconds[spike_clusters == this_unit]
         these_amplitudes = template_amplitudes[spike_clusters == this_unit]
 
         # number of spikes
-        quality_metrics["n_spikes"][unit_idx] = these_spike_times.shape[0]
+        quality_metrics["nSpikes"][unit_idx] = these_spike_times.shape[0]
 
         # Ignoring for the moment as need to find a way to get the same shape as actual results for percent_missings
         # and fraction RPVs # JF: what?
@@ -542,9 +542,9 @@ def get_all_quality_metrics(
             these_spike_times,
             these_amplitudes,
             these_spike_clusters,
-            quality_metrics["use_these_times_start"][unit_idx],
-            quality_metrics["use_these_times_stop"][unit_idx],
-            quality_metrics["RPV_use_tauR_est"][unit_idx],
+            quality_metrics["useTheseTimesStart"][unit_idx],
+            quality_metrics["useTheseTimesStop"][unit_idx],
+            quality_metrics["RPV_window_index"][unit_idx],
         ) = qm.time_chunks_to_keep(
             percent_missing_gaussian,
             fraction_RPVs,
@@ -559,15 +559,15 @@ def get_all_quality_metrics(
 
         use_these_times = np.array(
             (
-                quality_metrics["use_these_times_start"][unit_idx],
-                quality_metrics["use_these_times_stop"][unit_idx],
+                quality_metrics["useTheseTimesStart"][unit_idx],
+                quality_metrics["useTheseTimesStop"][unit_idx],
             )
         )
         # re-compute percentage spikes missing and RPV on time chunks
         time_tmp = time.time()
         (
-            quality_metrics["percent_missing_gaussian"][unit_idx],
-            quality_metrics["percent_missing_symmetric"][unit_idx],
+            quality_metrics["percentageSpikesMissing_gaussian"][unit_idx],
+            quality_metrics["percentageSpikesMissing_symmetric"][unit_idx],
         ) = qm.perc_spikes_missing(
             these_amplitudes, these_spike_times, use_these_times, param, metric = True
         )
@@ -579,20 +579,20 @@ def get_all_quality_metrics(
             these_amplitudes,
             use_these_times,
             param,
-            use_this_tauR=quality_metrics["RPV_use_tauR_est"][unit_idx],
+            use_this_tauR=quality_metrics["RPV_window_index"][unit_idx],
         )
         runtimes_RPV_2[unit_idx] = time.time() - time_tmp
 
-        quality_metrics["fraction_RPVs"][unit_idx] = fraction_RPVs[
-            quality_metrics["RPV_use_tauR_est"][unit_idx].astype(int)
+        quality_metrics["fractionRPVs"][unit_idx] = fraction_RPVs[
+            quality_metrics["RPV_window_index"][unit_idx].astype(int)
         ].squeeze()
 
         # get presence ratio
         time_tmp = time.time()
-        quality_metrics["presence_ratio"][unit_idx] = qm.presence_ratio(
+        quality_metrics["presenceRatio"][unit_idx] = qm.presence_ratio(
             these_spike_times,
-            quality_metrics["use_these_times_start"][unit_idx],
-            quality_metrics["use_these_times_stop"][unit_idx],
+            quality_metrics["useTheseTimesStart"][unit_idx],
+            quality_metrics["useTheseTimesStop"][unit_idx],
             param,
         )
         runtimes_presence_ratio[unit_idx] = time.time() - time_tmp
@@ -600,8 +600,8 @@ def get_all_quality_metrics(
         # maximum cumulative drift estimate
         time_tmp = time.time()
         (
-            quality_metrics["max_drift_estimate"][unit_idx],
-            quality_metrics["cumulative_drift_estimate"][unit_idx],
+            quality_metrics["maxDriftEstimate"][unit_idx],
+            quality_metrics["cumDriftEstimate"][unit_idx],
         ) = qm.max_drift_estimate(
             pc_features,
             pc_features_idx,
@@ -614,7 +614,7 @@ def get_all_quality_metrics(
         runtimes_max_drift[unit_idx] = time.time() - time_tmp
 
         # number of spikes
-        quality_metrics["n_spikes"][unit_idx] = these_spike_times.shape[0]
+        quality_metrics["nSpikes"][unit_idx] = these_spike_times.shape[0]
 
         # waveform
         time_tmp = time.time()
@@ -626,17 +626,17 @@ def get_all_quality_metrics(
         )
 
         (
-            quality_metrics["n_peaks"][unit_idx],
-            quality_metrics["n_troughs"][unit_idx],
-            quality_metrics["waveform_duration_peak_trough"][unit_idx],
-            quality_metrics["spatial_decay_slope"][unit_idx],
-            quality_metrics["waveform_baseline_flatness"][unit_idx],
-            quality_metrics["scnd_peak_to_trough_ratio"][unit_idx],
-            quality_metrics["peak1_to_peak2_ratio"][unit_idx],
-            quality_metrics["main_peak_to_trough_ratio"][unit_idx],
-            quality_metrics["trough_to_peak2_ratio"][unit_idx],
-            quality_metrics["peak_before_width"][unit_idx],
-            quality_metrics["trough_width"][unit_idx],
+            quality_metrics["nPeaks"][unit_idx],
+            quality_metrics["nTroughs"][unit_idx],
+            quality_metrics["waveformDuration_peakTrough"][unit_idx],
+            quality_metrics["spatialDecaySlope"][unit_idx],
+            quality_metrics["waveformBaselineFlatness"][unit_idx],
+            quality_metrics["scndPeakToTroughRatio"][unit_idx],
+            quality_metrics["peak1ToPeak2Ratio"][unit_idx],
+            quality_metrics["mainPeakToTroughRatio"][unit_idx],
+            quality_metrics["troughToPeak2Ratio"][unit_idx],
+            quality_metrics["mainPeak_before_width"][unit_idx],
+            quality_metrics["mainTrough_width"][unit_idx],
             param,
         ) = qm.waveform_shape(
             template_waveforms,
@@ -650,18 +650,18 @@ def get_all_quality_metrics(
 
         # amplitude
         if raw_waveforms_full is not None and param["extract_raw_waveforms"] and param['gain_to_uV'] is not None:
-            quality_metrics["raw_amplitude"][unit_idx] = qm.get_raw_amplitude(
+            quality_metrics["rawAmplitude"][unit_idx] = qm.get_raw_amplitude(
                 raw_waveforms_full[unit_idx], param["gain_to_uV"]
             )
         else:
-            quality_metrics["raw_amplitude"][unit_idx] = np.nan
+            quality_metrics["rawAmplitude"][unit_idx] = np.nan
 
         time_tmp = time.time()
         if param["compute_distance_metrics"]:
             (
-                quality_metrics["isolation_dist"][unit_idx],
-                quality_metrics["l_ratio"][unit_idx],
-                quality_metrics["silhouette_score"][unit_idx],
+                quality_metrics["isolationDistance"][unit_idx],
+                quality_metrics["Lratio"][unit_idx],
+                quality_metrics["silhouetteScore"][unit_idx],
             ) = qm.get_distance_metrics(
                 pc_features, pc_features_idx, this_unit, spike_clusters, param
             )
@@ -851,32 +851,32 @@ def make_qm_table(quality_metrics, param, unit_type_string):
     qm_table_list = [unit_type_string, unique_templates]
     qm_table_names = ["unit_type", "Original ID"]
 
-    nan_result = np.isnan(quality_metrics["n_peaks"])
+    nan_result = np.isnan(quality_metrics["nPeaks"])
 
-    too_many_peaks = quality_metrics["n_peaks"] > param["max_n_peaks"]
-    too_many_troughs = quality_metrics["n_troughs"] > param["max_n_troughs"]
+    too_many_peaks = quality_metrics["nPeaks"] > param["max_n_peaks"]
+    too_many_troughs = quality_metrics["nTroughs"] > param["max_n_troughs"]
     too_short_waveform = (
-        quality_metrics["waveform_duration_peak_trough"] < param["min_wv_duration"]
+        quality_metrics["waveformDuration_peakTrough"] < param["min_wv_duration"]
     )
     too_long_waveform = (
-        quality_metrics["waveform_duration_peak_trough"] > param["max_wv_duration"]
+        quality_metrics["waveformDuration_peakTrough"] > param["max_wv_duration"]
     )
     duration = np.logical_or(too_short_waveform, too_long_waveform).squeeze()
     too_noisy_baseline = (
-        quality_metrics["waveform_baseline_flatness"] > param["max_wv_baseline_fraction"]
+        quality_metrics["waveformBaselineFlatness"] > param["max_wv_baseline_fraction"]
     )
-    peak2_to_trough = quality_metrics["scnd_peak_to_trough_ratio"] > param["max_scnd_peak_to_trough_ratio_noise"]
+    peak2_to_trough = quality_metrics["scndPeakToTroughRatio"] > param["max_scnd_peak_to_trough_ratio_noise"]
 
     qm_table_list.extend([nan_result, too_many_peaks, too_many_troughs, duration, too_noisy_baseline, peak2_to_trough])
     qm_table_names.extend(["NaN result", "# peaks", "# troughs", "duration", "baseline flatness", "peak2 / trough"])
 
     if param["compute_spatial_decay"]:
         if param["compute_spatial_decay"] & param["sp_decay_lin_fit"]:
-            bad_spatial_decay = quality_metrics['spatial_decay_slope'] > param['min_spatial_decay_slope']
+            bad_spatial_decay = quality_metrics['spatialDecaySlope'] > param['min_spatial_decay_slope']
         elif param["compute_spatial_decay"]:
-            too_shallow_decay = quality_metrics["spatial_decay_slope"] > param["min_spatial_decay_slope_exp"]
+            too_shallow_decay = quality_metrics["spatialDecaySlope"] > param["min_spatial_decay_slope_exp"]
             too_steep_decay = (
-                quality_metrics["spatial_decay_slope"] < param["max_spatial_decay_slope_exp"]
+                quality_metrics["spatialDecaySlope"] < param["max_spatial_decay_slope_exp"]
             )  
             bad_spatial_decay = np.logical_or(too_shallow_decay, too_steep_decay).squeeze()
         
@@ -885,53 +885,53 @@ def make_qm_table(quality_metrics, param, unit_type_string):
     # classify as mua
     # ALL or ANY?
 
-    too_few_total_spikes = quality_metrics["n_spikes"] < param["min_num_spikes_total"]
+    too_few_total_spikes = quality_metrics["nSpikes"] < param["min_num_spikes_total"]
     too_many_spikes_missing = (
-        quality_metrics["percent_missing_gaussian"] > param["max_perc_spikes_missing"]
+        quality_metrics["percentageSpikesMissing_gaussian"] > param["max_perc_spikes_missing"]
     )
     too_low_presence_ratio = (
-        quality_metrics["presence_ratio"] < param["min_presence_ratio"]
+        quality_metrics["presenceRatio"] < param["min_presence_ratio"]
     )
-    too_many_RPVs = quality_metrics["fraction_RPVs"] > param["max_RPV"]
+    too_many_RPVs = quality_metrics["fractionRPVs"] > param["max_RPV"]
 
     qm_table_list.extend([too_few_total_spikes, too_many_spikes_missing, too_low_presence_ratio, too_many_RPVs])
     qm_table_names.extend(["# spikes", "% spikes missing", "presence ratio", "fraction RPVs"])
 
     if param["extract_raw_waveforms"]:
         too_small_amplitude = (
-            quality_metrics["raw_amplitude"] < param["min_amplitude"]
+            quality_metrics["rawAmplitude"] < param["min_amplitude"]
         ) 
         too_small_SNR = (
-            quality_metrics["signal_to_noise_ratio"] < param["min_SNR"]
+            quality_metrics["signalToNoiseRatio"] < param["min_SNR"]
         )
         qm_table_list.extend([too_small_amplitude, too_small_SNR])
         qm_table_names.extend(["amplitude", "SNR"])
 
     if param["compute_drift"]:
         too_large_drift = (
-            quality_metrics["max_drift_estimate"] > param["max_drift"]
+            quality_metrics["maxDriftEstimate"] > param["max_drift"]
         )
         qm_table_list.append(too_large_drift)
         qm_table_names.append("drift")
 
     # determine if ALL unit is somatic or non-somatic
     is_non_somatic = (
-        (quality_metrics["trough_to_peak2_ratio"] < param["min_trough_to_peak2_ratio_non_somatic"]) &
-        (quality_metrics["peak_before_width"] < param["min_width_first_peak_non_somatic"]) &
-        (quality_metrics["trough_width"] < param["min_width_main_trough_non_somatic"]) &
-        (quality_metrics["peak1_to_peak2_ratio"] > param["max_peak1_to_peak2_ratio_non_somatic"]) |
-        (quality_metrics["main_peak_to_trough_ratio"] > param["max_main_peak_to_trough_ratio_non_somatic"])
+        (quality_metrics["troughToPeak2Ratio"] < param["min_trough_to_peak2_ratio_non_somatic"]) &
+        (quality_metrics["mainPeak_before_width"] < param["min_width_first_peak_non_somatic"]) &
+        (quality_metrics["mainTrough_width"] < param["min_width_main_trough_non_somatic"]) &
+        (quality_metrics["peak1ToPeak2Ratio"] > param["max_peak1_to_peak2_ratio_non_somatic"]) |
+        (quality_metrics["mainPeakToTroughRatio"] > param["max_main_peak_to_trough_ratio_non_somatic"])
     )
-    peak_main_to_trough = quality_metrics["main_peak_to_trough_ratio"] > param["max_main_peak_to_trough_ratio_non_somatic"]
-    peak1_to_peak2 = quality_metrics["peak1_to_peak2_ratio"] > param["max_peak1_to_peak2_ratio_non_somatic"]
+    peak_main_to_trough = quality_metrics["mainPeakToTroughRatio"] > param["max_main_peak_to_trough_ratio_non_somatic"]
+    peak1_to_peak2 = quality_metrics["peak1ToPeak2Ratio"] > param["max_peak1_to_peak2_ratio_non_somatic"]
 
     qm_table_list.extend([is_non_somatic, peak_main_to_trough, peak1_to_peak2])
     qm_table_names.extend(["non somatic", "peak(main) / trough", "peak1 / peak2"])
 
 
     if param["compute_distance_metrics"]:
-        too_low_iso_dist = quality_metrics['isolation_dist'] < param["iso_d_min"]
-        too_high_lratio = quality_metrics["l_ratio"] > param["lratio_max"]
+        too_low_iso_dist = quality_metrics['isolationDistance'] < param["iso_d_min"]
+        too_high_lratio = quality_metrics["Lratio"] > param["lratio_max"]
 
         qm_table_list.extend([too_low_iso_dist, too_high_lratio])
         qm_table_names.extend(["iso dist", "l ratio"])

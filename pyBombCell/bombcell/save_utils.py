@@ -16,34 +16,34 @@ def path_handler(path: str) -> None:
 def get_metric_keys():
     return [
             # noise metrics
-            "n_peaks",
-            "n_troughs",
-            "waveform_duration_peak_trough",
-            "spatial_decay_slope",
-            "waveform_baseline_flatness",
-            "scnd_peak_to_trough_ratio",
+            "nPeaks",
+            "nTroughs",
+            "waveformDuration_peakTrough",
+            "spatialDecaySlope",
+            "waveformBaselineFlatness",
+            "scndPeakToTroughRatio",
             # non-somatic metrics
-            "main_peak_to_trough_ratio",
-            "peak1_to_peak2_ratio",
-            "trough_to_peak2_ratio",
-            "peak_before_width",
-            "trough_width",
+            "mainPeakToTroughRatio",
+            "peak1ToPeak2Ratio",
+            "troughToPeak2Ratio",
+            "mainPeak_before_width",
+            "mainTrough_width",
             # MUA metrics 
-            "percent_missing_gaussian",
-            "percent_missing_symmetric",
-            "RPV_use_tauR_est",
-            "fraction_RPVs",
-            "presence_ratio",
-            "max_drift_estimate",
-            "cumulative_drift_estimate",
-            "raw_amplitude",
-            "signal_to_noise_ratio",
-            "isolation_dist",
-            "l_ratio",
-            "silhouette_score",
+            "percentageSpikesMissing_gaussian",
+            "percentageSpikesMissing_symmetric",
+            "RPV_window_index",
+            "fractionRPVs",
+            "presenceRatio",
+            "maxDriftEstimate",
+            "cumDriftEstimate",
+            "rawAmplitude",
+            "signalToNoiseRatio",
+            "isolationDistance",
+            "Lratio",
+            "silhouetteScore",
             # time metrics
-            "use_these_times_start",
-            "use_these_times_stop",
+            "useTheseTimesStart",
+            "useTheseTimesStop",
             ]
 
 
@@ -277,7 +277,7 @@ def save_results(
     # Get rid of peak channels of empty rows, which were kept for convenient indexing up to here
     quality_metrics_save = quality_metrics.copy()
     quality_metrics_save["peak_channels"] = quality_metrics["peak_channels"][
-        quality_metrics["cluster_id"].astype(int)
+        quality_metrics["phy_clusterID"].astype(int)
     ]
 
     # Save full quality metrics table

@@ -42,14 +42,14 @@ def get_default_parameters(
         "save_mat_file": False,  # TODO use scipy to save .mat file?
 
         ## Duplicate spike parameters
-        "remove_duplicate_spike": True,
+        "remove_duplicate_spike": False,
         "duplicate_spikes_window_s": 0.00001,  # in seconds
         "save_spike_without_duplicates": True,
         "recompute_duplicate_spike": False,
 
         ## Amplitude / raw waveform parameters
         "detrend_waveform": True,  # If True will linearly de-trend over time
-        "n_raw_spikes_to_extract": 500,  # Number of raw spikes per unit
+        "n_raw_spikes_to_extract": 100,  # Number of raw spikes per unit
         "save_multiple_raw": False,  # TODO check if still needed for UM
         "decompress_data": False,  # whether to decompress .cbin data
         "extract_raw_waveforms": True,
@@ -60,15 +60,14 @@ def get_default_parameters(
         ## Refractory period parameters
         "tauR_values_min": 2 / 1000,  # refractory period time (s), usually 0.002 s
         "tauR_values_max": 2 / 1000,  # refractory period time (s)
-        "tauR_values_steps": 0.5
-        / 1000,  # if tauR_values_min and tauR_values_max are different
+        "tauR_values_steps": 0.5 / 1000,  # if tauR_values_min and tauR_values_max are different
         # bombcell will estimate values in between using
         # tauR_values_steps
         "tauC": 0.1 / 1000,  # censored period time (s), to prevent duplicate spikes
         "use_hill_method": True,  # use hill if 1, else use Llobet et al.
 
         ## Percentage spikes missing parameters
-        "compute_time_chunks": True,  # compute fraction refractory period violations and
+        "compute_time_chunks": False,  # compute fraction refractory period violations and
         # percent spikes missing for different time chunks
         "delta_time_chunk": 360,  # time in seconds
 
@@ -89,12 +88,6 @@ def get_default_parameters(
         # this makes the spatial decay more invariant to the spike-sorting
         "sp_decay_lin_fit": False, # if True, use a linear fit for spatial decay. If false, use exponential (preferred)
         "compute_spatial_decay": True,
-        "max_scnd_peak_to_trough_ratio_noise": 0.8,
-        "min_trough_to_peak2_ratio_non_somatic": 5,
-        "min_width_first_peak_non_somatic": 4,
-        "min_width_main_trough_non_somatic": 5,
-        "max_peak1_to_peak2_ratio_non_somatic": 3,
-        "max_main_peak_to_trough_ratio_non_somatic": 0.8,
 
         ## Recording parameters
         "ephys_sample_rate": 30000,  # samples per second
@@ -112,7 +105,7 @@ def get_default_parameters(
         "max_n_troughs": 1,  # maximum number of troughs
         "keep_only_somatic": True,  # keep only somatic units
         "min_wv_duration": 100,  # in us
-        "max_wv_duration": 800,  # in us
+        "max_wv_duration": 1150,  # in us
         "min_spatial_decay_slope": -0.008,
         "min_spatial_decay_slope_exp": -0.01,  # in a.u / um
         "max_spatial_decay_slope_exp": -0.1,  # in a.u / um
@@ -136,7 +129,7 @@ def get_default_parameters(
         "min_num_spikes_total": 300,  # minimum number of total spikes recorded
         "max_drift": 100,  # in um
         "min_presence_ratio": 0.7,  # minimum fraction of time chunks unit must be present for
-        "min_SNR": 0,  # min SNR for a good unit
+        "min_SNR": 1,  # min SNR for a good unit
     }
 
     if ephys_meta_dir is not None:
@@ -155,8 +148,8 @@ def get_default_parameters(
     if kilosort_version == 4:
         param["spike_width"] = 61 # width of spike in samples
         param["waveform_baseline_noise_window"] = 10  # time in samples at the beginning, with no signal
-        param["waveform_baseline_window_start"] = 0  # in samples
-        param["waveform_baseline_window_stop"] = 10  # in samples
+        param["waveform_baseline_window_start"] = 0  # 0-indexed, in samples
+        param["waveform_baseline_window_stop"] = 10  # 0-indexed, in samples
 
     else:
         param["spike_width"] = 82 # width of spike in samples

@@ -1,4 +1,4 @@
-cluster_id	cumulative_drift_estimate
+cluster_id	cumDriftEstimate
 0.0	221.9303696743599
 1.0	383.4532584073801
 2.0	453.7756563273043

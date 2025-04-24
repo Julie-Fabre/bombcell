@@ -1632,61 +1632,61 @@ def get_quality_unit_type(param, quality_metrics):
     unit_type_string : ndarray
         The unit type classification as a string
     """
-    n_units = len(quality_metrics["n_peaks"])
+    n_units = len(quality_metrics["nPeaks"])
     unit_type = np.full(n_units, np.nan)
     
     # Noise classification
     noise_mask = (
-        np.isnan(quality_metrics["n_peaks"]) |
-        (quality_metrics["n_peaks"] > param["max_n_peaks"]) |
-        (quality_metrics["n_troughs"] > param["max_n_troughs"]) |
-        (quality_metrics["waveform_duration_peak_trough"] < param["min_wv_duration"]) |
-        (quality_metrics["waveform_duration_peak_trough"] > param["max_wv_duration"]) |
-        (quality_metrics["waveform_baseline_flatness"] > param["max_wv_baseline_fraction"]) |
-        (quality_metrics["scnd_peak_to_trough_ratio"] > param["max_scnd_peak_to_trough_ratio_noise"])
+        np.isnan(quality_metrics["nPeaks"]) |
+        (quality_metrics["nPeaks"] > param["max_n_peaks"]) |
+        (quality_metrics["nTroughs"] > param["max_n_troughs"]) |
+        (quality_metrics["waveformDuration_peakTrough"] < param["min_wv_duration"]) |
+        (quality_metrics["waveformDuration_peakTrough"] > param["max_wv_duration"]) |
+        (quality_metrics["waveformBaselineFlatness"] > param["max_wv_baseline_fraction"]) |
+        (quality_metrics["scndPeakToTroughRatio"] > param["max_scnd_peak_to_trough_ratio_noise"])
     )
 
     if param["compute_spatial_decay"] & param["sp_decay_lin_fit"]:
-        noise_mask |= (quality_metrics["spatial_decay_slope"] < param["min_spatial_decay_slope"])
+        noise_mask |= (quality_metrics["spatialDecaySlope"] < param["min_spatial_decay_slope"])
     elif param["compute_spatial_decay"]:
         noise_mask |= (
             #Inequalities "wrong" way round due to -ve sign
-            (quality_metrics["spatial_decay_slope"] > param["min_spatial_decay_slope_exp"]) |
-            (quality_metrics["spatial_decay_slope"] < param["max_spatial_decay_slope_exp"])
+            (quality_metrics["spatialDecaySlope"] > param["min_spatial_decay_slope_exp"]) |
+            (quality_metrics["spatialDecaySlope"] < param["max_spatial_decay_slope_exp"])
         )
     
     unit_type[noise_mask] = 0
     
     # Non-somatic classification
     is_non_somatic = (
-        (quality_metrics["trough_to_peak2_ratio"] < param["min_trough_to_peak2_ratio_non_somatic"]) &
-        (quality_metrics["peak_before_width"] < param["min_width_first_peak_non_somatic"]) &
-        (quality_metrics["trough_width"] < param["min_width_main_trough_non_somatic"]) &
-        (quality_metrics["peak1_to_peak2_ratio"] > param["max_peak1_to_peak2_ratio_non_somatic"]) |
-        (quality_metrics["main_peak_to_trough_ratio"] > param["max_main_peak_to_trough_ratio_non_somatic"])
+        (quality_metrics["troughToPeak2Ratio"] < param["min_trough_to_peak2_ratio_non_somatic"]) &
+        (quality_metrics["mainPeak_before_width"] < param["min_width_first_peak_non_somatic"]) &
+        (quality_metrics["mainTrough_width"] < param["min_width_main_trough_non_somatic"]) &
+        (quality_metrics["peak1ToPeak2Ratio"] > param["max_peak1_to_peak2_ratio_non_somatic"]) |
+        (quality_metrics["mainPeakToTroughRatio"] > param["max_main_peak_to_trough_ratio_non_somatic"])
     )
     
     # MUA classification
     mua_mask = np.isnan(unit_type) & (
-        (quality_metrics["percent_missing_gaussian"] > param["max_perc_spikes_missing"]) |
-        (quality_metrics["n_spikes"] < param["min_num_spikes_total"]) |
-        (quality_metrics["fraction_RPVs"] > param["max_RPV"]) |
-        (quality_metrics["presence_ratio"] < param["min_presence_ratio"])
+        (quality_metrics["percentageSpikesMissing_gaussian"] > param["max_perc_spikes_missing"]) |
+        (quality_metrics["nSpikes"] < param["min_num_spikes_total"]) |
+        (quality_metrics["fractionRPVs"] > param["max_RPV"]) |
+        (quality_metrics["presenceRatio"] < param["min_presence_ratio"])
     )
     
-    if param["extract_raw_waveforms"] and np.all(~np.isnan(quality_metrics['raw_amplitude'])):
+    if param["extract_raw_waveforms"] and np.all(~np.isnan(quality_metrics['rawAmplitude'])):
         mua_mask |= np.isnan(unit_type) & (
-            (quality_metrics["raw_amplitude"] < param["min_amplitude"]) |
-            (quality_metrics["signal_to_noise_ratio"] < param["min_SNR"])
+            (quality_metrics["rawAmplitude"] < param["min_amplitude"]) |
+            (quality_metrics["signalToNoiseRatio"] < param["min_SNR"])
         )
     
     if param["compute_drift"]:
-        mua_mask |= np.isnan(unit_type) & (quality_metrics["max_drift_estimate"] > param["max_drift"])
+        mua_mask |= np.isnan(unit_type) & (quality_metrics["maxDriftEstimate"] > param["max_drift"])
     
     if param["compute_distance_metrics"]:
         mua_mask |= np.isnan(unit_type) & (
-            (quality_metrics["isolation_dist"] < param["iso_d_min"]) |
-            (quality_metrics["l_ratio"] > param["lratio_max"])
+            (quality_metrics["isolationDistance"] < param["iso_d_min"]) |
+            (quality_metrics["Lratio"] > param["lratio_max"])
         )
     
     unit_type[mua_mask] = 2

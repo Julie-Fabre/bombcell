@@ -160,14 +160,14 @@ def plot_histograms(quality_metrics, param):
     param : dict
         The dictionary of all bomcell parameters
     """
-    quality_metrics['peak1_to_peak2_ratio'][quality_metrics['peak1_to_peak2_ratio'] == np.inf] = np.nan
-    quality_metrics['trough_to_peak2_ratio'][quality_metrics['trough_to_peak2_ratio'] == np.inf] = np.nan
+    quality_metrics['peak1ToPeak2Ratio'][quality_metrics['peak1ToPeak2Ratio'] == np.inf] = np.nan
+    quality_metrics['troughToPeak2Ratio'][quality_metrics['troughToPeak2Ratio'] == np.inf] = np.nan
 
     #find which metrics to add
     color_pass = {"Noise" : "k", "Somatic" : "k", "MUA" : 'g'}
     color_fail = {"Noise" : "r", "Somatic" : "b", "MUA" : 'orange'}
 
-    plot_metric_keys = ["n_peaks", "n_troughs", "waveform_baseline_flatness", "waveform_duration_peak_trough", "scnd_peak_to_trough_ratio"]
+    plot_metric_keys = ["nPeaks", "nTroughs", "waveformBaselineFlatness", "waveformDuration_peakTrough", "scndPeakToTroughRatio"]
     metric_types = ["Noise", "Noise", "Noise", "Noise", "Noise"]
     is_continous = [False, False, True, True, True]
     plot_metric_thresholds_lower_bound = [None, None, None, "min_wv_duration", None]
@@ -176,14 +176,14 @@ def plot_histograms(quality_metrics, param):
 
     #Add correct type of spatial decay if spatial decay is calculated
     if param["compute_spatial_decay"] & param["sp_decay_lin_fit"]:
-        plot_metric_keys.append("spatial_decay_slope")
+        plot_metric_keys.append("spatialDecaySlope")
         metric_types.append("Noise")
         is_continous.append(True)
         plot_metric_thresholds_lower_bound.append("max_spatial_decay_slope_exp")
         plot_metric_thresholds_upper_bound.append(None)
         x_axis_labels.append("spatial decay")
     elif param["compute_spatial_decay"]:
-        plot_metric_keys.append("spatial_decay_slope")
+        plot_metric_keys.append("spatialDecaySlope")
         metric_types.append("Noise")
         is_continous.append(True)
         plot_metric_thresholds_lower_bound.append("max_spatial_decay_slope_exp")
@@ -191,8 +191,8 @@ def plot_histograms(quality_metrics, param):
         x_axis_labels.append("spatial decay")
 
     #add rest of core metrics
-    plot_metric_keys.extend(["peak1_to_peak2_ratio", "main_peak_to_trough_ratio",
-                        "fraction_RPVs", "presence_ratio", "percent_missing_gaussian", "n_spikes"])
+    plot_metric_keys.extend(["peak1ToPeak2Ratio", "mainPeakToTroughRatio",
+                        "fractionRPVs", "presenceRatio", "percentageSpikesMissing_gaussian", "nSpikes"])
     metric_types.extend(["Somatic", "Somatic",
                     "MUA", "MUA", "MUA", "MUA"])
     is_continous.extend([True, True,
@@ -205,8 +205,8 @@ def plot_histograms(quality_metrics, param):
                         "frac. RPVs", "presence ratio", "% spikes missing", "# spikes"])
 
     #add optional metrics
-    if param["extract_raw_waveforms"] and np.all(~np.isnan(quality_metrics['raw_amplitude'])):
-        plot_metric_keys.extend(["raw_amplitude", "signal_to_noise_ratio"])
+    if param["extract_raw_waveforms"] and np.all(~np.isnan(quality_metrics['rawAmplitude'])):
+        plot_metric_keys.extend(["rawAmplitude", "signalToNoiseRatio"])
         metric_types.extend(["MUA", "MUA"])
         is_continous.extend([True, True])
         plot_metric_thresholds_lower_bound.extend(["min_amplitude", "min_SNR"])
@@ -214,7 +214,7 @@ def plot_histograms(quality_metrics, param):
         x_axis_labels.extend(["amplitude", "SNR"])
 
     if param["compute_drift"]:
-        plot_metric_keys.append("max_drift_estimate")
+        plot_metric_keys.append("maxDriftEstimate")
         metric_types.append("MUA")
         is_continous.append(True)
         plot_metric_thresholds_lower_bound.append(None)
@@ -222,7 +222,7 @@ def plot_histograms(quality_metrics, param):
         x_axis_labels.append("max drift")
 
     if param["compute_distance_metrics"]:
-        plot_metric_keys.extend(["isolation_dist", "l_ratio"])
+        plot_metric_keys.extend(["isolationDistance", "Lratio"])
         metric_types.extend(["MUA", "MUA"])
         is_continous.extend([True, True])
         plot_metric_thresholds_lower_bound.extend(["iso_d_min", None])
