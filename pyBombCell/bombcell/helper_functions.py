@@ -722,7 +722,12 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
 
     # Extract or load in raw waveforms
     if raw_file != None:
-        raw_waveforms_full, raw_waveforms_peak_channel, SNR, raw_waveforms_id_match = extract_raw_waveforms(
+        (
+        raw_waveforms_full,
+        raw_waveforms_peak_channel,
+        signal_to_noise_ratio,
+        raw_waveforms_id_match,
+        ) = extract_raw_waveforms(
             param,
             spike_clusters,
             spike_times_samples,
@@ -732,7 +737,7 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
     else:
         raw_waveforms_full = None
         raw_waveforms_peak_channel = None
-        SNR = None
+        signal_to_noise_ratio = None
         raw_waveforms_id_match = None
         param["extract_raw_waveforms"] = False  # No waveforms to extract!
 
@@ -740,29 +745,32 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
     peak_channels = qm.get_waveform_peak_channel(template_waveforms)
 
     # Remove duplicate spikes
-    (
-        non_empty_units,
-        duplicate_spike_idx,
-        spike_times_samples,
-        spike_clusters,
-        template_amplitudes,
-        pc_features,
-        raw_waveforms_full,
-        raw_waveforms_peak_channel,
-        signal_to_noise_ratio,
-        peak_channels,
-    ) = qm.remove_duplicate_spikes(
-        spike_times_samples,
-        spike_clusters,
-        template_amplitudes,
-        peak_channels,
-        save_path,
-        param,
-        pc_features=pc_features,
-        raw_waveforms_full=raw_waveforms_full,
-        raw_waveforms_peak_channel=raw_waveforms_peak_channel,
-        signal_to_noise_ratio=SNR,
-    )
+    if param["remove_duplicate_spike"]:
+        (
+            non_empty_units,
+            duplicate_spike_idx,
+            spike_times_samples,
+            spike_clusters,
+            template_amplitudes,
+            pc_features,
+            raw_waveforms_full,
+            raw_waveforms_peak_channel,
+            signal_to_noise_ratio,
+            peak_channels,
+        ) = qm.remove_duplicate_spikes(
+            spike_times_samples,
+            spike_clusters,
+            template_amplitudes,
+            peak_channels,
+            save_path,
+            param,
+            pc_features=pc_features,
+            raw_waveforms_full=raw_waveforms_full,
+            raw_waveforms_peak_channel=raw_waveforms_peak_channel,
+            signal_to_noise_ratio=signal_to_noise_ratio,
+        )
+    else:
+        non_empty_units = np.unique(spike_clusters)
 
     # Divide recording into time chunks
     spike_times_seconds = spike_times_samples / param["ephys_sample_rate"]
@@ -782,7 +790,7 @@ def run_bombcell(ks_dir, raw_file, save_path, param):
 
     # Initialize quality metrics dictionary
     n_units = unique_templates.size
-    quality_metrics = create_quality_metrics_dict(n_units, snr=SNR)
+    quality_metrics = create_quality_metrics_dict(n_units, snr=signal_to_noise_ratio)
     quality_metrics["peak_channels"] = peak_channels
 
     # Complete with remaining quality metrics
