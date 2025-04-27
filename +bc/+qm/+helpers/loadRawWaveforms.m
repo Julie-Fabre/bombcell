@@ -13,6 +13,7 @@ if ~isempty(rawWaveformFolder)
     % Find empty rows (where all elements are zero)
     row_sums = squeeze(sum(sum(abs(rawWaveformsFull), 2), 3));
     empty_row_indices = find(isnan(row_sums));
+    
     % Check which empty rows should actually contain data
     emptyWaveforms = empty_row_indices(ismember(empty_row_indices, unique_clusters));
 

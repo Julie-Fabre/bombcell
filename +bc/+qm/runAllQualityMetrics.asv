@@ -81,6 +81,11 @@ param.computeSpatialDecay = bc.qm.checkProbeGeometry(channelPositions);
 maxChannels = bc.qm.helpers.getWaveformMaxChannel(templateWaveforms);
 
 % extract and save or load in raw waveforms
+[rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc_extractRawWaveformsFast_test(param, spikeTimes_samples, ...
+    spikeClusters, param.reextractRaw, savePath, param.verbose);
+
+figure(); plot(squeeze(rawWaveformsFull(2,rawWaveformsPeakChan(2),:)))
+
 [rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio] = bc.qm.helpers.extractRawWaveformsFast(param, ...
     spikeTimes_samples, spikeClusters, param.reextractRaw, savePath, param.verbose); % takes ~10' for
 % an average dataset, the first time it is run, <1 min after that
@@ -104,7 +109,7 @@ if param.computeTimeChunks
 else
     timeChunks = [min(spikeTimes_seconds), max(spikeTimes_seconds)];
 end
-[clusterIDs, unitQuality, contaminationRate] = sqKilosort.maskedClusterQualityKilosort(pcFeatures, pcFeatureIdx, spikeClusters ,spikeTemplates);
+
 %% loop through units and get quality metrics
 fprintf('\n Extracting quality metrics from %s ... \n', param.rawFile)
 
@@ -212,5 +217,5 @@ fprintf('\n Saved quality metrics from %s to %s \n', param.rawFile, savePath)
 
 unitType = bc.qm.getQualityUnitType(param, qMetric, savePath);
 
-bc.qm.plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv);
+bc.qm.plotGlobalQualityMetric(qMetric, param, unitType, uniqueTemplates, forGUI.tempWv, savePath);
 end
