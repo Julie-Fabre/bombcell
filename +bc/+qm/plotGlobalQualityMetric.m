@@ -102,8 +102,8 @@ if load_data
 
    
 end
- % Call the original plotting function with the figure save path
- plotGlobalQualityMetricInternal(qMetric, param, unitType, uniqueTemplates, templateWaveforms, save_path);
+    % Call the original plotting function with the figure save path
+    plotGlobalQualityMetricInternal(qMetric, param, unitType, uniqueTemplates, templateWaveforms, save_path);
 end
 function plotGlobalQualityMetricInternal(qMetric, param, unitType, uniqueTemplates, templateWaveforms, save_path)
 % Internal function containing the original plotting code
@@ -335,15 +335,15 @@ metricLineCols = [0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0; ... % 1 'nPeaks'
     0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 7 'RPV_tauR_estimate',
     0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 8 'percentageSpikesMissing_gaussian'
     0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 9 'percentageSpikesMissing_symmetric'
-    1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... ;% 10  '# spikes'
+    1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 10  '# spikes'
     1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 11 'amplitude'
     1, 0, 0, 0.2, 0.2, 0.2, 1, 0, 0; ... % 12 'spatial decay'
     1, 0, 0, 0.2, 0.2, 0.2, 1, 0, 0; ... % 13 'waveform duration'
     0.2, 0.2, 0.2, 1, 0, 0, 1, 0, 0; ... % 14 'baseline flatness'
     1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 15 'presence ratio'
     1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 16 'SNR'
-    1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 17 'maximum drift'
-    1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 18 'cum. drift'
+     0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 17 'maximum drift'
+     0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 18 'cum. drift'
     1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 19 'isolation dist.'
     0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 20 'L-ratio'
     ];

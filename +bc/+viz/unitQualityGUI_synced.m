@@ -556,7 +556,7 @@ maxXC = ephysData.channel_positions(maxChan, 1);
 maxYC = ephysData.channel_positions(maxChan, 2);
 chanDistances = ((ephysData.channel_positions(:, 1) - maxXC).^2 ...
     +(ephysData.channel_positions(:, 2) - maxYC).^2).^0.5;
-chansToPlot = find(chanDistances < 100);
+chansToPlot = find(chanDistances < 100); % should take into account "bad" channels here
 
 % Calculate scaling factor based on the range of the maximum channel
 maxChannelWaveform = squeeze(ephysData.templates(thisUnit, :, maxChan));
@@ -565,7 +565,11 @@ scalingFactor = range(-maxChannelWaveform) * 3;  % Increased from 2.5 to 3 for b
 vals = zeros(min(20, size(chansToPlot, 1)), size(ephysData.templates, 2));
 
 for iChanToPlot = 1:min(20, size(chansToPlot, 1))
+    if chansToPlot(iChanToPlot) > size(ephysData.templates,3)
+        continue;
+    end
     thisChannelWaveform = squeeze(ephysData.templates(thisUnit, :, chansToPlot(iChanToPlot)))';
+
     vals(iChanToPlot, :) = -thisChannelWaveform + (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) / 100 * scalingFactor);
 
     if maxChan == chansToPlot(iChanToPlot)
@@ -1134,27 +1138,29 @@ function [metricNames, metricThresh1, metricThresh2, plotConditions, metricNames
         param.computeDistanceMetrics && ~isnan(param.isoDmin), ...
         param.computeDistanceMetrics && ~isnan(param.isoDmin)];
 
-        metricLineCols = [0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0; ... % 1 'nPeaks'
-            0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0; ... % 2 'nTroughs'
-            0.2, 0.2, 0.2, 1, 0, 0, 1, 0, 0; ... % 3 'scndPeakToTroughRatio'
-            0.2, 0.2, 0.2, 0.25, 0.41, 0.88, 0, 0, 0; ... % 4 'peak1ToPeak2Ratio'
-            0.2, 0.2, 0.2, 0.25, 0.41, 0.88, 0, 0, 0; ... % 5 'mainPeakToTroughRatio'
-            0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 6 'fractionRPVs_estimatedTauR'
-            0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 7 'RPV_tauR_estimate',
-            0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 8 'percentageSpikesMissing_gaussian'
-            0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 9 'percentageSpikesMissing_symmetric'
-            1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... ;% 10  '# spikes'
-            1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 11 'amplitude'
-            1, 0, 0, 0.2, 0.2, 0.2, 1, 0, 0; ... % 12 'spatial decay'
-            1, 0, 0, 0.2, 0.2, 0.2, 1, 0, 0; ... % 13 'waveform duration'
-            0.2, 0.2, 0.2, 1, 0, 0, 1, 0, 0; ... % 14 'baseline flatness'
-            1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 15 'presence ratio'
-            1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 16 'SNR'
-            1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 17 'maximum drift'
-            1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 18 'cum. drift'
-            1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 19 'isolation dist.'
-            0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 20 'L-ratio'
-                   ];
+
+metricLineCols = [0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0; ... % 1 'nPeaks'
+    0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0; ... % 2 'nTroughs'
+    0.2, 0.2, 0.2, 1, 0, 0, 1, 0, 0; ... % 3 'scndPeakToTroughRatio'
+    0.2, 0.2, 0.2, 0.25, 0.41, 0.88, 0, 0, 0; ... % 4 'peak1ToPeak2Ratio'
+    0.2, 0.2, 0.2, 0.25, 0.41, 0.88, 0, 0, 0; ... % 5 'mainPeakToTroughRatio'
+    0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 6 'fractionRPVs_estimatedTauR'
+    0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 7 'RPV_tauR_estimate',
+    0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 8 'percentageSpikesMissing_gaussian'
+    0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 9 'percentageSpikesMissing_symmetric'
+    1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 10  '# spikes'
+    1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 11 'amplitude'
+    1, 0, 0, 0.2, 0.2, 0.2, 1, 0, 0; ... % 12 'spatial decay'
+    1, 0, 0, 0.2, 0.2, 0.2, 1, 0, 0; ... % 13 'waveform duration'
+    0.2, 0.2, 0.2, 1, 0, 0, 1, 0, 0; ... % 14 'baseline flatness'
+    1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 15 'presence ratio'
+    1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 16 'SNR'
+     0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 17 'maximum drift'
+     0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 18 'cum. drift'
+    1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 19 'isolation dist.'
+    0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 20 'L-ratio'
+    ];
+
 indices_ordered = [1,2,14,13,3,12,4,5,11,16,6,10,15,8,17,18,19,20];
     metricNames = metricNames(indices_ordered );
     metricNames_SHORT  = metricNames_SHORT(indices_ordered );
