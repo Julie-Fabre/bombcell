@@ -1482,7 +1482,7 @@ def get_distance_metrics(
     )
 
     # precompute unique identifiers and allocate space for outputs
-    unique_ids = np.unique(spike_clusters[spike_clusters > 0])
+    unique_ids = np.unique(spike_clusters) # np.unique(spike_clusters[spike_clusters > 0])
     mahalanobis_distance = np.zeros(unique_ids.size)  # JF: i don't think is used
     other_units_double = np.zeros(unique_ids.size)  # JF: i don't think is used
     # NOTE the first dimension here maybe the prbolem?
@@ -1506,12 +1506,8 @@ def get_distance_metrics(
         # NOTE This bit could likely be faster.
         for channel_idx in range(param["n_channels_iso_dist"]):
             if np.isin(these_channels[channel_idx], current_channels):
-                common_channel_idx = np.argwhere(
-                    current_channels == these_channels[channel_idx]
-                )
-                channel_spikes = pc_features[
-                    other_spikes, :, common_channel_idx
-                ]
+                common_channel_idx = np.squeeze(np.argwhere(current_channels == these_channels[channel_idx]))
+                channel_spikes = pc_features[other_spikes, :, common_channel_idx]
                 other_features[
                     n_count : n_count + channel_spikes.shape[0], :, channel_idx
                 ] = channel_spikes
