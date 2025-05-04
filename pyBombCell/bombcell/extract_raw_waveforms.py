@@ -108,39 +108,43 @@ def process_a_unit(
             int(sid - half_width - 1) : int(sid + spike_width - half_width - 1),
             np.arange(n_channels_rec),
         ]
+        if tmp.shape[0] != spike_map.shape[1]:
+            # if hit, spike overlaps with the beginning or the end of the binary file.
+            continue
         # -1, to better fit with ML, adn python indexing!
         tmp.astype(np.float64)
 
         # option to remove a linear in time trends
         if detrend_waveforms:
-            spike_map[:, :, i] = detrend(tmp[:, :-n_sync_channels], axis=0).swapaxes(
+            detrended = detrend(tmp[:, :-n_sync_channels], axis=0).swapaxes(
                 0, 1
             )
+            spike_map[:, :, i] = detrended
         else:
             spike_map[:, :, i] = tmp[:, :-n_sync_channels].swapaxes(0, 1)
 
     # Save average waveforms for unitmatch
     # create the waveforms now, save later
-    if save_multiple_raw:
-        tmp_spike_map = spike_map.swapaxes(0, 1)  # allign with UnitMatch
+    # if save_multiple_raw:
+    #     tmp_spike_map = spike_map.swapaxes(0, 1)  # allign with UnitMatch
 
-        # smooth over axis at once
-        tmp_spike_map = gaussian_filter(tmp_spike_map, axes=0, sigma=1, radius=2)
-        # matches matlab smoothdata, EXCEPT at boundaries!
-        tmp_spike_map -= np.mean(tmp_spike_map[:waveform_baseline_noise, :, :], axis=0)[
-            np.newaxis, :, :
-        ]
+    #     # smooth over axis at once
+    #     tmp_spike_map = gaussian_filter(tmp_spike_map, axes=0, sigma=1, radius=2)
+    #     # matches matlab smoothdata, EXCEPT at boundaries!
+    #     tmp_spike_map -= np.mean(tmp_spike_map[:waveform_baseline_noise, :, :], axis=0)[
+    #         np.newaxis, :, :
+    #     ]
 
-        # split into 2 CV for unitmatch!
-        UM_CV_limit = np.floor(n_spikes_sampled / 2).astype(int)
-        avg_waveforms = np.full((spike_width, n_channels - n_sync_channels, 2), np.nan)
-        avg_waveforms[:, :, 0] = np.median(tmp_spike_map[:, :, :UM_CV_limit], axis=-1)
-        avg_waveforms[:, :, 1] = np.median(tmp_spike_map[:, :, UM_CV_limit:], axis=-1)
+    #     # split into 2 CV for unitmatch!
+    #     UM_CV_limit = np.floor(n_spikes_sampled / 2).astype(int)
+    #     avg_waveforms = np.full((spike_width, n_channels - n_sync_channels, 2), np.nan)
+    #     avg_waveforms[:, :, 0] = np.median(tmp_spike_map[:, :, :UM_CV_limit], axis=-1)
+    #     avg_waveforms[:, :, 1] = np.median(tmp_spike_map[:, :, UM_CV_limit:], axis=-1)
 
-        np.save(
-            save_directory / f"Unit{cid}_RawSpikes.npy",
-            avg_waveforms[:, :, :],
-        )
+    #     np.save(
+    #         save_directory / f"Unit{cid}_RawSpikes.npy",
+    #         avg_waveforms[:, :, :],
+    #     )
 
     # get average, baseline-subtracted waveforms, Not smoothing as a mandatory processing step!
     spike_map_mean = np.nanmean(spike_map, axis=2)
@@ -168,6 +172,7 @@ def process_a_unit(
     cluster_raw_waveforms["raw_waveforms_full"] = raw_waveforms_full
     cluster_raw_waveforms["raw_waveforms_peak_channel"] = raw_waveforms_peak_channel
     cluster_raw_waveforms["spike_idxs"] = spike_idx
+
     return cluster_raw_waveforms
 
 
@@ -396,7 +401,7 @@ def extract_raw_waveforms(
                 waveform_baseline_noise,
                 raw_waveforms_dir,
             )
-            for i, cid in enumerate(unique_clusters)
+            for i, cid in tqdm(enumerate(unique_clusters))
         )
 
 
@@ -441,9 +446,9 @@ def extract_raw_waveforms(
     return raw_waveforms_full, raw_waveforms_peak_channel, SNR, raw_waveforms_id_match
 
 
-def manage_data_compression(ephys_raw_dir, decompressed_data_local=None):
+def manage_data_compression(ephys_raw_dir):
     """
-    Tries to find the raw data in the given directory and handle decompression
+    Tries to find the raw data in the given directory and handle decompression if necessary.
 
     Parameters
     ----------
@@ -466,70 +471,63 @@ def manage_data_compression(ephys_raw_dir, decompressed_data_local=None):
     """
     exts = []
     files = os.listdir(ephys_raw_dir)
+    ephys_raw_dir = Path(ephys_raw_dir)
     bc_decompressed_data = None
     decompressed_data = None
     compressed_data = None
-
+    
+    # Find compressed or decompressed binary files at ephys_raw_dir
     for file in files:
         ext = os.path.splitext(file)[1]
         exts.append(ext)
 
-        # get paths to data
-        if file == "_bc_decompressed*.bin":
+        if "_bc_decompressed" in file:
             bc_decompressed_data = file
+
         if ext == ".bin":
             pre_ext = os.path.splitext(os.path.splitext(file)[0])[1]
             if pre_ext != ".lf":
                 decompressed_data = file
-        if ext == ".cbin":
-            compressed_data = os.path.join(ephys_raw_dir, file)
 
-        # get .ch / .meta paths
+        if ext == ".cbin":
+            compressed_data = file
+
         if ext == ".ch":
             pre_ext = os.path.splitext(os.path.splitext(file)[0])[1]
             if pre_ext != ".lf":
-                compressed_ch = os.path.join(ephys_raw_dir, file)
-        if ext == ".meta":
-            pre_ext = os.path.splitext(os.path.splitext(file)[0])[1]
-            if pre_ext != ".lf":
-                meta_path = os.path.join(ephys_raw_dir, file)
+                compressed_ch = file
 
-    # If bc_decomp data use it
+    # Assign raw data path after eventual decompression
+    ephys_raw_data = None
     if bc_decompressed_data is not None:
-        print(
-            f"Using previously decompressed ephys data file {bc_decompressed_data} as raw data"
-        )
-        ephys_raw_data = bc_decompressed_data
+        print(f"Using previously decompressed ephys data file {bc_decompressed_data} as raw data.")
+        ephys_raw_data = ephys_raw_dir / bc_decompressed_data
     elif decompressed_data is not None:
-        print(f"Using found decompressed data {decompressed_data}")
-        ephys_raw_data = decompressed_data
+        print(f"Using raw data {decompressed_data}.")
+        ephys_raw_data = ephys_raw_dir / decompressed_data
     elif compressed_data is not None:
-        if decompressed_data_local is not None:
-            print(
-                f"Decompressing ephys data file {compressed_data} to {decompressed_data_local}"
-            )
-            ephys_raw_data = decompress_data(
-                compressed_data, compressed_ch, decompressed_data_local
-            )
-        else:
-            print(
-                f"Trying to decompress {compressed_data}, please re-run function with with \n decompressed_data_local = path directory to store decompressed data"
-            )
-            return
-
+        assert compressed_ch is not None, f"Found compressed data file {compressed_data} but no matching .ch file!"
+        print(f"Decompressing ephys data file {compressed_data}...")
+        decompressed_data_name = compressed_data.replace(".cbin", ".bin").split('.')
+        decompressed_data_name[0] = decompressed_data_name[0] + '_bc_decompressed'
+        decompressed_data_name = ".".join(decompressed_data_name)
+        ephys_raw_data = decompress_data(
+            ephys_raw_dir, compressed_data, compressed_ch, decompressed_data_name
+        )
     else:
-        raise Exception("Could not find compressed or decompressed data")
+        raise Exception(f"Could not find compressed or decompressed data at {ephys_raw_dir}!")
 
     # need full paths
-    ephys_raw_data = os.path.join(ephys_raw_dir, ephys_raw_data)
-    meta_path = os.path.join(ephys_raw_dir, meta_path)
-    return ephys_raw_data, meta_path
+    assert ephys_raw_data is not None, f"Raw data (.ap.bin file) not found at {ephys_raw_dir}!"
+
+    return ephys_raw_data
 
 
 def decompress_data(
+    source_directory,
     compressed_data,
     compressed_ch,
-    decompressed_data_local,
+    decompressed_data_name,
     check_after_decompress=False,
 ):
     """
@@ -537,12 +535,14 @@ def decompress_data(
 
     Parameters
     ----------
+    source_directory: str
+        Directory holding the compressed_data .cbin and compressed_ch .ch files
     compressed_data : str
-        The path to compressed data file
+        Name of .cbin compressed data file
     compressed_ch : str
-        The path to the .ch file
-    decompressed_data_local : str
-        he path to the directory to save the decompressed data
+        Name of .ch file
+    decompressed_data_name : str
+        Target name for decompressed .bin data
     check_after_decompress : bool, optional
         If True will go through the mtscomp extra checks , by default False
 
@@ -551,18 +551,19 @@ def decompress_data(
     decompressed_data_path : str
         The path to the decompressed data
     """
-    decompressed_data_path = os.path.join(
-        decompressed_data_local, "_bc_decompressed.bin"
-    )
+    source_directory = Path(source_directory)
+    compressed_data = str(source_directory / compressed_data)
+    compressed_ch = str(source_directory / compressed_ch)
+    decompressed_data_name = str(source_directory / decompressed_data_name)
 
     r = Reader(
         check_after_decompress=check_after_decompress
     )  # Can skip the verification check to save time
     r.open(compressed_data, compressed_ch)
-    r.tofile(decompressed_data_path)
+    r.tofile(decompressed_data_name)
     r.close()
 
-    return decompressed_data_path
+    return decompressed_data_name
 
 def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel, spike_clusters, spike_times, baseline_noise_all, param):
 

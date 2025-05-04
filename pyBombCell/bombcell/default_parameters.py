@@ -38,7 +38,7 @@ def get_default_parameters(
         "re_extract_raw": False,  # If True will re extract raw waveforms
         "save_as_tsv": True,  # save outputs as a .tsv file, useful for using phy after bombcell
         "unit_type_for_phy": True,  # save a unit_type .tsv file for phy
-        "ephys_kilosort_path": kilosort_path,  # path to the KiloSort directory
+        "ephys_kilosort_path": str(kilosort_path),  # path to the KiloSort directory
         "save_mat_file": False,  # TODO use scipy to save .mat file?
 
         ## Duplicate spike parameters
@@ -133,7 +133,7 @@ def get_default_parameters(
     }
 
     if ephys_meta_dir is not None:
-        param["ephys_meta_file"] = ephys_meta_dir
+        param["ephys_meta_file"] = str(ephys_meta_dir)
         if gain_to_uV is not None and not np.isnan(gain_to_uV):
             param["gain_to_uV"] = gain_to_uV
         else:
@@ -143,7 +143,9 @@ def get_default_parameters(
         param["gain_to_uV"] = gain_to_uV
 
     if raw_file != None:
-        param["raw_data_file"] = raw_file
+        param["raw_data_file"] = str(raw_file)
+    else:
+        param["raw_data_file"] = None
 
     if kilosort_version == 4:
         param["spike_width"] = 61 # width of spike in samples
