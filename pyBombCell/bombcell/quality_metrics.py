@@ -552,7 +552,7 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param,
 
 
 def fraction_RP_violations(
-    these_spike_times, these_amplitudes, time_chunks, param, use_this_tauR=None
+    these_spike_times, these_amplitudes, time_chunks, param
 ):
     """
     This function estimates the fraction of refractory period violations for a given unit.
@@ -581,18 +581,13 @@ def fraction_RP_violations(
     tauR_min = param["tauR_values_min"]
     tauR_max = param["tauR_values_max"]
     tauR_step = param["tauR_values_steps"]
+    assert tauR_min <= tauR_max, "tauR_max is smaller than tauR_min! Check parameters!"
 
     tauR_window = np.arange(
         tauR_min, tauR_max + tauR_step, tauR_step
     )  # arange doesn't include the end point!
 
-    if use_this_tauR != None:
-        # Get the index of the max tauR
-        tauR_window = tauR_window[int(use_this_tauR)][
-            np.newaxis
-        ]  # Keep it as an array with a shape for the loop
-
-    tauC = param["tauC"]
+    tauC = param["tauC"] 
 
     # initialize arrays
     fraction_RPVs = np.zeros((time_chunks.shape[0] - 1, tauR_window.shape[0]))
@@ -733,9 +728,7 @@ def time_chunks_to_keep(
     max_perc_spikes_missing = param["max_perc_spikes_missing"]
 
     sum_RPV = np.sum(fraction_RPVs, axis=0)
-    use_tauR = np.argmax(
-        sum_RPV
-    )  # gives the index of the tauR which has smallest contamination
+    use_tauR = np.argmin(sum_RPV)  # gives the index of the tauR which has smallest contamination # CAUGHT BUG was argmax!!
     use_these_times_temp = np.zeros(time_chunks.shape[0] - 1)
 
     use_these_times_temp = np.argwhere(

@@ -448,6 +448,7 @@ def get_all_quality_metrics(
     channel_positions,
     template_waveforms,
     param,
+    save_path,
 ):
     """
     This function runs all of the quality metric calculations
@@ -478,6 +479,8 @@ def get_all_quality_metrics(
         The template waveforms for each unit
     param : dict
         The dictionary of parameters
+    save_path: str
+        Bombcell results saving path
 
     Returns
     -------
@@ -496,6 +499,7 @@ def get_all_quality_metrics(
     runtimes_max_drift = np.zeros(unique_templates.shape[0])
     runtimes_waveform_shape = np.zeros(unique_templates.shape[0])
     runtime_dist_metrics = np.zeros(unique_templates.shape[0])
+    RPV_tauR_estimate_units_NtauR = []
 
     not_enough_spikes = np.zeros(unique_templates.size)
     bad_units = 0
@@ -578,14 +582,14 @@ def get_all_quality_metrics(
             these_spike_times,
             these_amplitudes,
             use_these_times,
-            param,
-            use_this_tauR=quality_metrics["RPV_window_index"][unit_idx],
-        )
+            param)
         runtimes_RPV_2[unit_idx] = time.time() - time_tmp
+        fraction_RPVs = fraction_RPVs[0] # only 'use_these_times', so single time chunk
 
         quality_metrics["fractionRPVs"][unit_idx] = fraction_RPVs[
-            quality_metrics["RPV_window_index"][unit_idx].astype(int)
-        ].squeeze()
+            int(quality_metrics["RPV_window_index"][unit_idx])
+        ]
+        RPV_tauR_estimate_units_NtauR.append(fraction_RPVs)
 
         # get presence ratio
         time_tmp = time.time()
@@ -677,6 +681,19 @@ def get_all_quality_metrics(
         "times_max_drift": runtimes_max_drift,
         "times_waveform_shape": runtimes_waveform_shape,
     }
+
+    # save tauR values as parquet file for bombcell GUI
+    tauR_min = param["tauR_values_min"]
+    tauR_max = param["tauR_values_max"]
+    tauR_step = param["tauR_values_steps"]
+    tauR_window = np.arange(
+        tauR_min, tauR_max + tauR_step, tauR_step
+    )
+    RPV_tauR_estimate_units_NtauR = np.array(RPV_tauR_estimate_units_NtauR)
+    df = pd.DataFrame(RPV_tauR_estimate_units_NtauR,
+                      columns=tauR_window,
+                      index=unique_templates)
+    df.to_parquet(Path(save_path) / "templates._bc_fractionRefractoryPeriodViolationsPerTauR.parquet")
 
     if param["compute_distance_metrics"]:
         runtimes["time_dist_metrics"] = runtime_dist_metrics
@@ -805,6 +822,7 @@ def run_bombcell(ks_dir, save_path, param):
         channel_positions,
         template_waveforms,
         param,
+        save_path,
     )
 
     unit_type, unit_type_string = qm.get_quality_unit_type(
