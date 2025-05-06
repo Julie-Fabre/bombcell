@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=64.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bombcell"
+version = "0.32"
+description = "Python port of BombCell. Automated quality control, curation and neuron classification of spike-sorted electrophysiology data."
+readme = "README.md"
+authors = [
+    {name = "Julie Fabre", email = "julie.m.fabre@gmail.com"},
+    {name = "Sam Dodgson"},
+    {name = "Maxime Beau", email = "maximebeaujeanroch047@gmail.com"}
+]
+license = {text = "GPL-3.0"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9"
+]
+requires-python = ">=3.6"
+dependencies = [
+    "uv",
+    "ipykernel",
+    "numpy",
+    "joblib",
+    "scipy",
+    "pandas",
+    "numba>=0.58.1",
+    "matplotlib",
+    "mtscomp",
+    "tqdm",
+    "pyarrow",
+    "upsetplot"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/BombCell/bombcell"
+
+[tool.setuptools]
+packages = ["bombcell"]
+
+[tool.setuptools.package-dir]
+"" = "."

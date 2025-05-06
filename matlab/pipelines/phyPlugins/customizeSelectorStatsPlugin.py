@@ -8,5 +8,5 @@ class customizeSelectorStatsPlugin(IPlugin):
     def attach_to_controller(self, controller):
         @connect
         def on_controller_ready(sender):
-            controller.supervisor.columns = ['id', 'depth', 'fr', 'Amplitude', 'n_spikes',
+            controller.supervisor.columns = ['id', 'depth', 'fr', 'Amplitude', 'nSpikes',
              'fractionRPV', 'percentSpikesMissing']

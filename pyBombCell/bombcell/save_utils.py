@@ -6,6 +6,7 @@ import pandas as pd
 from typing import Dict, Tuple, List
 from numpy.typing import NDArray
 
+
 def path_handler(path: str) -> None:
     path = Path(path).expanduser()
     assert path.parent.exists(), f"{str(path.parent)} must exist to create {str(path)}."
@@ -15,34 +16,34 @@ def path_handler(path: str) -> None:
 def get_metric_keys():
     return [
             # noise metrics
-            "n_peaks",
-            "n_troughs",
-            "waveform_duration_peak_trough",
-            "spatial_decay_slope",
-            "waveform_baseline_flatness",
-            "scnd_peak_to_trough_ratio",
+            "nPeaks",
+            "nTroughs",
+            "waveformDuration_peakTrough",
+            "spatialDecaySlope",
+            "waveformBaselineFlatness",
+            "scndPeakToTroughRatio",
             # non-somatic metrics
-            "main_peak_to_trough_ratio",
-            "peak1_to_peak2_ratio",
-            "trough_to_peak2_ratio",
-            "peak_before_width",
-            "trough_width",
+            "mainPeakToTroughRatio",
+            "peak1ToPeak2Ratio",
+            "troughToPeak2Ratio",
+            "mainPeak_before_width",
+            "mainTrough_width",
             # MUA metrics 
-            "percent_missing_gaussian",
-            "percent_missing_symmetric",
-            "RPV_use_tauR_est",
-            "fraction_RPVs",
-            "presence_ratio",
-            "max_drift_estimate",
-            "cumulative_drift_estimate",
-            "raw_amplitude",
-            "signal_to_noise_ratio",
-            "isolation_dist",
-            "l_ratio",
-            "silhouette_score",
+            "percentageSpikesMissing_gaussian",
+            "percentageSpikesMissing_symmetric",
+            "RPV_window_index",
+            "fractionRPVs_estimatedTauR",
+            "presenceRatio",
+            "maxDriftEstimate",
+            "cumDriftEstimate",
+            "rawAmplitude",
+            "signalToNoiseRatio",
+            "isolationDistance",
+            "Lratio",
+            "silhouetteScore",
             # time metrics
-            "use_these_times_start",
-            "use_these_times_stop",
+            "useTheseTimesStart",
+            "useTheseTimesStop",
             ]
 
 
@@ -76,7 +77,7 @@ def save_quality_metric_tsv(metric_data, template_ids, output_dir, filename, col
     )
     df.to_csv(file_path, sep="\t", index=False)
 
-def save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_dir):
+def save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_dir, param):
     """
     Save all quality metrics as separate TSV files.
 
@@ -91,42 +92,43 @@ def save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_d
     output_dir : str
         Directory path for saving the files
     """
-    # Ensure output directory exists
-    os.makedirs(output_dir, exist_ok=True)
+    if param["saveAsTSV"]:
+        # Ensure output directory exists
+        os.makedirs(output_dir, exist_ok=True)
 
-    # Save unit types first
-    save_quality_metric_tsv(
-        unit_types,
-        template_ids,
-        output_dir,
-        "cluster_bc_unitType.tsv",
-        ("cluster_id", "bc_unitType")
-    )
+        # Save unit types first
+        save_quality_metric_tsv(
+            unit_types,
+            template_ids,
+            output_dir,
+            "cluster_bc_unitType.tsv",
+            ("cluster_id", "bc_unitType")
+        )
 
-    # Get all metric keys
-    metric_keys = get_metric_keys()
+        # Get all metric keys
+        metric_keys = get_metric_keys()
 
-    # Generate filename and column headers for each metric
-    for metric_name in metric_keys:
-        if metric_name in quality_metrics:
-            # Convert metric name to filename format
-            filename = f"cluster_{metric_name}.tsv"
-            
-            # Create column headers
-            column_names = ("cluster_id", metric_name)
-            
-            # Save the metric
-            save_quality_metric_tsv(
-                quality_metrics[metric_name],
-                template_ids,
-                output_dir,
-                filename,
-                column_names
-            )
-        else:
-            print(f"Warning: Metric '{metric_name}' not found in quality_metrics dictionary")
+        # Generate filename and column headers for each metric
+        for metric_name in metric_keys:
+            if metric_name in quality_metrics:
+                # Convert metric name to filename format
+                filename = f"cluster_{metric_name}.tsv"
+                
+                # Create column headers
+                column_names = ("cluster_id", metric_name)
+                
+                # Save the metric
+                save_quality_metric_tsv(
+                    quality_metrics[metric_name],
+                    template_ids,
+                    output_dir,
+                    filename,
+                    column_names
+                )
+            else:
+                print(f"Warning: Metric '{metric_name}' not found in quality_metrics dictionary")
 
-def save_quality_metrics_and_verify(quality_metrics, unit_types, template_ids, output_dir):
+def save_quality_metrics_and_verify(quality_metrics, unit_types, template_ids, output_dir, param):
     """
     Save all quality metrics and verify that all expected metrics were saved.
 
@@ -142,7 +144,7 @@ def save_quality_metrics_and_verify(quality_metrics, unit_types, template_ids, o
         Directory path for saving the files
     """
     # Save all metrics
-    save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_dir)
+    save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_dir, param)
     
     # Verify all metrics were saved
     expected_metrics = set(get_metric_keys())
@@ -157,8 +159,8 @@ def save_quality_metrics_and_verify(quality_metrics, unit_types, template_ids, o
         print("All expected metrics were successfully saved.")
 
 
-def save_quality_metrics_as_parquet(
-    quality_metrics, save_path, file_name="templates._bc_qMetrics.parquet"
+def save_dict_as_parquet_and_csv(
+    dic, save_path, file_name="templates._bc_qMetrics"
 ):
     """
     This function save the whole quality metrics dictionary as a parquet file
@@ -175,17 +177,14 @@ def save_quality_metrics_as_parquet(
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
-    file_path = os.path.join(save_path, file_name)
-    quality_metrics_save = quality_metrics.copy()
-    quality_metrics_save["peak_channels"] = quality_metrics["peak_channels"][
-        quality_metrics["cluster_id"].astype(int)
-    ]
-    quality_metrics_df = pd.DataFrame.from_dict(quality_metrics_save)
-    quality_metrics_df.to_parquet(file_path)
+    file_path = str(save_path / file_name)
+    quality_metrics_df = pd.DataFrame.from_dict(dic)
+    quality_metrics_df.to_parquet(file_path + ".parquet")
+    quality_metrics_df.to_csv(file_path + ".csv")
 
 
 def save_params_as_parquet(
-    param, save_path, file_name="_bc_parameters._bc_qMetrics.parquet"
+    param, save_path, file_name="_bc_parameters._bc_qMetrics"
 ):
     """
     This function save the whole param dictionary as a parquet file
@@ -204,14 +203,18 @@ def save_params_as_parquet(
 
     # PyArrow cant save Path type objects as a parquet
     param_save = param.copy()
-    param_save["ephys_kilosort_path"] = str(param["ephys_kilosort_path"])
+    for key, value in param.items():
+        if key == 'ephysKilosortPath':
+            param_save[key] = str(value)
+        if type(value) == Path:
+            param_save[key] = str(value)
 
-    file_path = os.path.join(save_path, file_name)
-    param_df = pd.DataFrame.from_dict(param_save)
-    param_df.to_parquet(file_path)
+    file_path = save_path / file_name
+    param_df = pd.DataFrame.from_dict([param_save])
+    param_df.to_parquet(str(file_path) + ".parquet")
 
 
-def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, save_path):
+def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, raw_waveforms_id_match, save_path):
     """
     This function saves the raw waveform information as npy arrays
 
@@ -227,13 +230,14 @@ def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, save_p
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
-    file_path_raw_waveforms = os.path.join(save_path, "templates._bc_rawWaveforms.npy")
+    file_path_raw_waveforms = save_path / "templates._bc_rawWaveforms.npy"
     np.save(file_path_raw_waveforms, raw_waveforms_full)
 
-    file_path_peak_channels = os.path.join(
-        save_path, "templates._bc_rawWaveformsPeakChannels.npy"
-    )
+    file_path_peak_channels = save_path / "templates._bc_rawWaveformPeakChannels.npy"
     np.save(file_path_peak_channels, raw_waveforms_peak_channel)
+
+    file_path_raw_waveforms_id_match = save_path / "_bc_rawWaveforms_kilosort_format"
+    np.save(file_path_raw_waveforms_id_match, raw_waveforms_id_match)
 
 
 def save_results(
@@ -243,6 +247,7 @@ def save_results(
     param,
     raw_waveforms_full,
     raw_waveforms_peak_channel,
+    raw_waveforms_id_match,
     save_path,
 ):
     """
@@ -268,12 +273,21 @@ def save_results(
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
-    save_quality_metrics_and_verify(quality_metrics, unit_type_string, unique_templates, save_path)
+    save_quality_metrics_and_verify(quality_metrics, unit_type_string, unique_templates, save_path, param)
 
-    save_quality_metrics_as_parquet(
-        quality_metrics, save_path, file_name="templates._bc_qMetrics.parquet"
+    # Get rid of peak channels of empty rows, which were kept for convenient indexing up to here
+    quality_metrics_save = quality_metrics.copy()
+    quality_metrics_save["maxChannels"] = quality_metrics["maxChannels"][
+        quality_metrics["phy_clusterID"].astype(int)
+    ]
+
+    # Save full quality metrics table
+    save_dict_as_parquet_and_csv(
+        quality_metrics_save, save_path, file_name="templates._bc_qMetrics"
     )
     save_params_as_parquet(
-        param, save_path, file_name="_bc_parameters._bc_qMetrics.parquet"
+        param, save_path, file_name="_bc_parameters._bc_qMetrics"
     )
-    save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, save_path)
+
+    # Save waveforms
+    save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, raw_waveforms_id_match, save_path)
