@@ -79,9 +79,9 @@ class qMetricsPlugin(IPlugin):
                #n_fit = gaussian_cut(x, popt[0], popt[1], popt[2], popt[3])
 
 
-               min_amplitude = popt[3]
+               minAmplitude = popt[3]
 
-               norm_area_ndtr = ndtr((popt[1] - min_amplitude) /
+               norm_area_ndtr = ndtr((popt[1] - minAmplitude) /
                                         popt[2])
                percent_missing_ndtr = 100 * (1 - norm_area_ndtr)
            return percent_missing_ndtr#add this written in the view + curve_fit
