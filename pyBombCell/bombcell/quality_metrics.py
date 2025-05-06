@@ -1632,7 +1632,7 @@ def get_quality_unit_type(param, quality_metrics):
         (quality_metrics["waveformDuration_peakTrough"] < param["minWvDuration"]) |
         (quality_metrics["waveformDuration_peakTrough"] > param["maxWvDuration"]) |
         (quality_metrics["waveformBaselineFlatness"] > param["maxWvBaselineFraction"]) |
-        (quality_metrics["scndPeakToTroughRatio"] > param["maxScndPeakToTroughRatio_noise "])
+        (quality_metrics["scndPeakToTroughRatio"] > param["maxScndPeakToTroughRatio_noise"])
     )
 
     if param["computeSpatialDecay"] & param["spDecayLinFit"]:
