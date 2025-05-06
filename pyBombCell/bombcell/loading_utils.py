@@ -161,14 +161,14 @@ def get_gain_spikeglx(meta_path):
     meta_dict = erw.read_meta(Path(meta_path))
 
     if np.isin("imDatPrb_type", list(meta_dict.keys())):
-        probe_type = meta_dict["imDatPrb_type"]
+        probeType = meta_dict["imDatPrb_type"]
     elif np.isin("imProbeOpt", list(meta_dict.keys())):
-        probe_type = meta_dict["imProbeOpt"]
+        probeType = meta_dict["imProbeOpt"]
     else:
         # NOTE will have to update for new probes!
         print("Can not find imDatPrb_type or imProbeOpt in meta file")
 
-    probe_type_1 = np.array(
+    probeType_1 = np.array(
         (
             "1",
             "3",
@@ -185,15 +185,15 @@ def get_gain_spikeglx(meta_path):
             "1110",
         )
     )  # NP1, NP2-like
-    probe_type_2 = np.array(
+    probeType_2 = np.array(
         ("21", "2003", "2004", "24", "2013", "2014", "2020")
     )  # NP2, NP2-like
 
-    if np.isin(probe_type, probe_type_1):
+    if np.isin(probeType, probeType_1):
         bits_encoding = 2**10
         v_range = 1.2e6
         gain = 500
-    elif np.isin(probe_type, probe_type_2):
+    elif np.isin(probeType, probeType_2):
         bits_encoding = 2**14
         v_range = 1e6
         gain = 80

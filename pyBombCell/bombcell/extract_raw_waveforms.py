@@ -53,8 +53,7 @@ def process_a_unit(
     n_channels,
     n_sync_channels,
     cid,
-    detrend_waveforms,
-    save_multiple_raw,
+    detrendWaveform,
     waveform_baseline_noise,
     save_directory,
 ):
@@ -79,10 +78,8 @@ def process_a_unit(
         The number of sync channel in the recording
     cid : int
         The id of the cluster
-    detrend_waveforms : bool
+    detrendWaveform : bool
         If True will linearly de-trend the waveforms over time
-    save_multiple_raw : bool
-        If true will prepare and save waveforms suitable for UnitMatch
     waveform_baseline_noise : int
         The number of samples before the waveform which are noise
     save_directory : pathlib.Path
@@ -115,7 +112,7 @@ def process_a_unit(
         tmp.astype(np.float64)
 
         # option to remove a linear in time trends
-        if detrend_waveforms:
+        if detrendWaveform:
             detrended = detrend(tmp[:, :-n_sync_channels], axis=0).swapaxes(
                 0, 1
             )
@@ -286,7 +283,7 @@ def extract_raw_waveforms(
     raw_waveforms_dir.mkdir(exist_ok = True)
 
     raw_waveforms_file = save_path / "templates._bc_rawWaveforms.npy"
-    raw_waveforms_peak_channel_file = save_path / "templates._bc_rawWaveformsPeakChannels.npy"
+    raw_waveforms_peak_channel_file = save_path / "templates._bc_rawWaveformPeakChannels.npy"
     snr_noise_file = save_path / "templates._bc_baselineNoiseAmplitude.npy"
     snr_noise_idx_file = save_path / "templates._bc_baselineNoiseAmplitudeIndex.npy"
     raw_waveforms_id_match_file = save_path / "_bc_rawWaveforms_kilosort_format.npy"
@@ -299,12 +296,12 @@ def extract_raw_waveforms(
     # Get necessary info from param
     raw_data_file = param["raw_data_file"]
     meta_path = Path(param["ephys_meta_file"])
-    n_channels = param["n_channels"]
-    n_sync_channels = param["n_sync_channels"]
-    n_spikes_to_extract = param["n_raw_spikes_to_extract"]
-    detrend_waveforms = param["detrend_waveform"]
-    save_multiple_raw = param.get("save_multiple_raw", False)  # get and save data for UnitMatch
-    waveform_baseline_noise = param.get("waveform_baseline_noise", 20)
+    n_channels = param["nChannels"]
+    n_sync_channels = param["nSyncChannels"]
+    n_spikes_to_extract = param["nRawSpikesToExtract"]
+    detrendWaveform = param["detrendWaveform"]
+    #save_multiple_raw = param.get("save_multiple_raw", False)  # get and save data for UnitMatch
+    waveform_baseline_noise = param.get("waveformBaselineNoiseWindow", 20)
     spike_width = param["spike_width"]
 
     # if data exists and re_extract_waveforms is false, load in data
@@ -396,8 +393,7 @@ def extract_raw_waveforms(
                 n_channels,
                 n_sync_channels,
                 cid,
-                detrend_waveforms,
-                save_multiple_raw,
+                detrendWaveform,
                 waveform_baseline_noise,
                 raw_waveforms_dir,
             )
@@ -610,8 +606,8 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
         meta_path = Path(param["ephys_meta_file"])
         n_channels = param["n_channels"]
         n_sync_channels = param["n_sync_channels"]
-        n_spikes_to_extract = param["n_raw_spikes_to_extract"]
-        detrend_waveforms = param["detrend_waveform"]
+        n_spikes_to_extract = param["nRawSpikesToExtract"]
+        detrendWaveform = param["detrendWaveform"]
         waveform_baseline_noise = param.get("waveform_baseline_noise", 20)
         spike_width = param["spike_width"]
 
@@ -675,7 +671,7 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
                 n_channels,
                 n_sync_channels,
                 id,
-                detrend_waveforms,
+                detrendWaveform,
                 False,
                 waveform_baseline_noise,
                 None,

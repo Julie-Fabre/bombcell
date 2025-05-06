@@ -32,7 +32,7 @@ def get_metric_keys():
             "percentageSpikesMissing_gaussian",
             "percentageSpikesMissing_symmetric",
             "RPV_window_index",
-            "fractionRPVs",
+            "fractionRPVs_estimatedTauR",
             "presenceRatio",
             "maxDriftEstimate",
             "cumDriftEstimate",
@@ -77,7 +77,7 @@ def save_quality_metric_tsv(metric_data, template_ids, output_dir, filename, col
     )
     df.to_csv(file_path, sep="\t", index=False)
 
-def save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_dir):
+def save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_dir, param):
     """
     Save all quality metrics as separate TSV files.
 
@@ -92,42 +92,43 @@ def save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_d
     output_dir : str
         Directory path for saving the files
     """
-    # Ensure output directory exists
-    os.makedirs(output_dir, exist_ok=True)
+    if param["saveAsTSV"]:
+        # Ensure output directory exists
+        os.makedirs(output_dir, exist_ok=True)
 
-    # Save unit types first
-    save_quality_metric_tsv(
-        unit_types,
-        template_ids,
-        output_dir,
-        "cluster_bc_unitType.tsv",
-        ("cluster_id", "bc_unitType")
-    )
+        # Save unit types first
+        save_quality_metric_tsv(
+            unit_types,
+            template_ids,
+            output_dir,
+            "cluster_bc_unitType.tsv",
+            ("cluster_id", "bc_unitType")
+        )
 
-    # Get all metric keys
-    metric_keys = get_metric_keys()
+        # Get all metric keys
+        metric_keys = get_metric_keys()
 
-    # Generate filename and column headers for each metric
-    for metric_name in metric_keys:
-        if metric_name in quality_metrics:
-            # Convert metric name to filename format
-            filename = f"cluster_{metric_name}.tsv"
-            
-            # Create column headers
-            column_names = ("cluster_id", metric_name)
-            
-            # Save the metric
-            save_quality_metric_tsv(
-                quality_metrics[metric_name],
-                template_ids,
-                output_dir,
-                filename,
-                column_names
-            )
-        else:
-            print(f"Warning: Metric '{metric_name}' not found in quality_metrics dictionary")
+        # Generate filename and column headers for each metric
+        for metric_name in metric_keys:
+            if metric_name in quality_metrics:
+                # Convert metric name to filename format
+                filename = f"cluster_{metric_name}.tsv"
+                
+                # Create column headers
+                column_names = ("cluster_id", metric_name)
+                
+                # Save the metric
+                save_quality_metric_tsv(
+                    quality_metrics[metric_name],
+                    template_ids,
+                    output_dir,
+                    filename,
+                    column_names
+                )
+            else:
+                print(f"Warning: Metric '{metric_name}' not found in quality_metrics dictionary")
 
-def save_quality_metrics_and_verify(quality_metrics, unit_types, template_ids, output_dir):
+def save_quality_metrics_and_verify(quality_metrics, unit_types, template_ids, output_dir, param):
     """
     Save all quality metrics and verify that all expected metrics were saved.
 
@@ -143,7 +144,7 @@ def save_quality_metrics_and_verify(quality_metrics, unit_types, template_ids, o
         Directory path for saving the files
     """
     # Save all metrics
-    save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_dir)
+    save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_dir, param)
     
     # Verify all metrics were saved
     expected_metrics = set(get_metric_keys())
@@ -203,7 +204,7 @@ def save_params_as_parquet(
     # PyArrow cant save Path type objects as a parquet
     param_save = param.copy()
     for key, value in param.items():
-        if key == 'ephys_kilosort_path':
+        if key == 'ephysKilosortPath':
             param_save[key] = str(value)
         if type(value) == Path:
             param_save[key] = str(value)
@@ -232,7 +233,7 @@ def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, raw_wa
     file_path_raw_waveforms = save_path / "templates._bc_rawWaveforms.npy"
     np.save(file_path_raw_waveforms, raw_waveforms_full)
 
-    file_path_peak_channels = save_path / "templates._bc_rawWaveformsPeakChannels.npy"
+    file_path_peak_channels = save_path / "templates._bc_rawWaveformPeakChannels.npy"
     np.save(file_path_peak_channels, raw_waveforms_peak_channel)
 
     file_path_raw_waveforms_id_match = save_path / "_bc_rawWaveforms_kilosort_format"
@@ -272,11 +273,11 @@ def save_results(
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
-    save_quality_metrics_and_verify(quality_metrics, unit_type_string, unique_templates, save_path)
+    save_quality_metrics_and_verify(quality_metrics, unit_type_string, unique_templates, save_path, param)
 
     # Get rid of peak channels of empty rows, which were kept for convenient indexing up to here
     quality_metrics_save = quality_metrics.copy()
-    quality_metrics_save["peak_channels"] = quality_metrics["peak_channels"][
+    quality_metrics_save["maxChannels"] = quality_metrics["maxChannels"][
         quality_metrics["phy_clusterID"].astype(int)
     ]
 

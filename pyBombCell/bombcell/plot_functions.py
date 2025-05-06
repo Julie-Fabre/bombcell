@@ -29,10 +29,10 @@ def plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_
     param : dict
         The dictionary of all bomcell parameters
     """
-
-    plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param) 
-    upset_plots(quality_metrics, unit_type_string, param)
-    plot_histograms(quality_metrics, param)
+    if param["plotGlobal"]:
+        plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param) 
+        upset_plots(quality_metrics, unit_type_string, param)
+        plot_histograms(quality_metrics, param)
 
 def upset_plots(quality_metrics, unit_type_string, param):
     warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -103,7 +103,7 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
 
     n_categories = np.unique(unit_type).size
     labels = {0: "NOISE", 1: "GOOD", 2: "MUA", 
-                3: "NON-SOMA GOOD" if param["split_good_and_mua_non_somatic"] else "NON-SOMA",
+                3: "NON-SOMA GOOD" if param["splitGoodAndMua_NonSomatic"] else "NON-SOMA",
                 4: "NON-SOMA MUA", 5: ""}
     #TODO change alpha to be inversly proprotional to n units
     if n_categories < 5:
@@ -114,7 +114,7 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
             n_units_in_cat = og_id.size
             if n_units_in_cat !=0:
                 for id in og_id:
-                    axs[img_pos[i][0]][img_pos[i][1]].plot(template_waveforms[id, 20:, quality_metrics['peak_channels'][id]], color = 'black', alpha = 0.1)
+                    axs[img_pos[i][0]][img_pos[i][1]].plot(template_waveforms[id, 20:, quality_metrics['maxChannels'][id]], color = 'black', alpha = 0.1)
                     axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
                     axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
                     axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
@@ -133,7 +133,7 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
             n_units_in_cat = og_id.size
             if n_units_in_cat !=0:
                 for id in og_id:
-                    axs[img_pos[i][0]][img_pos[i][1]].plot(template_waveforms[id, 20:, quality_metrics['peak_channels'][id]], color = 'black', alpha = 0.1)
+                    axs[img_pos[i][0]][img_pos[i][1]].plot(template_waveforms[id, 20:, quality_metrics['maxChannels'][id]], color = 'black', alpha = 0.1)
                     axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
                     axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
                     axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
@@ -170,63 +170,63 @@ def plot_histograms(quality_metrics, param):
     plot_metric_keys = ["nPeaks", "nTroughs", "waveformBaselineFlatness", "waveformDuration_peakTrough", "scndPeakToTroughRatio"]
     metric_types = ["Noise", "Noise", "Noise", "Noise", "Noise"]
     is_continous = [False, False, True, True, True]
-    plot_metric_thresholds_lower_bound = [None, None, None, "min_wv_duration", None]
-    plot_metric_thresholds_upper_bound = ["max_n_peaks", "max_n_troughs", "max_wv_baseline_fraction", "max_wv_duration", "max_scnd_peak_to_trough_ratio_noise"]
+    plot_metric_thresholds_lower_bound = [None, None, None, "minWvDuration", None]
+    plot_metric_thresholds_upper_bound = ["maxNPeaks", "maxNTroughs", "maxWvBaselineFraction", "maxWvDuration", "maxScndPeakToTroughRatio_noise "]
     x_axis_labels = ["# peaks", "# troughs", "baseline flatness", "waveform duration", "peak2/trough"]
 
     #Add correct type of spatial decay if spatial decay is calculated
-    if param["compute_spatial_decay"] & param["sp_decay_lin_fit"]:
+    if param["computeSpatialDecay"] & param["spDecayLinFit"]:
         plot_metric_keys.append("spatialDecaySlope")
         metric_types.append("Noise")
         is_continous.append(True)
-        plot_metric_thresholds_lower_bound.append("max_spatial_decay_slope_exp")
+        plot_metric_thresholds_lower_bound.append("maxSpatialDecaySlopeExp")
         plot_metric_thresholds_upper_bound.append(None)
         x_axis_labels.append("spatial decay")
-    elif param["compute_spatial_decay"]:
+    elif param["computeSpatialDecay"]:
         plot_metric_keys.append("spatialDecaySlope")
         metric_types.append("Noise")
         is_continous.append(True)
-        plot_metric_thresholds_lower_bound.append("max_spatial_decay_slope_exp")
-        plot_metric_thresholds_upper_bound.append("min_spatial_decay_slope_exp")
+        plot_metric_thresholds_lower_bound.append("maxSpatialDecaySlopeExp")
+        plot_metric_thresholds_upper_bound.append("minSpatialDecaySlopeExp")
         x_axis_labels.append("spatial decay")
 
     #add rest of core metrics
     plot_metric_keys.extend(["peak1ToPeak2Ratio", "mainPeakToTroughRatio",
-                        "fractionRPVs", "presenceRatio", "percentageSpikesMissing_gaussian", "nSpikes"])
+                        "fractionRPVs_estimatedTauR", "presenceRatio", "percentageSpikesMissing_gaussian", "nSpikes"])
     metric_types.extend(["Somatic", "Somatic",
                     "MUA", "MUA", "MUA", "MUA"])
     is_continous.extend([True, True,
                     True, True, True, True])
     plot_metric_thresholds_lower_bound.extend([None, None,
-                                        None, "min_presence_ratio", None, "min_num_spikes_total"])
-    plot_metric_thresholds_upper_bound.extend(["max_peak1_to_peak2_ratio_non_somatic", "max_main_peak_to_trough_ratio_non_somatic",
-                                        "max_RPV", None, "max_perc_spikes_missing", None])
+                                        None, "minPresenceRatio", None, "minNumSpikes"])
+    plot_metric_thresholds_upper_bound.extend(["maxPeak1ToPeak2Ratio_nonSomatic", "maxMainPeakToTroughRatio_nonSomatic",
+                                        "maxRPVviolations", None, "maxPercSpikesMissing", None])
     x_axis_labels.extend([ "peak1/peak2", "peak(main)/trough",
                         "frac. RPVs", "presence ratio", "% spikes missing", "# spikes"])
 
     #add optional metrics
-    if param["extract_raw_waveforms"] and np.all(~np.isnan(quality_metrics['rawAmplitude'])):
+    if param["extractRaw"] and np.all(~np.isnan(quality_metrics['rawAmplitude'])):
         plot_metric_keys.extend(["rawAmplitude", "signalToNoiseRatio"])
         metric_types.extend(["MUA", "MUA"])
         is_continous.extend([True, True])
-        plot_metric_thresholds_lower_bound.extend(["min_amplitude", "min_SNR"])
+        plot_metric_thresholds_lower_bound.extend(["minAmplitude", "min_SNR"])
         plot_metric_thresholds_upper_bound.extend([None, None])
         x_axis_labels.extend(["amplitude", "SNR"])
 
-    if param["compute_drift"]:
+    if param["computeDrift"]:
         plot_metric_keys.append("maxDriftEstimate")
         metric_types.append("MUA")
         is_continous.append(True)
         plot_metric_thresholds_lower_bound.append(None)
-        plot_metric_thresholds_upper_bound.append("max_drift")
+        plot_metric_thresholds_upper_bound.append("maxDrift")
         x_axis_labels.append("max drift")
 
-    if param["compute_distance_metrics"]:
+    if param["computeDistanceMetrics"]:
         plot_metric_keys.extend(["isolationDistance", "Lratio"])
         metric_types.extend(["MUA", "MUA"])
         is_continous.extend([True, True])
-        plot_metric_thresholds_lower_bound.extend(["iso_d_min", None])
-        plot_metric_thresholds_upper_bound.extend([None, "lratio_max"])
+        plot_metric_thresholds_lower_bound.extend(["isoDmin ", None])
+        plot_metric_thresholds_upper_bound.extend([None, "lratioMax"])
         x_axis_labels.extend(["isolation dist", "L ratio"])
 
     #plot all histograms
