@@ -701,7 +701,7 @@ def get_all_quality_metrics(
     return quality_metrics, runtimes
 
 
-def run_bombcell(ks_dir, save_path, param):
+def un_bombcell(ks_dir, save_path, param):
     """
     This function runs the entire bombcell pipeline from input data paths
 
@@ -898,9 +898,9 @@ def make_qm_table(quality_metrics, param, unit_type_string):
         if param["computeSpatialDecay"] & param["spDecayLinFit"]:
             bad_spatial_decay = quality_metrics['spatialDecaySlope'] > param['minSpatialDecaySlope']
         elif param["computeSpatialDecay"]:
-            too_shallow_decay = quality_metrics["spatialDecaySlope"] > param["minSpatialDecaySlopeExp"]
+            too_shallow_decay = quality_metrics["spatialDecaySlope"] < param["minSpatialDecaySlopeExp"]
             too_steep_decay = (
-                quality_metrics["spatialDecaySlope"] < param["maxSpatialDecaySlopeExp"]
+                quality_metrics["spatialDecaySlope"] > param["maxSpatialDecaySlopeExp"]
             )  
             bad_spatial_decay = np.logical_or(too_shallow_decay, too_steep_decay).squeeze()
         
