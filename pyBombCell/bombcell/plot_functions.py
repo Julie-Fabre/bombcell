@@ -171,7 +171,7 @@ def plot_histograms(quality_metrics, param):
     metric_types = ["Noise", "Noise", "Noise", "Noise", "Noise"]
     is_continous = [False, False, True, True, True]
     plot_metric_thresholds_lower_bound = [None, None, None, "minWvDuration", None]
-    plot_metric_thresholds_upper_bound = ["maxNPeaks", "maxNTroughs", "maxWvBaselineFraction", "maxWvDuration", "maxScndPeakToTroughRatio_noise "]
+    plot_metric_thresholds_upper_bound = ["maxNPeaks", "maxNTroughs", "maxWvBaselineFraction", "maxWvDuration", "maxScndPeakToTroughRatio_noise"]
     x_axis_labels = ["# peaks", "# troughs", "baseline flatness", "waveform duration", "peak2/trough"]
 
     #Add correct type of spatial decay if spatial decay is calculated

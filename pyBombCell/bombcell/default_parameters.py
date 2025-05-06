@@ -112,7 +112,7 @@ def get_default_parameters(
         "maxSpatialDecaySlopeExp": 0.1,  # in a.u / um
         "maxWvBaselineFraction": 0.3,  # maximum absolute value in waveform baseline should not
         # exceed this fraction of the waveforms's absolute peak
-        "maxScndPeakToTroughRatio_noise ": 0.8, 
+        "maxScndPeakToTroughRatio_noise": 0.8, 
         "minTroughToPeak2Ratio_nonSomatic": 5,
         "minWidthFirstPeak_nonSomatic": 4,
         "minWidthMainTrough_nonSomatic": 5,

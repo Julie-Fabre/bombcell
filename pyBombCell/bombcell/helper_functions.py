@@ -889,7 +889,7 @@ def make_qm_table(quality_metrics, param, unit_type_string):
     too_noisy_baseline = (
         quality_metrics["waveformBaselineFlatness"] > param["maxWvBaselineFraction"]
     )
-    peak2_to_trough = quality_metrics["scndPeakToTroughRatio"] > param["maxScndPeakToTroughRatio_noise "]
+    peak2_to_trough = quality_metrics["scndPeakToTroughRatio"] > param["maxScndPeakToTroughRatio_noise"]
 
     qm_table_list.extend([nan_result, too_many_peaks, too_many_troughs, duration, too_noisy_baseline, peak2_to_trough])
     qm_table_names.extend(["NaN result", "# peaks", "# troughs", "duration", "baseline flatness", "peak2 / trough"])
