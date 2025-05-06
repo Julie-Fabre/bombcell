@@ -121,7 +121,7 @@ def get_default_parameters(
 
         ## Distance metrics
         "isoDmin ": 20,  # minimum isolation distance value
-        "lratioMax": 0.1,  # maximum l-ratio value
+        "lratioMax": 0.2,  # maximum l-ratio value
         "ss_min": np.nan,  # minimum silhouette score, not currently implemented
         ## Other classification parameters
         "minAmplitude": 20,  # in uV

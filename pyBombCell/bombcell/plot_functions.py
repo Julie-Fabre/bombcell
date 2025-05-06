@@ -53,9 +53,9 @@ def upset_plots(quality_metrics, unit_type_string, param):
 
     qm_table = hf.make_qm_table(quality_metrics, param, unit_type_string)
 
-    noise_metrics = ["# peaks", "# troughs", "duration", "spatial decay", "baseline flatness", "peak2 / trough"] #Duration is peak to trough duration
+    noise_metrics = ["# peaks", "# troughs", "waveform duration", "spatial decay", "baseline flatness", "peak2 / trough"] #Duration is peak to trough duration
     non_somatic_metrics = ["peak(main) / trough", "peak1 / peak2"]
-    mua_metrics = ["SNR", "amplitude", "# spikes", "presence ratio", "% spikes missing", "fraction RPVs"]
+    mua_metrics = ["SNR", "amplitude", "# spikes", "presence ratio", "% spikes missing", "fraction RPVs", "max. drift", "isolation dist.", "L-Ratio"]
 
     # Eventually filter out uncomputed metrics
     noise_metrics = [m for m in noise_metrics if m in qm_table.columns]
@@ -228,7 +228,7 @@ def plot_histograms(quality_metrics, param):
         is_continous.extend([True, True])
         plot_metric_thresholds_lower_bound.extend(["isoDmin ", None])
         plot_metric_thresholds_upper_bound.extend([None, "lratioMax"])
-        x_axis_labels.extend(["isolation dist", "L ratio"])
+        x_axis_labels.extend(["isolation dist", "L-Ratio"])
 
     #plot all histograms
     n_metrics = len(plot_metric_keys) + 1

@@ -891,8 +891,8 @@ def make_qm_table(quality_metrics, param, unit_type_string):
     )
     peak2_to_trough = quality_metrics["scndPeakToTroughRatio"] > param["maxScndPeakToTroughRatio_noise"]
 
-    qm_table_list.extend([nan_result, too_many_peaks, too_many_troughs, duration, too_noisy_baseline, peak2_to_trough])
-    qm_table_names.extend(["NaN result", "# peaks", "# troughs", "duration", "baseline flatness", "peak2 / trough"])
+    qm_table_list.extend([too_many_peaks, too_many_troughs, duration, too_noisy_baseline, peak2_to_trough])
+    qm_table_names.extend(["# peaks", "# troughs", "waveform duration", "baseline flatness", "peak2 / trough"])
 
     if param["computeSpatialDecay"]:
         if param["computeSpatialDecay"] & param["spDecayLinFit"]:
@@ -936,7 +936,7 @@ def make_qm_table(quality_metrics, param, unit_type_string):
             quality_metrics["maxDriftEstimate"] > param["maxDrift"]
         )
         qm_table_list.append(too_large_drift)
-        qm_table_names.append("drift")
+        qm_table_names.append("max. drift")
 
     # determine if ALL unit is somatic or non-somatic
     is_non_somatic = (
@@ -958,7 +958,7 @@ def make_qm_table(quality_metrics, param, unit_type_string):
         too_high_lratio = quality_metrics["Lratio"] > param["lratioMax"]
 
         qm_table_list.extend([too_low_iso_dist, too_high_lratio])
-        qm_table_names.extend(["iso dist", "l ratio"])
+        qm_table_names.extend(["isolation dist.", "L-Ratio"])
 
 
     # DO this for the optional params
