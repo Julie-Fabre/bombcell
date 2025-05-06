@@ -1632,16 +1632,15 @@ def get_quality_unit_type(param, quality_metrics):
         (quality_metrics["waveformDuration_peakTrough"] < param["minWvDuration"]) |
         (quality_metrics["waveformDuration_peakTrough"] > param["maxWvDuration"]) |
         (quality_metrics["waveformBaselineFlatness"] > param["maxWvBaselineFraction"]) |
-        (quality_metrics["scndPeakToTroughRatio"] > param["maxScndPeakToTroughRatio_noise "])
+        (quality_metrics["scndPeakToTroughRatio"] > param["maxScndPeakToTroughRatio_noise"])
     )
 
     if param["computeSpatialDecay"] & param["spDecayLinFit"]:
         noise_mask |= (quality_metrics["spatialDecaySlope"] < param["minSpatialDecaySlope"])
     elif param["computeSpatialDecay"]:
         noise_mask |= (
-            #Inequalities "wrong" way round due to -ve sign
-            (quality_metrics["spatialDecaySlope"] > param["minSpatialDecaySlopeExp"]) |
-            (quality_metrics["spatialDecaySlope"] < param["maxSpatialDecaySlopeExp"])
+            (quality_metrics["spatialDecaySlope"] < param["minSpatialDecaySlopeExp"]) |
+            (quality_metrics["spatialDecaySlope"] > param["maxSpatialDecaySlopeExp"])
         )
     
     unit_type[noise_mask] = 0

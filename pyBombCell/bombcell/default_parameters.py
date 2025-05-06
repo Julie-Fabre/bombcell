@@ -107,12 +107,12 @@ def get_default_parameters(
         "keep_only_somatic": True,  # keep only somatic units
         "minWvDuration": 100,  # in us
         "maxWvDuration": 1150,  # in us
-        "minSpatialDecaySlope": -0.008,
+        "minSpatialDecaySlope": 0.008,
         "minSpatialDecaySlopeExp": 0.01,  # in a.u / um
         "maxSpatialDecaySlopeExp": 0.1,  # in a.u / um
         "maxWvBaselineFraction": 0.3,  # maximum absolute value in waveform baseline should not
         # exceed this fraction of the waveforms's absolute peak
-        "maxScndPeakToTroughRatio_noise ": 0.8, 
+        "maxScndPeakToTroughRatio_noise": 0.8, 
         "minTroughToPeak2Ratio_nonSomatic": 5,
         "minWidthFirstPeak_nonSomatic": 4,
         "minWidthMainTrough_nonSomatic": 5,
