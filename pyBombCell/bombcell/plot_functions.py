@@ -188,6 +188,7 @@ def plot_histograms(quality_metrics, param):
         is_continous.append(True)
         plot_metric_thresholds_lower_bound.append("minSpatialDecaySlopeExp")
         plot_metric_thresholds_upper_bound.append("maxSpatialDecaySlopeExp")
+
         x_axis_labels.append("spatial decay")
 
     #add rest of core metrics

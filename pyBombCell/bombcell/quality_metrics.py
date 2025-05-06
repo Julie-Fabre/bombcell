@@ -1639,9 +1639,8 @@ def get_quality_unit_type(param, quality_metrics):
         noise_mask |= (quality_metrics["spatialDecaySlope"] < param["minSpatialDecaySlope"])
     elif param["computeSpatialDecay"]:
         noise_mask |= (
-            #Inequalities "wrong" way round due to -ve sign
-            (quality_metrics["spatialDecaySlope"] > param["minSpatialDecaySlopeExp"]) |
-            (quality_metrics["spatialDecaySlope"] < param["maxSpatialDecaySlopeExp"])
+            (quality_metrics["spatialDecaySlope"] < param["minSpatialDecaySlopeExp"]) |
+            (quality_metrics["spatialDecaySlope"] > param["maxSpatialDecaySlopeExp"])
         )
     
     unit_type[noise_mask] = 0

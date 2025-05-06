@@ -701,7 +701,7 @@ def get_all_quality_metrics(
     return quality_metrics, runtimes
 
 
-def un_bombcell(ks_dir, save_path, param):
+def run_bombcell(ks_dir, save_path, param):
     """
     This function runs the entire bombcell pipeline from input data paths
 
