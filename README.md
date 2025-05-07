@@ -2,9 +2,16 @@
 [![License](https://img.shields.io/badge/license-GPLv3-yellow)](https://github.com/Julie-Fabre/bombcell/blob/master/LICENSE)
 [![View bombcell on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://uk.mathworks.com/matlabcentral/fileexchange/136619-bombcell)
 
-# 💣 Bombcell: find bombshell cells! 💣 <img src="./docs/images/bombcell_logo_crop.svg" width="25%" title="bombcell" alt="bombcell" align="right" vspace = "20">
+# 💣 Bombcell: find bombshell cells! 💣 
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="./docs/images/bombcell_logo_crop.svg"  width="40%" title="bombcell" alt="bombcell" align="right" vspace = "20">
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/images/bombcell_logo_crop_DARK.svg" width="40%" title="bombcell" alt="bombcell" align="right" vspace = "20">
+  <img alt="Shows a black logo in light color mode and a white one in dark color mode." width="25%" title="bombcell" alt="bombcell" align="right" vspace = "20">
+</picture>
 
-Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem, evaluating the quality of recorded units and extracting essential electrophysiological properties. Bombcell can replace manual curation or can be used as a tool to aid manual curation. See [this talk](https://www.youtube.com/watch?v=8Gauba3KzvM&list=PLfhWmWntvjl7kljKozClpjS29DoY8V5pB&index=12) at the annual Neuropixels course about quality control.
+Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem, evaluating the quality of recorded units and extracting essential electrophysiological properties. Bombcell can replace manual curation or can be used as a tool to aid manual curation. See [this talk](https://youtu.be/CvXUtGzkXIY?si=lHkLN885OCb4WJEv) at the annual Neuropixels course about quality control.
+
+📢 We are working on a Python version - it's expected to be ready for release in April 📢
 
 Please star the project to support us, using the top-right "⭐ Star" button.
 
@@ -15,7 +22,7 @@ Documentation and guides to using and troubleshooting bombcell can be found on t
 ### 🔍️ How bombcell works
 
 Below is a flowchart of how bombcell evaluates and classifies each unit:
-<img align="center" src="./docs/images/bombcell_flowchart_full.svg" width=100% height=100%>
+<img align="center" src="./docs/images/bombcell_flowchart.png" width=100% height=100%>
 
 ### 🏁 Quick start guide
 
@@ -23,7 +30,7 @@ Below is a flowchart of how bombcell evaluates and classifies each unit:
 
 Bombcell extracts relevant quality metrics to categorize units into four categories: single somatic units, multi-units, noise units and non-somatic units.
 
-Take a look at [`bombcell_pipeline`](https://github.com/Julie-Fabre/bombcell/blob/main/pipelines/bombcell_pipeline.m) to see an example workflow and play around with our small toy dataset. You can also use the MATLAB live script [`gettingStarted`](https://github.com/Julie-Fabre/bombcell/blob/main/gettingStarted.mlx)
+Take a look at the MATLAB live script [`gettingStarted`](https://github.com/Julie-Fabre/bombcell/blob/main/gettingStarted.mlx) to see an example workflow and play around with our small toy dataset. You can also take a look at the exercise we prepared for the 2024 Neuropixels course [here](https://github.com/BombCell/Neuropixels_course_2024). 
 
 #### Installation
 
@@ -48,6 +55,7 @@ To begin using Bombcell:
 
 In addition we would like to acknowledge:
 - to compute fast ACGs, we use a function (`CCGHeart.c`) part of the [FMAToolbox](https://fmatoolbox.sourceforge.net/), and it is already included in bombcell.
+- to read in spikeGLX meta data, we use a function from Jennifer Colonell's [SpikeGLX_Datafile_Tools](https://github.com/jenniferColonell/SpikeGLX_Datafile_Tools) repository. 
 
 ### 🤗 Support and citing
 
