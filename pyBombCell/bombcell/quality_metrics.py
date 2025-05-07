@@ -29,7 +29,7 @@ def get_waveform_peak_channel(template_waveforms):
     """
     max_value = np.max(template_waveforms, axis=1)
     min_value = np.min(template_waveforms, axis=1)
-    maxChannels = np.argmax(max_value - min_value, axis=1)
+    maxChannels = np.nanargmax(max_value - min_value, axis=1)
 
     return maxChannels
 
@@ -425,7 +425,7 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param,
             spike_counts_per_amp_bin_smooth = medfilt(spike_counts_per_amp_bin, 5)
             # first max value if there are multiple
             # necessarily has a 2 index peak
-            max_amp_bins_smooth = np.argmax(spike_counts_per_amp_bin_smooth)
+            max_amp_bins_smooth = np.nanargmax(spike_counts_per_amp_bin_smooth)
             surrogate_amplitudes = np.concatenate(
                 (
                     spike_counts_per_amp_bin_smooth[-1:max_amp_bins_smooth:-1],
@@ -761,7 +761,7 @@ def time_chunks_to_keep(
             chunk_lengths = chunk_ends - chunk_starts + 1
 
             longest_chunk = np.max(chunk_lengths)  # JF: i don't think is used
-            longest_chunk_idx = np.argmax(chunk_lengths)
+            longest_chunk_idx = np.nanargmax(chunk_lengths)
 
             longest_chunk_start = use_these_times_temp[
                 chunk_starts[longest_chunk_idx].astype(int)
@@ -1052,7 +1052,6 @@ def waveform_shape(
         The parameters 
     """
     min_thresh_detect_peaks_troughs = param["minThreshDetectPeaksTroughs"]
-
     this_waveform = template_waveforms[this_unit, :, maxChannels[this_unit]]
 
     if param["spDecayLinFit"]:
@@ -1075,25 +1074,38 @@ def waveform_shape(
         spatial_decay_slope = np.nan
         waveform_baseline = np.nan
     else:
+        this_waveform_fit = this_waveform
+        if np.size(this_waveform) == 82:  # Checking if the second dimension is 82
+            # For KS4 waveforms, replace the first 24 values with NaN to avoid artificial peaks/troughs
+            #this_waveform[0:24] = np.nan
+            first_valid_index = 25
+        else:
+            # For other waveforms, replace just the first 4 values with NaN
+            #this_waveform[0:4] = np.nan
+            first_valid_index = 5
+
         # New finding peaks/trough for somatic/non-somatic
-        min_prominence = min_thresh_detect_peaks_troughs * np.max(np.abs(this_waveform))
+        min_prominence = min_thresh_detect_peaks_troughs * np.max(np.abs(this_waveform[first_valid_index:]))
 
         trough_locs, trough_dict = find_peaks(
-            this_waveform * -1, prominence=min_prominence, width=0
+            this_waveform[first_valid_index:] * -1, prominence=min_prominence, width=0
         )
+
 
         # more than 1 trough find the biggest
         if trough_locs.size > 1:
-            max_trough_idx = np.argmax(
+            trough_locs += first_valid_index
+            max_trough_idx = np.nanargmax(
                 trough_dict["prominences"]
             )  # prominence is =ve even though is trough
             trough_width = trough_dict["widths"][max_trough_idx].squeeze()
         elif trough_locs.size == 1:
+            trough_locs += first_valid_index
             trough_width = trough_dict["widths"].squeeze()
             trough_locs = np.atleast_1d(trough_locs)
 
         if trough_locs.size == 0:
-            trough_locs = np.argmin(this_waveform)
+            trough_locs = np.nanargmin(this_waveform[first_valid_index:]) + first_valid_index
             trough_locs = np.atleast_1d(trough_locs)
             trough_width = np.nan
             n_troughs = 1
@@ -1102,17 +1114,18 @@ def waveform_shape(
 
         # get the main trough, if multiple trough have the same value choose first
         main_trough = np.min(this_waveform[trough_locs])  # JF: i don't think is used
-        main_trough_idx = np.argmin(this_waveform[trough_locs])
+        main_trough_idx = np.nanargmin(this_waveform[trough_locs])
         trough_loc = trough_locs[main_trough_idx]
         troughs = np.abs(this_waveform[trough_locs])
 
         # find peaks before the trough
         if trough_loc > 2:  # need at least 3 sample to get peak before
             peaks_before_locs, peaks_before_dict = find_peaks(
-                this_waveform[:trough_loc], prominence=min_prominence, width=0
+                this_waveform[first_valid_index:trough_loc], prominence=min_prominence, width=0
             )
+            peaks_before_locs += first_valid_index
             if peaks_before_locs.shape[0] > 1:
-                max_peak = np.argmax(
+                max_peak = np.nanargmax(
                     peaks_before_dict["prominences"]
                 )  # prominence is +ve even though is trough
                 peak_before_width = peaks_before_dict["widths"][max_peak].squeeze()
@@ -1128,7 +1141,7 @@ def waveform_shape(
             )
             peaks_after_locs += trough_loc
             if peaks_after_locs.shape[0] > 1:
-                max_peak = np.argmax(
+                max_peak = np.nanargmax(
                     peaks_after_dict["prominences"]
                 )  # prominence is +ve even though is trough
                 width_after = peaks_after_dict["widths"][max_peak]
@@ -1140,15 +1153,16 @@ def waveform_shape(
         # If no peaks found with the min_prominence
         used_max_before = False
         if peaks_before_locs.size == 0:
-            if trough_loc > 2:  # need at least 3 sample to get peak before
+            if trough_loc > 2:  # need at least 3 samples to get peak before
                 peaks_before_locs, peaks_before_dict = find_peaks(
                     this_waveform[:trough_loc],
                     prominence=0.01 * np.max(np.abs(this_waveform)),
                     width=0,
                 )
+                peaks_before_locs += first_valid_index
                 # only want the biggest of these picks, with smaller prominences
                 if peaks_before_locs.shape[0] > 1:
-                    max_peak = np.argmax(
+                    max_peak = np.nanargmax(
                         peaks_before_dict["prominences"]
                     )  # prominence is +ve even though is trough
                     peaks_before_locs = peaks_before_locs[max_peak].squeeze()
@@ -1160,22 +1174,24 @@ def waveform_shape(
 
             if peaks_before_locs.size == 0:
                 width_before = 0  # 0 if no width_before
-                peaks_before_locs = np.argmax(this_waveform[:trough_loc])
+                peaks_before_locs = np.nanargmax(this_waveform[first_valid_index:trough_loc]) + first_valid_index
 
             used_max_before = True
 
         # same for after the major trough
         used_max_after = False
         if peaks_after_locs.size == 0:
-            if trough_loc > 2:  # need at least 3 sample to get peak before
+            if np.size(this_waveform) - trough_loc > 2:  # need at least 3 samples
                 peaks_after_locs, peaks_after_dict = find_peaks(
                     this_waveform[trough_loc:],
                     prominence=0.01 * np.max(np.abs(this_waveform)),
                     width=0,
                 )
+                if peaks_after_locs.shape[0] == 1:
+                    peaks_after_locs += trough_loc
                 # only want the biggest of these picks, with smaller prominences
                 if peaks_after_locs.shape[0] > 1:
-                    max_peak = np.argmax(
+                    max_peak = np.nanargmax(
                         peaks_after_dict["prominences"]
                     )  # prominence is +ve even though is trough
                     peaks_after_locs = peaks_after_locs[max_peak] + trough_loc
@@ -1185,7 +1201,7 @@ def waveform_shape(
 
             if peaks_after_locs.size == 0:
                 width_after = 0  # JF: i don't think is used
-                peaks_after_locs = np.argmax(this_waveform[trough_loc:]) + trough_loc
+                peaks_after_locs = np.nanargmax(this_waveform[trough_loc:]) + trough_loc
 
             used_max_after = True
 
@@ -1199,14 +1215,14 @@ def waveform_shape(
         # get the main peaks before and after the trough
         peaks_before_locs = np.atleast_1d(np.asarray(peaks_before_locs))
         main_peak_before = np.max(this_waveform[peaks_before_locs])
-        main_peak_before_idx = np.argmax(this_waveform[peaks_before_locs])
+        main_peak_before_idx = np.nanargmax(this_waveform[peaks_before_locs])
         main_peak_before_loc = peaks_before_locs[
             main_peak_before_idx
         ]  # JF: i don't think is used
 
         peaks_after_locs = np.atleast_1d(np.asarray(peaks_after_locs))
         main_peak_after = np.max(this_waveform[peaks_after_locs])
-        main_peak_after_idx = np.argmax(this_waveform[peaks_after_locs])
+        main_peak_after_idx = np.nanargmax(this_waveform[peaks_after_locs])
         main_peak_after_loc = peaks_after_locs[main_peak_after_idx]
 
         # combine peak information
@@ -1223,17 +1239,17 @@ def waveform_shape(
         n_peaks = peaks.size
         n_troughs = troughs.size
 
-        max_waveform_location = np.argmax(np.abs(this_waveform))
+        max_waveform_location = np.nanargmax(np.abs(this_waveform))
         max_waveform_value = this_waveform[max_waveform_location]  # signed value
         if max_waveform_value > 0:  # positive peak
             peak_loc_for_duration = max_waveform_location
-            trough_loc_for_duration = np.argmin(this_waveform[peak_loc_for_duration:])
+            trough_loc_for_duration = np.nanargmin(this_waveform[peak_loc_for_duration:])
             trough_loc_for_duration = (
                 trough_loc_for_duration + peak_loc_for_duration
             )  # arg for truncated waveform
         if max_waveform_value < 0:  # positive peak
             trough_loc_for_duration = max_waveform_location
-            peak_loc_for_duration = np.argmax(this_waveform[trough_loc_for_duration:])
+            peak_loc_for_duration = np.nanargmax(this_waveform[trough_loc_for_duration:])
             peak_loc_for_duration = (
                 peak_loc_for_duration + trough_loc_for_duration
             )  # arg for truncated waveform
@@ -1250,6 +1266,11 @@ def waveform_shape(
         peak1_to_peak2_ratio = get_ratio(main_peak_before, main_peak_after)
         main_peak_to_trough_ratio = get_ratio(max(main_peak_before or 0, main_peak_after or 0), main_trough)
         trough_to_peak2_ratio = get_ratio(main_trough, main_peak_before)
+
+        # plt.figure(figsize=(8, 6))
+        # plt.plot(this_waveform, 'r-', linewidth=2)  
+        # plt.show()  # This will display the plot
+
 
         if param["computeSpatialDecay"]:
             if np.min(np.diff(np.unique(channel_positions[:, 1]))) < 30:

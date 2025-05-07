@@ -172,7 +172,7 @@ param.minTroughToPeak2Ratio_nonSomatic = 5; % trough should be min 5 x bigger th
 
 % distance metrics
 param.isoDmin = 20; % minimum isolation distance value
-param.lratioMax = 0.1; % maximum l-ratio value
+param.lratioMax = 0.3; % maximum l-ratio value
 param.ssMin = NaN; % minimum silhouette score 
 
 % other classification params

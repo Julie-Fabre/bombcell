@@ -107,7 +107,7 @@ def get_default_parameters(
         "keep_only_somatic": True,  # keep only somatic units
         "minWvDuration": 100,  # in us
         "maxWvDuration": 1150,  # in us
-        "minSpatialDecaySlope": 0.008,
+        "minSpatialDecaySlope": -0.008,
         "minSpatialDecaySlopeExp": 0.01,  # in a.u / um
         "maxSpatialDecaySlopeExp": 0.1,  # in a.u / um
         "maxWvBaselineFraction": 0.3,  # maximum absolute value in waveform baseline should not
@@ -121,16 +121,16 @@ def get_default_parameters(
 
         ## Distance metrics
         "isoDmin ": 20,  # minimum isolation distance value
-        "lratioMax": 0.1,  # maximum l-ratio value
+        "lratioMax": 0.3,  # maximum l-ratio value
         "ss_min": np.nan,  # minimum silhouette score, not currently implemented
         ## Other classification parameters
-        "minAmplitude": 20,  # in uV
+        "minAmplitude": 40,  # in uV
         "maxRPVviolations": 0.1,  # max fraction of refractory period violations
         "maxPercSpikesMissing": 20,  # max percentage of missing spikes
         "minNumSpikes": 300,  # minimum number of total spikes recorded
         "maxDrift": 100,  # in um
         "minPresenceRatio": 0.7,  # minimum fraction of time chunks unit must be present for
-        "minSNR": 1,  # min SNR for a good unit
+        "minSNR": 5,  # min SNR for a good unit
     }
 
 
