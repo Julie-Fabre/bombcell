@@ -840,7 +840,7 @@ def run_bombcell(ks_dir, save_path, param):
         raw_waveforms_peak_channel,
         raw_waveforms_id_match,
         save_path,
-    )  # JF: this should be inside bc.get_all_quality_metrics
+    )  
 
     return (
         quality_metrics,
