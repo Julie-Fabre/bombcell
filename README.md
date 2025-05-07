@@ -30,10 +30,13 @@ Below is a flowchart of how bombcell evaluates and classifies each unit:
 
 Bombcell extracts relevant quality metrics to categorize units into four categories: single somatic units, multi-units, noise units and non-somatic units.
 
-Take a look at the MATLAB live script [`gettingStarted`](https://github.com/Julie-Fabre/bombcell/blob/main/gettingStarted.mlx) to see an example workflow and play around with our small toy dataset. You can also take a look at the exercise we prepared for the 2024 Neuropixels course [here](https://github.com/BombCell/Neuropixels_course_2024). 
+Take a look at:
+- the MATLAB live script [`gettingStarted`](https://github.com/Julie-Fabre/bombcell/blob/main/gettingStarted.mlx) to see an example workflow and play around with our small toy dataset.
+- the Python Jupyter notebook [`BC_demo`](https://github.com/Julie-Fabre/bombcell/blob/bleeding_edge/pyBombCell/Demos/BC_demo.ipynb)
+- You can also take a look at the exercise we prepared for the 2024 Neuropixels course [here](https://github.com/BombCell/Neuropixels_course_2024). 
 
 #### Installation
-
+##### Matlab
 Bombcell requires MATLAB>=2019a.
 
 To begin using Bombcell:
@@ -41,7 +44,7 @@ To begin using Bombcell:
 - add bombcell's and the dependancies' folders to [MATLAB's path](https://uk.mathworks.com/help/matlab/ref/pathtool.html).
 - in addition, if you want to compute ephys properties, change your working directory to `bombcell\+bc\+ep\+helpers` in matlab and run `mex -O CCGHeart.c` to able to compute fast ACGs, using part of the [FMAToolbox](https://fmatoolbox.sourceforge.net/).
 
-#### Dependencies
+###### Dependencies
 
 - [npy-matlab](https://github.com/kwikteam/npy-matlab), to load .npy data in.
 - If you have z-lib compressed ephys data, compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp), you will need the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat). More information about compressing ephys data [here](https://www.biorxiv.org/content/biorxiv/early/2023/05/24/2023.05.22.541700.full.pdf?%3Fcollection=).
@@ -56,6 +59,25 @@ To begin using Bombcell:
 In addition we would like to acknowledge:
 - to compute fast ACGs, we use a function (`CCGHeart.c`) part of the [FMAToolbox](https://fmatoolbox.sourceforge.net/), and it is already included in bombcell.
 - to read in spikeGLX meta data, we use a function from Jennifer Colonell's [SpikeGLX_Datafile_Tools](https://github.com/jenniferColonell/SpikeGLX_Datafile_Tools) repository. 
+
+#### Python 
+
+1. Create a conda environment
+```bash
+conda create -n bombcell python=3.11
+conda activate bombcell
+```
+2. Clone latest bombcell repository from github
+```bash
+git clone https://github.com/Julie-Fabre/bombcell.git
+```
+3. Install bombcell from local repository
+```bash
+cd bombcell/pyBombCell
+# you could do `pip install .`, but uv is much quicker!
+pip install uv
+uv pip install . # or uv pip install -e . (-e for editable mode)
+```
 
 ### 🤗 Support and citing
 
