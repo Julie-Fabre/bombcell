@@ -424,15 +424,24 @@ def extract_raw_waveforms(
     # Compute SNR
     SNR = np.zeros(n_clusters)
     for i, cid in enumerate(unique_clusters):
-        # signal: from peak channel
-        peak_waveform = raw_waveforms_full[i, raw_waveforms_peak_channel[i].astype(int), :]
-        s = np.max(np.abs(peak_waveform))
+        mask = unique_clusters == i
+        cluster_idx = np.where(mask)[0]
+        peak_channel = raw_waveforms_peak_channel[cluster_idx].astype(int)
 
-        # noise: mean average deviation
-        baseline_noise = baseline_noise_all[baseline_noise_idx == cid]
-        n = np.median(np.abs(baseline_noise)) / 0.6745
+        # Maximum absolute value of the waveform (signal)
+        peak_waveform = raw_waveforms_full[cluster_idx, peak_channel, :]
+        signal = np.max(np.abs(np.squeeze(peak_waveform)))
 
-        SNR[i] = s / n
+        # Get baseline noise for this cluster
+        baseline_mask = baseline_noise_idx  == i
+        baseline = baseline_noise_all[baseline_mask]
+
+        # Calculate MAD (noise)
+        noise = np.median(np.abs(baseline))
+
+        # Calculate SNR
+        SNR[i] = signal / noise
+
 
     #Save a copy of the waveforms were the row number matches the cluster index
     raw_waveforms_id_match = np.full((max_cluster_id + 1, n_channels - n_sync_channels, spike_width), np.nan)
