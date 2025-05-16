@@ -32,7 +32,7 @@ end
 % Process qMetric if it's a structure and required field is not computed
 if isstruct(qMetric) % if saving failed, qMetric is a structure and the fractionRPVs_estimatedTauR field we need below is not computed yet
     if ~isfield(qMetric, 'fractionRPVs_estimatedTauR')
-        qMetric.fractionRPVs_estimatedTauR = arrayfun(@(x) qMetric.fractionRPVs(x, qMetric.RPV_tauR_estimate(x)), 1:size(qMetric.fractionRPVs, 1));
+        qMetric.fractionRPVs_estimatedTauR = arrayfun(@(x) qMetric.fractionRPVs(x, qMetric.RPV_window_index(x)), 1:size(qMetric.fractionRPVs, 1));
         qMetric = rmfield(qMetric, 'fractionRPVs');
     end
 end
@@ -62,7 +62,7 @@ unitType((qMetric.percentageSpikesMissing_gaussian > param.maxPercSpikesMissing 
     isnan(unitType)) = 2; % MUA
 
 if param.computeDistanceMetrics && ~isnan(param.isoDmin)
-    unitType((qMetric.isoD < param.isoDmin | qMetric.Lratio > param.lratioMax) & ...
+    unitType((qMetric.isolationDistance < param.isoDmin | qMetric.Lratio > param.lratioMax) & ...
         isnan(unitType)) = 2; % MUA
 end
 

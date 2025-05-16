@@ -1,4 +1,4 @@
-function [nPeaks, nTroughs, spatialDecaySlope, waveformBaseline, scndPeakToTroughRatio, mainPeakToTroughRatio, peak1ToPeak2Ratio,...
+function [nPeaks, nTroughs, spatialDecaySlope, waveformBaseline, scndPeakToTroughRatio, mainPeakToTroughRatio, peak1ToPeak2Ratio, ...
     troughToPeak2Ratio, mainPeak_before_width, mainPeak_after_width, mainTrough_width, peakLocs, troughLocs, waveformDuration_peakTrough, ...
     spatialDecayPoints, thisWaveform, spatialDecayPoints_loc, spatialDecayFit_1] = waveformShape(templateWaveforms, ...
     thisUnit, maxChannel, param, channelPositions, waveformBaselineWindow)
@@ -62,16 +62,16 @@ function [nPeaks, nTroughs, spatialDecaySlope, waveformBaseline, scndPeakToTroug
 % (find peaks and troughs using MATLAB's built-in function)
 thisWaveform = templateWaveforms(thisUnit, :, maxChannel);
 nChannels_to_eval = 1;
-if any(isnan(thisWaveform)) || all(thisWaveform == 0) % kilosort can sometimes 
+if any(isnan(thisWaveform)) || all(thisWaveform == 0) % kilosort can sometimes
     % return all NaNs or zeros in a waveform (not sure why), we classify these units as noise
     nPeaks = NaN;
     nTroughs = NaN;
-    mainPeak_before_size = nan(1,nChannels_to_eval);
-    mainPeak_after_size = nan(1,nChannels_to_eval);
-    mainTrough_size = nan(1,nChannels_to_eval);
-    mainPeak_before_width = nan(1,nChannels_to_eval);
-    mainPeak_after_width = nan(1,nChannels_to_eval);
-    mainTrough_width = nan(1,nChannels_to_eval);
+    mainPeak_before_size = nan(1, nChannels_to_eval);
+    mainPeak_after_size = nan(1, nChannels_to_eval);
+    mainTrough_size = nan(1, nChannels_to_eval);
+    mainPeak_before_width = nan(1, nChannels_to_eval);
+    mainPeak_after_width = nan(1, nChannels_to_eval);
+    mainTrough_width = nan(1, nChannels_to_eval);
     peakLocs = NaN;
     troughLocs = NaN;
     waveformDuration_peakTrough = NaN;
@@ -83,27 +83,27 @@ if any(isnan(thisWaveform)) || all(thisWaveform == 0) % kilosort can sometimes
     spatialDecayPoints = nan(1, num_buff);
     spatialDecaySlope = NaN;
     waveformBaseline = NaN;
-    spatialDecayPoints_loc = nan(1, num_buff); 
+    spatialDecayPoints_loc = nan(1, num_buff);
     spatialDecayFit_1 = NaN;
     scndPeakToTroughRatio = NaN;
     mainPeakToTroughRatio = NaN;
     peak1ToPeak2Ratio = NaN;
     troughToPeak2Ratio = NaN;
-    
+
 else
     % get waveform peaks, troughs locations, sizes and widths for top 17
-    % channels 
+    % channels
     theseChannels = maxChannel; % - 8 : maxChannel + 8;
-    for iChannel = 1%:17 % evaluate peak and trough sizes and widths for top 17 channels (To do - only 1 channel for now)
-        if theseChannels(iChannel) > 0 && theseChannels(iChannel) <= size(templateWaveforms,3)
+    for iChannel = 1 %:17 % evaluate peak and trough sizes and widths for top 17 channels (To do - only 1 channel for now)
+        if theseChannels(iChannel) > 0 && theseChannels(iChannel) <= size(templateWaveforms, 3)
             if theseChannels(iChannel) == maxChannel
                 thisWaveform = templateWaveforms(thisUnit, :, theseChannels(iChannel));
-                [nPeaks(iChannel), nTroughs(iChannel), mainPeak_before_size(iChannel), mainPeak_after_size(iChannel), mainTrough_size(iChannel),...
+                [nPeaks(iChannel), nTroughs(iChannel), mainPeak_before_size(iChannel), mainPeak_after_size(iChannel), mainTrough_size(iChannel), ...
                     mainPeak_before_width(iChannel), mainPeak_after_width(iChannel), mainTrough_width(iChannel), peakLocs, troughLocs, PKS, TRS, troughLoc] = ...
                     bc.qm.helpers.getWaveformPeakProperties(thisWaveform, param);
             else
                 thisWaveform = templateWaveforms(thisUnit, :, theseChannels(iChannel));
-                [nPeaks(iChannel), nTroughs(iChannel), mainPeak_before_size(iChannel), mainPeak_after_size(iChannel), mainTrough_size(iChannel),...
+                [nPeaks(iChannel), nTroughs(iChannel), mainPeak_before_size(iChannel), mainPeak_after_size(iChannel), mainTrough_size(iChannel), ...
                     mainPeak_before_width(iChannel), mainPeak_after_width(iChannel), mainTrough_width(iChannel), ~, ~, ~, ~, ~] = ...
                     bc.qm.helpers.getWaveformPeakProperties(thisWaveform, param);
             end
@@ -128,8 +128,8 @@ else
         max_waveform_abs_value = max_waveform_abs_value(1);
     end
     max_waveform_location = find(abs(thisWaveform) == max_waveform_abs_value);
-     if length(max_waveform_location) > 1
-       max_waveform_location = max_waveform_location(1);
+    if length(max_waveform_location) > 1
+        max_waveform_location = max_waveform_location(1);
     end
     max_waveform_value = thisWaveform(max_waveform_location);
     if max_waveform_value(end) > 0
@@ -154,11 +154,11 @@ else
     else
         waveformDuration_peakTrough = NaN;
     end
-    
+
     % store quality metric ratios
     scndPeakToTroughRatio = abs(mainPeak_after_size./mainTrough_size); ...
-    peak1ToPeak2Ratio = abs(mainPeak_before_size./mainPeak_after_size);
-    mainPeakToTroughRatio = max([mainPeak_before_size, mainPeak_after_size], [], 2)./ mainTrough_size;
+        peak1ToPeak2Ratio = abs(mainPeak_before_size./mainPeak_after_size);
+    mainPeakToTroughRatio = max([mainPeak_before_size, mainPeak_after_size], [], 2) ./ mainTrough_size;
     troughToPeak2Ratio = abs(mainTrough_size./mainPeak_before_size);
 
 
@@ -167,11 +167,11 @@ else
     [spatialDecaySlope, spatialDecayFit, spatialDecayPoints, spatialDecayPoints_loc, estimatedUnitXY] = ...
         bc.qm.helpers.getSpatialDecay(templateWaveforms, thisUnit, maxChannel, channelPositions, linearFit, param.normalizeSpDecay, param.computeSpatialDecay);
 
-       if linearFit
-            spatialDecayFit_1 = spatialDecayFit(end);
-       else
-            spatialDecayFit_1 = spatialDecayFit(1);
-       end
+    if linearFit
+        spatialDecayFit_1 = spatialDecayFit(end);
+    else
+        spatialDecayFit_1 = spatialDecayFit(1);
+    end
 
     % (get waveform baseline fraction)
     if ~isnan(waveformBaselineWindow(1))
@@ -180,6 +180,12 @@ else
     else
         waveformBaseline = NaN;
     end
+
+    % ensure ratio format is OK
+    scndPeakToTroughRatio = abs(scndPeakToTroughRatio);
+    mainPeakToTroughRatio = abs(mainPeakToTroughRatio);
+    peak1ToPeak2Ratio = abs(peak1ToPeak2Ratio);
+    troughToPeak2Ratio = abs(troughToPeak2Ratio);
 
     % (plot waveform)
     if param.plotDetails
@@ -198,19 +204,19 @@ else
         else
             % Generate points for the exponential fit curve
             fitX = linspace(min(spatialDecayPoints_loc), max(spatialDecayPoints_loc), 100);
-            spatialDecayFitFun = @(x) spatialDecayFit(1) * exp(-spatialDecaySlope * x);
+            spatialDecayFitFun = @(x) spatialDecayFit(1) * exp(-spatialDecaySlope*x);
             fitY = spatialDecayFitFun(fitX);
-            
+
             % Plot the exponential fit curve
             ef = plot(fitX, fitY, '-', 'Color', colorMtx(2, :, :));
-            
+
             % Add legend with decay rate
             legend(ef, {sprintf('Exp. fit, decay rate = %.4f', spatialDecaySlope)}, ...
                 'TextColor', [0.7, 0.7, 0.7], 'Color', 'none')
         end
         ylabel('trough size (a.u.)')
         xlabel('distance from peak channel (um)')
-        
+
 
         subplot(4, 2, 1:6)
         set(gca, 'YDir', 'reverse');
