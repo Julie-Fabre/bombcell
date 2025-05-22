@@ -7,7 +7,7 @@ from bombcell.loading_utils import get_gain_spikeglx
 def get_default_parameters(
     kilosort_path,
     raw_file=None,
-    kilosort_version=None,
+    kilosort_version=4,
     meta_file=None,
     gain_to_uV=None,
 ):
