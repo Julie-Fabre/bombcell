@@ -550,10 +550,7 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param,
         percent_missing_symmetric
     )
 
-
-def fraction_RP_violations(
-    these_spike_times, these_amplitudes, time_chunks, param
-):
+def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, param):
     """
     This function estimates the fraction of refractory period violations for a given unit.
 
@@ -566,9 +563,14 @@ def fraction_RP_violations(
     time_chunks : ndarray
         The time chunks to consider
     param : dict
-        The param dictionary
-    use_this_tauR : float
-        The Value of tauR to use after testing different values
+        The param dictionary containing:
+        - tauR_valuesMin: minimum refractory period value
+        - tauR_valuesMax: maximum refractory period value
+        - tauR_valuesStep: step size for refractory period values
+        - tauC: censored period
+        - hillOrLlobetMethod: boolean to choose method
+        - plotDetails: boolean to enable plotting (default: False)
+        - RPV_tauR_estimate: index of tauR to use for plotting (optional)
 
     Returns
     -------
@@ -577,103 +579,209 @@ def fraction_RP_violations(
     num_violations : ndarray
         The number of refractory period violations for the unit
     """
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
 
     tauR_min = param["tauR_valuesMin"]
     tauR_max = param["tauR_valuesMax"]
     tauR_step = param["tauR_valuesStep"]
     assert tauR_min <= tauR_max, "tauR_max is smaller than tauR_min! Check parameters!"
 
-    tauR_window = np.arange(
-        tauR_min, tauR_max + tauR_step, tauR_step
-    )  # arange doesn't include the end point!
+    # Create tauR window array (includes endpoint)
+    tauR_window = np.arange(tauR_min, tauR_max + tauR_step, tauR_step)
+    tauC = param["tauC"]
+    
+    # Set default value for plotting if not provided
+    if "plotDetails" not in param:
+        param["plotDetails"] = False
 
-    tauC = param["tauC"] 
-
-    # initialize arrays
+    # Initialize arrays
     fraction_RPVs = np.zeros((time_chunks.shape[0] - 1, tauR_window.shape[0]))
     overestimate_bool = np.zeros_like(fraction_RPVs)
     num_violations = np.zeros_like(fraction_RPVs)
+    
+    # Initialize raw fraction (violations/total spikes) for plotting
+    RPV_fraction = np.zeros_like(fraction_RPVs)
 
-    # loop through each time chunk
+    # Check if RPV_tauR_estimate is provided
+    if "RPV_tauR_estimate" not in param:
+        param["RPV_tauR_estimate"] = None
+
+    # Create figure and gridspec if plotting is enabled
+    if param["plotDetails"]:
+        fig = plt.figure(figsize=(12, 8))
+        gs = GridSpec(2, len(time_chunks) - 1, figure=fig)
+        
+        # Create the top panel that spans all columns
+        ax_top = fig.add_subplot(gs[0, :])
+
+    # Loop through each time chunk
     for time_chunk_idx in range(time_chunks.shape[0] - 1):
-        # number of spikes in a chunks
+        # Get spikes in this chunk
         chunk_spike_times = these_spike_times[
             np.logical_and(
                 these_spike_times >= time_chunks[time_chunk_idx],
                 these_spike_times < time_chunks[time_chunk_idx + 1],
             )
         ]
+        
+        # Number of spikes in chunk
         n_chunk = chunk_spike_times.size
-
-        chunk_ISIs = np.diff(chunk_spike_times)
-
+        
+        # Calculate duration of this chunk
         duration_chunk = time_chunks[time_chunk_idx + 1] - time_chunks[time_chunk_idx]
-        # total times at which refractory period violation can occur
+        
+        # Calculate chunk ISIs
+        if n_chunk > 1:
+            chunk_ISIs = np.diff(chunk_spike_times)
+        else:
+            chunk_ISIs = np.array([])
+        
+        # Loop through each tauR value
         for i_tau_r, tauR in enumerate(tauR_window):
+            # Calculate number of refractory period violations
+            if n_chunk > 1:
+                num_violations[time_chunk_idx, i_tau_r] = np.sum(chunk_ISIs <= tauR)
+                # Calculate raw fraction for plotting
+                RPV_fraction[time_chunk_idx, i_tau_r] = num_violations[time_chunk_idx, i_tau_r] / n_chunk
+            else:
+                num_violations[time_chunk_idx, i_tau_r] = 0
+                RPV_fraction[time_chunk_idx, i_tau_r] = 0
+                
+            # Apply either Hill or Llobet method
             if param["hillOrLlobetMethod"]:
-                ## equivalent to the old code!
-                k = (
-                    2
-                    * (tauR - tauC)
-                    * n_chunk**2
-                )
-                T = (time_chunks[time_chunk_idx + 1] - time_chunks[time_chunk_idx])
-
-                num_violations[time_chunk_idx, i_tau_r] = np.sum(
-                    np.diff(chunk_spike_times) <= tauR
-                )
-
-                if (
-                    num_violations[time_chunk_idx, i_tau_r] == 0
-                ):  # NO observed refractory period violations
-                    # this might be due to having no/few spikes in the region, use presence ratio
+                # Hill et al. method
+                k = 2 * (tauR - tauC) * n_chunk**2
+                T = duration_chunk
+                
+                if num_violations[time_chunk_idx, i_tau_r] == 0:
+                    # No observed refractory period violations
                     fraction_RPVs[time_chunk_idx, i_tau_r] = 0
                     overestimate_bool[time_chunk_idx, i_tau_r] = 0
-                else:  # solve the eqn above
-                    rts = np.roots((-k, k, -num_violations[time_chunk_idx, i_tau_r] * T))
-
-                    if ~np.all(np.iscomplex(rts)):
-                        fraction_RPVs[time_chunk_idx, i_tau_r] = np.min(rts)
+                else:
+                    # Solve the quadratic equation
+                    # Using coefficients [k, -k, nRPVs * T] to match MATLAB
+                    rts = np.roots([k, -k, num_violations[time_chunk_idx, i_tau_r] * T])
+                    
+                    # Get minimum root and check if it's real
+                    min_root = np.min(rts)
+                    if np.isreal(min_root):
+                        fraction_RPVs[time_chunk_idx, i_tau_r] = np.real(min_root)
                         overestimate_bool[time_chunk_idx, i_tau_r] = 0
-
-                    # function returns imaginary number if r is too high: over-estimate number
                     else:
-                        if (
-                            num_violations[time_chunk_idx, i_tau_r] < n_chunk
-                        ):  # to not get a negative number or a 0
-                            fraction_RPVs[time_chunk_idx, i_tau_r] = num_violations[
-                                time_chunk_idx, i_tau_r
-                            ] / (
-                                2
-                                * (tauR - tauC)
-                                * (n_chunk - num_violations[time_chunk_idx, i_tau_r])
+                        # If roots are complex, use approximation formula
+                        if num_violations[time_chunk_idx, i_tau_r] < n_chunk:
+                            fraction_RPVs[time_chunk_idx, i_tau_r] = num_violations[time_chunk_idx, i_tau_r] / (
+                                2 * (tauR - tauC) * (n_chunk - num_violations[time_chunk_idx, i_tau_r])
                             )
-                            # fraction_RPVs[time_chunk_idx, i] = num_violations[time_chunk_idx, i] / ((n_chunk - num_violations[time_chunk_idx, i]))
                         else:
                             fraction_RPVs[time_chunk_idx, i_tau_r] = 1
                             overestimate_bool[time_chunk_idx, i_tau_r] = 1
-
-                    if (
-                        fraction_RPVs[time_chunk_idx, i_tau_r] > 1
-                    ):  # A value above 1 makes no sense, the assumptions are failing
+                            
+                    # Cap fraction at 1 (assumptions failing if > 1)
+                    if fraction_RPVs[time_chunk_idx, i_tau_r] > 1:
                         fraction_RPVs[time_chunk_idx, i_tau_r] = 1
+                        overestimate_bool[time_chunk_idx, i_tau_r] = 1
             else:
-            
+                # Llobet et al. method
                 N = len(chunk_spike_times)
                 isi_violations_sum = 0
 
+                # Count all pair-wise violations
                 for i in range(N):
                     for j in range(i+1, N):
                         isi = chunk_spike_times[j] - chunk_spike_times[i]
                         if isi <= tauR and isi >= tauC:
                             isi_violations_sum += 1
 
-                underRoot = 1 - (isi_violations_sum * (duration_chunk - 2 * N * tauC)) / (N **2 * (tauR - tauC))
-                if underRoot >= 0:
-                    fraction_RPVs[time_chunk_idx, i_tau_r] = 1 - np.sqrt(underRoot)
+                # Calculate fraction using Llobet equation
+                if N > 0:  # Avoid division by zero
+                    underRoot = 1 - (isi_violations_sum * (duration_chunk - 2 * N * tauC)) / (N**2 * (tauR - tauC))
+                    if underRoot >= 0:
+                        fraction_RPVs[time_chunk_idx, i_tau_r] = 1 - np.sqrt(underRoot)
+                    else:
+                        fraction_RPVs[time_chunk_idx, i_tau_r] = 1
+                        overestimate_bool[time_chunk_idx, i_tau_r] = 1
                 else:
-                    fraction_RPVs[time_chunk_idx, i_tau_r] = 1
-
+                    fraction_RPVs[time_chunk_idx, i_tau_r] = 0
+        
+        # Plot ISI histogram if requested
+        if param["plotDetails"]:
+            # Create a subplot for each time chunk in the bottom row
+            ax_bottom = fig.add_subplot(gs[1, time_chunk_idx])
+            
+            if n_chunk > 1:
+                # Clean ISIs - removing duplicates (censored period)
+                clean_isis = chunk_ISIs[chunk_ISIs >= tauC]
+                
+                # Convert to ms for plotting
+                clean_isis_ms = clean_isis * 1000
+                
+                # Create histogram
+                hist_values, edges = np.histogram(clean_isis_ms, bins=np.arange(0, 100.5, 0.5))
+                centers = edges[:-1] + np.diff(edges)/2
+                
+                # Plot histogram
+                ax_bottom.bar(centers, hist_values, width=0.5, color=[0, 0.35, 0.71], edgecolor=[0, 0.35, 0.71])
+                
+                # Add labels to first subplot only
+                if time_chunk_idx == 0:
+                    ax_bottom.set_xlabel('Interspike interval (ms)')
+                    ax_bottom.set_ylabel('# of spikes')
+                else:
+                    ax_bottom.set_xticks([])
+                    ax_bottom.set_yticks([])
+                
+                # Get y-limits for reference line
+                ylims = ax_bottom.get_ylim()
+                
+                # Calculate baseline firing rate for reference line (similar to MATLAB's nanmean)
+                long_isis = clean_isis_ms[(clean_isis_ms >= 400) & (clean_isis_ms <= 500)]
+                if len(long_isis) > 0:
+                    baseline = np.nanmean(np.histogram(long_isis, bins=np.arange(400, 500.5, 0.5))[0])
+                    ax_bottom.plot([0, 10], [baseline, baseline], '--', color=[0.86, 0.2, 0.13])
+                
+                # Add refractory period lines
+                RPV_tauR_estimate = param["RPV_tauR_estimate"]
+                if RPV_tauR_estimate is None:
+                    # Show min and max tauR if no specific estimate
+                    if len(tauR_window) > 1:
+                        for idx in [0, len(tauR_window)-1]:
+                            ax_bottom.axvline(x=tauR_window[idx] * 1000, color=[0.86, 0.2, 0.13])
+                        
+                        # Add title with min/max RPV rates
+                        ax_bottom.set_title(f"{fraction_RPVs[time_chunk_idx, 0]*100:.0f}% rpv\n"
+                                  f"{fraction_RPVs[time_chunk_idx, -1]*100:.0f}% rpv")
+                    else:
+                        # Just one tauR value
+                        ax_bottom.axvline(x=tauR_window[0] * 1000, color=[0.86, 0.2, 0.13])
+                        ax_bottom.set_title(f"{fraction_RPVs[time_chunk_idx, 0]*100:.0f}% rpv\n"
+                                  f"frac. rpv={RPV_fraction[time_chunk_idx, 0]:.3f}")
+                else:
+                    # Use the specified tauR estimate
+                    if 0 <= RPV_tauR_estimate < len(tauR_window):
+                        ax_bottom.axvline(x=tauR_window[RPV_tauR_estimate] * 1000, color=[0.86, 0.2, 0.13])
+                        ax_bottom.set_title(f"{fraction_RPVs[time_chunk_idx, RPV_tauR_estimate]*100:.0f}% rpv\n"
+                                  f"frac. rpv={RPV_fraction[time_chunk_idx, RPV_tauR_estimate]:.3f}")
+    
+    # Create top row plot with spike amplitudes vs time if plotting is enabled
+    if param["plotDetails"]:
+        # Plot spike amplitudes vs time in the top panel
+        ax_top.scatter(these_spike_times, these_amplitudes, s=4, c=[0, 0.35, 0.71], alpha=0.7)
+        
+        # Add vertical lines for time chunks
+        ylims = ax_top.get_ylim()
+        for i, t in enumerate(time_chunks):
+            ax_top.axvline(x=t, color=[0.7, 0.7, 0.7])
+        
+        ax_top.set_xlabel('time (s)')
+        ax_top.set_ylabel('amplitude scaling\nfactor')
+        
+        # Adjust layout and display
+        plt.tight_layout()
+        plt.show()
+    
     return fraction_RPVs, num_violations
 
 
