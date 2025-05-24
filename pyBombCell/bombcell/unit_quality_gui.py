@@ -303,26 +303,17 @@ class InteractiveUnitQualityGUI:
                     ax.text(x_offset - 5, y_offset, f'{ch}', fontsize=8, ha='right', va='center')
                     
             # Mark peaks and troughs on peak channel only
-            if 'nPeaks' in metrics and 'nTroughs' in metrics:
+            if max_ch in layout_channels:
                 peak_waveform = template[:, max_ch]
                 # Find peak channel position in grid
-                peak_idx = channels_to_plot.index(max_ch) if max_ch in channels_to_plot else 0
+                peak_idx = layout_channels.index(max_ch)
                 peak_row = peak_idx // n_cols
                 peak_col = peak_idx % n_cols
                 peak_x_offset = peak_col * 100
                 peak_y_offset = peak_row * amp_range * 1.2
                 
-                try:
-                    from scipy.signal import find_peaks
-                    peaks, _ = find_peaks(peak_waveform, height=np.max(peak_waveform)*0.3)
-                    troughs, _ = find_peaks(-peak_waveform, height=-np.min(peak_waveform)*0.3)
-                    
-                    for peak in peaks:
-                        ax.plot(peak + peak_x_offset, peak_waveform[peak] + peak_y_offset, 'ro', markersize=4)
-                    for trough in troughs:
-                        ax.plot(trough + peak_x_offset, peak_waveform[trough] + peak_y_offset, 'bo', markersize=4)
-                except ImportError:
-                    pass
+                # Detect all peaks and troughs
+                self.mark_peaks_and_troughs(ax, peak_waveform, peak_x_offset, peak_y_offset, metrics, amp_range)
                     
         ax.set_title('Template waveforms')
         ax.set_xticks([])
@@ -777,6 +768,77 @@ class InteractiveUnitQualityGUI:
                     channels_sorted[peak_idx], channels_sorted[mid_point] = channels_sorted[mid_point], channels_sorted[peak_idx]
             
             return channels_sorted
+    
+    def mark_peaks_and_troughs(self, ax, waveform, x_offset, y_offset, metrics, amp_range):
+        """Mark all peaks and troughs on waveform with duration line"""
+        try:
+            from scipy.signal import find_peaks
+            
+            # Find all peaks (positive deflections)
+            peak_height_threshold = np.max(waveform) * 0.2
+            peaks, peak_properties = find_peaks(waveform, height=peak_height_threshold, distance=5)
+            
+            # Find all troughs (negative deflections)
+            trough_height_threshold = -np.min(waveform) * 0.2
+            troughs, trough_properties = find_peaks(-waveform, height=trough_height_threshold, distance=5)
+            
+            # Mark all peaks with red circles
+            for i, peak_idx in enumerate(peaks):
+                ax.plot(peak_idx + x_offset, waveform[peak_idx] + y_offset, 'ro', markersize=6, 
+                       markeredgecolor='darkred', markeredgewidth=1)
+                # Label peak number
+                ax.text(peak_idx + x_offset, waveform[peak_idx] + y_offset + amp_range*0.1, f'P{i+1}', 
+                       ha='center', va='bottom', fontsize=8, color='red', weight='bold')
+            
+            # Mark all troughs with blue circles
+            for i, trough_idx in enumerate(troughs):
+                ax.plot(trough_idx + x_offset, waveform[trough_idx] + y_offset, 'bo', markersize=6,
+                       markeredgecolor='darkblue', markeredgewidth=1)
+                # Label trough number
+                ax.text(trough_idx + x_offset, waveform[trough_idx] + y_offset - amp_range*0.1, f'T{i+1}', 
+                       ha='center', va='top', fontsize=8, color='blue', weight='bold')
+            
+            # Draw duration line from main peak to main trough
+            if len(peaks) > 0 and len(troughs) > 0:
+                # Find main peak (highest amplitude)
+                main_peak_idx = peaks[np.argmax(waveform[peaks])]
+                # Find main trough (most negative)
+                main_trough_idx = troughs[np.argmin(waveform[troughs])]
+                
+                # Draw line from main peak to main trough
+                ax.plot([main_peak_idx + x_offset, main_trough_idx + x_offset], 
+                       [waveform[main_peak_idx] + y_offset, waveform[main_trough_idx] + y_offset], 
+                       'g-', linewidth=2, alpha=0.7)
+                
+                # Add duration annotation
+                duration_samples = abs(main_trough_idx - main_peak_idx)
+                duration_ms = duration_samples / 30.0  # Assuming 30kHz sampling
+                mid_x = (main_peak_idx + main_trough_idx) / 2 + x_offset
+                mid_y = (waveform[main_peak_idx] + waveform[main_trough_idx]) / 2 + y_offset
+                
+                ax.text(mid_x, mid_y, f'{duration_ms:.1f}ms', ha='center', va='center',
+                       bbox=dict(boxstyle='round,pad=0.3', facecolor='lightgreen', alpha=0.8),
+                       fontsize=8, weight='bold')
+                
+                # Mark main peak and trough with larger markers
+                ax.plot(main_peak_idx + x_offset, waveform[main_peak_idx] + y_offset, 'ro', 
+                       markersize=8, markeredgecolor='darkred', markeredgewidth=2)
+                ax.plot(main_trough_idx + x_offset, waveform[main_trough_idx] + y_offset, 'bo', 
+                       markersize=8, markeredgecolor='darkblue', markeredgewidth=2)
+            
+        except ImportError:
+            # Fallback: simple peak/trough detection without scipy
+            max_idx = np.argmax(waveform)
+            min_idx = np.argmin(waveform)
+            
+            # Mark main peak and trough
+            ax.plot(max_idx + x_offset, waveform[max_idx] + y_offset, 'ro', markersize=6)
+            ax.plot(min_idx + x_offset, waveform[min_idx] + y_offset, 'bo', markersize=6)
+            
+            # Draw duration line
+            ax.plot([max_idx + x_offset, min_idx + x_offset], 
+                   [waveform[max_idx] + y_offset, waveform[min_idx] + y_offset], 
+                   'g-', linewidth=2, alpha=0.7)
     
     def get_nearby_channels_for_spatial_decay(self, peak_channel, n_channels):
         """Get nearby channels for spatial decay plot - fewer points like MATLAB"""
