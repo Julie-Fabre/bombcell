@@ -449,17 +449,31 @@ def load_metrics_for_gui(ks_dir, quality_metrics, ephys_properties=None, param=N
     """
     from . import loading_utils as bc_load
     
-    # Load ephys data
-    ephys_data = bc_load.load_ephys_data(ks_dir)
+    # Load ephys data (returns tuple)
+    ephys_data_tuple = bc_load.load_ephys_data(ks_dir)
+    
+    # Convert tuple to dictionary
+    ephys_data = {
+        'spike_times': ephys_data_tuple[0] / 30000.0,  # Convert to seconds
+        'spike_clusters': ephys_data_tuple[1],
+        'template_waveforms': ephys_data_tuple[2],
+        'template_amplitudes': ephys_data_tuple[3],
+        'pc_features': ephys_data_tuple[4],
+        'pc_features_idx': ephys_data_tuple[5],
+        'channel_positions': ephys_data_tuple[6]
+    }
     
     # Load raw waveforms if available
     raw_waveforms = None
     raw_wf_path = Path(ks_dir) / "bombcell" / "templates._bc_rawWaveforms.npy"
     if raw_wf_path.exists():
-        raw_waveforms = {
-            'average': np.load(raw_wf_path),
-            'peak_channels': np.load(Path(ks_dir) / "bombcell" / "templates._bc_rawWaveformPeakChannels.npy")
-        }
+        try:
+            raw_waveforms = {
+                'average': np.load(raw_wf_path, allow_pickle=True),
+                'peak_channels': np.load(Path(ks_dir) / "bombcell" / "templates._bc_rawWaveformPeakChannels.npy", allow_pickle=True)
+            }
+        except FileNotFoundError:
+            raw_waveforms = None
     
     return {
         'ephys_data': ephys_data,
