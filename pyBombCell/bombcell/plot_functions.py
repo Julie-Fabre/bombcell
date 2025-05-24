@@ -114,7 +114,7 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
             n_units_in_cat = og_id.size
             if n_units_in_cat !=0:
                 for id in og_id:
-                    axs[img_pos[i][0]][img_pos[i][1]].plot(template_waveforms[id, 20:, quality_metrics['maxChannels'][id]], color = 'black', alpha = 0.1)
+                    axs[img_pos[i][0]][img_pos[i][1]].plot(template_waveforms[id, 0:, quality_metrics['maxChannels'][id]], color = 'black', alpha = 0.1)
                     axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
                     axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
                     axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
@@ -133,7 +133,7 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
             n_units_in_cat = og_id.size
             if n_units_in_cat !=0:
                 for id in og_id:
-                    axs[img_pos[i][0]][img_pos[i][1]].plot(template_waveforms[id, 20:, quality_metrics['maxChannels'][id]], color = 'black', alpha = 0.1)
+                    axs[img_pos[i][0]][img_pos[i][1]].plot(template_waveforms[id, 0:, quality_metrics['maxChannels'][id]], color = 'black', alpha = 0.1)
                     axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
                     axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
                     axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
@@ -163,132 +163,350 @@ def plot_histograms(quality_metrics, param):
     quality_metrics['peak1ToPeak2Ratio'][quality_metrics['peak1ToPeak2Ratio'] == np.inf] = np.nan
     quality_metrics['troughToPeak2Ratio'][quality_metrics['troughToPeak2Ratio'] == np.inf] = np.nan
 
-    #find which metrics to add
-    color_pass = {"Noise" : "k", "Somatic" : "k", "MUA" : 'g'}
-    color_fail = {"Noise" : "r", "Somatic" : "b", "MUA" : 'orange'}
+    # Define MATLAB-style color matrices
+    red_colors = np.array([
+        [0.8627, 0.0784, 0.2353],  # Crimson
+        [1.0000, 0.1412, 0.0000],  # Scarlet
+        [0.7255, 0.0000, 0.0000],  # Cherry
+        [0.5020, 0.0000, 0.1255],  # Burgundy
+        [0.5020, 0.0000, 0.0000],  # Maroon
+        [0.8039, 0.3608, 0.3608],  # Indian Red
+    ])
 
-    plot_metric_keys = ["nPeaks", "nTroughs", "waveformBaselineFlatness", "waveformDuration_peakTrough", "scndPeakToTroughRatio"]
-    metric_types = ["Noise", "Noise", "Noise", "Noise", "Noise"]
-    is_continous = [False, False, True, True, True]
-    plot_metric_thresholds_lower_bound = [None, None, None, "minWvDuration", None]
-    plot_metric_thresholds_upper_bound = ["maxNPeaks", "maxNTroughs", "maxWvBaselineFraction", "maxWvDuration", "maxScndPeakToTroughRatio_noise"]
-    x_axis_labels = ["# peaks", "# troughs", "baseline flatness", "waveform duration", "peak2/trough"]
+    blue_colors = np.array([
+        [0.2549, 0.4118, 0.8824],  # Royal Blue
+        [0.0000, 0.0000, 0.5020],  # Navy Blue
+    ])
 
-    #Add correct type of spatial decay if spatial decay is calculated
-    if param["computeSpatialDecay"] & param["spDecayLinFit"]:
-        plot_metric_keys.append("spatialDecaySlope")
-        metric_types.append("Noise")
-        is_continous.append(True)
-        plot_metric_thresholds_lower_bound.append("minSpatialDecaySlope")
-        plot_metric_thresholds_upper_bound.append(None)
-        x_axis_labels.append("spatial decay")
-    elif param["computeSpatialDecay"]:
-        plot_metric_keys.append("spatialDecaySlope")
-        metric_types.append("Noise")
-        is_continous.append(True)
-        plot_metric_thresholds_lower_bound.append("minSpatialDecaySlopeExp")
-        plot_metric_thresholds_upper_bound.append("maxSpatialDecaySlopeExp")
+    darker_yellow_orange_colors = np.array([
+        [0.7843, 0.7843, 0.0000],  # Dark Yellow
+        [0.8235, 0.6863, 0.0000],  # Dark Golden Yellow
+        [0.8235, 0.5294, 0.0000],  # Dark Orange
+        [0.8039, 0.4118, 0.3647],  # Dark Coral
+        [0.8235, 0.3176, 0.2275],  # Dark Tangerine
+        [0.8235, 0.6157, 0.6510],  # Dark Salmon
+        [0.7882, 0.7137, 0.5765],  # Dark Goldenrod
+        [0.8235, 0.5137, 0.3922],  # Dark Light Coral
+        [0.7569, 0.6196, 0.0000],  # Darker Goldenrod
+        [0.8235, 0.4510, 0.0000],  # Darker Orange
+    ])
 
-        x_axis_labels.append("spatial decay")
+    color_mtx = np.vstack([red_colors, blue_colors, darker_yellow_orange_colors])
 
-    #add rest of core metrics
-    plot_metric_keys.extend(["peak1ToPeak2Ratio", "mainPeakToTroughRatio",
-                        "fractionRPVs_estimatedTauR", "presenceRatio", "percentageSpikesMissing_gaussian", "nSpikes"])
-    metric_types.extend(["Somatic", "Somatic",
-                    "MUA", "MUA", "MUA", "MUA"])
-    is_continous.extend([True, True,
-                    True, True, True, True])
-    plot_metric_thresholds_lower_bound.extend([None, None,
-                                        None, "minPresenceRatio", None, "minNumSpikes"])
-    plot_metric_thresholds_upper_bound.extend(["maxPeak1ToPeak2Ratio_nonSomatic", "maxMainPeakToTroughRatio_nonSomatic",
-                                        "maxRPVviolations", None, "maxPercSpikesMissing", None])
-    x_axis_labels.extend([ "peak1/peak2", "peak(main)/trough",
-                        "frac. RPVs", "presence ratio", "% spikes missing", "# spikes"])
+    # Define metrics in MATLAB order
+    metric_names = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 
+                   'scndPeakToTroughRatio', 'spatialDecaySlope', 'peak1ToPeak2Ratio', 'mainPeakToTroughRatio',
+                   'rawAmplitude', 'signalToNoiseRatio', 'fractionRPVs_estimatedTauR', 'nSpikes', 
+                   'presenceRatio', 'percentageSpikesMissing_gaussian', 'maxDriftEstimate', 
+                   'isolationDistance', 'Lratio']
 
-    #add optional metrics
-    if param["extractRaw"] and np.all(~np.isnan(quality_metrics['rawAmplitude'])):
-        plot_metric_keys.extend(["rawAmplitude", "signalToNoiseRatio"])
-        metric_types.extend(["MUA", "MUA"])
-        is_continous.extend([True, True])
-        plot_metric_thresholds_lower_bound.extend(["minAmplitude", "min_SNR"])
-        plot_metric_thresholds_upper_bound.extend([None, None])
-        x_axis_labels.extend(["amplitude", "SNR"])
+    metric_names_short = ['# peaks', '# troughs', 'baseline flatness', 'waveform duration',
+                         'peak_2/trough', 'spatial decay', 'peak_1/peak_2', 'peak_{main}/trough',
+                         'amplitude', 'SNR', 'frac. RPVs', '# spikes',
+                         'presence ratio', '% spikes missing', 'maximum drift',
+                         'isolation dist.', 'L-ratio']
 
-    if param["computeDrift"]:
-        plot_metric_keys.append("maxDriftEstimate")
-        metric_types.append("MUA")
-        is_continous.append(True)
-        plot_metric_thresholds_lower_bound.append(None)
-        plot_metric_thresholds_upper_bound.append("maxDrift")
-        x_axis_labels.append("max drift")
+    # Define thresholds
+    metric_thresh1 = [param.get('maxNPeaks'), param.get('maxNTroughs'), param.get('maxWvBaselineFraction'),
+                     param.get('minWvDuration'), param.get('maxScndPeakToTroughRatio_noise'),
+                     param.get('minSpatialDecaySlope') if param.get('spDecayLinFit') else param.get('minSpatialDecaySlopeExp'),
+                     param.get('maxPeak1ToPeak2Ratio_nonSomatic'), param.get('maxMainPeakToTroughRatio_nonSomatic'),
+                     None, None, param.get('maxRPVviolations'), None, None, param.get('maxPercSpikesMissing'),
+                     param.get('maxDrift'), param.get('isoDmin'), None]
 
-    if param["computeDistanceMetrics"]:
-        plot_metric_keys.extend(["isolationDistance", "Lratio"])
-        metric_types.extend(["MUA", "MUA"])
-        is_continous.extend([True, True])
-        plot_metric_thresholds_lower_bound.extend(["isoDmin ", None])
-        plot_metric_thresholds_upper_bound.extend([None, "lratioMax"])
-        x_axis_labels.extend(["isolation dist", "L-Ratio"])
+    metric_thresh2 = [None, None, None, param.get('maxWvDuration'), None,
+                     None if param.get('spDecayLinFit') else param.get('maxSpatialDecaySlopeExp'),
+                     None, None, param.get('minAmplitude'), param.get('min_SNR'),
+                     None, param.get('minNumSpikes'), param.get('minPresenceRatio'), None, None,
+                     None, param.get('lratioMax')]
 
-    #plot all histograms
-    n_metrics = len(plot_metric_keys) + 1
-    n_rows = int(np.floor(np.sqrt(n_metrics)))
-    n_columns = int(np.ceil(n_metrics / n_rows))
+    # Define plot conditions
+    plot_conditions = [True, True, True, True, True,
+                      param.get('computeSpatialDecay', False),
+                      True, True,
+                      param.get('extractRaw', False) and np.all(~np.isnan(quality_metrics.get('rawAmplitude', [np.nan]))),
+                      param.get('extractRaw', False) and np.all(~np.isnan(quality_metrics.get('signalToNoiseRatio', [np.nan]))),
+                      True, True, True, True,
+                      param.get('computeDrift', False),
+                      param.get('computeDistanceMetrics', False),
+                      param.get('computeDistanceMetrics', False)]
 
-    fig, axs = plt.subplots(nrows = n_rows, ncols = n_columns, layout = "constrained", figsize = (12,8))
-    for i in range(n_rows * n_columns):
-        row_id = int(np.floor(i / n_columns))
-        column_id = i % n_columns
-        if (i+1) < n_metrics:
-            #get the quality metric and the bounds
-            metric = quality_metrics[plot_metric_keys[i]]
-            if plot_metric_thresholds_lower_bound[i] is not None:
-                lower_threshold = param[plot_metric_thresholds_lower_bound[i]]
+    # Define line colors for thresholds (MATLAB style)
+    metric_line_cols = np.array([
+        [0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0],  # nPeaks
+        [0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0],  # nTroughs
+        [0.2, 0.2, 0.2, 1, 0, 0, 1, 0, 0],  # baseline flatness
+        [1, 0, 0, 0.2, 0.2, 0.2, 1, 0, 0],  # waveform duration
+        [0.2, 0.2, 0.2, 1, 0, 0, 1, 0, 0],  # peak2/trough
+        [1, 0, 0, 0.2, 0.2, 0.2, 1, 0, 0],  # spatial decay
+        [0.2, 0.2, 0.2, 0.25, 0.41, 0.88, 0, 0, 0],  # peak1/peak2
+        [0.2, 0.2, 0.2, 0.25, 0.41, 0.88, 0, 0, 0],  # peak_main/trough
+        [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # amplitude
+        [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # SNR
+        [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # frac RPVs
+        [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # nSpikes
+        [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # presence ratio
+        [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # % spikes missing
+        [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # max drift
+        [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # isolation dist
+        [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # L-ratio
+    ])
+
+    # Filter metrics that should be plotted
+    valid_metrics = []
+    valid_colors = []
+    valid_labels = []
+    valid_thresh1 = []
+    valid_thresh2 = []
+    valid_line_cols = []
+    
+    for i, (metric_name, condition) in enumerate(zip(metric_names, plot_conditions)):
+        if condition and metric_name in quality_metrics:
+            valid_metrics.append(metric_name)
+            valid_colors.append(color_mtx[i % len(color_mtx)])
+            valid_labels.append(metric_names_short[i])
+            valid_thresh1.append(metric_thresh1[i])
+            valid_thresh2.append(metric_thresh2[i])
+            valid_line_cols.append(metric_line_cols[i])
+
+    # Calculate grid layout
+    num_subplots = len(valid_metrics)
+    num_rows = int(np.floor(np.sqrt(num_subplots)))
+    num_cols = int(np.ceil(num_subplots / num_rows))
+
+    fig, axs = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(15, 9))
+    fig.patch.set_facecolor('white')
+    
+    if num_rows == 1:
+        axs = axs.reshape(1, -1)
+    elif num_cols == 1:
+        axs = axs.reshape(-1, 1)
+
+    for i, metric_name in enumerate(valid_metrics):
+        row_id = i // num_cols
+        col_id = i % num_cols
+        ax = axs[row_id, col_id]
+        
+        metric_data = quality_metrics[metric_name]
+        metric_data = metric_data[~np.isnan(metric_data)]
+        
+        if len(metric_data) > 0:
+            # Plot histogram with probability normalization (MATLAB style)
+            if metric_name in ['nPeaks', 'nTroughs']:
+                # Use integer bins for discrete metrics
+                bins = np.arange(np.min(metric_data), np.max(metric_data) + 2) - 0.5
+            elif metric_name == 'waveformDuration_peakTrough':
+                # Use fewer bins for waveform duration like MATLAB
+                bins = 20
             else:
-                lower_threshold = np.nanmin(metric) - 1e-6
-            if plot_metric_thresholds_upper_bound[i] is not None:
-                upper_threshold = param[plot_metric_thresholds_upper_bound[i]]
-            else:
-                upper_threshold = np.nanmax(metric) + 1e-6
+                bins = 40
+                
+            n, bins_out, patches = ax.hist(metric_data, bins=bins, density=True, 
+                                         color=valid_colors[i], alpha=0.7)
             
-            current_metric_type = metric_types[i]
-            pass_color = color_pass[current_metric_type]
-            fail_color = color_fail[current_metric_type]
-
-            #plot histogram with 40 bins
-            if is_continous[i]:
-
-                good_idx = np.logical_and(metric > lower_threshold, metric < upper_threshold)
-                bins = np.histogram_bin_edges(metric[~np.isnan(metric)], bins = 40)
-                axs[row_id][column_id].hist(metric[good_idx], bins, color = pass_color)
-                axs[row_id][column_id].hist(metric[~good_idx], bins, color = fail_color)
-
-                if plot_metric_thresholds_lower_bound[i] is not None:
-                    axs[row_id][column_id].axvline(lower_threshold, color = 'k')
-                if plot_metric_thresholds_upper_bound[i] is not None:
-                    axs[row_id][column_id].axvline(upper_threshold, color = 'k')
-
-                axs[row_id][column_id].set_xlabel(f"{x_axis_labels[i]}")
-            #plot bar chart for discrete data
-            else:
-                good_idx = np.logical_and(metric > lower_threshold, metric < upper_threshold)
-                points, counts = np.unique(metric, return_counts=True)
-
-                colors = [fail_color if upper_threshold < x or x < lower_threshold  else pass_color for x in points ]
-                axs[row_id][column_id].bar(points, counts, color = colors)
-
-                if plot_metric_thresholds_lower_bound[i] is not None:
-                    axs[row_id][column_id].axvline(lower_threshold + 0.5, color = 'k')
-                if plot_metric_thresholds_upper_bound[i] is not None:
-                    axs[row_id][column_id].axvline(upper_threshold + 0.5, color = 'k')
-
-                axs[row_id][column_id].set_xlabel(f"{x_axis_labels[i]}")
+            # Convert to probability (like MATLAB's 'Normalization', 'probability')
+            if metric_name not in ['nPeaks', 'nTroughs']:
+                bin_width = bins_out[1] - bins_out[0]
+                for patch in patches:
+                    patch.set_height(patch.get_height() * bin_width)
             
-            if i == 0:
-                axs[row_id][column_id].set_ylabel("N. units")
-            axs[row_id][column_id].spines[['right', 'top']].set_visible(False)
-        else:
-            axs[row_id][column_id].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
-            axs[row_id][column_id].set_xticks([])
-            axs[row_id][column_id].set_yticks([])
+            # Add threshold lines above histogram at 0.9
+            x_lim = ax.get_xlim()
+            # Extend x-axis to make room for text labels
+            x_range = x_lim[1] - x_lim[0]
+            ax.set_xlim([x_lim[0] - 0.1*x_range, x_lim[1] + 0.1*x_range])
+            x_lim = ax.get_xlim()
+            line_y = 0.9  # Position lines at 0.9
+            
+            thresh1 = valid_thresh1[i]
+            thresh2 = valid_thresh2[i]
+            line_colors = valid_line_cols[i].reshape(3, 3)
+            
+            if metric_name in ['nPeaks', 'nTroughs']:
+                binsize_offset = 0.5
+            else:
+                binsize_offset = (bins_out[1] - bins_out[0]) / 2 if len(bins_out) > 1 else 0
+            
+            if thresh1 is not None or thresh2 is not None:
+                if thresh1 is not None and thresh2 is not None:
+                    # Add vertical lines for thresholds (adjust for discrete metrics)
+                    if metric_name in ['nPeaks', 'nTroughs']:
+                        # For discrete metrics, place lines at bin edges
+                        ax.axvline(thresh1 + 0.5, color='k', linewidth=2)
+                        ax.axvline(thresh2 + 0.5, color='k', linewidth=2)
+                    else:
+                        # For continuous metrics, place lines at exact values
+                        ax.axvline(thresh1, color='k', linewidth=2)
+                        ax.axvline(thresh2, color='k', linewidth=2)
+                    # Add horizontal colored lines (adjust for discrete metrics)
+                    if metric_name in ['nPeaks', 'nTroughs']:
+                        # For discrete metrics, extend lines to full bin width
+                        ax.plot([x_lim[0], thresh1 + 0.5], 
+                               [line_y, line_y], color=line_colors[0], linewidth=6)
+                        ax.plot([thresh1 + 0.5, thresh2 + 0.5], 
+                               [line_y, line_y], color=line_colors[1], linewidth=6)
+                        ax.plot([thresh2 + 0.5, x_lim[1]], 
+                               [line_y, line_y], color=line_colors[2], linewidth=6)
+                    else:
+                        # For continuous metrics, use normal positioning
+                        ax.plot([x_lim[0], thresh1], 
+                               [line_y, line_y], color=line_colors[0], linewidth=6)
+                        ax.plot([thresh1, thresh2], 
+                               [line_y, line_y], color=line_colors[1], linewidth=6)
+                        ax.plot([thresh2, x_lim[1]], 
+                               [line_y, line_y], color=line_colors[2], linewidth=6)
+                    
+                    # Add classification labels with arrows
+                    midpoint1 = (x_lim[0] + thresh1) / 2
+                    midpoint2 = (thresh1 + thresh2) / 2
+                    midpoint3 = (thresh2 + x_lim[1]) / 2
+                    text_y = 0.95  # Position text at 0.95
+                    
+                    # Determine metric type based on metric name
+                    noise_metrics = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope']
+                    nonsomatic_metrics = ['peak1ToPeak2Ratio', 'mainPeakToTroughRatio']
+                    
+                    if metric_name in noise_metrics:
+                        # Noise metrics: both thresholds -> Noise, Neuronal, Noise
+                        ax.text(midpoint1, text_y, '↓ Noise', ha='center', fontsize=10, 
+                               color=line_colors[0], weight='bold')
+                        ax.text(midpoint2, text_y, '↓ Neuronal', ha='center', fontsize=10, 
+                               color=line_colors[1], weight='bold')
+                        ax.text(midpoint3, text_y, '↓ Noise', ha='center', fontsize=10, 
+                               color=line_colors[2], weight='bold')
+                    elif metric_name in nonsomatic_metrics:
+                        # Non-somatic metrics: both thresholds -> Non-somatic, Somatic, Non-somatic
+                        ax.text(midpoint1, text_y, '↓ Non-somatic', ha='center', fontsize=10, 
+                               color=line_colors[0], weight='bold')
+                        ax.text(midpoint2, text_y, '↓ Somatic', ha='center', fontsize=10, 
+                               color=line_colors[1], weight='bold')
+                        ax.text(midpoint3, text_y, '↓ Non-somatic', ha='center', fontsize=10, 
+                               color=line_colors[2], weight='bold')
+                    else:
+                        # MUA metrics: both thresholds -> MUA, Good, MUA
+                        ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=10, 
+                               color=line_colors[0], weight='bold')
+                        ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=10, 
+                               color=line_colors[1], weight='bold')
+                        ax.text(midpoint3, text_y, '↓ MUA', ha='center', fontsize=10, 
+                               color=line_colors[2], weight='bold')
+                    
+                elif thresh1 is not None:
+                    # Add vertical line for threshold (adjust for discrete metrics)
+                    if metric_name in ['nPeaks', 'nTroughs']:
+                        # For discrete metrics, place line at bin edge
+                        ax.axvline(thresh1 + 0.5, color='k', linewidth=2)
+                    else:
+                        # For continuous metrics, place line at exact value
+                        ax.axvline(thresh1, color='k', linewidth=2)
+                    # Add horizontal colored lines (adjust for discrete metrics)
+                    if metric_name in ['nPeaks', 'nTroughs']:
+                        # For discrete metrics, extend lines to full bin width
+                        ax.plot([x_lim[0], thresh1 + 0.5], 
+                               [line_y, line_y], color=line_colors[0], linewidth=6)
+                        ax.plot([thresh1 + 0.5, x_lim[1]], 
+                               [line_y, line_y], color=line_colors[1], linewidth=6)
+                    else:
+                        # For continuous metrics, use normal positioning
+                        ax.plot([x_lim[0], thresh1], 
+                               [line_y, line_y], color=line_colors[0], linewidth=6)
+                        ax.plot([thresh1, x_lim[1]], 
+                               [line_y, line_y], color=line_colors[1], linewidth=6)
+                    
+                    # Add classification labels for single threshold
+                    midpoint1 = (x_lim[0] + thresh1) / 2
+                    midpoint2 = (thresh1 + x_lim[1]) / 2
+                    text_y = 0.95  # Position text at 0.95
+                    
+                    # Determine metric type based on metric name
+                    noise_metrics = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope']
+                    nonsomatic_metrics = ['peak1ToPeak2Ratio', 'mainPeakToTroughRatio']
+                    
+                    if metric_name in noise_metrics:
+                        # Noise metrics: thresh1 only -> Neuronal, Noise
+                        ax.text(midpoint1, text_y, '↓ Neuronal', ha='center', fontsize=10, 
+                               color=line_colors[0], weight='bold')
+                        ax.text(midpoint2, text_y, '↓ Noise', ha='center', fontsize=10, 
+                               color=line_colors[1], weight='bold')
+                    elif metric_name in nonsomatic_metrics:
+                        # Non-somatic metrics: thresh1 only -> Somatic, Non-somatic
+                        ax.text(midpoint1, text_y, '↓ Somatic', ha='center', fontsize=10, 
+                               color=line_colors[0], weight='bold')
+                        ax.text(midpoint2, text_y, '↓ Non-somatic', ha='center', fontsize=10, 
+                               color=line_colors[1], weight='bold')
+                    else:
+                        # MUA metrics: thresh1 only -> Good, MUA
+                        ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=10, 
+                               color=line_colors[0], weight='bold')
+                        ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=10, 
+                               color=line_colors[1], weight='bold')
+                    
+                elif thresh2 is not None:
+                    # Add vertical line for threshold (adjust for discrete metrics)
+                    if metric_name in ['nPeaks', 'nTroughs']:
+                        # For discrete metrics, place line at bin edge
+                        ax.axvline(thresh2 + 0.5, color='k', linewidth=2)
+                    else:
+                        # For continuous metrics, place line at exact value
+                        ax.axvline(thresh2, color='k', linewidth=2)
+                    # Add horizontal colored lines (adjust for discrete metrics)
+                    if metric_name in ['nPeaks', 'nTroughs']:
+                        # For discrete metrics, extend lines to full bin width
+                        ax.plot([x_lim[0], thresh2 + 0.5], 
+                               [line_y, line_y], color=line_colors[0], linewidth=6)
+                        ax.plot([thresh2 + 0.5, x_lim[1]], 
+                               [line_y, line_y], color=line_colors[1], linewidth=6)
+                    else:
+                        # For continuous metrics, use normal positioning
+                        ax.plot([x_lim[0], thresh2], 
+                               [line_y, line_y], color=line_colors[0], linewidth=6)
+                        ax.plot([thresh2, x_lim[1]], 
+                               [line_y, line_y], color=line_colors[1], linewidth=6)
+                    
+                    # Add classification labels for threshold 2 only
+                    midpoint1 = (x_lim[0] + thresh2) / 2
+                    midpoint2 = (thresh2 + x_lim[1]) / 2
+                    text_y = 0.95  # Position text at 0.95
+                    
+                    # Determine metric type based on metric name
+                    noise_metrics = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope']
+                    nonsomatic_metrics = ['peak1ToPeak2Ratio', 'mainPeakToTroughRatio']
+                    
+                    if metric_name in noise_metrics:
+                        # Noise metrics: thresh2 only -> Noise, Neuronal
+                        ax.text(midpoint1, text_y, '↓ Noise', ha='center', fontsize=10, 
+                               color=line_colors[0], weight='bold')
+                        ax.text(midpoint2, text_y, '↓ Neuronal', ha='center', fontsize=10, 
+                               color=line_colors[1], weight='bold')
+                    elif metric_name in nonsomatic_metrics:
+                        # Non-somatic metrics: thresh2 only -> Non-somatic, Somatic
+                        ax.text(midpoint1, text_y, '↓ Non-somatic', ha='center', fontsize=10, 
+                               color=line_colors[0], weight='bold')
+                        ax.text(midpoint2, text_y, '↓ Somatic', ha='center', fontsize=10, 
+                               color=line_colors[1], weight='bold')
+                    else:
+                        # MUA metrics: thresh2 only -> MUA, Good
+                        ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=10, 
+                               color=line_colors[0], weight='bold')
+                        ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=10, 
+                               color=line_colors[1], weight='bold')
+
+            # Set histogram limits from 0 to 1
+            ax.set_ylim([0, 1])
+            
+        ax.set_xlabel(valid_labels[i], fontsize=13)
+        if i == 0:
+            ax.set_ylabel('frac. units', fontsize=13)
+        
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.tick_params(labelsize=12)
+
+    # Hide unused subplots
+    for i in range(len(valid_metrics), num_rows * num_cols):
+        row_id = i // num_cols
+        col_id = i % num_cols
+        axs[row_id, col_id].set_visible(False)
+
+    plt.tight_layout()
     plt.show()
