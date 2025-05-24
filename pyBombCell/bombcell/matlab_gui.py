@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 
-class UnitQualityGUI:
+class MatlabStyleGUI:
     """
     GUI that exactly matches the MATLAB unitQualityGUI_synced layout
     """
@@ -478,9 +478,10 @@ class UnitQualityGUI:
             self.goto_next_noise(None)
 
 
-def load_metrics_for_gui(ks_dir, quality_metrics, ephys_properties=None, param=None):
+def matlab_style_gui(ks_dir, quality_metrics, ephys_properties=None, 
+                     unit_types=None, param=None):
     """
-    Load and prepare data for GUI - Python equivalent of loadMetricsForGUI.m
+    Launch MATLAB-style GUI
     
     Parameters
     ----------
@@ -490,13 +491,15 @@ def load_metrics_for_gui(ks_dir, quality_metrics, ephys_properties=None, param=N
         Quality metrics from bombcell
     ephys_properties : list, optional
         Ephys properties from compute_all_ephys_properties
+    unit_types : array, optional
+        Unit type classifications
     param : dict, optional
         Parameters dictionary
         
     Returns
     -------
-    dict
-        Dictionary containing all data needed for GUI
+    MatlabStyleGUI
+        The GUI object
     """
     from . import loading_utils as bc_load
     
@@ -514,60 +517,13 @@ def load_metrics_for_gui(ks_dir, quality_metrics, ephys_properties=None, param=N
         'channel_positions': ephys_data_tuple[6]
     }
     
-    # Load raw waveforms if available
-    raw_waveforms = None
-    raw_wf_path = Path(ks_dir) / "bombcell" / "templates._bc_rawWaveforms.npy"
-    if raw_wf_path.exists():
-        try:
-            raw_waveforms = {
-                'average': np.load(raw_wf_path, allow_pickle=True),
-                'peak_channels': np.load(Path(ks_dir) / "bombcell" / "templates._bc_rawWaveformPeakChannels.npy", allow_pickle=True)
-            }
-        except FileNotFoundError:
-            raw_waveforms = None
-    
-    return {
-        'ephys_data': ephys_data,
-        'quality_metrics': quality_metrics,
-        'ephys_properties': ephys_properties,
-        'raw_waveforms': raw_waveforms,
-        'param': param or {}
-    }
-
-
-def unit_quality_gui(ks_dir, quality_metrics, ephys_properties=None, 
-                     unit_types=None, param=None):
-    """
-    Launch the Unit Quality GUI - Python equivalent of unitQualityGUI_synced
-    
-    Parameters
-    ----------
-    ks_dir : str
-        Path to kilosort directory
-    quality_metrics : dict
-        Quality metrics from bombcell
-    ephys_properties : list, optional
-        Ephys properties from compute_all_ephys_properties
-    unit_types : array, optional
-        Unit type classifications
-    param : dict, optional
-        Parameters dictionary
-        
-    Returns
-    -------
-    UnitQualityGUI
-        The GUI object
-    """
-    # Load data for GUI
-    gui_data = load_metrics_for_gui(ks_dir, quality_metrics, ephys_properties, param)
-    
     # Create and return GUI
-    gui = UnitQualityGUI(
-        ephys_data=gui_data['ephys_data'],
+    gui = MatlabStyleGUI(
+        ephys_data=ephys_data,
         quality_metrics=quality_metrics,
         ephys_properties=ephys_properties,
-        raw_waveforms=gui_data['raw_waveforms'],
-        param=gui_data['param'],
+        raw_waveforms=None,
+        param=param or {},
         unit_types=unit_types
     )
     

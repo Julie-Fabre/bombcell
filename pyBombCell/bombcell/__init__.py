@@ -26,6 +26,7 @@ from .ephys_properties import get_ephys_parameters
 from .classification import classify_and_plot_brain_region
 from .unit_quality_gui import unit_quality_gui, UnitQualityGUI
 from .simple_gui import simple_unit_browser, plot_unit_waveforms
+from .matlab_gui import matlab_style_gui, MatlabStyleGUI
 
 # __version__ attribute exposition
 try:
