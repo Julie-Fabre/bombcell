@@ -24,7 +24,7 @@ from .plot_functions import *
 # Explicitly expose key functions
 from .ephys_properties import get_ephys_parameters
 from .classification import classify_and_plot_brain_region
-from .unit_quality_gui import unit_quality_gui, UnitQualityGUI
+from .unit_quality_gui import unit_quality_gui, UnitQualityGUI, InteractiveUnitQualityGUI
 from .simple_gui import simple_unit_browser, plot_unit_waveforms
 from .matlab_gui import matlab_style_gui, MatlabStyleGUI
 
