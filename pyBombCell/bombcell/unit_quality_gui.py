@@ -264,10 +264,13 @@ class InteractiveUnitQualityGUI:
             max_ch = int(metrics.get('maxChannels', 0))
             n_channels = template.shape[1]
             
-            # Find 16 nearest channels to peak channel
+            # Find 16 nearest channels to peak channel (prioritizing above/below)
             channels_to_plot = self.get_nearest_channels(max_ch, n_channels, 16)
             
-            # Calculate layout for channels (4x4 grid)
+            # Arrange channels to reflect probe layout when possible
+            layout_channels = self.arrange_channels_for_display(channels_to_plot, max_ch)
+            
+            # Calculate layout (4x4 grid but arranged by probe geometry)
             n_cols = 4
             n_rows = 4
             
@@ -278,7 +281,7 @@ class InteractiveUnitQualityGUI:
                     all_amps.extend(template[:, ch])
             amp_range = np.max(all_amps) - np.min(all_amps) if all_amps else 1
             
-            for i, ch in enumerate(channels_to_plot):
+            for i, ch in enumerate(layout_channels):
                 if ch < n_channels and i < 16:
                     row = i // n_cols
                     col = i % n_cols
@@ -345,8 +348,11 @@ class InteractiveUnitQualityGUI:
                             max_ch = int(metrics.get('maxChannels', 0))
                             n_channels = waveforms.shape[1]
                             
-                            # Find 16 nearest channels
+                            # Find 16 nearest channels (prioritizing above/below)
                             channels_to_plot = self.get_nearest_channels(max_ch, n_channels, 16)
+                            
+                            # Arrange channels to reflect probe layout
+                            layout_channels = self.arrange_channels_for_display(channels_to_plot, max_ch)
                             
                             # Calculate layout for channels (4x4 grid)
                             n_cols = 4
@@ -359,7 +365,7 @@ class InteractiveUnitQualityGUI:
                                     all_amps.extend(waveforms[:, ch])
                             amp_range = np.max(all_amps) - np.min(all_amps) if all_amps else 1
                             
-                            for i, ch in enumerate(channels_to_plot):
+                            for i, ch in enumerate(layout_channels):
                                 if ch < n_channels and i < 16:
                                     row = i // n_cols
                                     col = i % n_cols
@@ -615,24 +621,40 @@ class InteractiveUnitQualityGUI:
                    bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
         
     def get_nearest_channels(self, peak_channel, n_channels, n_to_get=16):
-        """Get nearest channels to peak channel like MATLAB"""
+        """Get nearest channels to peak channel like MATLAB - prioritize above/below"""
         if 'channel_positions' in self.ephys_data:
             positions = self.ephys_data['channel_positions']
             if len(positions) > peak_channel:
                 peak_pos = positions[peak_channel]
                 
-                # Calculate distances to all channels
-                distances = []
-                for ch in range(min(n_channels, len(positions))):
-                    dist = np.sqrt(np.sum((positions[ch] - peak_pos)**2))
-                    distances.append((dist, ch))
+                # For neural probes, prioritize channels above and below (y-direction)
+                # Calculate distances with preference for vertical neighbors
+                channels_with_scores = []
                 
-                # Sort by distance and take nearest n_to_get
-                distances.sort()
-                nearest_channels = [ch for _, ch in distances[:n_to_get]]
+                for ch in range(min(n_channels, len(positions))):
+                    pos_diff = positions[ch] - peak_pos
+                    
+                    # Calculate distance
+                    dist = np.sqrt(np.sum(pos_diff**2))
+                    
+                    # Give preference to channels above/below (smaller x difference)
+                    x_diff = abs(pos_diff[0]) if len(pos_diff) > 0 else 0
+                    y_diff = abs(pos_diff[1]) if len(pos_diff) > 1 else 0
+                    
+                    # Priority score: prefer small x differences (same column) and small overall distance
+                    if x_diff < 20:  # Same column or very close
+                        priority_score = dist  # Use distance as tie-breaker
+                    else:
+                        priority_score = dist + x_diff  # Penalize horizontal distance
+                    
+                    channels_with_scores.append((priority_score, ch))
+                
+                # Sort by priority score and take nearest n_to_get
+                channels_with_scores.sort()
+                nearest_channels = [ch for _, ch in channels_with_scores[:n_to_get]]
                 return nearest_channels
         
-        # Fallback: just take channels around peak
+        # Fallback: take channels above and below peak (sequential channels)
         half_range = n_to_get // 2
         start = max(0, peak_channel - half_range)
         end = min(n_channels, peak_channel + half_range)
@@ -650,6 +672,111 @@ class InteractiveUnitQualityGUI:
                 break
                 
         return channels[:n_to_get]
+    
+    def arrange_channels_for_display(self, channels, peak_channel):
+        """Arrange channels for display to reflect probe geometry - peak in center"""
+        if not channels:
+            return channels
+            
+        # Try to put peak channel in center of 4x4 grid (position 5 or 6, 9 or 10)
+        # and arrange others by their relationship to peak
+        
+        if 'channel_positions' in self.ephys_data and len(self.ephys_data['channel_positions']) > peak_channel:
+            positions = self.ephys_data['channel_positions']
+            peak_pos = positions[peak_channel]
+            
+            # Separate channels into above, below, and sides relative to peak
+            above_channels = []
+            below_channels = []
+            left_channels = []
+            right_channels = []
+            peak_found = False
+            
+            for ch in channels:
+                if ch == peak_channel:
+                    peak_found = True
+                    continue
+                    
+                if ch < len(positions):
+                    pos_diff = positions[ch] - peak_pos
+                    x_diff = pos_diff[0] if len(pos_diff) > 0 else 0
+                    y_diff = pos_diff[1] if len(pos_diff) > 1 else 0
+                    
+                    # Classify by primary direction
+                    if abs(y_diff) > abs(x_diff):  # Primarily vertical
+                        if y_diff > 0:
+                            above_channels.append(ch)
+                        else:
+                            below_channels.append(ch)
+                    else:  # Primarily horizontal
+                        if x_diff > 0:
+                            right_channels.append(ch)
+                        else:
+                            left_channels.append(ch)
+            
+            # Sort each group by distance from peak
+            def sort_by_distance(ch_list):
+                distances = []
+                for ch in ch_list:
+                    if ch < len(positions):
+                        dist = np.sqrt(np.sum((positions[ch] - peak_pos)**2))
+                        distances.append((dist, ch))
+                distances.sort()
+                return [ch for _, ch in distances]
+            
+            above_channels = sort_by_distance(above_channels)
+            below_channels = sort_by_distance(below_channels)
+            left_channels = sort_by_distance(left_channels)
+            right_channels = sort_by_distance(right_channels)
+            
+            # Arrange in 4x4 grid with peak near center
+            arranged = [None] * 16
+            
+            # Place peak channel at position 5 (row 1, col 1)
+            if peak_found:
+                arranged[5] = peak_channel
+            
+            # Fill above (row 0)
+            for i, ch in enumerate(above_channels[:4]):
+                arranged[i] = ch
+                
+            # Fill below (rows 2-3)
+            below_positions = [8, 9, 10, 11, 12, 13, 14, 15]
+            for i, ch in enumerate(below_channels[:8]):
+                if i < len(below_positions):
+                    arranged[below_positions[i]] = ch
+            
+            # Fill sides around peak
+            side_positions = [4, 6, 7]  # Left and right of peak
+            side_channels = left_channels + right_channels
+            for i, ch in enumerate(side_channels[:3]):
+                arranged[side_positions[i]] = ch
+            
+            # Fill any remaining positions with remaining channels
+            remaining_channels = [ch for ch in channels if ch not in arranged]
+            empty_positions = [i for i, ch in enumerate(arranged) if ch is None]
+            
+            for i, pos in enumerate(empty_positions):
+                if i < len(remaining_channels):
+                    arranged[pos] = remaining_channels[i]
+            
+            # Remove None values and return
+            return [ch for ch in arranged if ch is not None]
+        
+        else:
+            # Fallback: arrange sequentially with peak in center
+            channels_sorted = sorted(channels)
+            arranged = []
+            
+            # Try to put peak channel in center
+            if peak_channel in channels_sorted:
+                peak_idx = channels_sorted.index(peak_channel)
+                # Reorder to put peak near position 5-6
+                mid_point = len(channels_sorted) // 2
+                if peak_idx != mid_point:
+                    channels_sorted[peak_idx], channels_sorted[mid_point] = channels_sorted[mid_point], channels_sorted[peak_idx]
+            
+            return channels_sorted
     
     def get_nearby_channels_for_spatial_decay(self, peak_channel, n_channels):
         """Get nearby channels for spatial decay plot - fewer points like MATLAB"""
