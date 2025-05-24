@@ -10,7 +10,6 @@ from scipy.stats import norm, chi2
 import matplotlib.pyplot as plt
 
 from bombcell.extract_raw_waveforms import path_handler
-from scipy.special import erf
 
 
 def get_waveform_peak_channel(template_waveforms):
@@ -318,9 +317,8 @@ def gaussian_cut(bin_centers, A, u, s, c):
     F : ndarray
         The cutoff gaussian as an array
     """
-    F = A * np.exp(-((bin_centers - u) ** 2) / (2 * s**2)) * erf(bin_centers - c)
-    
-    # F[bin_centers < c] = 0
+    F = A * np.exp(-((bin_centers - u) ** 2) / (2 * s**2))
+    F[bin_centers < c] = 0
     return F
 
 

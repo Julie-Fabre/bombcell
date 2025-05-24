@@ -436,8 +436,8 @@ def extract_raw_waveforms(
         baseline_mask = baseline_noise_idx  == i
         baseline = baseline_noise_all[baseline_mask]
 
-        # Calculate MAD (noise)
-        noise = np.median(np.abs(baseline))
+        # Calculate MAD (noise) - Median Absolute Deviation
+        noise = np.median(np.abs(baseline - np.median(baseline)))
 
         # Calculate SNR
         SNR[i] = signal / noise
