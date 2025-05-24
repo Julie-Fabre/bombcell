@@ -472,14 +472,46 @@ class InteractiveUnitQualityGUI:
                                 # Linear fit in log space
                                 coeffs = np.polyfit(x_fit, log_y, 1)
                                 
-                                # Plot fitted line
-                                x_smooth = np.linspace(0, np.max(distances), 50)
+                                # Plot fitted line - extend beyond data range for visibility
+                                x_max = np.max(distances)
+                                x_smooth = np.linspace(-x_max*0.1, x_max*1.1, 100)  # Extend slightly beyond data
                                 y_smooth = np.exp(np.polyval(coeffs, x_smooth))
-                                ax.plot(x_smooth, y_smooth, 'r-', linewidth=2, alpha=0.8)
+                                # Only plot where y values are reasonable
+                                valid_y = (y_smooth > 0) & (y_smooth < 10)  # Avoid extreme values
+                                ax.plot(x_smooth[valid_y], y_smooth[valid_y], 'r-', linewidth=2, alpha=0.8)
                             
                             ax.set_xlabel('Distance (μm)')
                             ax.set_ylabel('Normalized amplitude')
-                            ax.set_ylim([0, 1.1])
+                            
+                            # Set y-limits to show all data AND fitted line with generous padding
+                            data_y_min = np.min(amplitudes)
+                            data_y_max = np.max(amplitudes)
+                            
+                            # Consider fitted line values if they exist
+                            if 'y_smooth' in locals() and 'valid_y' in locals():
+                                line_y_min = np.min(y_smooth[valid_y]) if np.any(valid_y) else data_y_min
+                                line_y_max = np.max(y_smooth[valid_y]) if np.any(valid_y) else data_y_max
+                                
+                                combined_y_min = min(data_y_min, line_y_min)
+                                combined_y_max = max(data_y_max, line_y_max)
+                            else:
+                                combined_y_min = data_y_min
+                                combined_y_max = data_y_max
+                            
+                            # Add generous padding (20% of range)
+                            y_range = combined_y_max - combined_y_min
+                            padding = max(0.2 * y_range, 0.1)  # At least 10% padding
+                            
+                            y_min = combined_y_min - padding
+                            y_max = combined_y_max + padding
+                            
+                            # Ensure minimum range for visibility
+                            if y_max - y_min < 0.5:
+                                center = (y_max + y_min) / 2
+                                y_min = center - 0.25
+                                y_max = center + 0.25
+                            
+                            ax.set_ylim([y_min, y_max])
                         else:
                             ax.text(0.5, 0.5, 'Spatial decay\n(no signal)', 
                                     ha='center', va='center', transform=ax.transAxes)
@@ -604,11 +636,11 @@ class InteractiveUnitQualityGUI:
         else:
             text_lines = []
             
-        # Add text to plot
+        # Add text to plot - position in top right to avoid obstructing data
         if text_lines:
             text_str = '\n'.join(text_lines)
-            ax.text(0.02, 0.98, text_str, transform=ax.transAxes, 
-                   verticalalignment='top', fontsize=8, 
+            ax.text(0.98, 0.98, text_str, transform=ax.transAxes, 
+                   verticalalignment='top', horizontalalignment='right', fontsize=8, 
                    bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
         
     def get_nearest_channels(self, peak_channel, n_channels, n_to_get=16):
@@ -787,7 +819,7 @@ class InteractiveUnitQualityGUI:
                 ax.plot(peak_idx + x_offset, waveform[peak_idx] + y_offset, 'ro', markersize=6, 
                        markeredgecolor='darkred', markeredgewidth=1)
                 # Label peak number
-                ax.text(peak_idx + x_offset, waveform[peak_idx] + y_offset + amp_range*0.1, f'P{i+1}', 
+                ax.text(peak_idx + x_offset, waveform[peak_idx] + y_offset + amp_range*0.1, f'peak {i+1}', 
                        ha='center', va='bottom', fontsize=8, color='red', weight='bold')
             
             # Mark all troughs with blue circles
@@ -795,30 +827,29 @@ class InteractiveUnitQualityGUI:
                 ax.plot(trough_idx + x_offset, waveform[trough_idx] + y_offset, 'bo', markersize=6,
                        markeredgecolor='darkblue', markeredgewidth=1)
                 # Label trough number
-                ax.text(trough_idx + x_offset, waveform[trough_idx] + y_offset - amp_range*0.1, f'T{i+1}', 
+                ax.text(trough_idx + x_offset, waveform[trough_idx] + y_offset - amp_range*0.1, f'trough {i+1}', 
                        ha='center', va='top', fontsize=8, color='blue', weight='bold')
             
-            # Draw duration line from main peak to main trough
+            # Draw horizontal duration line from main peak to main trough
             if len(peaks) > 0 and len(troughs) > 0:
                 # Find main peak (highest amplitude)
                 main_peak_idx = peaks[np.argmax(waveform[peaks])]
                 # Find main trough (most negative)
                 main_trough_idx = troughs[np.argmin(waveform[troughs])]
                 
-                # Draw line from main peak to main trough
+                # Draw horizontal line at a fixed y-position below the waveform
+                line_y = y_offset - amp_range * 0.3  # Position line below waveform
                 ax.plot([main_peak_idx + x_offset, main_trough_idx + x_offset], 
-                       [waveform[main_peak_idx] + y_offset, waveform[main_trough_idx] + y_offset], 
+                       [line_y, line_y], 
                        'g-', linewidth=2, alpha=0.7)
                 
-                # Add duration annotation
-                duration_samples = abs(main_trough_idx - main_peak_idx)
-                duration_ms = duration_samples / 30.0  # Assuming 30kHz sampling
-                mid_x = (main_peak_idx + main_trough_idx) / 2 + x_offset
-                mid_y = (waveform[main_peak_idx] + waveform[main_trough_idx]) / 2 + y_offset
-                
-                ax.text(mid_x, mid_y, f'{duration_ms:.1f}ms', ha='center', va='center',
-                       bbox=dict(boxstyle='round,pad=0.3', facecolor='lightgreen', alpha=0.8),
-                       fontsize=8, weight='bold')
+                # Add vertical lines to connect to peak and trough
+                ax.plot([main_peak_idx + x_offset, main_peak_idx + x_offset], 
+                       [waveform[main_peak_idx] + y_offset, line_y], 
+                       'g--', linewidth=1, alpha=0.5)
+                ax.plot([main_trough_idx + x_offset, main_trough_idx + x_offset], 
+                       [waveform[main_trough_idx] + y_offset, line_y], 
+                       'g--', linewidth=1, alpha=0.5)
                 
                 # Mark main peak and trough with larger markers
                 ax.plot(main_peak_idx + x_offset, waveform[main_peak_idx] + y_offset, 'ro', 
@@ -835,10 +866,19 @@ class InteractiveUnitQualityGUI:
             ax.plot(max_idx + x_offset, waveform[max_idx] + y_offset, 'ro', markersize=6)
             ax.plot(min_idx + x_offset, waveform[min_idx] + y_offset, 'bo', markersize=6)
             
-            # Draw duration line
+            # Draw horizontal duration line
+            line_y = y_offset - amp_range * 0.3
             ax.plot([max_idx + x_offset, min_idx + x_offset], 
-                   [waveform[max_idx] + y_offset, waveform[min_idx] + y_offset], 
+                   [line_y, line_y], 
                    'g-', linewidth=2, alpha=0.7)
+            
+            # Add vertical lines to connect to peak and trough
+            ax.plot([max_idx + x_offset, max_idx + x_offset], 
+                   [waveform[max_idx] + y_offset, line_y], 
+                   'g--', linewidth=1, alpha=0.5)
+            ax.plot([min_idx + x_offset, min_idx + x_offset], 
+                   [waveform[min_idx] + y_offset, line_y], 
+                   'g--', linewidth=1, alpha=0.5)
     
     def get_nearby_channels_for_spatial_decay(self, peak_channel, n_channels):
         """Get nearby channels for spatial decay plot - fewer points like MATLAB"""
