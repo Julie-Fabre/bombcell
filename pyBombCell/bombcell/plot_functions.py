@@ -329,32 +329,16 @@ def plot_histograms(quality_metrics, param):
             
             if thresh1 is not None or thresh2 is not None:
                 if thresh1 is not None and thresh2 is not None:
-                    # Add vertical lines for thresholds (adjust for discrete metrics)
-                    if metric_name in ['nPeaks', 'nTroughs']:
-                        # For discrete metrics, place lines at bin edges
-                        ax.axvline(thresh1 + 0.5, color='k', linewidth=2)
-                        ax.axvline(thresh2 + 0.5, color='k', linewidth=2)
-                    else:
-                        # For continuous metrics, place lines at exact values
-                        ax.axvline(thresh1, color='k', linewidth=2)
-                        ax.axvline(thresh2, color='k', linewidth=2)
-                    # Add horizontal colored lines (adjust for discrete metrics)
-                    if metric_name in ['nPeaks', 'nTroughs']:
-                        # For discrete metrics, extend lines to full bin width
-                        ax.plot([x_lim[0], thresh1 + 0.5], 
-                               [line_y, line_y], color=line_colors[0], linewidth=6)
-                        ax.plot([thresh1 + 0.5, thresh2 + 0.5], 
-                               [line_y, line_y], color=line_colors[1], linewidth=6)
-                        ax.plot([thresh2 + 0.5, x_lim[1]], 
-                               [line_y, line_y], color=line_colors[2], linewidth=6)
-                    else:
-                        # For continuous metrics, use normal positioning
-                        ax.plot([x_lim[0], thresh1], 
-                               [line_y, line_y], color=line_colors[0], linewidth=6)
-                        ax.plot([thresh1, thresh2], 
-                               [line_y, line_y], color=line_colors[1], linewidth=6)
-                        ax.plot([thresh2, x_lim[1]], 
-                               [line_y, line_y], color=line_colors[2], linewidth=6)
+                    # Add vertical lines for thresholds
+                    ax.axvline(thresh1, color='k', linewidth=2)
+                    ax.axvline(thresh2, color='k', linewidth=2)
+                    # Add horizontal colored lines
+                    ax.plot([x_lim[0], thresh1], 
+                           [line_y, line_y], color=line_colors[0], linewidth=6)
+                    ax.plot([thresh1, thresh2], 
+                           [line_y, line_y], color=line_colors[1], linewidth=6)
+                    ax.plot([thresh2, x_lim[1]], 
+                           [line_y, line_y], color=line_colors[2], linewidth=6)
                     
                     # Add classification labels with arrows
                     midpoint1 = (x_lim[0] + thresh1) / 2
@@ -392,26 +376,13 @@ def plot_histograms(quality_metrics, param):
                                color=line_colors[2], weight='bold')
                     
                 elif thresh1 is not None:
-                    # Add vertical line for threshold (adjust for discrete metrics)
-                    if metric_name in ['nPeaks', 'nTroughs']:
-                        # For discrete metrics, place line at bin edge
-                        ax.axvline(thresh1 + 0.5, color='k', linewidth=2)
-                    else:
-                        # For continuous metrics, place line at exact value
-                        ax.axvline(thresh1, color='k', linewidth=2)
-                    # Add horizontal colored lines (adjust for discrete metrics)
-                    if metric_name in ['nPeaks', 'nTroughs']:
-                        # For discrete metrics, extend lines to full bin width
-                        ax.plot([x_lim[0], thresh1 + 0.5], 
-                               [line_y, line_y], color=line_colors[0], linewidth=6)
-                        ax.plot([thresh1 + 0.5, x_lim[1]], 
-                               [line_y, line_y], color=line_colors[1], linewidth=6)
-                    else:
-                        # For continuous metrics, use normal positioning
-                        ax.plot([x_lim[0], thresh1], 
-                               [line_y, line_y], color=line_colors[0], linewidth=6)
-                        ax.plot([thresh1, x_lim[1]], 
-                               [line_y, line_y], color=line_colors[1], linewidth=6)
+                    # Add vertical line for threshold
+                    ax.axvline(thresh1, color='k', linewidth=2)
+                    # Add horizontal colored lines
+                    ax.plot([x_lim[0], thresh1], 
+                           [line_y, line_y], color=line_colors[0], linewidth=6)
+                    ax.plot([thresh1, x_lim[1]], 
+                           [line_y, line_y], color=line_colors[1], linewidth=6)
                     
                     # Add classification labels for single threshold
                     midpoint1 = (x_lim[0] + thresh1) / 2
@@ -442,26 +413,13 @@ def plot_histograms(quality_metrics, param):
                                color=line_colors[1], weight='bold')
                     
                 elif thresh2 is not None:
-                    # Add vertical line for threshold (adjust for discrete metrics)
-                    if metric_name in ['nPeaks', 'nTroughs']:
-                        # For discrete metrics, place line at bin edge
-                        ax.axvline(thresh2 + 0.5, color='k', linewidth=2)
-                    else:
-                        # For continuous metrics, place line at exact value
-                        ax.axvline(thresh2, color='k', linewidth=2)
-                    # Add horizontal colored lines (adjust for discrete metrics)
-                    if metric_name in ['nPeaks', 'nTroughs']:
-                        # For discrete metrics, extend lines to full bin width
-                        ax.plot([x_lim[0], thresh2 + 0.5], 
-                               [line_y, line_y], color=line_colors[0], linewidth=6)
-                        ax.plot([thresh2 + 0.5, x_lim[1]], 
-                               [line_y, line_y], color=line_colors[1], linewidth=6)
-                    else:
-                        # For continuous metrics, use normal positioning
-                        ax.plot([x_lim[0], thresh2], 
-                               [line_y, line_y], color=line_colors[0], linewidth=6)
-                        ax.plot([thresh2, x_lim[1]], 
-                               [line_y, line_y], color=line_colors[1], linewidth=6)
+                    # Add vertical line for threshold
+                    ax.axvline(thresh2, color='k', linewidth=2)
+                    # Add horizontal colored lines
+                    ax.plot([x_lim[0], thresh2], 
+                           [line_y, line_y], color=line_colors[0], linewidth=6)
+                    ax.plot([thresh2, x_lim[1]], 
+                           [line_y, line_y], color=line_colors[1], linewidth=6)
                     
                     # Add classification labels for threshold 2 only
                     midpoint1 = (x_lim[0] + thresh2) / 2
