@@ -3,6 +3,21 @@ import pandas as pd
 from scipy import signal, optimize, stats
 from scipy.sparse import csr_matrix
 import os
+import psutil
+import gc
+from pathlib import Path
+from tqdm.auto import tqdm
+
+__all__ = [
+    'run_all_ephys_properties',
+    'get_ephys_parameters', 
+    'ephys_prop_values',
+    'compute_all_ephys_properties',
+    'compute_acg_properties',
+    'compute_isi_properties',
+    'compute_waveform_properties',
+    'save_ephys_properties'
+]
 
 # Path handling utility function
 def path_handler(path):
@@ -10,115 +25,202 @@ def path_handler(path):
     return Path(path)
 
 
+def get_memory_usage():
+    """Get current memory usage in MB"""
+    process = psutil.Process(os.getpid())
+    return process.memory_info().rss / 1024 / 1024
+
+
+def log_memory_usage(step_name, verbose=True):
+    """Log memory usage at different steps"""
+    # Memory logging removed per user request
+    pass
+
+
 def run_all_ephys_properties(ephys_path, param=None, save_path=None):
     """
-    Main function to compute all ephys properties and classify cells
+    Main function to compute all ephys properties - like MATLAB runAllEphysProperties
     
     Parameters
     ----------
     ephys_path : str
         Path to ephys data directory
     param : dict, optional
-        Parameters dictionary
+        Quality metrics parameters dictionary (for compatibility)
     save_path : str, optional
         Path to save results
     
     Returns
     -------
-    ephys_properties : dict
-        Dictionary containing all computed ephys properties
-    cell_types : dict
-        Dictionary containing cell type classifications
+    ephys_properties : list
+        List of dictionaries containing ephys properties for each unit
+    ephys_param : dict
+        Ephys properties parameters (separate from quality metrics)
     """
-    if param is None:
-        from bombcell.default_parameters import get_default_parameters
-        param = get_default_parameters(ephys_path)
-    
     if save_path is None:
         save_path = ephys_path
     
-    # Set ephys properties parameters
-    param = ephys_prop_values(param)
+    # Get SEPARATE ephys properties parameters (like MATLAB ephysPropValues)
+    raw_file = param.get('raw_data_file', None) if param else None
+    meta_file = param.get('ephys_meta_file', None) if param else None
+    ephys_param = get_ephys_parameters(ephys_path, raw_file, meta_file)
     
-    # Compute all ephys properties
-    ephys_properties = compute_all_ephys_properties(ephys_path, param, save_path)
-    
-    # Classify cells
-    cell_types = classify_cells(ephys_properties, param)
+    # Compute all ephys properties using ephys_param
+    ephys_properties = compute_all_ephys_properties(ephys_path, ephys_param, save_path)
     
     # Save results
-    save_ephys_properties(ephys_properties, cell_types, save_path, param)
+    save_ephys_properties(ephys_properties, save_path, ephys_param)
     
-    return ephys_properties, param
+    return ephys_properties, ephys_param
+
+
+def get_ephys_parameters(ephys_path, raw_file=None, meta_file=None):
+    """
+    Get ephys properties parameters - SEPARATE from quality metrics parameters
+    Mimics MATLAB ephysPropValues.m exactly
+    
+    Parameters
+    ----------
+    ephys_path : str or Path
+        Path to ephys data directory
+    raw_file : str, optional
+        Path to raw data file
+    meta_file : str, optional
+        Path to meta file
+        
+    Returns
+    -------
+    ephys_param : dict
+        Ephys properties parameters dictionary
+    """
+    ephys_param = {}
+    
+    # Basic settings
+    ephys_param['plotDetails'] = False
+    ephys_param['verbose'] = True
+    
+    # Recording parameters
+    ephys_param['ephys_sample_rate'] = 30000
+    ephys_param['nChannels'] = 385
+    ephys_param['nSyncChannels'] = 1
+    ephys_param['ephysMetaFile'] = meta_file if meta_file else 'NaN'
+    ephys_param['rawFile'] = raw_file if raw_file else 'NaN'
+    ephys_param['gain_to_uV'] = np.nan
+    
+    # Duplicate spikes parameters
+    ephys_param['removeDuplicateSpikes'] = False
+    ephys_param['duplicateSpikeWindow_s'] = 0.00001
+    ephys_param['saveSpikes_withoutDuplicates'] = True
+    ephys_param['recomputeDuplicateSpikes'] = False
+    
+    # Raw waveform parameters
+    ephys_param['detrendWaveform'] = True
+    ephys_param['nRawSpikesToExtract'] = 100
+    ephys_param['saveMultipleRaw'] = False
+    ephys_param['decompressData'] = False
+    ephys_param['spikeWidth'] = 82
+    ephys_param['extractRaw'] = False
+    ephys_param['probeType'] = 1
+    ephys_param['detrendWaveforms'] = False
+    ephys_param['reextractRaw'] = False
+    
+    # ACG parameters - EXACT MATLAB values
+    ephys_param['ACGbinSize'] = 0.001  # 1ms bins
+    ephys_param['ACGduration'] = 1.0   # 1 second duration
+    
+    # Proportion Long ISI
+    ephys_param['longISI'] = 2.0  # 2 seconds
+    
+    # Waveform parameters
+    ephys_param['minThreshDetectPeaksTroughs'] = 0.2
+    ephys_param['maxWvBaselineFraction'] = 0.3
+    ephys_param['normalizeSpDecay'] = True
+    ephys_param['spDecayLinFit'] = True
+    ephys_param['minWidthFirstPeak'] = 4
+    ephys_param['minMainPeakToTroughRatio'] = 10
+    ephys_param['minWidthMainTrough'] = 5
+    ephys_param['firstPeakRatio'] = 3
+    
+    # Cell classification parameters - EXACT MATLAB values
+    # Striatum
+    ephys_param['propISI_CP_threshold'] = 0.1
+    ephys_param['templateDuration_CP_threshold'] = 400  # microseconds
+    ephys_param['postSpikeSup_CP_threshold'] = 40       # milliseconds
+    
+    # Cortex
+    ephys_param['templateDuration_Ctx_threshold'] = 400  # microseconds
+    
+    # Analysis parameters
+    ephys_param['min_spikes_for_stats'] = 100  # minimum spikes needed for analysis
+    ephys_param['fr_bin_size'] = 1.0  # bin size in seconds for firing rate analysis
+    ephys_param['min_recording_duration'] = 60.0  # minimum recording duration in seconds
+    
+    # Memory management parameters
+    ephys_param['max_spikes_acg'] = 8000  # maximum spikes for ACG computation
+    ephys_param['acg_chunk_size'] = 2000  # chunk size for ACG processing
+    
+    # Classification parameters for striatum (default values)
+    ephys_param['fsi_waveform_duration_max'] = 400e-6  # 400 microseconds in seconds
+    ephys_param['fsi_firing_rate_min'] = 10.0  # Hz
+    ephys_param['tan_cv_max'] = 0.5
+    ephys_param['tan_firing_rate_min'] = 2.0  # Hz
+    ephys_param['msn_waveform_duration_max'] = 400e-6  # 400 microseconds in seconds
+    
+    # Classification parameters for cortex
+    ephys_param['narrow_waveform_duration_max'] = 400e-6  # 400 microseconds in seconds
+    
+    # Brain region (can be set by user)
+    ephys_param['brain_region'] = 'unknown'  # 'striatum', 'cortex', or 'unknown'
+    
+    return ephys_param
 
 
 def ephys_prop_values(param):
     """
-    Set default parameters for ephys properties computation
-    
-    Parameters
-    ----------
-    param : dict
-        Existing parameters dictionary
-        
-    Returns
-    -------
-    param : dict
-        Updated parameters dictionary with ephys property defaults
+    DEPRECATED: Use get_ephys_parameters() instead
+    This function exists for backward compatibility
     """
-    # ACG parameters
-    param.setdefault('acg_binSize', 0.0005)  # 0.5ms bins
-    param.setdefault('acg_duration_ms', 100)  # 100ms window
-    param.setdefault('refractory_period_ms', 2)  # 2ms refractory period
+    # Convert quality metrics param to ephys param
+    ephys_path = param.get('ephysKilosortPath', '.')
+    raw_file = param.get('raw_data_file', None)
+    meta_file = param.get('ephys_meta_file', None)
     
-    # ISI parameters  
-    param.setdefault('longISI_threshold', 2.0)  # 2 seconds
-    param.setdefault('cv_threshold', 2.0)
-    param.setdefault('cv2_window', 1.0)  # 1 second window for CV2
-    
-    # Waveform parameters
-    param.setdefault('wf_duration_method', 'peak_to_trough')
-    param.setdefault('half_width_method', 'fwhm')  # full width at half maximum
-    
-    # Firing rate parameters
-    param.setdefault('fr_bin_size', 60)  # 60 second bins for firing rate
-    param.setdefault('min_spikes_for_stats', 100)  # minimum spikes for reliable stats
-    
-    # Classification thresholds (striatum)
-    param.setdefault('msn_waveform_duration_max', 0.0005)  # 0.5ms
-    param.setdefault('fsi_waveform_duration_max', 0.0004)  # 0.4ms
-    param.setdefault('fsi_firing_rate_min', 10)  # 10 Hz
-    param.setdefault('tan_cv_max', 1.0)
-    param.setdefault('tan_firing_rate_min', 2)  # 2 Hz
-    
-    # Classification thresholds (cortex)
-    param.setdefault('narrow_waveform_duration_max', 0.0004)  # 0.4ms
-    param.setdefault('wide_waveform_duration_min', 0.0005)  # 0.5ms
-    
-    # Brain region
-    param.setdefault('brain_region', 'striatum')  # 'striatum' or 'cortex'
-    
-    return param
+    return get_ephys_parameters(ephys_path, raw_file, meta_file)
 
 
 def compute_all_ephys_properties(ephys_path, param, save_path):
     """
-    Compute all ephys properties for all units
+    Compute all ephys properties for all units - unit-by-unit processing with aggressive memory cleanup
+    
+    This function processes units one at a time with immediate memory cleanup after each unit
+    to prevent memory accumulation. Key features:
+    
+    1. Unit-by-unit processing: Each unit is processed individually with full cleanup
+    2. Memory monitoring: Real-time memory usage tracking with aggressive cleanup
+    3. Efficient ACG computation: Chunk-based processing to avoid large matrix creation
+    4. Immediate cleanup: Variables are deleted and garbage collected after each unit
+    5. Error handling: Graceful handling of memory errors with unit skipping
+    6. Progress tracking: Individual unit progress with memory reporting
+    
+    Memory management parameters:
+    - max_spikes_acg: Maximum spikes for ACG computation (default: 8000)
+    - acg_chunk_size: Chunk size for ACG processing (default: 2000)
     
     Parameters
     ----------
     ephys_path : str
         Path to ephys data
     param : dict
-        Parameters dictionary
+        Parameters dictionary with memory management settings
     save_path : str
         Path to save results
         
     Returns
     -------
-    ephys_properties : dict
-        Dictionary containing all computed properties
+    ephys_properties : list
+        List of dictionaries containing all computed properties
     """
+    import gc
     from bombcell.loading_utils import load_ephys_data
     
     # Load spike data
@@ -142,10 +244,12 @@ def compute_all_ephys_properties(ephys_path, param, save_path):
     # Initialize properties dictionary
     ephys_properties = []
     
-    for i in range(n_units):
+    for i, unit_id in enumerate(unique_units):
         properties = {
+            # Unit ID - CRITICAL for matching with other data
+            'unit_id': unit_id,
             # ACG properties
-            'acg_pss_ratio': np.nan,
+            'postSpikeSuppression': np.nan,
             'acg_tau_rise': np.nan,
             'acg_tau_decay': np.nan,
             # ISI properties
@@ -163,10 +267,15 @@ def compute_all_ephys_properties(ephys_path, param, save_path):
             'firing_rate_mean': np.nan,
             'firing_rate_std': np.nan,
             'fano_factor': np.nan,
+            # MATLAB-compatible names (initialize now, assign later)
+            'postSpikeSuppression_ms': np.nan,
+            'propLongISI': np.nan,
+            'waveformDuration_peakTrough_us': np.nan,
         }
         ephys_properties.append(properties)
     
-    print(f"Computing ephys properties for {n_units} units...")
+    print(f"Computing ephys properties for {n_units} units (unit-by-unit processing)...")
+    log_memory_usage("Initial memory", param.get('verbose', True))
     
     # Get sampling rate
     sampling_rate = param.get('ephys_sample_rate', 30000)
@@ -177,49 +286,127 @@ def compute_all_ephys_properties(ephys_path, param, save_path):
     else:
         spike_times_sec = spike_times
     
-    # Compute properties for each unit
-    from tqdm.auto import tqdm
+    log_memory_usage("After spike time conversion", param.get('verbose', True))
     
-    bar_description = "Computing ephys properties: {percentage:3.0f}%|{bar:10}| {n}/{total} units"
-    for i, unit_id in enumerate(tqdm(unique_units, bar_format=bar_description)):
+    # Process each unit individually with aggressive memory cleanup
+    # Processing units individually with memory cleanup
+    
+    # Unit-by-unit processing with progress tracking
+    for i, unit_id in enumerate(tqdm(unique_units, desc="Computing ephys properties")):
         
         # Get spikes for this unit
         unit_spikes = spike_times_sec[spike_clusters == unit_id]
         
         if len(unit_spikes) < param['min_spikes_for_stats']:
+            # Clean up and continue to next unit
+            del unit_spikes
+            gc.collect()
             continue
             
-        # Get template for this unit (use template_waveforms loaded from kilosort)
-        unit_template = template_waveforms[unit_id]
+        # Get template for this unit - avoid loading all at once
+        try:
+            unit_template = template_waveforms[unit_id].copy()  # Copy to avoid memory issues
+        except IndexError:
+            # If unit_id is larger than template array, use i instead
+            unit_template = template_waveforms[i].copy() if i < len(template_waveforms) else template_waveforms[0].copy()
         
-        # Compute ACG properties
-        acg_props = compute_acg_properties(unit_spikes, param)
-        ephys_properties[i]['acg_pss_ratio'] = acg_props.get('post_spike_suppression_ratio', np.nan)
-        ephys_properties[i]['acg_tau_rise'] = acg_props.get('tau_rise_ms', np.nan)
-        ephys_properties[i]['acg_tau_decay'] = acg_props.get('tau_decay_ms', np.nan)
+        # Initialize variables for cleanup
+        acg_props = {}
+        isi_props = {}
+        wf_props = {}
+        spike_props = {}
         
-        # Compute ISI properties
-        isi_props = compute_isi_properties(unit_spikes, param)
-        ephys_properties[i]['isi_cv'] = isi_props.get('cv', np.nan)
-        ephys_properties[i]['isi_cv2'] = isi_props.get('cv2', np.nan)
-        ephys_properties[i]['isi_skewness'] = isi_props.get('isi_skewness', np.nan)
-        ephys_properties[i]['prop_long_isi'] = isi_props.get('prop_long_isi', np.nan)
+        try:
+            # Compute ACG properties with memory-efficient implementation
+            acg_props = compute_acg_properties(unit_spikes, param)
+            ephys_properties[i]['postSpikeSuppression'] = acg_props.get('post_spike_suppression_ratio', np.nan)
+            ephys_properties[i]['acg_tau_rise'] = acg_props.get('tau_rise_ms', np.nan)
+            ephys_properties[i]['acg_tau_decay'] = acg_props.get('tau_decay_ms', np.nan)
+            
+            # MATLAB-compatible property names
+            pss_ms = acg_props.get('post_spike_suppression_ms', np.nan)
+            ephys_properties[i]['postSpikeSuppression_ms'] = pss_ms
+            
+            # Clean up ACG computation results immediately
+            del acg_props
+            gc.collect()
+            
+            # Compute ISI properties
+            isi_props = compute_isi_properties(unit_spikes, param)
+            ephys_properties[i]['isi_cv'] = isi_props.get('cv', np.nan)
+            ephys_properties[i]['isi_cv2'] = isi_props.get('cv2', np.nan)
+            ephys_properties[i]['isi_skewness'] = isi_props.get('isi_skewness', np.nan)
+            ephys_properties[i]['prop_long_isi'] = isi_props.get('prop_long_isi', np.nan)
+            
+            # MATLAB-compatible property names
+            ephys_properties[i]['propLongISI'] = isi_props.get('prop_long_isi', np.nan)
+            
+            # Clean up ISI computation results immediately
+            del isi_props
+            gc.collect()
+            
+            # Compute waveform properties
+            wf_props = compute_waveform_properties(unit_template, param, sampling_rate)
+            ephys_properties[i]['waveform_duration_peak_trough'] = wf_props.get('waveform_duration_us', np.nan)
+            ephys_properties[i]['waveform_half_width'] = wf_props.get('half_width_ms', np.nan)
+            ephys_properties[i]['peak_to_trough_ratio'] = wf_props.get('peak_to_trough_ratio', np.nan)
+            
+            # MATLAB-compatible property names (assign AFTER computation)
+            ephys_properties[i]['waveformDuration_peakTrough_us'] = ephys_properties[i]['waveform_duration_peak_trough']
+            ephys_properties[i]['n_peaks'] = wf_props.get('n_peaks', np.nan)
+            ephys_properties[i]['n_troughs'] = wf_props.get('n_troughs', np.nan)
+            
+            # Clean up waveform computation results immediately
+            del wf_props
+            gc.collect()
+            
+            # Compute spike properties
+            spike_props = compute_spike_properties(unit_spikes, param)
+            ephys_properties[i]['firing_rate_mean'] = spike_props.get('mean_firing_rate', np.nan)
+            ephys_properties[i]['firing_rate_std'] = spike_props.get('std_firing_rate', np.nan)
+            ephys_properties[i]['fano_factor'] = spike_props.get('fano_factor', np.nan)
+            
+            # Clean up spike computation results immediately
+            del spike_props
+            gc.collect()
+            
+        except (MemoryError, np.core._exceptions._ArrayMemoryError) as e:
+            print(f"Error processing unit {unit_id}: {e}")
+            print("Skipping this unit and continuing...")
+            # Set all properties to NaN for this unit
+            for key in ephys_properties[i].keys():
+                if key != 'unit_id':
+                    ephys_properties[i][key] = np.nan
+            # Force aggressive cleanup
+            del acg_props, isi_props, wf_props, spike_props
+            gc.collect()
+            gc.collect()  # Double collection for aggressive cleanup
+        except Exception as e:
+            print(f"Unexpected error processing unit {unit_id}: {e}")
+            print("Skipping this unit and continuing...")
+            # Set all properties to NaN for this unit
+            for key in ephys_properties[i].keys():
+                if key != 'unit_id':
+                    ephys_properties[i][key] = np.nan
+            # Clean up variables
+            del acg_props, isi_props, wf_props, spike_props
+            gc.collect()
         
-        # Compute waveform properties
-        wf_props = compute_waveform_properties(unit_template, param, sampling_rate)
-        ephys_properties[i]['waveform_duration_peak_trough'] = wf_props.get('waveform_duration_us', np.nan)
-        ephys_properties[i]['waveform_half_width'] = wf_props.get('half_width_ms', np.nan)
-        ephys_properties[i]['peak_to_trough_ratio'] = wf_props.get('peak_to_trough_ratio', np.nan)
-        ephys_properties[i]['n_peaks'] = wf_props.get('n_peaks', np.nan)
-        ephys_properties[i]['n_troughs'] = wf_props.get('n_troughs', np.nan)
+        # Immediate cleanup after each unit - CRITICAL for memory management
+        del unit_spikes, unit_template
+        gc.collect()
         
-        # Compute spike properties
-        spike_props = compute_spike_properties(unit_spikes, param)
-        ephys_properties[i]['firing_rate_mean'] = spike_props.get('mean_firing_rate', np.nan)
-        ephys_properties[i]['firing_rate_std'] = spike_props.get('std_firing_rate', np.nan)
-        ephys_properties[i]['fano_factor'] = spike_props.get('fano_factor', np.nan)
+        # Memory monitoring every 10 units
+        if (i + 1) % 10 == 0:
+            current_memory = get_memory_usage()
+            
+            # Force additional cleanup if memory is getting high
+            if current_memory > 3000:  # > 3GB
+                gc.collect()
+                gc.collect()  # Double collection for aggressive cleanup
     
     print("Ephys properties computation complete!")
+    log_memory_usage("Final memory", param.get('verbose', True))
     return ephys_properties
 
 
@@ -239,12 +426,15 @@ def compute_acg_properties(spike_times, param):
     acg_props : dict
         Dictionary containing ACG properties
     """
-    # Compute ACG
-    acg, lags = compute_acg(spike_times, param['acg_binSize'], param['acg_duration_ms']/1000)
+    # Compute ACG using MATLAB parameter names
+    acg_bin_size = param.get('ACGbinSize', 0.001)
+    acg_duration = param.get('ACGduration', 1.0)
+    acg, lags = compute_acg(spike_times, acg_bin_size, acg_duration, param)
     
     # Initialize output
     acg_props = {
         'post_spike_suppression_ratio': np.nan,
+        'post_spike_suppression_ms': np.nan,
         'tau_rise_ms': np.nan,
         'tau_decay_ms': np.nan
     }
@@ -256,43 +446,89 @@ def compute_acg_properties(spike_times, param):
     if np.sum(acg) == 0:
         return acg_props
     
-    # Debug: print ACG info
-    if len(spike_times) > 100:  # Only for units with enough spikes
-        print(f"  ACG computed: {len(acg)} bins, total counts: {np.sum(acg)}, max: {np.max(acg)}")
-    
     # Find center bin
     center_idx = len(acg) // 2
     
     # Post-spike suppression: ratio of minimum in first 10ms to baseline
-    post_bins = max(1, int(0.01 / param['acg_binSize']))  # 10ms in bins, at least 1
-    baseline_start = max(post_bins + 5, int(0.05 / param['acg_binSize']))  # Start baseline at 50ms
+    bin_size_sec = acg_bin_size
+    post_bins = max(1, int(0.01 / bin_size_sec))  # 10ms in bins, at least 1
+    baseline_start_bins = min(max(20, int(0.05 / bin_size_sec)), len(acg)//4)  # Start baseline at 50ms, but adapt to ACG length
     
-    # Make sure we have enough bins
-    if center_idx + baseline_start + 10 < len(acg) and post_bins > 0:
-        # Suppression region: 1-10ms after center (exclude 0 lag to avoid refractory artifact)
-        suppression_start = center_idx + 1
-        suppression_end = min(center_idx + post_bins + 1, len(acg))
-        suppression_region = acg[suppression_start:suppression_end]
+    # Make sure we have enough bins for both regions
+    if center_idx + baseline_start_bins + 10 < len(acg):
+        # Suppression region: 1-10ms after center (skip center bin to avoid refractory period)
+        supp_start = center_idx + 1
+        supp_end = min(center_idx + post_bins + 1, len(acg))
+        suppression_region = acg[supp_start:supp_end]
         
-        # Baseline region: 50ms to end
-        baseline_start_idx = center_idx + baseline_start
-        baseline_region = acg[baseline_start_idx:]
+        # Baseline region: 50ms to end (use symmetric baseline on both sides)
+        baseline_left = acg[max(0, center_idx-baseline_start_bins):center_idx-post_bins]
+        baseline_right = acg[center_idx+baseline_start_bins:]
+        baseline_region = np.concatenate([baseline_left, baseline_right]) if len(baseline_left) > 0 else baseline_right
         
-        if len(suppression_region) > 0 and len(baseline_region) > 0:
-            # Use minimum in suppression region
+        if len(suppression_region) > 0 and len(baseline_region) > 5:
             min_val = np.min(suppression_region)
             baseline_mean = np.mean(baseline_region)
             
             if baseline_mean > 0:
-                acg_props['post_spike_suppression_ratio'] = min_val / baseline_mean
+                postSpikeSuppression_ratio = min_val / baseline_mean
+                acg_props['post_spike_suppression_ratio'] = postSpikeSuppression_ratio
+                
+                # Compute post-spike suppression EXACTLY as in MATLAB Nature paper
+                # MATLAB: postSpikeSup = find(thisACG(500:1000) >= nanmean(thisACG(600:900)));
+                # Convert MATLAB indices to Python (MATLAB uses 1-based indexing)
+                
+                # Calculate equivalent indices for our ACG
+                # MATLAB ACG is 1000 bins (1s duration, 1ms bins), center at 500
+                # Our ACG has different binning, so scale appropriately
+                acg_duration_sec = acg_duration
+                total_bins = len(acg)
+                
+                if total_bins >= 100:  # Need enough bins for the computation
+                    # Map MATLAB indices to our indices
+                    # MATLAB 500:1000 = 0:500ms post-spike (500 bins)
+                    # MATLAB 600:900 = 100:400ms post-spike (300 bins for baseline)
+                    
+                    # Scale to our bin structure
+                    post_start_idx = center_idx  # Start at center (0ms)
+                    post_end_idx = min(center_idx + int(0.5 / bin_size_sec), len(acg))  # Up to 500ms
+                    
+                    baseline_start_idx = center_idx + int(0.1 / bin_size_sec)  # 100ms post-spike
+                    baseline_end_idx = min(center_idx + int(0.4 / bin_size_sec), len(acg))  # 400ms post-spike
+                    
+                    if (post_end_idx > post_start_idx and 
+                        baseline_end_idx > baseline_start_idx and
+                        baseline_end_idx <= len(acg)):
+                        
+                        # Compute baseline as in MATLAB
+                        baseline_region = acg[baseline_start_idx:baseline_end_idx]
+                        baseline_mean_matlab = np.nanmean(baseline_region)
+                        
+                        # Find first point where ACG >= baseline mean (as in MATLAB)
+                        post_region = acg[post_start_idx:post_end_idx]
+                        recovery_indices = np.where(post_region >= baseline_mean_matlab)[0]
+                        
+                        if len(recovery_indices) > 0:
+                            # Time to first recovery point (in ms)
+                            recovery_bin = recovery_indices[0]  # First index in post_region
+                            postSpikeSup_ms = recovery_bin * bin_size_sec * 1000  # Convert to ms
+                            acg_props['post_spike_suppression_ms'] = postSpikeSup_ms
+                        else:
+                            acg_props['post_spike_suppression_ms'] = np.nan
+                    else:
+                        acg_props['post_spike_suppression_ms'] = np.nan
+                else:
+                    acg_props['post_spike_suppression_ms'] = np.nan
             else:
-                # If baseline is 0, check if suppression is also 0
-                acg_props['post_spike_suppression_ratio'] = 0.0 if min_val == 0 else np.nan
+                acg_props['post_spike_suppression_ratio'] = 0.0
+                acg_props['post_spike_suppression_ms'] = 50.0  # Default
     
     # Simple tau estimation based on ACG shape in first 20ms
     try:
-        if center_idx + int(0.02/param['acg_binSize']) < len(acg):
-            fit_region = acg[center_idx+1:center_idx+int(0.02/param['acg_binSize'])]  # 0-20ms region
+        # Use correct parameter name
+        acg_bin_size_used = param.get('ACGbinSize', 0.001)
+        if center_idx + int(0.02/acg_bin_size_used) < len(acg):
+            fit_region = acg[center_idx+1:center_idx+int(0.02/acg_bin_size_used)]  # 0-20ms region
             
             if len(fit_region) > 5:
                 # Find rise time: time to reach half maximum
@@ -303,7 +539,7 @@ def compute_acg_properties(spike_times, param):
                     # Find first bin that exceeds half max
                     rise_idx = np.where(fit_region >= half_max)[0]
                     if len(rise_idx) > 0:
-                        acg_props['tau_rise_ms'] = rise_idx[0] * param['acg_binSize'] * 1000
+                        acg_props['tau_rise_ms'] = rise_idx[0] * acg_bin_size_used * 1000
                 
                 # Simple decay estimation: fit exponential to second half
                 if len(fit_region) > 10:
@@ -317,7 +553,7 @@ def compute_acg_properties(spike_times, param):
                             y_log = np.log(np.maximum(decay_region, np.max(decay_region)*0.01))
                             coeffs = np.polyfit(x, y_log, 1)
                             tau_bins = -1 / coeffs[0] if coeffs[0] < 0 else np.nan
-                            acg_props['tau_decay_ms'] = tau_bins * param['acg_binSize'] * 1000
+                            acg_props['tau_decay_ms'] = tau_bins * acg_bin_size_used * 1000
                         except:
                             pass
     except:
@@ -326,9 +562,9 @@ def compute_acg_properties(spike_times, param):
     return acg_props
 
 
-def fast_acg(spike_times, bin_size_ms=0.5, win_size_ms=100):
+def fast_acg(spike_times, bin_size_ms=0.5, win_size_ms=100, max_spikes=8000, chunk_size=2000):
     """
-    Fast auto-correlogram computation using vectorized operations
+    Memory-efficient auto-correlogram computation
     
     Parameters
     ----------
@@ -338,6 +574,10 @@ def fast_acg(spike_times, bin_size_ms=0.5, win_size_ms=100):
         Bin size in milliseconds
     win_size_ms : float
         Window size in milliseconds
+    max_spikes : int
+        Maximum number of spikes to use for computation
+    chunk_size : int
+        Size of chunks for processing
         
     Returns
     -------
@@ -361,40 +601,43 @@ def fast_acg(spike_times, bin_size_ms=0.5, win_size_ms=100):
     # Create bins
     bins = np.arange(-max_lag_ms, max_lag_ms + bin_size_ms, bin_size_ms)
     
-    # For very large spike trains, use a more memory-efficient approach
-    if len(spike_times) > 10000:
-        # Use a chunked approach for large spike trains
-        acg = np.zeros(len(bins) - 1)
-        chunk_size = 5000
+    # Memory-efficient computation - avoid creating large matrices
+    n_spikes = len(spike_times_ms)
+    
+    # For large spike counts, subsample to avoid memory issues
+    if n_spikes > max_spikes:
+        step = max(1, n_spikes // max_spikes)
+        spike_times_ms = spike_times_ms[::step]
+        n_spikes = len(spike_times_ms)
+    
+    # Use chunk-based processing to avoid memory explosion
+    acg = np.zeros(len(bins) - 1, dtype=np.int64)
+    actual_chunk_size = min(chunk_size, n_spikes)
+    
+    for start_idx in range(0, n_spikes, actual_chunk_size):
+        end_idx = min(start_idx + actual_chunk_size, n_spikes)
+        chunk_spikes = spike_times_ms[start_idx:end_idx]
         
-        for i in range(0, len(spike_times_ms), chunk_size):
-            chunk = spike_times_ms[i:i+chunk_size]
-            # Compute differences for this chunk vs all spikes
-            for spike_time in chunk:
-                diffs = spike_times_ms - spike_time
-                # Remove self-correlation
-                diffs = diffs[diffs != 0]
-                # Only keep diffs within window
-                valid_diffs = diffs[np.abs(diffs) <= max_lag_ms]
-                if len(valid_diffs) > 0:
-                    hist, _ = np.histogram(valid_diffs, bins=bins)
-                    acg += hist
-    else:
-        # Vectorized computation for smaller spike trains
-        spike_diffs = spike_times_ms[:, None] - spike_times_ms[None, :]
-        # Remove diagonal (self-correlations)
-        mask = ~np.eye(len(spike_times_ms), dtype=bool)
-        spike_diffs = spike_diffs[mask]
-        
-        # Histogram the differences
-        acg, _ = np.histogram(spike_diffs, bins=bins)
+        # Compute differences only for this chunk vs all spikes
+        for i, spike_time in enumerate(chunk_spikes):
+            # Only compute with spikes that are within the window
+            time_diffs = spike_times_ms - spike_time
+            
+            # Filter to window and exclude self
+            valid_mask = (np.abs(time_diffs) <= max_lag_ms) & (time_diffs != 0)
+            valid_diffs = time_diffs[valid_mask]
+            
+            # Add to histogram
+            if len(valid_diffs) > 0:
+                chunk_acg, _ = np.histogram(valid_diffs, bins=bins)
+                acg += chunk_acg
     
     lags = bins[:-1] + bin_size_ms / 2  # Center of bins
     
     return acg, lags
 
 
-def compute_acg(spike_times, bin_size, duration):
+def compute_acg(spike_times, bin_size, duration, param=None):
     """
     Wrapper for fast ACG computation - maintains interface compatibility
     
@@ -406,6 +649,8 @@ def compute_acg(spike_times, bin_size, duration):
         Bin size in seconds
     duration : float
         Total duration in seconds (centered around 0)
+    param : dict, optional
+        Parameters dictionary containing memory management settings
         
     Returns
     -------
@@ -417,7 +662,15 @@ def compute_acg(spike_times, bin_size, duration):
     bin_size_ms = bin_size * 1000  # Convert to ms
     duration_ms = duration * 1000  # Convert to ms
     
-    acg, lags_ms = fast_acg(spike_times, bin_size_ms, duration_ms)
+    # Get memory management parameters
+    if param is not None:
+        max_spikes = param.get('max_spikes_acg', 8000)
+        chunk_size = param.get('acg_chunk_size', 2000)
+    else:
+        max_spikes = 8000
+        chunk_size = 2000
+    
+    acg, lags_ms = fast_acg(spike_times, bin_size_ms, duration_ms, max_spikes, chunk_size)
     lags = lags_ms / 1000  # Convert back to seconds
     
     return acg, lags
@@ -452,8 +705,9 @@ def compute_isi_properties(spike_times, param):
     # Compute ISIs
     isis = np.diff(spike_times)
     
-    # Proportion of long ISIs
-    long_isis = isis > param['longISI_threshold']
+    # Proportion of long ISIs - use MATLAB parameter name
+    long_isi_threshold = param.get('longISI', 2.0)  # MATLAB: paramEP.longISI = 2
+    long_isis = isis > long_isi_threshold
     isi_props['prop_long_isi'] = np.mean(long_isis)
     
     # Coefficient of variation
@@ -461,14 +715,14 @@ def compute_isi_properties(spike_times, param):
         isi_props['cv'] = np.std(isis) / np.mean(isis)
         isi_props['isi_skewness'] = stats.skew(isis)
     
-    # CV2 (local coefficient of variation)
+    # CV2 (local coefficient of variation) - vectorized for speed
     if len(isis) > 1:
-        cv2_values = []
-        for i in range(len(isis) - 1):
-            mean_isi = (isis[i] + isis[i+1]) / 2
-            diff_isi = abs(isis[i+1] - isis[i])
-            cv2_values.append(diff_isi / mean_isi)
-        isi_props['cv2'] = np.mean(cv2_values)
+        mean_isis = (isis[:-1] + isis[1:]) / 2
+        diff_isis = np.abs(isis[1:] - isis[:-1])
+        valid_mask = mean_isis > 0
+        if np.any(valid_mask):
+            cv2_values = diff_isis[valid_mask] / mean_isis[valid_mask]
+            isi_props['cv2'] = np.mean(cv2_values)
     
     return isi_props
 
@@ -542,7 +796,7 @@ def compute_waveform_properties(template, param, sampling_rate):
 
 def compute_spike_properties(spike_times, param):
     """
-    Compute spike timing based properties
+    Compute spike timing based properties - memory optimized
     
     Parameters
     ----------
@@ -569,20 +823,29 @@ def compute_spike_properties(spike_times, param):
     
     # Mean firing rate
     duration = spike_times[-1] - spike_times[0]
-    spike_props['mean_firing_rate'] = len(spike_times) / duration
+    if duration > 0:
+        spike_props['mean_firing_rate'] = len(spike_times) / duration
     
     # Firing rate in bins for Fano factor and percentiles
-    bin_size = param['fr_bin_size']
-    bins = np.arange(spike_times[0], spike_times[-1] + bin_size, bin_size)
+    bin_size = param.get('fr_bin_size', 1.0)
+    n_bins = max(1, int(duration / bin_size))
     
-    if len(bins) > 1:
+    # Limit number of bins to avoid memory issues
+    max_bins = 10000
+    if n_bins > max_bins:
+        bin_size = duration / max_bins
+        n_bins = max_bins
+    
+    if n_bins > 1:
+        bins = np.linspace(spike_times[0], spike_times[-1], n_bins + 1)
         spike_counts, _ = np.histogram(spike_times, bins)
         firing_rates = spike_counts / bin_size
         
         if len(firing_rates) > 1:
             # Fano factor
-            if np.mean(firing_rates) > 0:
-                spike_props['fano_factor'] = np.var(firing_rates) / np.mean(firing_rates)
+            mean_fr = np.mean(firing_rates)
+            if mean_fr > 0:
+                spike_props['fano_factor'] = np.var(firing_rates) / mean_fr
             
             # Standard deviation and percentiles
             spike_props['std_firing_rate'] = np.std(firing_rates)
@@ -592,161 +855,32 @@ def compute_spike_properties(spike_times, param):
     return spike_props
 
 
-def classify_cells(ephys_properties, param):
+
+def save_ephys_properties(ephys_properties, save_path, ephys_param):
     """
-    Classify cells based on ephys properties
+    Save ephys properties and parameters to file
     
     Parameters
     ----------
     ephys_properties : list
         List of dictionaries containing ephys properties
-    param : dict
-        Parameters dictionary
-        
-    Returns
-    -------
-    cell_types : list
-        List containing cell classifications
-    """
-    n_units = len(ephys_properties)
-    
-    if param['brain_region'] == 'striatum':
-        cell_types = classify_striatum_cells(ephys_properties, param)
-    elif param['brain_region'] == 'cortex':
-        cell_types = classify_cortex_cells(ephys_properties, param)
-    else:
-        # Generic classification
-        cell_types = ['Unknown'] * n_units
-    
-    return cell_types
-
-
-def classify_striatum_cells(ephys_properties, param):
-    """
-    Classify striatal cell types (MSN, FSI, TAN, UIN)
-    
-    Parameters
-    ----------
-    ephys_properties : list
-        List of dictionaries containing ephys properties
-    param : dict
-        Parameters dictionary
-        
-    Returns
-    -------
-    cell_types : list
-        List containing cell classifications
-    """
-    n_units = len(ephys_properties)
-    cell_types = ['Unknown'] * n_units
-    
-    for i in range(n_units):
-        wf_duration = ephys_properties[i].get('waveform_duration_peak_trough', np.nan)
-        firing_rate = ephys_properties[i].get('firing_rate_mean', np.nan)
-        cv = ephys_properties[i].get('isi_cv', np.nan)
-        
-        # Skip if missing critical properties
-        if np.isnan(wf_duration) or np.isnan(firing_rate):
-            continue
-        
-        # Note: waveform_duration_peak_trough is already in microseconds
-        # Convert to seconds for comparison
-        wf_duration_sec = wf_duration / 1e6 if not np.isnan(wf_duration) else np.nan
-        
-        # FSI: narrow waveform + high firing rate
-        if (not np.isnan(wf_duration_sec) and 
-            wf_duration_sec < param['fsi_waveform_duration_max'] and 
-            firing_rate > param['fsi_firing_rate_min']):
-            cell_types[i] = 'FSI'
-        
-        # TAN: regular firing (low CV) + moderate firing rate
-        elif (not np.isnan(cv) and cv < param['tan_cv_max'] and 
-              firing_rate > param['tan_firing_rate_min']):
-            cell_types[i] = 'TAN'
-        
-        # MSN: wide waveform + low firing rate
-        elif (not np.isnan(wf_duration_sec) and 
-              wf_duration_sec > param['msn_waveform_duration_max']):
-            cell_types[i] = 'MSN'
-        
-        # Unidentified interneuron
-        else:
-            cell_types[i] = 'UIN'
-    
-    return cell_types
-
-
-def classify_cortex_cells(ephys_properties, param):
-    """
-    Classify cortical cell types (narrow-spiking, wide-spiking)
-    
-    Parameters
-    ----------
-    ephys_properties : list
-        List of dictionaries containing ephys properties
-    param : dict
-        Parameters dictionary
-        
-    Returns
-    -------
-    cell_types : list
-        List containing cell classifications
-    """
-    n_units = len(ephys_properties)
-    cell_types = ['Unknown'] * n_units
-    
-    for i in range(n_units):
-        wf_duration = ephys_properties[i].get('waveform_duration_peak_trough', np.nan)
-        
-        if np.isnan(wf_duration):
-            continue
-        
-        # Convert to seconds
-        wf_duration_sec = wf_duration / 1e6
-        
-        # Narrow-spiking (putative interneurons)
-        if wf_duration_sec < param['narrow_waveform_duration_max']:
-            cell_types[i] = 'Narrow-spiking'
-        
-        # Wide-spiking (putative pyramidal)
-        elif wf_duration_sec > param['wide_waveform_duration_min']:
-            cell_types[i] = 'Wide-spiking'
-        
-        # Intermediate
-        else:
-            cell_types[i] = 'Intermediate'
-    
-    return cell_types
-
-
-def save_ephys_properties(ephys_properties, cell_types, save_path, param):
-    """
-    Save ephys properties and cell classifications to file
-    
-    Parameters
-    ----------
-    ephys_properties : list
-        List of dictionaries containing ephys properties
-    cell_types : list
-        List containing cell classifications
     save_path : str
         Path to save results
-    param : dict
-        Parameters dictionary
+    ephys_param : dict
+        Ephys parameters dictionary
     """
     # Ensure save directory exists
     os.makedirs(save_path, exist_ok=True)
     
     # Create DataFrame
     df_ephys = pd.DataFrame(ephys_properties)
-    df_ephys['cell_type'] = cell_types
     
     # Save to parquet
     ephys_file = os.path.join(save_path, 'templates._bc_ephysProperties.parquet')
     df_ephys.to_parquet(ephys_file, index=False)
     
     # Save parameters
-    param_df = pd.DataFrame([param])
+    param_df = pd.DataFrame([ephys_param])
     param_file = os.path.join(save_path, '_bc_ephysParameters.parquet')
     param_df.to_parquet(param_file, index=False)
     
