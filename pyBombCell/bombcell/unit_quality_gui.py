@@ -707,15 +707,15 @@ class InteractiveUnitQualityGUI:
                 amplitudes = self.ephys_data['template_amplitudes'][spike_mask]
                 
                 # Plot amplitudes with slightly bigger dots
-                ax.scatter(spike_times, amplitudes, s=2, alpha=0.6, color='blue', edgecolors='none')
+                ax.scatter(spike_times, amplitudes, s=3, alpha=0.6, color='blue', edgecolors='none')
                 ax.set_ylabel('Template scaling', color='blue')
                 
                 # Create twin axis for firing rate
                 ax2 = ax.twinx()
                 
-                # Plot firing rate as bars below
-                ax2.bar(bin_centers, firing_rates, width=bin_width*0.8, alpha=0.7, 
-                       color='orange', label='Firing rate')
+                # Plot firing rate as step plot (outline only)
+                ax2.step(bin_centers, firing_rates, where='mid', color='orange', 
+                        linewidth=2.5, alpha=0.8, label='Firing rate')
                 ax2.set_ylabel('Firing rate (sp/s)', color='orange')
                 ax2.tick_params(axis='y', labelcolor='orange')
                 
@@ -730,13 +730,13 @@ class InteractiveUnitQualityGUI:
             else:
                 # Just plot spike times as raster with bigger dots
                 y_pos = np.ones_like(spike_times)
-                ax.scatter(spike_times, y_pos, s=2, alpha=0.6, color='blue', edgecolors='none')
+                ax.scatter(spike_times, y_pos, s=3, alpha=0.6, color='blue', edgecolors='none')
                 ax.set_ylabel('Spikes', color='blue')
                 
                 # Create twin axis for firing rate  
                 ax2 = ax.twinx()
-                ax2.bar(bin_centers, firing_rates, width=bin_width*0.8, alpha=0.7,
-                       color='orange', label='Firing rate')
+                ax2.step(bin_centers, firing_rates, where='mid', color='orange', 
+                        linewidth=2.5, alpha=0.8, label='Firing rate')
                 ax2.set_ylabel('Firing rate (sp/s)', color='orange')
                 ax2.tick_params(axis='y', labelcolor='orange')
                 
@@ -778,11 +778,96 @@ class InteractiveUnitQualityGUI:
         ax.invert_yaxis()  # MATLAB style
         
     def plot_amplitude_fit(self, ax, unit_data):
-        """Plot amplitude fit"""
-        # Placeholder for amplitude fit analysis
-        ax.text(0.5, 0.5, 'Amplitude fit\n(analysis needed)', 
-                ha='center', va='center', transform=ax.transAxes)
-        ax.set_title('Amplitude fit')
+        """Plot amplitude distribution with Gaussian fit like BombCell"""
+        spike_times = unit_data['spike_times']
+        metrics = unit_data['metrics']
+        
+        if len(spike_times) > 0:
+            # Get amplitudes if available
+            unit_id = unit_data['unit_id']
+            spike_mask = self.ephys_data['spike_clusters'] == unit_id
+            
+            if 'template_amplitudes' in self.ephys_data:
+                amplitudes = self.ephys_data['template_amplitudes'][spike_mask]
+                
+                if len(amplitudes) > 10:  # Need sufficient data for fit
+                    # Create histogram of amplitudes
+                    n_bins = min(50, int(len(amplitudes) / 10))  # Adaptive bin count
+                    hist_counts, bin_edges = np.histogram(amplitudes, bins=n_bins, density=True)
+                    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+                    bin_width = bin_edges[1] - bin_edges[0]
+                    
+                    # Plot histogram
+                    ax.bar(bin_centers, hist_counts, width=bin_width*0.8, alpha=0.7, 
+                          color='lightblue', edgecolor='blue', linewidth=1)
+                    
+                    # Fit Gaussian
+                    try:
+                        from scipy import stats
+                        # Robust statistics (remove outliers)
+                        q1, q3 = np.percentile(amplitudes, [25, 75])
+                        iqr = q3 - q1
+                        lower_bound = q1 - 1.5 * iqr
+                        upper_bound = q3 + 1.5 * iqr
+                        
+                        # Filter outliers for fitting
+                        clean_amplitudes = amplitudes[(amplitudes >= lower_bound) & 
+                                                    (amplitudes <= upper_bound)]
+                        
+                        if len(clean_amplitudes) > 5:
+                            # Fit Gaussian to clean data
+                            mu, sigma = stats.norm.fit(clean_amplitudes)
+                            
+                            # Generate smooth curve for fit
+                            x_smooth = np.linspace(np.min(amplitudes), np.max(amplitudes), 200)
+                            y_smooth = stats.norm.pdf(x_smooth, mu, sigma)
+                            
+                            # Plot Gaussian fit
+                            ax.plot(x_smooth, y_smooth, 'r-', linewidth=2, 
+                                   label=f'Gaussian fit\nμ={mu:.2f}, σ={sigma:.2f}')
+                            
+                            # Mark mean and std
+                            ax.axvline(mu, color='red', linestyle='--', alpha=0.7, linewidth=1)
+                            ax.axvspan(mu-sigma, mu+sigma, alpha=0.2, color='red')
+                            
+                            # Calculate percentage of spikes missing (outside 2*sigma)
+                            spikes_in_2sigma = np.sum((amplitudes >= mu - 2*sigma) & 
+                                                    (amplitudes <= mu + 2*sigma))
+                            percent_missing = (1 - spikes_in_2sigma / len(amplitudes)) * 100
+                            
+                            ax.text(0.02, 0.98, f'% missing\n(2σ): {percent_missing:.1f}%', 
+                                   transform=ax.transAxes, va='top', ha='left',
+                                   bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
+                                   fontsize=8)
+                            
+                    except ImportError:
+                        # Fallback without scipy
+                        mu = np.mean(amplitudes)
+                        sigma = np.std(amplitudes)
+                        ax.axvline(mu, color='red', linestyle='--', alpha=0.7, linewidth=1)
+                        ax.text(0.02, 0.98, f'Mean: {mu:.2f}\nStd: {sigma:.2f}', 
+                               transform=ax.transAxes, va='top', ha='left',
+                               bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
+                               fontsize=8)
+                    
+                    ax.set_xlabel('Template amplitude')
+                    ax.set_ylabel('Probability density')
+                    
+                    # Add legend if Gaussian fit was plotted
+                    if ax.get_legend_handles_labels()[0]:
+                        ax.legend(loc='upper right', fontsize=8)
+                        
+                else:
+                    ax.text(0.5, 0.5, 'Insufficient data\nfor amplitude fit', 
+                            ha='center', va='center', transform=ax.transAxes)
+            else:
+                ax.text(0.5, 0.5, 'No amplitude data\navailable', 
+                        ha='center', va='center', transform=ax.transAxes)
+        else:
+            ax.text(0.5, 0.5, 'No spike data\navailable', 
+                    ha='center', va='center', transform=ax.transAxes)
+                    
+        ax.set_title('Amplitude distribution')
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'amplitude_fit')
