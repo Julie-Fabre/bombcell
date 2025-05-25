@@ -763,8 +763,8 @@ class InteractiveUnitQualityGUI:
         classification_colors = {
             'good': [0, 0.7, 0],        # Green
             'mua': [1, 0.5, 0],         # Orange  
-            'noise': [0.7, 0.7, 0.7],  # Gray
-            'non-somatic': [0.5, 0, 0.5]  # Purple
+            'noise': [1, 0, 0],         # Red
+            'non-somatic': [0, 0, 1]    # Blue
         }
         
         if 'channel_positions' in self.ephys_data and 'maxChannels' in self.quality_metrics:
@@ -795,8 +795,17 @@ class InteractiveUnitQualityGUI:
                                 firing_rate = len(unit_spike_times) / duration
                                 
                                 # Get classification
-                                if hasattr(self, 'unit_classifications') and i < len(self.unit_classifications):
-                                    classification = self.unit_classifications[i]
+                                if self.unit_types is not None and i < len(self.unit_types):
+                                    unit_type = self.unit_types[i]
+                                    # Map numeric codes to classification names
+                                    type_map = {
+                                        0: 'noise',
+                                        1: 'good', 
+                                        2: 'mua',
+                                        3: 'non-somatic',
+                                        4: 'non-somatic'
+                                    }
+                                    classification = type_map.get(unit_type, 'good')
                                 else:
                                     classification = 'good'  # Default
                                 
