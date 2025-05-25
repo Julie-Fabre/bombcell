@@ -818,7 +818,7 @@ class InteractiveUnitQualityGUI:
                                 ax.plot(x_vals, y_vals, 'k-', linewidth=1, alpha=0.7)
                             
                             # Add channel number - position further to the left to avoid overlap
-                            ax.text(x_offset - waveform_width * 0.15, y_offset, f'{ch}', fontsize=8, ha='right', va='center')
+                            ax.text(x_offset - waveform_width * 0.15, y_offset, f'{ch}', fontsize=8, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
                     
                     # Mark peaks and troughs on max channel
                     max_ch_waveform = template[:, max_ch]
@@ -841,9 +841,9 @@ class InteractiveUnitQualityGUI:
                 # Fallback: simple single channel display
                 ax.plot(template[:, max_ch], 'k-', linewidth=2)
                 ax.text(0.5, 0.5, f'Template\n(channel {max_ch})', 
-                       ha='center', va='center', transform=ax.transAxes)
+                       ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Template waveforms', fontsize=12, fontweight='bold', fontfamily='Arial')
+        ax.set_title('Template waveforms', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
         ax.set_xticks([])
         ax.set_yticks([])
         
@@ -858,8 +858,8 @@ class InteractiveUnitQualityGUI:
         extract_raw = self.param.get('extractRaw', 0)
         if extract_raw != 1:
             ax.text(0.5, 0.5, 'Raw waveforms\n(extractRaw disabled)', 
-                    ha='center', va='center', transform=ax.transAxes)
-            ax.set_title('Raw waveforms', fontsize=12, fontweight='bold', fontfamily='Arial')
+                    ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
+            ax.set_title('Raw waveforms', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
             return
         
         if self.raw_waveforms is not None:
@@ -928,7 +928,7 @@ class InteractiveUnitQualityGUI:
                                                 ax.plot(x_vals, y_vals, 'gray', linewidth=1, alpha=0.7)
                                             
                                             # Add channel number
-                                            ax.text(x_offset - 2, y_offset, f'{ch}', fontsize=8, ha='right', va='center')
+                                            ax.text(x_offset - 2, y_offset, f'{ch}', fontsize=8, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
                                     
                                     # Mark peaks and troughs on max channel
                                     max_ch_waveform = waveforms[:, max_ch]
@@ -945,19 +945,19 @@ class InteractiveUnitQualityGUI:
                                 # Fallback: simple single channel display
                                 ax.plot(waveforms[:, max_ch], 'b-', linewidth=2)
                                 ax.text(0.5, 0.5, f'Raw waveforms\n(channel {max_ch})', 
-                                       ha='center', va='center', transform=ax.transAxes)
+                                       ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                         else:
                             # Single channel
                             ax.plot(waveforms, 'b-', alpha=0.7)
                             
                 except (TypeError, IndexError, AttributeError):
                     ax.text(0.5, 0.5, 'Raw waveforms\n(data format issue)', 
-                            ha='center', va='center', transform=ax.transAxes)
+                            ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
         else:
             ax.text(0.5, 0.5, 'Raw waveforms\n(not available)', 
-                    ha='center', va='center', transform=ax.transAxes)
+                    ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Raw waveforms', fontsize=12, fontweight='bold', fontfamily='Arial')
+        ax.set_title('Raw waveforms', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
         ax.set_xticks([])
         ax.set_yticks([])
         # Remove aspect ratio constraint to prevent squishing
@@ -1001,7 +1001,7 @@ class InteractiveUnitQualityGUI:
             
             # Show computing message on plot
             ax.text(0.5, 0.5, f'Computing ACG for unit {self.current_unit_idx}...\n(This may take a moment)', 
-                   ha='center', va='center', transform=ax.transAxes, 
+                   ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans",
                    bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
             # ACG calculation with MATLAB-style parameters
             max_lag = 0.05  # 50ms
@@ -1093,14 +1093,15 @@ class InteractiveUnitQualityGUI:
                 ax.axhline(mean_fr, color='orange', linewidth=3, linestyle='--', alpha=1.0, 
                           label=f'Mean FR = {mean_fr:.1f} sp/s', zorder=10)
                 
-        ax.set_title('Auto-correlogram', fontsize=12, fontweight='bold', fontfamily='Arial')
-        ax.set_xlabel('Time (ms)', fontsize=10, fontfamily='Arial')
-        ax.set_ylabel('Firing rate (sp/s)', fontsize=10, fontfamily='Arial')
+        ax.set_title('Auto-correlogram', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_xlabel('Time (ms)', fontsize=10, fontfamily="DejaVu Sans")
+        ax.set_ylabel('Firing rate (sp/s)', fontsize=10, fontfamily="DejaVu Sans")
         
         # Add legend in bottom right corner
         handles, labels = ax.get_legend_handles_labels()
         if handles:
-            ax.legend(handles, labels, loc='lower right', fontsize=11, framealpha=0.9)
+            ax.legend(handles, labels, loc='lower right', fontsize=10, framealpha=0.9,
+                     prop={'family': 'DejaVu Sans'})
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'acg')
@@ -1211,9 +1212,9 @@ class InteractiveUnitQualityGUI:
                         ha='center', va='center', transform=ax.transAxes)
         else:
             ax.text(0.5, 0.5, 'Spatial decay\n(not computed)', 
-                    ha='center', va='center', transform=ax.transAxes)
+                    ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Spatial decay', fontsize=12, fontweight='bold', fontfamily='Arial')
+        ax.set_title('Spatial decay', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'spatial')
@@ -1287,8 +1288,8 @@ class InteractiveUnitQualityGUI:
                         ax.axvspan(center - bin_width/2, center + bin_width/2, 
                                   alpha=0.1, color='green', zorder=0)
                 
-        ax.set_title('Amplitudes over time', fontsize=12, fontweight='bold', fontfamily='Arial')
-        ax.set_xlabel('Time (s)', fontsize=10, fontfamily='Arial')
+        ax.set_title('Amplitudes over time', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_xlabel('Time (s)', fontsize=10, fontfamily="DejaVu Sans")
         ax.tick_params(axis='y', labelcolor='blue')
         
         # Store y-limits for amplitude fit plot consistency
@@ -1388,9 +1389,9 @@ class InteractiveUnitQualityGUI:
                         ha='center', va='center', transform=ax.transAxes)
         else:
             ax.text(0.5, 0.5, 'Unit locations\n(requires probe geometry\nand max channels)', 
-                    ha='center', va='center', transform=ax.transAxes)
+                    ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
         
-        ax.set_title('Units by depth', fontsize=14, fontweight='bold')
+        ax.set_title('Units by depth', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
         
     def plot_amplitude_fit(self, ax, unit_data):
         """Plot amplitude distribution with cutoff Gaussian fit like BombCell"""
@@ -1492,9 +1493,9 @@ class InteractiveUnitQualityGUI:
                         ha='center', va='center', transform=ax.transAxes)
         else:
             ax.text(0.5, 0.5, 'No spike data\navailable', 
-                    ha='center', va='center', transform=ax.transAxes)
+                    ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Amplitude distribution', fontsize=14, fontweight='bold')
+        ax.set_title('Amplitude distribution', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'amplitude_fit')
@@ -1629,9 +1630,9 @@ class InteractiveUnitQualityGUI:
                     
                 ax.text(0.98, y_pos, text, transform=ax.transAxes, 
                        verticalalignment='top', horizontalalignment='right', fontsize=12, 
-                       color=color, weight='bold',
+                       color=color, weight='bold', fontfamily="DejaVu Sans",
                        bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.9, 
-                                edgecolor='lightgray', linewidth=1))
+                                edgecolor='lightgray', linewidth=1), zorder=20)
         
     def get_nearest_channels(self, peak_channel, n_channels, n_to_get=16):
         """Get nearest channels to peak channel like MATLAB - prioritize above/below"""
@@ -1844,14 +1845,51 @@ class InteractiveUnitQualityGUI:
                 troughs = [min_idx] if len(waveform) > 0 else []
         
         # Plot peaks and troughs (works for both pre-computed and real-time data)
-        # Find main peak and trough for special highlighting
+        # Find main peak and trough for special highlighting and duration calculation
         main_peak_idx = None
         main_trough_idx = None
         
+        print(f"DEBUG: Waveform shape: {waveform.shape}, min: {np.nanmin(waveform):.3f}, max: {np.nanmax(waveform):.3f}")
+        print(f"DEBUG: Found {len(peaks)} peaks at {peaks}")
+        print(f"DEBUG: Found {len(troughs)} troughs at {troughs}")
+        
+        # ROBUST approach: Find the main peak and main trough separately
+        # Main peak: highest positive point in waveform
         if len(peaks) > 0:
+            # Use detected peaks and find the highest one
             main_peak_idx = peaks[np.argmax(waveform[peaks])]
+            print(f"DEBUG: Main peak from detected peaks: {main_peak_idx}, value: {waveform[main_peak_idx]:.3f}")
+        else:
+            # Fallback: find highest point in entire waveform
+            main_peak_idx = np.nanargmax(waveform)
+            print(f"DEBUG: Main peak from fallback: {main_peak_idx}, value: {waveform[main_peak_idx]:.3f}")
+        
+        # Main trough: lowest negative point in waveform  
         if len(troughs) > 0:
+            # Use detected troughs and find the deepest one
             main_trough_idx = troughs[np.argmin(waveform[troughs])]
+            print(f"DEBUG: Main trough from detected troughs: {main_trough_idx}, value: {waveform[main_trough_idx]:.3f}")
+        else:
+            # Fallback: find lowest point in entire waveform
+            main_trough_idx = np.nanargmin(waveform)
+            print(f"DEBUG: Main trough from fallback: {main_trough_idx}, value: {waveform[main_trough_idx]:.3f}")
+        
+        # Ensure indices are valid integers
+        if main_peak_idx is not None:
+            main_peak_idx = int(main_peak_idx)
+        if main_trough_idx is not None:
+            main_trough_idx = int(main_trough_idx)
+            
+        print(f"DEBUG: Final main_peak_idx: {main_peak_idx}, main_trough_idx: {main_trough_idx}")
+        
+        # Sanity check: ensure peak is higher than trough
+        if (main_peak_idx is not None and main_trough_idx is not None and 
+            waveform[main_peak_idx] <= waveform[main_trough_idx]):
+            print(f"DEBUG: WARNING - Peak value {waveform[main_peak_idx]:.3f} <= Trough value {waveform[main_trough_idx]:.3f}")
+            # Swap if needed
+            if waveform[main_peak_idx] < 0 and waveform[main_trough_idx] > 0:
+                main_peak_idx, main_trough_idx = main_trough_idx, main_peak_idx
+                print(f"DEBUG: Swapped indices. New main_peak_idx: {main_peak_idx}, main_trough_idx: {main_trough_idx}")
         
         # Plot all peaks with red dots
         legend_elements = []
@@ -1902,7 +1940,8 @@ class InteractiveUnitQualityGUI:
         handles, labels = ax.get_legend_handles_labels()
         if handles:
             ax.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, -0.1), 
-                     ncol=len(handles), fontsize=9, frameon=True, framealpha=0.9)
+                     ncol=len(handles), fontsize=10, frameon=True, framealpha=0.9,
+                     prop={'family': 'DejaVu Sans'})
     
     def get_nearby_channels_for_spatial_decay(self, peak_channel, n_channels):
         """Get nearby channels for spatial decay plot - fewer points like MATLAB"""

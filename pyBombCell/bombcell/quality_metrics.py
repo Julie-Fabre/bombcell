@@ -1179,6 +1179,12 @@ def waveform_shape(
         spatial_decay_points = np.full((1, NUM_CHANNELS_FOR_FIT), np.nan)
         spatial_decay_slope = np.nan
         waveform_baseline = np.nan
+        scnd_peak_to_trough_ratio = np.nan
+        peak1_to_peak2_ratio = np.nan
+        main_peak_to_trough_ratio = np.nan
+        trough_to_peak2_ratio = np.nan
+        peak_before_width = np.nan
+        mainTrough_width = np.nan
     else:
         this_waveform_fit = this_waveform
         if np.size(this_waveform) == 82:  # Checking if the waveform length is 82 (KS4)
@@ -1419,6 +1425,8 @@ def waveform_shape(
         # plt.plot(this_waveform, 'r-', linewidth=2)  
         # plt.show()  # This will display the plot
 
+        # Initialize spatial decay slope
+        spatial_decay_slope = np.nan
 
         if param["computeSpatialDecay"]:
             if np.min(np.diff(np.unique(channel_positions[:, 1]))) < 30:
@@ -1524,14 +1532,14 @@ def waveform_shape(
                     spatial_decay_slope = -out_exp[0]
 
         # get waveform baseline fraction
-        if ~np.isnan(waveform_baseline_window)[0]:
-            waveform_baseline = np.max(
-                np.abs(
-                    this_waveform[
-                        waveform_baseline_window[0] : waveform_baseline_window[1]
-                    ]
-                )
-            ) / np.max(np.abs(this_waveform))
+        waveform_baseline = np.nan
+        if waveform_baseline_window is not None and len(waveform_baseline_window) >= 2:
+            if ~np.isnan(waveform_baseline_window[0]) and ~np.isnan(waveform_baseline_window[1]):
+                baseline_segment = this_waveform_fit[
+                    int(waveform_baseline_window[0]) : int(waveform_baseline_window[1])
+                ]
+                if len(baseline_segment) > 0:
+                    waveform_baseline = np.max(np.abs(baseline_segment)) / np.max(np.abs(this_waveform_fit))
 
         # plt.plot(channel_distances, spatial_decay_points,'o', label = 'Data')
         # plt.plot(channel_distances, out_linear[1] + channel_distances * out_linear[0], label = f'linear fit grad = {out_linear[0]:.4f}')
