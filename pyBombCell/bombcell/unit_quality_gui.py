@@ -398,8 +398,9 @@ class InteractiveUnitQualityGUI:
                             waveform = template[:, ch]
                             ch_pos = positions[ch]
                             
-                            # Calculate X offset - just enough to place side by side
-                            x_offset = (ch_pos[0] - max_pos[0]) * 0.1  # Minimal spacing
+                            # Calculate X offset - use waveform width for proper side-by-side spacing
+                            waveform_width = template.shape[0]  # Usually 82 samples
+                            x_offset = (ch_pos[0] - max_pos[0]) * waveform_width * 0.05  # Reduced spacing
                             
                             # Calculate Y offset based on channel Y position (like MATLAB)
                             y_offset = (ch_pos[1] - max_pos[1]) / 100 * scaling_factor
@@ -502,8 +503,9 @@ class InteractiveUnitQualityGUI:
                                             waveform = waveforms[:, ch]
                                             ch_pos = positions[ch]
                                             
-                                            # Calculate X offset - just enough to place side by side
-                                            x_offset = (ch_pos[0] - max_pos[0]) * 0.1  # Minimal spacing
+                                            # Calculate X offset - use waveform width for proper side-by-side spacing
+                                            waveform_width = waveforms.shape[0]  # Usually 82 samples
+                                            x_offset = (ch_pos[0] - max_pos[0]) * waveform_width * 0.05  # Reduced spacing
                                             
                                             # Calculate Y offset based on channel Y position (like MATLAB)
                                             y_offset = (ch_pos[1] - max_pos[1]) / 100 * scaling_factor
