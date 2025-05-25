@@ -53,18 +53,18 @@ class InteractiveUnitQualityGUI:
         )
         
         # Navigation buttons
-        self.prev_btn = widgets.Button(description='←', button_style='info')
-        self.next_btn = widgets.Button(description='→', button_style='info')
+        self.prev_btn = widgets.Button(description='← unit', button_style='info')
+        self.next_btn = widgets.Button(description='unit →', button_style='info')
         
         # Unit type navigation - both directions
-        self.goto_prev_good_btn = widgets.Button(description='←', button_style='success')
-        self.goto_good_btn = widgets.Button(description='→', button_style='success')
-        self.goto_prev_mua_btn = widgets.Button(description='←', button_style='warning')
-        self.goto_mua_btn = widgets.Button(description='→', button_style='warning')
-        self.goto_prev_noise_btn = widgets.Button(description='←', button_style='danger')
-        self.goto_noise_btn = widgets.Button(description='→', button_style='danger')
-        self.goto_prev_nonsomatic_btn = widgets.Button(description='←', button_style='primary')
-        self.goto_nonsomatic_btn = widgets.Button(description='→', button_style='primary')
+        self.goto_prev_good_btn = widgets.Button(description='← good', button_style='success')
+        self.goto_good_btn = widgets.Button(description='good →', button_style='success')
+        self.goto_prev_mua_btn = widgets.Button(description='← mua', button_style='warning')
+        self.goto_mua_btn = widgets.Button(description='mua →', button_style='warning')
+        self.goto_prev_noise_btn = widgets.Button(description='← noise', button_style='danger')
+        self.goto_noise_btn = widgets.Button(description='noise →', button_style='danger')
+        self.goto_prev_nonsomatic_btn = widgets.Button(description='← non-soma', button_style='primary')
+        self.goto_nonsomatic_btn = widgets.Button(description='non-soma →', button_style='primary')
         
         # Unit info display
         self.unit_info = widgets.HTML(value="")
@@ -400,6 +400,14 @@ class InteractiveUnitQualityGUI:
         """Plot raw waveforms with 16 nearest channels like MATLAB"""
         metrics = unit_data['metrics']
         
+        # Check if raw extraction is enabled
+        extract_raw = self.param.get('extractRaw', 0)
+        if extract_raw != 1:
+            ax.text(0.5, 0.5, 'Raw waveforms\n(extractRaw disabled)', 
+                    ha='center', va='center', transform=ax.transAxes)
+            ax.set_title('Raw waveforms')
+            return
+        
         if self.raw_waveforms is not None:
             raw_wf = self.raw_waveforms.get('average', None)
             if raw_wf is not None:
@@ -449,6 +457,19 @@ class InteractiveUnitQualityGUI:
                                     
                                     # Add channel number
                                     ax.text(x_offset - 5, y_offset, f'{ch}', fontsize=8, ha='right', va='center')
+                            
+                            # Mark peaks and troughs on peak channel only
+                            if max_ch in layout_channels:
+                                peak_waveform = waveforms[:, max_ch]
+                                # Find peak channel position in grid
+                                peak_idx = layout_channels.index(max_ch)
+                                peak_row = peak_idx // n_cols
+                                peak_col = peak_idx % n_cols
+                                peak_x_offset = peak_col * 150
+                                peak_y_offset = peak_row * amp_range * 1.2
+                                
+                                # Detect all peaks and troughs
+                                self.mark_peaks_and_troughs(ax, peak_waveform, peak_x_offset, peak_y_offset, metrics, amp_range)
                         else:
                             # Single channel
                             ax.plot(waveforms, 'b-', alpha=0.7)
