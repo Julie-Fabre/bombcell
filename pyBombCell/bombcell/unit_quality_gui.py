@@ -53,11 +53,18 @@ class InteractiveUnitQualityGUI:
         )
         
         # Navigation buttons
-        self.prev_btn = widgets.Button(description='← Previous', button_style='info')
-        self.next_btn = widgets.Button(description='Next →', button_style='info')
-        self.goto_good_btn = widgets.Button(description='Next Good', button_style='success')
-        self.goto_mua_btn = widgets.Button(description='Next MUA', button_style='warning')
-        self.goto_noise_btn = widgets.Button(description='Next Noise', button_style='danger')
+        self.prev_btn = widgets.Button(description='←', button_style='info')
+        self.next_btn = widgets.Button(description='→', button_style='info')
+        
+        # Unit type navigation - both directions
+        self.goto_prev_good_btn = widgets.Button(description='←', button_style='success')
+        self.goto_good_btn = widgets.Button(description='→', button_style='success')
+        self.goto_prev_mua_btn = widgets.Button(description='←', button_style='warning')
+        self.goto_mua_btn = widgets.Button(description='→', button_style='warning')
+        self.goto_prev_noise_btn = widgets.Button(description='←', button_style='danger')
+        self.goto_noise_btn = widgets.Button(description='→', button_style='danger')
+        self.goto_prev_nonsomatic_btn = widgets.Button(description='←', button_style='primary')
+        self.goto_nonsomatic_btn = widgets.Button(description='→', button_style='primary')
         
         # Unit info display
         self.unit_info = widgets.HTML(value="")
@@ -74,9 +81,16 @@ class InteractiveUnitQualityGUI:
         self.unit_slider.observe(self.on_unit_change, names='value')
         self.prev_btn.on_click(self.prev_unit)
         self.next_btn.on_click(self.next_unit)
+        
+        # Unit type navigation callbacks
+        self.goto_prev_good_btn.on_click(self.goto_prev_good)
         self.goto_good_btn.on_click(self.goto_next_good)
+        self.goto_prev_mua_btn.on_click(self.goto_prev_mua)
         self.goto_mua_btn.on_click(self.goto_next_mua)
+        self.goto_prev_noise_btn.on_click(self.goto_prev_noise)
         self.goto_noise_btn.on_click(self.goto_next_noise)
+        self.goto_prev_nonsomatic_btn.on_click(self.goto_prev_nonsomatic)
+        self.goto_nonsomatic_btn.on_click(self.goto_next_nonsomatic)
         self.classify_good_btn.on_click(lambda b: self.classify_unit(1))
         self.classify_mua_btn.on_click(lambda b: self.classify_unit(2))
         self.classify_noise_btn.on_click(lambda b: self.classify_unit(0))
@@ -87,7 +101,10 @@ class InteractiveUnitQualityGUI:
         nav_controls = widgets.HBox([
             self.prev_btn, self.next_btn, 
             widgets.Label('  |  '),
-            self.goto_good_btn, self.goto_mua_btn, self.goto_noise_btn
+            self.goto_prev_good_btn, self.goto_good_btn,
+            self.goto_prev_mua_btn, self.goto_mua_btn,
+            self.goto_prev_noise_btn, self.goto_noise_btn,
+            self.goto_prev_nonsomatic_btn, self.goto_nonsomatic_btn
         ])
         
         # Classification controls
@@ -135,10 +152,28 @@ class InteractiveUnitQualityGUI:
                     self.unit_slider.value = self.current_unit_idx
                     break
                     
+    def goto_prev_good(self, b=None):
+        """Go to previous good unit"""
+        if self.unit_types is not None:
+            for i in range(self.current_unit_idx - 1, -1, -1):
+                if self.unit_types[i] == 1:  # Good unit
+                    self.current_unit_idx = i
+                    self.unit_slider.value = self.current_unit_idx
+                    break
+                    
     def goto_next_mua(self, b=None):
         """Go to next MUA unit"""
         if self.unit_types is not None:
             for i in range(self.current_unit_idx + 1, self.n_units):
+                if self.unit_types[i] == 2:  # MUA unit
+                    self.current_unit_idx = i
+                    self.unit_slider.value = self.current_unit_idx
+                    break
+                    
+    def goto_prev_mua(self, b=None):
+        """Go to previous MUA unit"""
+        if self.unit_types is not None:
+            for i in range(self.current_unit_idx - 1, -1, -1):
                 if self.unit_types[i] == 2:  # MUA unit
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
@@ -149,6 +184,33 @@ class InteractiveUnitQualityGUI:
         if self.unit_types is not None:
             for i in range(self.current_unit_idx + 1, self.n_units):
                 if self.unit_types[i] == 0:  # Noise unit
+                    self.current_unit_idx = i
+                    self.unit_slider.value = self.current_unit_idx
+                    break
+                    
+    def goto_prev_noise(self, b=None):
+        """Go to previous noise unit"""
+        if self.unit_types is not None:
+            for i in range(self.current_unit_idx - 1, -1, -1):
+                if self.unit_types[i] == 0:  # Noise unit
+                    self.current_unit_idx = i
+                    self.unit_slider.value = self.current_unit_idx
+                    break
+                    
+    def goto_next_nonsomatic(self, b=None):
+        """Go to next non-somatic unit"""
+        if self.unit_types is not None:
+            for i in range(self.current_unit_idx + 1, self.n_units):
+                if self.unit_types[i] in [3, 4]:  # Non-somatic good or non-somatic MUA
+                    self.current_unit_idx = i
+                    self.unit_slider.value = self.current_unit_idx
+                    break
+                    
+    def goto_prev_nonsomatic(self, b=None):
+        """Go to previous non-somatic unit"""
+        if self.unit_types is not None:
+            for i in range(self.current_unit_idx - 1, -1, -1):
+                if self.unit_types[i] in [3, 4]:  # Non-somatic good or non-somatic MUA
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
@@ -203,9 +265,20 @@ class InteractiveUnitQualityGUI:
             type_map = {0: "Noise", 1: "Good", 2: "MUA", 3: "Non-soma good", 4: "Non-soma MUA"}
             unit_type_str = type_map.get(unit_type, "Unknown")
             
-        # Simple title with just unit number and type
+        # Get title color based on unit type
+        title_colors = {
+            "Noise": "red",
+            "Good": "green", 
+            "MUA": "orange",
+            "Non-soma good": "blue",
+            "Non-soma MUA": "blue",
+            "Unknown": "black"
+        }
+        title_color = title_colors.get(unit_type_str, "black")
+        
+        # Simple title with just unit number and type, colored by classification
         info_html = f"""
-        <h3>Unit {unit_data['unit_id']} ({self.current_unit_idx+1}/{self.n_units}) - {unit_type_str}</h3>
+        <h3 style="color: {title_color};">Unit {unit_data['unit_id']} ({self.current_unit_idx+1}/{self.n_units}) - {unit_type_str}</h3>
         """
         
         self.unit_info.value = info_html
@@ -396,26 +469,92 @@ class InteractiveUnitQualityGUI:
         self.add_metrics_text(ax, unit_data, 'raw')
         
     def plot_autocorrelogram(self, ax, unit_data):
-        """Plot autocorrelogram"""
+        """Plot autocorrelogram with tauR and firing rate lines"""
         spike_times = unit_data['spike_times']
+        metrics = unit_data['metrics']
+        
         if len(spike_times) > 1:
-            # Simple autocorrelogram calculation
+            # ACG calculation with MATLAB-style parameters
             max_lag = 0.05  # 50ms
-            bin_size = 0.001  # 1ms bins
+            bin_size = 0.002  # 2ms bins (larger like MATLAB)
             
-            # Calculate ISIs
-            isis = np.diff(spike_times)
-            isis = isis[isis <= max_lag]
+            # Calculate proper autocorrelogram (not just ISIs)
+            # Create bins centered around 0
+            bins = np.arange(-max_lag, max_lag + bin_size, bin_size)
+            bin_centers = bins[:-1] + bin_size/2
             
-            if len(isis) > 0:
-                bins = np.arange(0, max_lag + bin_size, bin_size)
-                hist, _ = np.histogram(isis, bins=bins)
-                bin_centers = bins[:-1] + bin_size/2
-                ax.bar(bin_centers * 1000, hist, width=bin_size*1000*0.8, color='blue', alpha=0.7)
+            # Calculate autocorrelogram
+            autocorr = np.zeros(len(bin_centers))
+            
+            # For efficiency, subsample spikes if there are too many
+            if len(spike_times) > 10000:
+                indices = np.random.choice(len(spike_times), 10000, replace=False)
+                spike_subset = spike_times[indices]
+            else:
+                spike_subset = spike_times
+            
+            # Calculate cross-correlation with itself
+            for i, spike_time in enumerate(spike_subset[::10]):  # Subsample further for speed
+                # Find spikes within max_lag of this spike
+                time_diffs = spike_times - spike_time
+                valid_diffs = time_diffs[(np.abs(time_diffs) <= max_lag) & (time_diffs != 0)]
+                
+                if len(valid_diffs) > 0:
+                    hist, _ = np.histogram(valid_diffs, bins=bins)
+                    autocorr += hist
+            
+            # Convert to firing rate (spikes/sec)
+            if len(spike_subset) > 0:
+                recording_duration = np.max(spike_times) - np.min(spike_times)
+                autocorr = autocorr / (len(spike_subset) * bin_size) if recording_duration > 0 else autocorr
+            
+            # Plot only positive lags (like MATLAB)
+            positive_mask = bin_centers >= 0
+            positive_centers = bin_centers[positive_mask]
+            positive_autocorr = autocorr[positive_mask]
+            
+            # Plot with wider bars like MATLAB
+            ax.bar(positive_centers * 1000, positive_autocorr, 
+                   width=bin_size*1000*0.9, color='blue', alpha=0.7, edgecolor='darkblue', linewidth=0.5)
+            
+            # Set limits first
+            ax.set_xlim(0, max_lag * 1000)
+            if len(positive_autocorr) > 0:
+                y_max = np.max(positive_autocorr) * 1.1
+                ax.set_ylim(0, y_max)
+            else:
+                y_max = 1
+                ax.set_ylim(0, y_max)
+            
+            # Add tauR vertical line - use milliseconds and ensure it's visible
+            tau_r = metrics.get('tauR_estimated', None)
+            if tau_r is None:
+                # Try alternative parameter names
+                tau_r = metrics.get('estimatedTauR', None)
+            if tau_r is None:
+                # Use a default value if not available
+                tau_r = 2.0  # 2ms default refractory period
+                
+            if tau_r is not None:
+                ax.axvline(tau_r, color='red', linewidth=3, linestyle='--', alpha=1.0, 
+                          label=f'τR = {tau_r:.1f}ms', zorder=10)
+            
+            # Add mean firing rate horizontal line
+            if len(spike_times) > 1:
+                recording_duration = np.max(spike_times) - np.min(spike_times)
+                if recording_duration > 0:
+                    mean_fr = len(spike_times) / recording_duration
+                    ax.axhline(mean_fr, color='orange', linewidth=3, linestyle='--', alpha=1.0, 
+                              label=f'Mean FR = {mean_fr:.1f} sp/s', zorder=10)
                 
         ax.set_title('Auto-correlogram')
         ax.set_xlabel('Time (ms)')
-        ax.set_ylabel('Count')
+        ax.set_ylabel('Firing rate (sp/s)')
+        
+        # Add legend in bottom right corner
+        handles, labels = ax.get_legend_handles_labels()
+        if handles:
+            ax.legend(handles, labels, loc='lower right', fontsize=8, framealpha=0.9)
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'acg')
@@ -588,10 +727,10 @@ class InteractiveUnitQualityGUI:
         ax.set_title('Amplitude fit')
         
         # Add quality metrics text
-        self.add_metrics_text(ax, unit_data, 'amplitude')
+        self.add_metrics_text(ax, unit_data, 'amplitude_fit')
         
     def add_metrics_text(self, ax, unit_data, plot_type):
-        """Add quality metrics text overlay to plots like MATLAB"""
+        """Add quality metrics text overlay to plots like MATLAB with color coding"""
         metrics = unit_data['metrics']
         
         def format_metric(value, decimals=2):
@@ -604,44 +743,124 @@ class InteractiveUnitQualityGUI:
             except (TypeError, ValueError):
                 return 'N/A'
         
+        def get_metric_color(metric_name, value, param):
+            """Determine color based on metric value and thresholds - simplified logic"""
+            if value == 'N/A' or not param:
+                return 'black'
+            
+            try:
+                val = float(value.split()[0])  # Extract numeric value
+            except (ValueError, AttributeError):
+                return 'black'
+            
+            # Noise metrics: red if noise, black if not noise
+            if metric_name in ['nPeaks', 'nTroughs', 'waveformDuration_peakTrough', 'waveformBaselineFlatness', 'spatialDecaySlope', 'scndPeakToTroughRatio']:
+                if metric_name == 'nPeaks':
+                    max_peaks = param.get('maxNPeaks', 2)
+                    return 'red' if val > max_peaks else 'black'
+                elif metric_name == 'nTroughs':
+                    max_troughs = param.get('maxNTroughs', 2) 
+                    return 'red' if val > max_troughs else 'black'
+                elif metric_name == 'waveformDuration_peakTrough':
+                    min_dur = param.get('minWvDuration', 0.3)
+                    max_dur = param.get('maxWvDuration', 1.0)
+                    return 'red' if (val < min_dur or val > max_dur) else 'black'
+                elif metric_name == 'waveformBaselineFlatness':
+                    max_baseline = param.get('maxWvBaselineFraction', 0.3)
+                    return 'red' if val > max_baseline else 'black'
+                elif metric_name == 'spatialDecaySlope':
+                    min_slope = param.get('minSpatialDecaySlope', 0.001)
+                    return 'red' if val < min_slope else 'black'
+                elif metric_name == 'scndPeakToTroughRatio':
+                    max_ratio = param.get('maxScndPeakToTroughRatio_noise', 0.5)
+                    return 'red' if val > max_ratio else 'black'
+            
+            # Non-somatic metrics: blue if non-somatic, black if somatic
+            elif metric_name in ['mainPeakToTroughRatio', 'peak1ToPeak2Ratio']:
+                if metric_name == 'mainPeakToTroughRatio':
+                    max_ratio = param.get('maxMainPeakToTroughRatio_nonSomatic', 2.0)
+                    return 'blue' if val > max_ratio else 'black'
+                elif metric_name == 'peak1ToPeak2Ratio':
+                    max_ratio = param.get('maxPeak1ToPeak2Ratio_nonSomatic', 0.5)
+                    return 'blue' if val > max_ratio else 'black'
+            
+            # MUA metrics: orange if MUA, green if good
+            elif metric_name in ['rawAmplitude', 'signalToNoiseRatio', 'fractionRPVs_estimatedTauR', 'presenceRatio', 'maxDriftEstimate', 'percentageSpikesMissing_gaussian']:
+                if metric_name == 'rawAmplitude':
+                    min_amp = param.get('minAmplitude', 50)
+                    return 'orange' if val < min_amp else 'green'
+                elif metric_name == 'signalToNoiseRatio':
+                    min_snr = param.get('min_SNR', 3)
+                    return 'orange' if val < min_snr else 'green'
+                elif metric_name == 'fractionRPVs_estimatedTauR':
+                    max_rpv = param.get('maxRPVviolations', 0.1)
+                    return 'orange' if val > max_rpv else 'green'
+                elif metric_name == 'presenceRatio':
+                    min_presence = param.get('minPresenceRatio', 0.9)
+                    return 'orange' if val < min_presence else 'green'
+                elif metric_name == 'maxDriftEstimate':
+                    max_drift = param.get('maxDrift', 100)
+                    return 'orange' if val > max_drift else 'green'
+                elif metric_name == 'percentageSpikesMissing_gaussian':
+                    max_missing = param.get('maxPercSpikesMissing', 20)
+                    return 'orange' if val > max_missing else 'green'
+            
+            # Default for informational metrics
+            else:
+                return 'black'
+        
         # Different metrics for different plot types
+        metric_info = []
         if plot_type == 'template':
-            text_lines = [
-                f"nPeaks: {format_metric(metrics.get('nPeaks'), 0)}",
-                f"nTroughs: {format_metric(metrics.get('nTroughs'), 0)}",
-                f"Duration: {format_metric(metrics.get('waveformDuration_peakTrough'), 1)} ms",
-                f"Main P/T: {format_metric(metrics.get('mainPeakToTroughRatio'), 2)}"
+            metric_info = [
+                ('nPeaks', f"nPeaks: {format_metric(metrics.get('nPeaks'), 0)}"),
+                ('nTroughs', f"nTroughs: {format_metric(metrics.get('nTroughs'), 0)}"),
+                ('waveformDuration_peakTrough', f"Duration: {format_metric(metrics.get('waveformDuration_peakTrough'), 1)} ms"),
+                ('scndPeakToTroughRatio', f"Peak2/Trough: {format_metric(metrics.get('scndPeakToTroughRatio'), 2)}"),
+                ('waveformBaselineFlatness', f"Baseline: {format_metric(metrics.get('waveformBaselineFlatness'), 3)}"),
+                ('peak1ToPeak2Ratio', f"Peak1/Peak2: {format_metric(metrics.get('peak1ToPeak2Ratio'), 2)}"),
+                ('mainPeakToTroughRatio', f"Main P/T: {format_metric(metrics.get('mainPeakToTroughRatio'), 2)}")
             ]
         elif plot_type == 'raw':
-            text_lines = [
-                f"Raw Ampl: {format_metric(metrics.get('rawAmplitude'), 1)} μV",
-                f"SNR: {format_metric(metrics.get('signalToNoiseRatio'), 1)}",
-                f"Baseline: {format_metric(metrics.get('waveformBaselineFlatness'), 3)}"
+            metric_info = [
+                ('rawAmplitude', f"Raw Ampl: {format_metric(metrics.get('rawAmplitude'), 1)} μV"),
+                ('signalToNoiseRatio', f"SNR: {format_metric(metrics.get('signalToNoiseRatio'), 1)}")
             ]
         elif plot_type == 'spatial':
-            text_lines = [
-                f"Spatial decay: {format_metric(metrics.get('spatialDecaySlope'), 3)}",
-                f"Max channel: {format_metric(metrics.get('maxChannels'), 0)}"
+            metric_info = [
+                ('spatialDecaySlope', f"Spatial decay: {format_metric(metrics.get('spatialDecaySlope'), 3)}")
             ]
         elif plot_type == 'acg':
-            text_lines = [
-                f"Frac RPVs: {format_metric(metrics.get('fractionRPVs_estimatedTauR'), 4)}",
-                f"Presence: {format_metric(metrics.get('presenceRatio'), 3)}"
+            metric_info = [
+                ('fractionRPVs_estimatedTauR', f"RPV rate: {format_metric(metrics.get('fractionRPVs_estimatedTauR'), 4)}")
             ]
         elif plot_type == 'amplitude':
-            text_lines = [
-                f"Max drift: {format_metric(metrics.get('maxDriftEstimate'), 1)} μm",
-                f"% missing: {format_metric(metrics.get('percentageSpikesMissing_gaussian'), 1)}%"
+            metric_info = [
+                ('maxDriftEstimate', f"Max drift: {format_metric(metrics.get('maxDriftEstimate'), 1)} μm"),
+                ('presenceRatio', f"Presence: {format_metric(metrics.get('presenceRatio'), 3)}")
             ]
-        else:
-            text_lines = []
+        elif plot_type == 'amplitude_fit':
+            metric_info = [
+                ('percentageSpikesMissing_gaussian', f"% missing: {format_metric(metrics.get('percentageSpikesMissing_gaussian'), 1)}%")
+            ]
             
-        # Add text to plot - position in top right to avoid obstructing data
-        if text_lines:
-            text_str = '\n'.join(text_lines)
-            ax.text(0.98, 0.98, text_str, transform=ax.transAxes, 
-                   verticalalignment='top', horizontalalignment='right', fontsize=8, 
-                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+        # Add colored text to plot with proper spacing
+        if metric_info:
+            y_start = 0.95
+            line_height = 0.08  # Increased spacing to prevent overlaps
+            
+            for i, (metric_name, text) in enumerate(metric_info):
+                color = get_metric_color(metric_name, format_metric(metrics.get(metric_name)), self.param)
+                y_pos = y_start - i * line_height
+                
+                # Skip if text would go below plot area
+                if y_pos < 0.05:
+                    break
+                    
+                ax.text(0.98, y_pos, text, transform=ax.transAxes, 
+                       verticalalignment='top', horizontalalignment='right', fontsize=8, 
+                       color=color, weight='bold',
+                       bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9, edgecolor=color))
         
     def get_nearest_channels(self, peak_channel, n_channels, n_to_get=16):
         """Get nearest channels to peak channel like MATLAB - prioritize above/below"""
@@ -806,13 +1025,24 @@ class InteractiveUnitQualityGUI:
         try:
             from scipy.signal import find_peaks
             
-            # Find all peaks (positive deflections)
-            peak_height_threshold = np.max(waveform) * 0.2
-            peaks, peak_properties = find_peaks(waveform, height=peak_height_threshold, distance=5)
+            # More stringent peak detection to match visual perception
+            waveform_range = np.max(waveform) - np.min(waveform)
             
-            # Find all troughs (negative deflections)
-            trough_height_threshold = -np.min(waveform) * 0.2
-            troughs, trough_properties = find_peaks(-waveform, height=trough_height_threshold, distance=5)
+            # Find all peaks (positive deflections) - use higher threshold and prominence
+            peak_height_threshold = np.max(waveform) * 0.5  # Increased from 0.2 to 0.5
+            peak_prominence = waveform_range * 0.1  # Require 10% of waveform range prominence
+            peaks, peak_properties = find_peaks(waveform, 
+                                               height=peak_height_threshold, 
+                                               distance=10,  # Increased from 5
+                                               prominence=peak_prominence)
+            
+            # Find all troughs (negative deflections) - similar stringent criteria
+            trough_height_threshold = -np.min(waveform) * 0.5  # Increased from 0.2 to 0.5
+            trough_prominence = waveform_range * 0.1
+            troughs, trough_properties = find_peaks(-waveform, 
+                                                   height=trough_height_threshold, 
+                                                   distance=10,  # Increased from 5
+                                                   prominence=trough_prominence)
             
             # Mark all peaks with red circles
             for i, peak_idx in enumerate(peaks):
