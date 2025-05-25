@@ -517,13 +517,22 @@ class InteractiveUnitQualityGUI:
             ax.bar(positive_centers * 1000, positive_autocorr, 
                    width=bin_size*1000*0.9, color='blue', alpha=0.7, edgecolor='darkblue', linewidth=0.5)
             
-            # Set limits first
+            # Calculate mean firing rate first to determine proper y-limits
+            mean_fr = 0
+            if len(spike_times) > 1:
+                recording_duration = np.max(spike_times) - np.min(spike_times)
+                if recording_duration > 0:
+                    mean_fr = len(spike_times) / recording_duration
+            
+            # Set limits to accommodate both data and mean firing rate line
             ax.set_xlim(0, max_lag * 1000)
             if len(positive_autocorr) > 0:
-                y_max = np.max(positive_autocorr) * 1.1
+                data_max = np.max(positive_autocorr)
+                # More conservative y-limits - just ensure mean firing rate is visible
+                y_max = max(data_max * 1.05, mean_fr * 1.1)
                 ax.set_ylim(0, y_max)
             else:
-                y_max = 1
+                y_max = mean_fr * 1.1 if mean_fr > 0 else 10
                 ax.set_ylim(0, y_max)
             
             # Add tauR vertical line - use milliseconds and ensure it's visible
@@ -540,12 +549,9 @@ class InteractiveUnitQualityGUI:
                           label=f'τR = {tau_r:.1f}ms', zorder=10)
             
             # Add mean firing rate horizontal line
-            if len(spike_times) > 1:
-                recording_duration = np.max(spike_times) - np.min(spike_times)
-                if recording_duration > 0:
-                    mean_fr = len(spike_times) / recording_duration
-                    ax.axhline(mean_fr, color='orange', linewidth=3, linestyle='--', alpha=1.0, 
-                              label=f'Mean FR = {mean_fr:.1f} sp/s', zorder=10)
+            if mean_fr > 0:
+                ax.axhline(mean_fr, color='orange', linewidth=3, linestyle='--', alpha=1.0, 
+                          label=f'Mean FR = {mean_fr:.1f} sp/s', zorder=10)
                 
         ax.set_title('Auto-correlogram')
         ax.set_xlabel('Time (ms)')
