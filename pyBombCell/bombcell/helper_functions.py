@@ -435,6 +435,262 @@ def set_unit_nan(unit_idx, quality_metrics, not_enough_spikes):
 
     return quality_metrics, not_enough_spikes
 
+
+
+def _precompute_unit_gui_data(unit_idx, unit_id, template_waveforms, quality_metrics, 
+                             spike_clusters, template_amplitudes, channel_positions, 
+                             gui_data, param):
+    """Helper function to precompute GUI data for a single unit during quality metrics computation"""
+    try:
+        template = template_waveforms[unit_idx]
+        max_ch = np.argmax(np.ptp(template, axis=0))
+        waveform = template[:, max_ch]
+        
+        # Use exact same peak/trough detection as quality metrics (inlined to avoid scope issues)
+        try:
+            from scipy.signal import find_peaks
+            
+            # Use same parameters as waveform_shape
+            min_thresh_detect_peaks_troughs = param.get("minThreshDetectPeaksTroughs", 0.25)
+            
+            # Handle baseline artifacts (same as waveform_shape)
+            first_valid_index = 0
+            if len(waveform) > 4 and np.any(np.abs(waveform[0:4]) > 2 * np.nanstd(waveform)):
+                first_valid_index = 5
+            
+            # Same prominence calculation as waveform_shape
+            min_prominence = min_thresh_detect_peaks_troughs * np.max(np.abs(waveform[first_valid_index:]))
+            
+            # Find troughs (same logic as waveform_shape)
+            trough_locs, trough_dict = find_peaks(
+                waveform[first_valid_index:] * -1, prominence=min_prominence, width=0
+            )
+            
+            if trough_locs.size > 1:
+                trough_locs += first_valid_index
+                max_trough_idx = np.nanargmax(trough_dict["prominences"])
+                trough_locs = trough_locs[max_trough_idx:max_trough_idx+1]  # Keep only main trough
+            elif trough_locs.size == 1:
+                trough_locs += first_valid_index
+                trough_locs = np.atleast_1d(trough_locs)
+            
+            if trough_locs.size == 0:
+                trough_locs = np.array([np.nanargmin(waveform[first_valid_index:]) + first_valid_index])
+            
+            # Get main trough location
+            main_trough_idx = np.nanargmin(waveform[trough_locs])
+            trough_loc = trough_locs[main_trough_idx]
+            
+            # Find peaks before and after trough (same logic as waveform_shape)
+            peaks_before_locs = np.array([])
+            peaks_after_locs = np.array([])
+            
+            # Peaks before trough
+            if trough_loc > 2:
+                peaks_before_locs, peaks_before_dict = find_peaks(
+                    waveform[first_valid_index:trough_loc], prominence=min_prominence, width=0
+                )
+                peaks_before_locs += first_valid_index
+                if peaks_before_locs.shape[0] > 1:
+                    max_peak = np.nanargmax(peaks_before_dict["prominences"])
+                    peaks_before_locs = peaks_before_locs[max_peak:max_peak+1]
+            
+            # Peaks after trough
+            if waveform.shape[0] - trough_loc > 2:
+                peaks_after_locs, peaks_after_dict = find_peaks(
+                    waveform[trough_loc:], prominence=min_prominence, width=0
+                )
+                peaks_after_locs += trough_loc
+                if peaks_after_locs.shape[0] > 1:
+                    max_peak = np.nanargmax(peaks_after_dict["prominences"])
+                    peaks_after_locs = peaks_after_locs[max_peak:max_peak+1]
+            
+            # Handle forced peaks (same logic as waveform_shape)
+            used_max_before = False
+            used_max_after = False
+            
+            if peaks_before_locs.size == 0:
+                if trough_loc > 2:
+                    peaks_before_locs, peaks_before_dict = find_peaks(
+                        waveform[:trough_loc], prominence=0.01 * np.max(np.abs(waveform)), width=0
+                    )
+                    peaks_before_locs += first_valid_index
+                    if peaks_before_locs.shape[0] > 1:
+                        max_peak = np.nanargmax(peaks_before_dict["prominences"])
+                        peaks_before_locs = peaks_before_locs[max_peak:max_peak+1]
+                
+                if peaks_before_locs.size == 0:
+                    peaks_before_locs = np.array([np.nanargmax(waveform[first_valid_index:trough_loc]) + first_valid_index])
+                used_max_before = True
+            
+            if peaks_after_locs.size == 0:
+                if waveform.shape[0] - trough_loc > 2:
+                    peaks_after_locs, peaks_after_dict = find_peaks(
+                        waveform[trough_loc:], prominence=0.01 * np.max(np.abs(waveform)), width=0
+                    )
+                    if peaks_after_locs.shape[0] > 1:
+                        max_peak = np.nanargmax(peaks_after_dict["prominences"])
+                        peaks_after_locs = peaks_after_locs[max_peak:max_peak+1] + trough_loc
+                    elif peaks_after_locs.shape[0] == 1:
+                        peaks_after_locs += trough_loc
+                
+                if peaks_after_locs.size == 0:
+                    peaks_after_locs = np.array([np.nanargmax(waveform[trough_loc:]) + trough_loc])
+                used_max_after = True
+            
+            # Apply final filtering (same as waveform_shape)
+            if used_max_before and used_max_after:
+                if waveform[peaks_before_locs[0]] > waveform[peaks_after_locs[0]]:
+                    used_max_before = False
+                else:
+                    used_max_after = False
+            
+            # Combine peaks and apply prominence filtering
+            peaks_before_locs = np.atleast_1d(peaks_before_locs)
+            peaks_after_locs = np.atleast_1d(peaks_after_locs)
+            
+            main_peak_before = np.max(waveform[peaks_before_locs]) if peaks_before_locs.size > 0 else 0
+            main_peak_after = np.max(waveform[peaks_after_locs]) if peaks_after_locs.size > 0 else 0
+            
+            # Final peak selection (same logic as waveform_shape lines 1335-1344)
+            if used_max_before and (main_peak_before < min_prominence * 0.5):
+                final_peak_locs = peaks_after_locs
+            elif used_max_after and (main_peak_after < min_prominence * 0.5):
+                final_peak_locs = peaks_before_locs
+            else:
+                final_peak_locs = np.hstack((peaks_before_locs, peaks_after_locs))
+            
+            gui_data['peak_locations'][unit_id] = final_peak_locs.tolist()
+            gui_data['trough_locations'][unit_id] = trough_locs.tolist()
+            
+        except ImportError:
+            # Fallback without scipy
+            gui_data['peak_locations'][unit_id] = []
+            gui_data['trough_locations'][unit_id] = []
+        
+        # Waveform scaling info
+        gui_data['waveform_scaling'][unit_id] = {
+            'max_channel': max_ch,
+            'scaling_factor': np.ptp(waveform) * 2.5 if waveform.size > 0 else 1.0
+        }
+        
+        # Spatial decay fit if channel positions available
+        if channel_positions is not None and max_ch < len(channel_positions):
+            max_pos = channel_positions[max_ch]
+            nearby_channels = []
+            distances = []
+            amplitudes = []
+            
+            for ch in range(template.shape[1]):
+                if ch < len(channel_positions):
+                    distance = np.sqrt(np.sum((channel_positions[ch] - max_pos)**2))
+                    if distance < 100:  # Within 100μm
+                        nearby_channels.append(ch)
+                        distances.append(distance)
+                        amplitudes.append(np.max(np.abs(template[:, ch])))
+            
+            gui_data['channel_arrangements'][unit_id] = nearby_channels
+            
+            # Spatial decay fit
+            if len(distances) >= 3 and len(amplitudes) >= 3:
+                try:
+                    from scipy.optimize import curve_fit
+                    
+                    def exp_decay(x, a, b):
+                        return a * np.exp(-b * x)
+                    
+                    valid_mask = (np.array(distances) > 0) & (np.array(amplitudes) > 0)
+                    if np.sum(valid_mask) >= 3:
+                        dist_fit = np.array(distances)[valid_mask]
+                        amp_fit = np.array(amplitudes)[valid_mask]
+                        
+                        popt, _ = curve_fit(exp_decay, dist_fit, amp_fit, 
+                                          p0=[np.max(amp_fit), 0.01], maxfev=1000)
+                        
+                        x_smooth = np.linspace(0, np.max(dist_fit), 100)
+                        y_smooth = exp_decay(x_smooth, *popt)
+                        
+                        gui_data['spatial_decay_fits'][unit_id] = {
+                            'distances': distances,
+                            'amplitudes': amplitudes,
+                            'fit_x': x_smooth,
+                            'fit_y': y_smooth,
+                            'fit_params': popt
+                        }
+                except:
+                    pass  # Skip if fitting fails
+        
+        # Amplitude distribution fit
+        spike_mask = spike_clusters == unit_id
+        if np.sum(spike_mask) > 50:
+            unit_amplitudes = template_amplitudes[spike_mask]
+            try:
+                hist, bin_edges = np.histogram(unit_amplitudes, bins=50, density=True)
+                bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+                
+                from scipy.optimize import curve_fit
+                
+                def gaussian(x, a, mu, sigma):
+                    return a * np.exp(-((x - mu) ** 2) / (2 * sigma ** 2))
+                
+                mu_init = np.mean(unit_amplitudes)
+                sigma_init = np.std(unit_amplitudes)
+                a_init = np.max(hist)
+                
+                popt, _ = curve_fit(gaussian, bin_centers, hist, 
+                                  p0=[a_init, mu_init, sigma_init], maxfev=1000)
+                
+                x_smooth = np.linspace(np.min(unit_amplitudes), np.max(unit_amplitudes), 100)
+                y_smooth = gaussian(x_smooth, *popt)
+                
+                cutoff_val = mu_init - 2 * sigma_init
+                percent_missing = np.sum(unit_amplitudes < cutoff_val) / len(unit_amplitudes) * 100
+                
+                gui_data['amplitude_fits'][unit_id] = {
+                    'amplitudes': unit_amplitudes,
+                    'hist': hist,
+                    'bin_centers': bin_centers,
+                    'fit_x': x_smooth,
+                    'fit_y': y_smooth,
+                    'percent_missing': percent_missing,
+                    'fit_params': popt
+                }
+            except:
+                pass  # Skip if fitting fails
+        
+        # ACG placeholder (computed lazily in GUI)
+        gui_data['acg_data'][unit_id] = None
+        
+    except Exception as e:
+        if param.get("verbose", False):
+            print(f"Warning: GUI data precomputation failed for unit {unit_id}: {e}")
+
+
+def _save_gui_data(gui_data, save_path, unique_templates, param):
+    """Helper function to save GUI data"""
+    try:
+        import pickle
+        import os
+        
+        gui_folder = os.path.join(save_path, "for_GUI")
+        os.makedirs(gui_folder, exist_ok=True)
+        gui_data_path = os.path.join(gui_folder, "gui_data.pkl")
+        
+        with open(gui_data_path, 'wb') as f:
+            pickle.dump(gui_data, f)
+            
+        if param.get("verbose", False):
+            spatial_decay_count = len(gui_data['spatial_decay_fits'])
+            amplitude_fits_count = len(gui_data['amplitude_fits'])
+            print(f"✅ GUI visualization data saved to: {gui_data_path}")
+            print(f"   Generated spatial decay fits: {spatial_decay_count}/{len(unique_templates)} units")
+            print(f"   Generated amplitude fits: {amplitude_fits_count}/{len(unique_templates)} units")
+        
+    except Exception as e:
+        if param.get("verbose", False):
+            print(f"⚠️ GUI data saving failed (GUI will still work): {e}")
+
+
 def get_all_quality_metrics(
     unique_templates,
     spike_times_seconds,
@@ -449,6 +705,7 @@ def get_all_quality_metrics(
     template_waveforms,
     param,
     save_path,
+    gui_data=None,
 ):
     """
     This function runs all of the quality metric calculations
@@ -489,6 +746,20 @@ def get_all_quality_metrics(
     runtimes : dict
         The runtimes for each sections
     """
+    # Initialize GUI data structure for precomputation during quality metrics
+    if gui_data is None:
+        gui_data = {
+            'peak_locations': {},
+            'trough_locations': {},
+            'peak_trough_labels': {},
+            'duration_lines': {},
+            'spatial_decay_fits': {},
+            'amplitude_fits': {},
+            'channel_arrangements': {},
+            'waveform_scaling': {},
+            'acg_data': {}
+        }
+    
     # Collect the time it takes to run each section
     runtimes_spikes_missing_1 = np.zeros(unique_templates.shape[0])
     runtimes_RPV_1 = np.zeros(unique_templates.shape[0])
@@ -671,6 +942,17 @@ def get_all_quality_metrics(
             )
         runtime_dist_metrics = time.time() - time_tmp
 
+        # Precompute GUI data during quality metrics computation
+        if unit_idx < len(template_waveforms):
+            _precompute_unit_gui_data(unit_idx, this_unit, template_waveforms, quality_metrics, 
+                                    spike_clusters, template_amplitudes, channel_positions, 
+                                    gui_data, param)
+
+    # Save GUI data after processing all units
+    if param.get("verbose", False):
+        print("\n💾 Saving GUI visualization data...")
+    _save_gui_data(gui_data, save_path, unique_templates, param)
+
     runtimes = {
         "times_spikes_missing_1": runtimes_spikes_missing_1, # JF: what is this?
         "times_RPV_1": runtimes_RPV_1,
@@ -725,6 +1007,13 @@ def run_bombcell(ks_dir, save_path, param):
     unit_type_string: ndarray
         The unit classifications as names
     """
+    
+    if param.get("verbose", False):
+        print("🚀 Starting BombCell quality metrics pipeline...")
+        print(f"📁 Processing data from: {ks_dir}")
+        print(f"💾 Results will be saved to: {save_path}")
+        print("\n📊 Loading ephys data...")
+    
     (
         spike_times_samples,
         spike_clusters, # actually spike_templates, but they're the same in bombcell
@@ -734,9 +1023,14 @@ def run_bombcell(ks_dir, save_path, param):
         pc_features_idx,
         channel_positions,
     ) = load_ephys_data(ks_dir)
+    
+    if param.get("verbose", False):
+        print(f"✅ Loaded ephys data: {len(np.unique(spike_clusters))} units, {len(spike_times_samples):,} spikes")
 
     # Extract or load in raw waveforms
     if param["raw_data_file"] is not None:
+        if param.get("verbose", False):
+            print("\n🔍 Extracting raw waveforms...")
         (
         raw_waveforms_full,
         raw_waveforms_peak_channel,
@@ -808,7 +1102,11 @@ def run_bombcell(ks_dir, save_path, param):
     quality_metrics = create_quality_metrics_dict(n_units, snr=signal_to_noise_ratio)
     quality_metrics["maxChannels"] = maxChannels
 
-    # Complete with remaining quality metrics
+    # Complete with remaining quality metrics  
+    if param.get("verbose", False):
+        print(f"\n⚙️ Computing quality metrics for {n_units} units...")
+        print("   (Progress bar will appear below)")
+    
     quality_metrics, times = get_all_quality_metrics(
         unique_templates,
         spike_times_seconds,
@@ -825,12 +1123,21 @@ def run_bombcell(ks_dir, save_path, param):
         save_path,
     )
 
+    if param.get("verbose", False):
+        print("\n🏷️ Classifying units (good/MUA/noise/non-soma)...")
+    
     unit_type, unit_type_string = qm.get_quality_unit_type(
         param, quality_metrics
     )  # JF: this should be inside bc.get_all_quality_metrics
 
+    if param.get("verbose", False):
+        print("\n📊 Generating summary plots...")
+    
     plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_string, param)
 
+    if param.get("verbose", False):
+        print("\n💾 Saving results...")
+    
     save_results(
         quality_metrics,
         unit_type_string,

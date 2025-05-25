@@ -1181,169 +1181,207 @@ def waveform_shape(
         waveform_baseline = np.nan
     else:
         this_waveform_fit = this_waveform
-        if np.size(this_waveform) == 82:  # Checking if the second dimension is 82
-            # For KS4 waveforms, replace the first 24 values with NaN to avoid artificial peaks/troughs
-            #this_waveform[0:24] = np.nan
-            first_valid_index = 25
+        if np.size(this_waveform) == 82:  # Checking if the waveform length is 82 (KS4)
+            # For KS4 waveforms, set the first 24 values to NaN to avoid artificial peaks/troughs (MATLAB line 6)
+            this_waveform = this_waveform.copy()  # Make copy to avoid modifying original
+            this_waveform[:24] = np.nan
+            first_valid_index = 24  # Start from index 24 (MATLAB 1-indexed = Python 0-indexed)
         else:
-            # For other waveforms, replace just the first 4 values with NaN
-            #this_waveform[0:4] = np.nan
-            first_valid_index = 5
+            # For other waveforms, set first 4 values to NaN (MATLAB line 8)
+            this_waveform = this_waveform.copy()  # Make copy to avoid modifying original  
+            this_waveform[:4] = np.nan
+            first_valid_index = 4  # Start from index 4
 
-        # New finding peaks/trough for somatic/non-somatic
-        min_prominence = min_thresh_detect_peaks_troughs * np.max(np.abs(this_waveform[first_valid_index:]))
+        # Detect troughs (MATLAB line 16: findpeaks on inverted waveform)
+        min_prominence = min_thresh_detect_peaks_troughs * np.nanmax(np.abs(this_waveform))  # Use full waveform max like MATLAB line 13
 
+        # Find troughs by inverting waveform (MATLAB line 16)
         trough_locs, trough_dict = find_peaks(
-            this_waveform[first_valid_index:] * -1, prominence=min_prominence, width=0
+            this_waveform * -1, prominence=min_prominence, width=0
         )
-
-
-        # more than 1 trough find the biggest
-        if trough_locs.size > 1:
-            trough_locs += first_valid_index
-            max_trough_idx = np.nanargmax(
-                trough_dict["prominences"]
-            )  # prominence is =ve even though is trough
-            trough_width = trough_dict["widths"][max_trough_idx].squeeze()
-        elif trough_locs.size == 1:
-            trough_locs += first_valid_index
-            trough_width = trough_dict["widths"].squeeze()
-            trough_locs = np.atleast_1d(trough_locs)
-
-        if trough_locs.size == 0:
-            trough_locs = np.nanargmin(this_waveform[first_valid_index:]) + first_valid_index
-            trough_locs = np.atleast_1d(trough_locs)
+        TRS = (this_waveform * -1)[trough_locs]  # Get trough magnitudes
+        
+        # Adjust for prominence filtering like MATLAB (lines 18-21)
+        # MATLAB only adjusts trough width but keeps ALL troughs in TRS
+        if len(trough_dict["widths"]) > 1:
+            max_prominence_idx = np.nanargmax(trough_dict["prominences"])
+            trough_width = trough_dict["widths"][max_prominence_idx]
+        elif len(trough_dict.get("widths", [])) == 1:
+            trough_width = trough_dict["widths"][0]
+        else:
             trough_width = np.nan
+        # IMPORTANT: Keep ALL troughs in TRS, don't filter down to one!
+
+        # If no trough detected, find the minimum (MATLAB lines 24-30)  
+        if len(TRS) == 0:
+            TRS = np.array([np.nanmin(this_waveform)])
+            trough_locs = np.array([np.nanargmin(this_waveform)])
             n_troughs = 1
+            trough_width = np.nan
         else:
-            n_troughs = trough_locs.shape[0]
+            n_troughs = len(TRS)  # MATLAB line 29: numel(TRS)
 
-        # get the main trough, if multiple trough have the same value choose first
-        main_trough = np.min(this_waveform[trough_locs])  # JF: i don't think is used
-        main_trough_idx = np.nanargmin(this_waveform[trough_locs])
-        trough_loc = trough_locs[main_trough_idx]
-        troughs = np.abs(this_waveform[trough_locs])
+        # Get the main trough location (MATLAB lines 33-40)
+        if len(TRS) > 0 and not np.all(np.isnan(TRS)):
+            mainTrough_idx = np.nanargmax(TRS)  # TRS contains trough magnitudes (positive since inverted)
+            # nanargmax returns a scalar, no need to index it
+            mainTrough_value = TRS[mainTrough_idx]
+            trough_loc = trough_locs[mainTrough_idx]
+        else:
+            # Fallback if no valid troughs found
+            mainTrough_idx = 0
+            mainTrough_value = 0
+            trough_loc = len(this_waveform) // 2  # Use middle of waveform as fallback
+        
+        # Store trough values for later use
+        troughs = TRS  # These are the actual trough magnitudes
 
-        # find peaks before the trough
-        if trough_loc > 2:  # need at least 3 sample to get peak before
-            peaks_before_locs, peaks_before_dict = find_peaks(
-                this_waveform[first_valid_index:trough_loc], prominence=min_prominence, width=0
+        # Find peaks before and after the trough (MATLAB lines 42-63)
+        PKS_before = np.array([])
+        peakLocs_before = np.array([])
+        width_before = np.nan
+        
+        # Find peaks before trough (MATLAB lines 43-52)
+        if trough_loc > 3:  # MATLAB line 43: need at least 3 samples
+            peakLocs_before, peak_dict_before = find_peaks(
+                this_waveform[:trough_loc], prominence=min_prominence, width=0
             )
-            peaks_before_locs += first_valid_index
-            if peaks_before_locs.shape[0] > 1:
-                max_peak = np.nanargmax(
-                    peaks_before_dict["prominences"]
-                )  # prominence is +ve even though is trough
-                peak_before_width = peaks_before_dict["widths"][max_peak].squeeze()
-            else:
-                peak_before_width = peaks_before_dict["widths"].squeeze()
-        else:
-            peaks_before_locs = np.array(())
-
-        # find peaks after trough
-        if this_waveform.shape[0] - trough_loc > 2:
-            peaks_after_locs, peaks_after_dict = find_peaks(
+            PKS_before = this_waveform[peakLocs_before]
+            widths_before = peak_dict_before.get("widths", [])
+            prominences_before = peak_dict_before.get("prominences", [])
+            if len(widths_before) > 1:
+                if len(prominences_before) > 0 and not np.all(np.isnan(prominences_before)):
+                    max_peak_idx = np.nanargmax(prominences_before)
+                    # nanargmax returns a scalar, no need to index it
+                    width_before = widths_before[max_peak_idx]
+                else:
+                    width_before = widths_before[0]
+            elif len(widths_before) == 1:
+                width_before = widths_before[0]
+            # IMPORTANT: Keep ALL peaks from PKS_before, don't reduce to single peak
+        
+        PKS_after = np.array([])
+        peakLocs_after = np.array([])
+        width_after = np.nan
+        
+        # Find peaks after trough (MATLAB lines 53-63)
+        if len(this_waveform) - trough_loc > 3:  # MATLAB line 53
+            peakLocs_after_temp, peak_dict_after = find_peaks(
                 this_waveform[trough_loc:], prominence=min_prominence, width=0
             )
-            peaks_after_locs += trough_loc
-            if peaks_after_locs.shape[0] > 1:
-                max_peak = np.nanargmax(
-                    peaks_after_dict["prominences"]
-                )  # prominence is +ve even though is trough
-                width_after = peaks_after_dict["widths"][max_peak]
-            else:
-                width_after = peaks_after_dict["widths"]
-        else:
-            peaks_after_locs = np.array(())
-
-        # If no peaks found with the min_prominence
-        used_max_before = False
-        if peaks_before_locs.size == 0:
-            if trough_loc > 2:  # need at least 3 samples to get peak before
-                peaks_before_locs, peaks_before_dict = find_peaks(
-                    this_waveform[:trough_loc],
-                    prominence=0.01 * np.max(np.abs(this_waveform)),
-                    width=0,
-                )
-                peaks_before_locs += first_valid_index
-                # only want the biggest of these picks, with smaller prominences
-                if peaks_before_locs.shape[0] > 1:
-                    max_peak = np.nanargmax(
-                        peaks_before_dict["prominences"]
-                    )  # prominence is +ve even though is trough
-                    peaks_before_locs = peaks_before_locs[max_peak].squeeze()
-                    peak_before_width = peaks_before_dict["widths"][max_peak].squeeze()
+            PKS_after = this_waveform[trough_loc:][peakLocs_after_temp]
+            peakLocs_after = peakLocs_after_temp + trough_loc  # MATLAB line 55: adjust for offset
+            widths_after = peak_dict_after.get("widths", [])
+            prominences_after = peak_dict_after.get("prominences", [])
+            if len(widths_after) > 1:
+                if len(prominences_after) > 0 and not np.all(np.isnan(prominences_after)):
+                    max_peak_idx = np.nanargmax(prominences_after)
+                    # nanargmax returns a scalar, no need to index it
+                    width_after = widths_after[max_peak_idx]
                 else:
-                    peak_before_width = np.nan # set to nan if there is no peak before
-            else:
-                peaks_before_locs = np.array(())
-
-            if peaks_before_locs.size == 0:
-                width_before = 0  # 0 if no width_before
-                peaks_before_locs = np.nanargmax(this_waveform[first_valid_index:trough_loc]) + first_valid_index
-
-            used_max_before = True
-
-        # same for after the major trough
-        used_max_after = False
-        if peaks_after_locs.size == 0:
-            if np.size(this_waveform) - trough_loc > 2:  # need at least 3 samples
-                peaks_after_locs, peaks_after_dict = find_peaks(
-                    this_waveform[trough_loc:],
-                    prominence=0.01 * np.max(np.abs(this_waveform)),
-                    width=0,
+                    width_after = widths_after[0]
+            elif len(widths_after) == 1:
+                width_after = widths_after[0]
+            # IMPORTANT: Keep ALL peaks from PKS_after, don't reduce to single peak
+                
+        # Handle case where no peaks detected with min_prominence (MATLAB lines 65-91)
+        usedMaxBefore = 0
+        if len(PKS_before) == 0:  # MATLAB line 67
+            if trough_loc > 3:  # MATLAB line 68
+                peakLocs_before_temp, peak_dict_before_temp = find_peaks(
+                    this_waveform[:trough_loc], prominence=0.01*np.nanmax(np.abs(this_waveform)), width=0
                 )
-                if peaks_after_locs.shape[0] == 1:
-                    peaks_after_locs += trough_loc
-                # only want the biggest of these picks, with smaller prominences
-                if peaks_after_locs.shape[0] > 1:
-                    max_peak = np.nanargmax(
-                        peaks_after_dict["prominences"]
-                    )  # prominence is +ve even though is trough
-                    peaks_after_locs = peaks_after_locs[max_peak] + trough_loc
-                    width_after = peaks_after_dict["widths"][max_peak]
+                PKS_before = this_waveform[peakLocs_before_temp]
+                peakLocs_before = peakLocs_before_temp
+                widths_before_temp = peak_dict_before_temp.get("widths", [])
+                prominences_before_temp = peak_dict_before_temp.get("prominences", [])
+                if len(PKS_before) > 1:  # MATLAB lines 73-79
+                    if len(prominences_before_temp) > 0 and not np.all(np.isnan(prominences_before_temp)):
+                        max_peak_idx = np.nanargmax(prominences_before_temp)
+                        # nanargmax returns a scalar, no need to index it
+                        width_before = widths_before_temp[max_peak_idx]
+                        # Don't reduce PKS_before to single peak - keep all peaks!
+                    else:
+                        width_before = widths_before_temp[0] if len(widths_before_temp) > 0 else np.nan
+                elif len(widths_before_temp) == 1:
+                    width_before = widths_before_temp[0]
+                    
+            if len(PKS_before) == 0:  # MATLAB lines 81-89
+                width_before = np.nan
+                # Handle case where all values might be NaN (MATLAB line 83: uses max, not nanargmax)
+                waveform_segment = this_waveform[:trough_loc]
+                if np.all(np.isnan(waveform_segment)) or len(waveform_segment) == 0:
+                    PKS_before = np.array([0.0])
+                    peakLocs_before = np.array([0])
                 else:
-                    peaks_after_widths = np.nan
-
-            if peaks_after_locs.size == 0:
-                width_after = 0  # JF: i don't think is used
-                peaks_after_locs = np.nanargmax(this_waveform[trough_loc:]) + trough_loc
-
-            used_max_after = True
-
-        # if neither a peak before or after was detected with the min_prominence, the larger peak is the true peak
-        if used_max_before & used_max_after:
-            if this_waveform[peaks_before_locs] > this_waveform[peaks_after_locs]:
-                used_max_before = False
-            else:
-                used_max_after = False
-
-        # get the main peaks before and after the trough
-        peaks_before_locs = np.atleast_1d(np.asarray(peaks_before_locs))
-        main_peak_before = np.max(this_waveform[peaks_before_locs])
-        main_peak_before_idx = np.nanargmax(this_waveform[peaks_before_locs])
-        main_peak_before_loc = peaks_before_locs[
-            main_peak_before_idx
-        ]  # JF: i don't think is used
-
-        peaks_after_locs = np.atleast_1d(np.asarray(peaks_after_locs))
-        main_peak_after = np.max(this_waveform[peaks_after_locs])
-        main_peak_after_idx = np.nanargmax(this_waveform[peaks_after_locs])
-        main_peak_after_loc = peaks_after_locs[main_peak_after_idx]
-
-        # combine peak information
-        if used_max_before & (main_peak_before < min_prominence * 0.5):
-            peaks = this_waveform[peaks_after_locs]
-            peak_locs = peaks_after_locs
-        elif used_max_after & (main_peak_after < min_prominence * 0.5):
-            peaks = this_waveform[peaks_before_locs]
-            peak_locs = peaks_before_locs
-        else:
-            peak_locs = np.hstack((peaks_before_locs, peaks_after_locs))
-            peaks = this_waveform[peak_locs]
-
-        n_peaks = peaks.size
-        n_troughs = troughs.size
+                    max_idx = np.nanargmax(waveform_segment)
+                    PKS_before = np.array([waveform_segment[max_idx]])
+                    peakLocs_before = np.array([max_idx])
+                
+            usedMaxBefore = 1  # MATLAB line 90
+            
+        usedMaxAfter = 0  
+        if len(PKS_after) == 0:  # MATLAB line 94
+            if len(this_waveform) - trough_loc > 3:  # MATLAB line 95
+                peakLocs_after_temp, peak_dict_after_temp = find_peaks(
+                    this_waveform[trough_loc:], prominence=0.01*np.nanmax(np.abs(this_waveform)), width=0
+                )
+                PKS_after = this_waveform[trough_loc:][peakLocs_after_temp]
+                peakLocs_after = peakLocs_after_temp + trough_loc  # MATLAB line 97
+                widths_after_temp = peak_dict_after_temp.get("widths", [])
+                prominences_after_temp = peak_dict_after_temp.get("prominences", [])
+                if len(PKS_after) > 1:  # MATLAB lines 101-107
+                    if len(prominences_after_temp) > 0 and not np.all(np.isnan(prominences_after_temp)):
+                        max_peak_idx = np.nanargmax(prominences_after_temp)
+                        # nanargmax returns a scalar, no need to index it
+                        width_after = widths_after_temp[max_peak_idx]
+                        # Don't reduce PKS_after to single peak - keep all peaks!
+                    else:
+                        width_after = widths_after_temp[0] if len(widths_after_temp) > 0 else np.nan
+                elif len(widths_after_temp) == 1:
+                    width_after = widths_after_temp[0]
+                    
+            if len(PKS_after) == 0:  # MATLAB lines 108-117
+                width_after = np.nan
+                # Handle case where all values might be NaN (MATLAB line 110: uses max, not nanargmax)
+                waveform_segment = this_waveform[trough_loc:]
+                if np.all(np.isnan(waveform_segment)) or len(waveform_segment) == 0:
+                    PKS_after = np.array([0.0])
+                    peakLocs_after = np.array([trough_loc])
+                else:
+                    max_idx = np.nanargmax(waveform_segment)
+                    PKS_after = np.array([waveform_segment[max_idx]])
+                    peakLocs_after = np.array([trough_loc + max_idx])
+                
+            usedMaxAfter = 1  # MATLAB line 118
+            
+        # If both forced peaks were used, keep only the larger one (MATLAB lines 121-128)
+        if usedMaxAfter > 0 and usedMaxBefore > 0:  # MATLAB line 122
+            if len(PKS_before) > 0 and len(PKS_after) > 0:
+                if PKS_before[0] > PKS_after[0]:  # MATLAB line 123
+                    usedMaxBefore = 0
+                else:
+                    usedMaxAfter = 0
+                    
+        # Get main peak values for ratios (MATLAB lines 131-135)
+        mainPeak_before_size = np.max(PKS_before) if len(PKS_before) > 0 else 0
+        mainPeak_after_size = np.max(PKS_after) if len(PKS_after) > 0 else 0
+        mainTrough_size = np.max(TRS) if len(TRS) > 0 else 0
+        
+        # Combine peak information - final filtering (MATLAB lines 137-147)
+        if usedMaxBefore == 1 and len(PKS_before) > 0 and mainPeak_before_size < min_prominence * 0.5:  # MATLAB line 138
+            PKS = PKS_after
+            peakLocs = peakLocs_after
+        elif usedMaxAfter == 1 and len(PKS_after) > 0 and mainPeak_after_size < min_prominence * 0.5:  # MATLAB line 141
+            PKS = PKS_before  
+            peakLocs = peakLocs_before
+        else:  # MATLAB lines 144-146
+            PKS = np.concatenate([PKS_before, PKS_after]) if len(PKS_before) > 0 and len(PKS_after) > 0 else (PKS_before if len(PKS_before) > 0 else PKS_after)
+            peakLocs = np.concatenate([peakLocs_before, peakLocs_after]) if len(peakLocs_before) > 0 and len(peakLocs_after) > 0 else (peakLocs_before if len(peakLocs_before) > 0 else peakLocs_after)
+            
+        # Get number of peaks and troughs (MATLAB lines 164-165)
+        n_peaks = len(PKS)  # MATLAB line 164: numel(PKS) 
+        n_troughs = len(TRS)  # Already set above to match MATLAB line 29
 
         max_waveform_location = np.nanargmax(np.abs(this_waveform))
         max_waveform_value = this_waveform[max_waveform_location]  # signed value
@@ -1367,11 +1405,15 @@ def waveform_shape(
             / param["ephys_sample_rate"]
         )
 
-        # waveform ratios   
-        scnd_peak_to_trough_ratio = get_ratio(main_peak_after, main_trough)
-        peak1_to_peak2_ratio = get_ratio(main_peak_before, main_peak_after)
-        main_peak_to_trough_ratio = get_ratio(max(main_peak_before or 0, main_peak_after or 0), main_trough)
-        trough_to_peak2_ratio = get_ratio(main_trough, main_peak_before)
+        # waveform ratios (MATLAB lines 158-162)
+        scnd_peak_to_trough_ratio = get_ratio(mainPeak_after_size, mainTrough_size)
+        peak1_to_peak2_ratio = get_ratio(mainPeak_before_size, mainPeak_after_size)
+        main_peak_to_trough_ratio = get_ratio(max(mainPeak_before_size, mainPeak_after_size), mainTrough_size)
+        trough_to_peak2_ratio = get_ratio(mainTrough_size, mainPeak_before_size)
+        
+        # Set width variables to match MATLAB return values (MATLAB lines 166-169)
+        peak_before_width = width_before
+        mainTrough_width = trough_width
 
         # plt.figure(figsize=(8, 6))
         # plt.plot(this_waveform, 'r-', linewidth=2)  
@@ -1510,7 +1552,7 @@ def waveform_shape(
         main_peak_to_trough_ratio,
         trough_to_peak2_ratio,
         peak_before_width,
-        trough_width,
+        mainTrough_width,
         param,
     )
 

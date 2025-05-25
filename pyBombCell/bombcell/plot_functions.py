@@ -62,23 +62,39 @@ def upset_plots(quality_metrics, unit_type_string, param):
     non_somatic_metrics = [m for m in non_somatic_metrics if m in qm_table.columns]
     mua_metrics = [m for m in mua_metrics if m in qm_table.columns]
 
-    # plot noise metrics upset plot
-    upset = UpSet(from_indicators(noise_metrics, data = qm_table.astype(bool)), min_degree = 1)
-    upset.plot()
-    plt.suptitle("Units classified as noise")
-    plt.show()
+    # Plot upset plots with error handling for library compatibility
+    try:
+        # plot noise metrics upset plot
+        noise_data = qm_table[noise_metrics].astype(bool)
+        if len(noise_metrics) > 1:
+            upset = UpSet(from_indicators(noise_metrics, data=noise_data), min_degree=1)
+            upset.plot()
+            plt.suptitle("Units classified as noise")
+            plt.show()
+    except (AttributeError, ValueError) as e:
+        print(f"Warning: Could not create noise upset plot due to library compatibility: {e}")
 
-    # plot non-somatic metrics upset plot
-    upset = UpSet(from_indicators(non_somatic_metrics, data = qm_table.astype(bool)), min_degree = 1)
-    upset.plot()
-    plt.suptitle("Units classified as non-somatic")
-    plt.show()
+    try:
+        # plot non-somatic metrics upset plot  
+        non_somatic_data = qm_table[non_somatic_metrics].astype(bool)
+        if len(non_somatic_metrics) > 1:
+            upset = UpSet(from_indicators(non_somatic_metrics, data=non_somatic_data), min_degree=1)
+            upset.plot()
+            plt.suptitle("Units classified as non-somatic")
+            plt.show()
+    except (AttributeError, ValueError) as e:
+        print(f"Warning: Could not create non-somatic upset plot due to library compatibility: {e}")
 
-    # plot MUA metrics upset plot
-    upset = UpSet(from_indicators(mua_metrics, data = qm_table.astype(bool)), min_degree = 1)
-    upset.plot()
-    plt.suptitle("Units classified as MUA")
-    plt.show()
+    try:
+        # plot MUA metrics upset plot
+        mua_data = qm_table[mua_metrics].astype(bool)
+        if len(mua_metrics) > 1:
+            upset = UpSet(from_indicators(mua_metrics, data=mua_data), min_degree=1)
+            upset.plot()
+            plt.suptitle("Units classified as MUA")
+            plt.show()
+    except (AttributeError, ValueError) as e:
+        print(f"Warning: Could not create MUA upset plot due to library compatibility: {e}")
 
 def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param):
     """
