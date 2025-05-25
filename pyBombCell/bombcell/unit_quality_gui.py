@@ -476,7 +476,7 @@ class InteractiveUnitQualityGUI:
         if len(spike_times) > 1:
             # ACG calculation with MATLAB-style parameters
             max_lag = 0.05  # 50ms
-            bin_size = 0.002  # 2ms bins (larger like MATLAB)
+            bin_size = 0.001  # 1ms bins
             
             # Calculate proper autocorrelogram (not just ISIs)
             # Create bins centered around 0
@@ -751,6 +751,9 @@ class InteractiveUnitQualityGUI:
         ax.set_xlabel('Time (s)')
         ax.tick_params(axis='y', labelcolor='blue')
         
+        # Store y-limits for amplitude fit plot consistency
+        self._amplitude_ylim = ax.get_ylim()
+        
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'amplitude')
         
@@ -778,9 +781,14 @@ class InteractiveUnitQualityGUI:
         ax.invert_yaxis()  # MATLAB style
         
     def plot_amplitude_fit(self, ax, unit_data):
-        """Plot amplitude distribution with Gaussian fit like BombCell"""
+        """Plot amplitude distribution with cutoff Gaussian fit like BombCell"""
         spike_times = unit_data['spike_times']
         metrics = unit_data['metrics']
+        
+        # Get y-limits from amplitude plot for consistency
+        amp_ylim = None
+        if hasattr(self, '_amplitude_ylim'):
+            amp_ylim = self._amplitude_ylim
         
         if len(spike_times) > 0:
             # Get amplitudes if available
@@ -791,71 +799,78 @@ class InteractiveUnitQualityGUI:
                 amplitudes = self.ephys_data['template_amplitudes'][spike_mask]
                 
                 if len(amplitudes) > 10:  # Need sufficient data for fit
-                    # Create histogram of amplitudes
+                    # Create histogram with count (not density) like BombCell
                     n_bins = min(50, int(len(amplitudes) / 10))  # Adaptive bin count
-                    hist_counts, bin_edges = np.histogram(amplitudes, bins=n_bins, density=True)
+                    hist_counts, bin_edges = np.histogram(amplitudes, bins=n_bins)
                     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
                     bin_width = bin_edges[1] - bin_edges[0]
                     
-                    # Plot histogram
-                    ax.bar(bin_centers, hist_counts, width=bin_width*0.8, alpha=0.7, 
-                          color='lightblue', edgecolor='blue', linewidth=1)
+                    # Plot horizontal histogram like BombCell
+                    ax.barh(bin_centers, hist_counts, height=bin_width*0.8, 
+                           facecolor=[0, 0.35, 0.71], edgecolor=[0, 0.35, 0.71])
                     
-                    # Fit Gaussian
+                    # Fit cutoff Gaussian like BombCell
                     try:
-                        from scipy import stats
-                        # Robust statistics (remove outliers)
-                        q1, q3 = np.percentile(amplitudes, [25, 75])
-                        iqr = q3 - q1
-                        lower_bound = q1 - 1.5 * iqr
-                        upper_bound = q3 + 1.5 * iqr
+                        from scipy.optimize import curve_fit
+                        from scipy.stats import norm
                         
-                        # Filter outliers for fitting
-                        clean_amplitudes = amplitudes[(amplitudes >= lower_bound) & 
-                                                    (amplitudes <= upper_bound)]
+                        def gaussian_cut(x, a, x0, sigma, xcut):
+                            """Cutoff Gaussian function from BombCell"""
+                            g = a * np.exp(-(x - x0)**2 / (2 * sigma**2))
+                            g[x < xcut] = 0
+                            return g
                         
-                        if len(clean_amplitudes) > 5:
-                            # Fit Gaussian to clean data
-                            mu, sigma = stats.norm.fit(clean_amplitudes)
+                        # Initial parameters like BombCell
+                        p0 = [
+                            np.max(hist_counts),  # Height
+                            np.median(amplitudes),  # Center
+                            np.std(amplitudes),   # Width  
+                            np.min(amplitudes)    # Cutoff
+                        ]
+                        
+                        # Bounds like BombCell
+                        bounds = (
+                            [0, np.min(amplitudes), 0, np.min(amplitudes)],  # Lower bounds
+                            [np.inf, np.max(amplitudes), np.ptp(amplitudes), np.median(amplitudes)]  # Upper bounds
+                        )
+                        
+                        # Fit the cutoff Gaussian
+                        try:
+                            popt, _ = curve_fit(gaussian_cut, bin_centers, hist_counts, 
+                                              p0=p0, bounds=bounds, maxfev=5000)
                             
                             # Generate smooth curve for fit
-                            x_smooth = np.linspace(np.min(amplitudes), np.max(amplitudes), 200)
-                            y_smooth = stats.norm.pdf(x_smooth, mu, sigma)
+                            y_smooth = np.linspace(np.min(amplitudes), np.max(amplitudes), 200)
+                            x_smooth = gaussian_cut(y_smooth, *popt)
                             
-                            # Plot Gaussian fit
-                            ax.plot(x_smooth, y_smooth, 'r-', linewidth=2, 
-                                   label=f'Gaussian fit\nμ={mu:.2f}, σ={sigma:.2f}')
+                            # Plot fit in red like BombCell
+                            ax.plot(x_smooth, y_smooth, 'r-', linewidth=2)
                             
-                            # Mark mean and std
-                            ax.axvline(mu, color='red', linestyle='--', alpha=0.7, linewidth=1)
-                            ax.axvspan(mu-sigma, mu+sigma, alpha=0.2, color='red')
+                            # Calculate percentage missing using BombCell formula
+                            # norm_area_ndtr = normcdf((center - cutoff)/width)
+                            norm_area_ndtr = norm.cdf((popt[1] - popt[3]) / popt[2])
+                            percent_missing = 100 * (1 - norm_area_ndtr)
                             
-                            # Calculate percentage of spikes missing (outside 2*sigma)
-                            spikes_in_2sigma = np.sum((amplitudes >= mu - 2*sigma) & 
-                                                    (amplitudes <= mu + 2*sigma))
-                            percent_missing = (1 - spikes_in_2sigma / len(amplitudes)) * 100
+                            # Display percentage like BombCell
+                            ax.text(0.5, 0.98, f'{percent_missing:.1f}', 
+                                   transform=ax.transAxes, va='top', ha='center',
+                                   color=[0.7, 0.7, 0.7], fontsize=10, weight='bold')
                             
-                            ax.text(0.02, 0.98, f'% missing\n(2σ): {percent_missing:.1f}%', 
-                                   transform=ax.transAxes, va='top', ha='left',
-                                   bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
-                                   fontsize=8)
+                        except Exception as e:
+                            # Fallback to simple stats
+                            ax.text(0.5, 0.5, 'Fit failed', 
+                                   ha='center', va='center', transform=ax.transAxes)
                             
                     except ImportError:
-                        # Fallback without scipy
-                        mu = np.mean(amplitudes)
-                        sigma = np.std(amplitudes)
-                        ax.axvline(mu, color='red', linestyle='--', alpha=0.7, linewidth=1)
-                        ax.text(0.02, 0.98, f'Mean: {mu:.2f}\nStd: {sigma:.2f}', 
-                               transform=ax.transAxes, va='top', ha='left',
-                               bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
-                               fontsize=8)
+                        ax.text(0.5, 0.5, 'SciPy required\nfor fitting', 
+                               ha='center', va='center', transform=ax.transAxes)
                     
-                    ax.set_xlabel('Template amplitude')
-                    ax.set_ylabel('Probability density')
+                    ax.set_xlabel('count')
+                    ax.set_ylabel('amplitude')
                     
-                    # Add legend if Gaussian fit was plotted
-                    if ax.get_legend_handles_labels()[0]:
-                        ax.legend(loc='upper right', fontsize=8)
+                    # Set y-limits to match amplitude plot if available
+                    if amp_ylim is not None:
+                        ax.set_ylim(amp_ylim)
                         
                 else:
                     ax.text(0.5, 0.5, 'Insufficient data\nfor amplitude fit', 
