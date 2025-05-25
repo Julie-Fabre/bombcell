@@ -679,25 +679,77 @@ class InteractiveUnitQualityGUI:
         self.add_metrics_text(ax, unit_data, 'spatial')
         
     def plot_amplitudes_over_time(self, ax, unit_data):
-        """Plot amplitudes over time"""
+        """Plot amplitudes over time with firing rate below and presence ratio indicators"""
         spike_times = unit_data['spike_times']
+        metrics = unit_data['metrics']
+        
         if len(spike_times) > 0:
             # Get amplitudes if available
             unit_id = unit_data['unit_id']
             spike_mask = self.ephys_data['spike_clusters'] == unit_id
             
+            # Calculate time bins for presence ratio and firing rate
+            total_duration = np.max(spike_times) - np.min(spike_times)
+            n_bins = max(20, int(total_duration / 60))  # ~1 minute bins, minimum 20 bins
+            time_bins = np.linspace(np.min(spike_times), np.max(spike_times), n_bins + 1)
+            bin_centers = (time_bins[:-1] + time_bins[1:]) / 2
+            bin_width = time_bins[1] - time_bins[0]
+            
+            # Calculate firing rate per bin
+            bin_counts, _ = np.histogram(spike_times, bins=time_bins)
+            firing_rates = bin_counts / bin_width
+            
+            # Calculate presence ratio per bin (assuming threshold of >0 spikes for presence)
+            presence_threshold = 0.1 * np.mean(bin_counts)  # 10% of mean rate
+            good_presence = bin_counts > presence_threshold
+            
             if 'template_amplitudes' in self.ephys_data:
                 amplitudes = self.ephys_data['template_amplitudes'][spike_mask]
-                ax.scatter(spike_times, amplitudes, s=1, alpha=0.5, color='blue')
-                ax.set_ylabel('Amplitude')
+                
+                # Plot amplitudes with slightly bigger dots
+                ax.scatter(spike_times, amplitudes, s=2, alpha=0.6, color='blue', edgecolors='none')
+                ax.set_ylabel('Template scaling', color='blue')
+                
+                # Create twin axis for firing rate
+                ax2 = ax.twinx()
+                
+                # Plot firing rate as bars below
+                ax2.bar(bin_centers, firing_rates, width=bin_width*0.8, alpha=0.7, 
+                       color='orange', label='Firing rate')
+                ax2.set_ylabel('Firing rate (sp/s)', color='orange')
+                ax2.tick_params(axis='y', labelcolor='orange')
+                
+                # Highlight time bins with good presence ratio
+                for i, (center, good) in enumerate(zip(bin_centers, good_presence)):
+                    if good:
+                        # Add subtle green background for good presence bins
+                        y_min, y_max = ax.get_ylim()
+                        ax.axvspan(center - bin_width/2, center + bin_width/2, 
+                                  alpha=0.1, color='green', zorder=0)
+                
             else:
-                # Just plot spike times as raster
+                # Just plot spike times as raster with bigger dots
                 y_pos = np.ones_like(spike_times)
-                ax.scatter(spike_times, y_pos, s=1, alpha=0.5, color='blue')
-                ax.set_ylabel('Spikes')
+                ax.scatter(spike_times, y_pos, s=2, alpha=0.6, color='blue', edgecolors='none')
+                ax.set_ylabel('Spikes', color='blue')
+                
+                # Create twin axis for firing rate  
+                ax2 = ax.twinx()
+                ax2.bar(bin_centers, firing_rates, width=bin_width*0.8, alpha=0.7,
+                       color='orange', label='Firing rate')
+                ax2.set_ylabel('Firing rate (sp/s)', color='orange')
+                ax2.tick_params(axis='y', labelcolor='orange')
+                
+                # Highlight good presence bins
+                for i, (center, good) in enumerate(zip(bin_centers, good_presence)):
+                    if good:
+                        y_min, y_max = ax.get_ylim()
+                        ax.axvspan(center - bin_width/2, center + bin_width/2, 
+                                  alpha=0.1, color='green', zorder=0)
                 
         ax.set_title('Amplitudes over time')
         ax.set_xlabel('Time (s)')
+        ax.tick_params(axis='y', labelcolor='blue')
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'amplitude')
