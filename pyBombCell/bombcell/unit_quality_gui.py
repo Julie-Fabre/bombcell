@@ -51,6 +51,14 @@ class InteractiveUnitQualityGUI:
             style={'description_width': 'initial'},
             layout=widgets.Layout(width='500px')
         )
+        self.unit_slider.observe(self.on_unit_change, names='value')
+        
+        # Unit number input
+        self.unit_input = widgets.IntText(
+            value=0, min=0, max=self.n_units-1,
+            description='Go to:', placeholder='Enter unit #'
+        )
+        self.goto_unit_btn = widgets.Button(description='Go', button_style='primary')
         
         # Navigation buttons
         self.prev_btn = widgets.Button(description='← unit', button_style='info')
@@ -81,6 +89,7 @@ class InteractiveUnitQualityGUI:
         self.unit_slider.observe(self.on_unit_change, names='value')
         self.prev_btn.on_click(self.prev_unit)
         self.next_btn.on_click(self.next_unit)
+        self.goto_unit_btn.on_click(self.goto_unit_number)
         
         # Unit type navigation callbacks
         self.goto_prev_good_btn.on_click(self.goto_prev_good)
@@ -107,17 +116,23 @@ class InteractiveUnitQualityGUI:
             self.goto_prev_nonsomatic_btn, self.goto_nonsomatic_btn
         ])
         
-        # Classification controls
-        classify_controls = widgets.HBox([
-            self.classify_good_btn, self.classify_mua_btn, self.classify_noise_btn
+        # Unit input controls
+        unit_input_controls = widgets.HBox([
+            self.unit_input, self.goto_unit_btn
         ])
+        
+        # Classification controls (hidden for now)
+        # classify_controls = widgets.HBox([
+        #     self.classify_good_btn, self.classify_mua_btn, self.classify_noise_btn
+        # ])
         
         # Full interface
         interface = widgets.VBox([
             self.unit_slider,
+            unit_input_controls,
             self.unit_info,
             nav_controls,
-            classify_controls,
+            # classify_controls,  # Hidden for now
             self.plot_output
         ])
         
@@ -142,6 +157,14 @@ class InteractiveUnitQualityGUI:
         if self.current_unit_idx < self.n_units - 1:
             self.current_unit_idx += 1
             self.unit_slider.value = self.current_unit_idx
+            
+    def goto_unit_number(self, b=None):
+        """Go to specific unit number"""
+        unit_num = self.unit_input.value
+        if 0 <= unit_num < self.n_units:
+            self.current_unit_idx = unit_num
+            self.unit_slider.value = self.current_unit_idx
+            self.update_display()
             
     def goto_next_good(self, b=None):
         """Go to next good unit"""
@@ -276,9 +299,9 @@ class InteractiveUnitQualityGUI:
         }
         title_color = title_colors.get(unit_type_str, "black")
         
-        # Simple title with just unit number and type, colored by classification
+        # Simple title with unit number, phy ID, and type, colored by classification
         info_html = f"""
-        <h3 style="color: {title_color};">Unit {unit_data['unit_id']} ({self.current_unit_idx+1}/{self.n_units}) - {unit_type_str}</h3>
+        <h3 style="color: {title_color};">Unit {unit_data['unit_id']} (phy ID = {self.current_unit_idx}, {self.current_unit_idx+1}/{self.n_units}) - {unit_type_str}</h3>
         """
         
         self.unit_info.value = info_html
@@ -333,8 +356,11 @@ class InteractiveUnitQualityGUI:
         metrics = unit_data['metrics']
         
         if template.size > 0 and len(template.shape) > 1:
-            # Get peak channel
-            max_ch = int(metrics.get('maxChannels', 0))
+            # Get peak channel - use actual detected peak channel from quality metrics
+            if 'maxChannels' in self.quality_metrics and self.current_unit_idx < len(self.quality_metrics['maxChannels']):
+                max_ch = int(self.quality_metrics['maxChannels'][self.current_unit_idx])
+            else:
+                max_ch = int(metrics.get('maxChannels', 0))
             n_channels = template.shape[1]
             
             # Find 16 nearest channels to peak channel (prioritizing above/below)
@@ -416,8 +442,11 @@ class InteractiveUnitQualityGUI:
                         waveforms = raw_wf[self.current_unit_idx]
                         
                         if hasattr(waveforms, 'shape') and len(waveforms.shape) > 1:
-                            # Multi-channel raw waveforms
-                            max_ch = int(metrics.get('maxChannels', 0))
+                            # Multi-channel raw waveforms - use actual detected peak channel
+                            if 'maxChannels' in self.quality_metrics and self.current_unit_idx < len(self.quality_metrics['maxChannels']):
+                                max_ch = int(self.quality_metrics['maxChannels'][self.current_unit_idx])
+                            else:
+                                max_ch = int(metrics.get('maxChannels', 0))
                             n_channels = waveforms.shape[1]
                             
                             # Find 16 nearest channels (prioritizing above/below)
@@ -536,7 +565,7 @@ class InteractiveUnitQualityGUI:
             
             # Plot with wider bars like MATLAB
             ax.bar(positive_centers * 1000, positive_autocorr, 
-                   width=bin_size*1000*0.9, color='blue', alpha=0.7, edgecolor='darkblue', linewidth=0.5)
+                   width=bin_size*1000*0.9, color='grey', alpha=0.7, edgecolor='black', linewidth=0.5)
             
             # Calculate mean firing rate first to determine proper y-limits
             mean_fr = 0
@@ -728,7 +757,7 @@ class InteractiveUnitQualityGUI:
                 amplitudes = self.ephys_data['template_amplitudes'][spike_mask]
                 
                 # Plot amplitudes with slightly bigger dots
-                ax.scatter(spike_times, amplitudes, s=3, alpha=0.6, color='blue', edgecolors='none')
+                ax.scatter(spike_times, amplitudes, s=3, alpha=0.6, color='black', edgecolors='none')
                 ax.set_ylabel('Template scaling', color='blue')
                 
                 # Create twin axis for firing rate
@@ -751,7 +780,7 @@ class InteractiveUnitQualityGUI:
             else:
                 # Just plot spike times as raster with bigger dots
                 y_pos = np.ones_like(spike_times)
-                ax.scatter(spike_times, y_pos, s=3, alpha=0.6, color='blue', edgecolors='none')
+                ax.scatter(spike_times, y_pos, s=3, alpha=0.6, color='black', edgecolors='none')
                 ax.set_ylabel('Spikes', color='blue')
                 
                 # Create twin axis for firing rate  
@@ -900,7 +929,7 @@ class InteractiveUnitQualityGUI:
                     
                     # Plot horizontal histogram like BombCell
                     ax.barh(bin_centers, hist_counts, height=bin_width*0.8, 
-                           facecolor=[0, 0.35, 0.71], edgecolor=[0, 0.35, 0.71])
+                           facecolor='grey', edgecolor='black')
                     
                     # Fit cutoff Gaussian like BombCell
                     try:
@@ -1742,7 +1771,7 @@ class UnitQualityGUI:
             
             # Plot as bar chart like MATLAB
             bin_centers = bins[:-1] + bin_size/2
-            self.ax_acg.bar(bin_centers, hist, width=bin_size*0.8, color='blue', alpha=0.7)
+            self.ax_acg.bar(bin_centers, hist, width=bin_size*0.8, color='grey', alpha=0.7)
             
             # Add refractory period line
             self.ax_acg.axvline(x=2, color='r', linestyle='--', linewidth=2, alpha=0.8)
