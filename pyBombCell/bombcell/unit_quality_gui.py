@@ -351,73 +351,92 @@ class InteractiveUnitQualityGUI:
             plt.show()
             
     def plot_template_waveform(self, ax, unit_data):
-        """Plot template waveform with 16 nearest channels like MATLAB"""
+        """Plot template waveform using BombCell MATLAB spatial arrangement"""
         template = unit_data['template']
         metrics = unit_data['metrics']
         
         if template.size > 0 and len(template.shape) > 1:
-            # Get peak channel - use actual detected peak channel from quality metrics
+            # Get peak channel from quality metrics
             if 'maxChannels' in self.quality_metrics and self.current_unit_idx < len(self.quality_metrics['maxChannels']):
                 max_ch = int(self.quality_metrics['maxChannels'][self.current_unit_idx])
             else:
                 max_ch = int(metrics.get('maxChannels', 0))
+            
             n_channels = template.shape[1]
             
-            # Find 16 nearest channels to peak channel (prioritizing above/below)
-            channels_to_plot = self.get_nearest_channels(max_ch, n_channels, 16)
-            
-            # Arrange channels to reflect probe layout when possible
-            layout_channels = self.arrange_channels_for_display(channels_to_plot, max_ch)
-            
-            # Calculate layout (4x4 grid but arranged by probe geometry)
-            n_cols = 4
-            n_rows = 4
-            
-            # Get amplitude scaling
-            all_amps = []
-            for ch in channels_to_plot:
-                if ch < n_channels:
-                    all_amps.extend(template[:, ch])
-            amp_range = np.max(all_amps) - np.min(all_amps) if all_amps else 1
-            
-            for i, ch in enumerate(layout_channels):
-                if ch < n_channels and i < 16:
-                    row = i // n_cols
-                    col = i % n_cols
-                    
-                    # Calculate position offset
-                    x_offset = col * 100
-                    y_offset = row * amp_range * 1.2
-                    
-                    waveform = template[:, ch]
-                    x_vals = np.arange(len(waveform)) + x_offset
-                    
-                    # Plot waveform
-                    if ch == max_ch:
-                        ax.plot(x_vals, waveform + y_offset, 'k-', linewidth=2)
-                    else:
-                        ax.plot(x_vals, waveform + y_offset, 'gray', linewidth=1, alpha=0.7)
-                    
-                    # Add channel number
-                    ax.text(x_offset - 5, y_offset, f'{ch}', fontsize=8, ha='right', va='center')
-                    
-            # Mark peaks and troughs on peak channel only
-            if max_ch in layout_channels:
-                peak_waveform = template[:, max_ch]
-                # Find peak channel position in grid
-                peak_idx = layout_channels.index(max_ch)
-                peak_row = peak_idx // n_cols
-                peak_col = peak_idx % n_cols
-                peak_x_offset = peak_col * 100
-                peak_y_offset = peak_row * amp_range * 1.2
+            # Find channels within 100μm of max channel (like MATLAB BombCell)
+            if 'channel_positions' in self.ephys_data and max_ch < len(self.ephys_data['channel_positions']):
+                positions = self.ephys_data['channel_positions']
+                max_pos = positions[max_ch]
                 
-                # Detect all peaks and troughs
-                self.mark_peaks_and_troughs(ax, peak_waveform, peak_x_offset, peak_y_offset, metrics, amp_range)
+                # Calculate distances and find nearby channels
+                channels_to_plot = []
+                for ch in range(n_channels):
+                    if ch < len(positions):
+                        distance = np.sqrt(np.sum((positions[ch] - max_pos)**2))
+                        if distance < 100:  # Within 100μm like MATLAB
+                            channels_to_plot.append(ch)
+                
+                # Limit to 20 channels max like MATLAB
+                if len(channels_to_plot) > 20:
+                    # Sort by distance and take closest 20
+                    distances = [(ch, np.sqrt(np.sum((positions[ch] - max_pos)**2))) for ch in channels_to_plot]
+                    distances.sort(key=lambda x: x[1])
+                    channels_to_plot = [ch for ch, _ in distances[:20]]
+                
+                if len(channels_to_plot) > 0:
+                    # Calculate scaling factor like MATLAB
+                    max_ch_waveform = template[:, max_ch]
+                    scaling_factor = np.ptp(max_ch_waveform) * 2.5
+                    
+                    # Create time axis
+                    time_axis = np.arange(template.shape[0])
+                    
+                    # Plot each channel at its spatial position
+                    for ch in channels_to_plot:
+                        if ch < n_channels:
+                            waveform = template[:, ch]
+                            ch_pos = positions[ch]
+                            
+                            # Calculate X offset - just enough to place side by side
+                            x_offset = (ch_pos[0] - max_pos[0]) * 0.1  # Minimal spacing
+                            
+                            # Calculate Y offset based on channel Y position (like MATLAB)
+                            y_offset = (ch_pos[1] - max_pos[1]) / 100 * scaling_factor
+                            
+                            # Plot waveform
+                            x_vals = time_axis + x_offset
+                            y_vals = -waveform + y_offset  # Negative like MATLAB
+                            
+                            if ch == max_ch:
+                                ax.plot(x_vals, y_vals, 'k-', linewidth=3)  # Max channel thicker black
+                            else:
+                                ax.plot(x_vals, y_vals, 'k-', linewidth=1, alpha=0.7)
+                            
+                            # Add channel number
+                            ax.text(x_offset - 2, y_offset, f'{ch}', fontsize=8, ha='right', va='center')
+                    
+                    # Mark peaks and troughs on max channel
+                    max_ch_waveform = template[:, max_ch]
+                    # Max channel is at center (0,0) since all offsets are relative to it
+                    max_ch_x_offset = 0  
+                    max_ch_y_offset = 0
+                    
+                    # Detect and mark peaks/troughs (account for inverted waveform)
+                    self.mark_peaks_and_troughs(ax, -max_ch_waveform, max_ch_x_offset, max_ch_y_offset, metrics, scaling_factor)
+                    
+                    # Set axis properties like MATLAB
+                    ax.invert_yaxis()  # Reverse Y direction like MATLAB
+                    
+            else:
+                # Fallback: simple single channel display
+                ax.plot(template[:, max_ch], 'k-', linewidth=2)
+                ax.text(0.5, 0.5, f'Template\n(channel {max_ch})', 
+                       ha='center', va='center', transform=ax.transAxes)
                     
         ax.set_title('Template waveforms')
         ax.set_xticks([])
         ax.set_yticks([])
-        # Remove aspect ratio constraint to prevent squishing
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'template')
@@ -442,63 +461,81 @@ class InteractiveUnitQualityGUI:
                         waveforms = raw_wf[self.current_unit_idx]
                         
                         if hasattr(waveforms, 'shape') and len(waveforms.shape) > 1:
-                            # Multi-channel raw waveforms - use actual detected peak channel
+                            # Multi-channel raw waveforms - use MATLAB spatial arrangement
                             if 'maxChannels' in self.quality_metrics and self.current_unit_idx < len(self.quality_metrics['maxChannels']):
                                 max_ch = int(self.quality_metrics['maxChannels'][self.current_unit_idx])
                             else:
                                 max_ch = int(metrics.get('maxChannels', 0))
                             n_channels = waveforms.shape[1]
                             
-                            # Find 16 nearest channels (prioritizing above/below)
-                            channels_to_plot = self.get_nearest_channels(max_ch, n_channels, 16)
-                            
-                            # Arrange channels to reflect probe layout
-                            layout_channels = self.arrange_channels_for_display(channels_to_plot, max_ch)
-                            
-                            # Calculate layout for channels (4x4 grid)
-                            n_cols = 4
-                            n_rows = 4
-                            
-                            # Get amplitude scaling
-                            all_amps = []
-                            for ch in channels_to_plot:
-                                if ch < n_channels:
-                                    all_amps.extend(waveforms[:, ch])
-                            amp_range = np.max(all_amps) - np.min(all_amps) if all_amps else 1
-                            
-                            for i, ch in enumerate(layout_channels):
-                                if ch < n_channels and i < 16:
-                                    row = i // n_cols
-                                    col = i % n_cols
-                                    
-                                    # Calculate position offset
-                                    x_offset = col * 150
-                                    y_offset = row * amp_range * 1.2
-                                    
-                                    waveform = waveforms[:, ch]
-                                    x_vals = np.arange(len(waveform)) + x_offset
-                                    
-                                    # Plot waveform
-                                    if ch == max_ch:
-                                        ax.plot(x_vals, waveform + y_offset, 'b-', linewidth=1.5, alpha=0.8)
-                                    else:
-                                        ax.plot(x_vals, waveform + y_offset, 'lightblue', linewidth=1, alpha=0.6)
-                                    
-                                    # Add channel number
-                                    ax.text(x_offset - 5, y_offset, f'{ch}', fontsize=8, ha='right', va='center')
-                            
-                            # Mark peaks and troughs on peak channel only
-                            if max_ch in layout_channels:
-                                peak_waveform = waveforms[:, max_ch]
-                                # Find peak channel position in grid
-                                peak_idx = layout_channels.index(max_ch)
-                                peak_row = peak_idx // n_cols
-                                peak_col = peak_idx % n_cols
-                                peak_x_offset = peak_col * 150
-                                peak_y_offset = peak_row * amp_range * 1.2
+                            # Find channels within 100μm of max channel (like MATLAB BombCell)
+                            if 'channel_positions' in self.ephys_data and max_ch < len(self.ephys_data['channel_positions']):
+                                positions = self.ephys_data['channel_positions']
+                                max_pos = positions[max_ch]
                                 
-                                # Detect all peaks and troughs
-                                self.mark_peaks_and_troughs(ax, peak_waveform, peak_x_offset, peak_y_offset, metrics, amp_range)
+                                # Calculate distances and find nearby channels
+                                channels_to_plot = []
+                                for ch in range(n_channels):
+                                    if ch < len(positions):
+                                        distance = np.sqrt(np.sum((positions[ch] - max_pos)**2))
+                                        if distance < 100:  # Within 100μm like MATLAB
+                                            channels_to_plot.append(ch)
+                                
+                                # Limit to 20 channels max like MATLAB
+                                if len(channels_to_plot) > 20:
+                                    # Sort by distance and take closest 20
+                                    distances = [(ch, np.sqrt(np.sum((positions[ch] - max_pos)**2))) for ch in channels_to_plot]
+                                    distances.sort(key=lambda x: x[1])
+                                    channels_to_plot = [ch for ch, _ in distances[:20]]
+                                
+                                if len(channels_to_plot) > 0:
+                                    # Calculate scaling factor like MATLAB
+                                    max_ch_waveform = waveforms[:, max_ch]
+                                    scaling_factor = np.ptp(max_ch_waveform) * 2.5
+                                    
+                                    # Create time axis
+                                    time_axis = np.arange(waveforms.shape[0])
+                                    
+                                    # Plot each channel at its spatial position
+                                    for ch in channels_to_plot:
+                                        if ch < n_channels:
+                                            waveform = waveforms[:, ch]
+                                            ch_pos = positions[ch]
+                                            
+                                            # Calculate X offset - just enough to place side by side
+                                            x_offset = (ch_pos[0] - max_pos[0]) * 0.1  # Minimal spacing
+                                            
+                                            # Calculate Y offset based on channel Y position (like MATLAB)
+                                            y_offset = (ch_pos[1] - max_pos[1]) / 100 * scaling_factor
+                                            
+                                            # Plot waveform
+                                            x_vals = time_axis + x_offset
+                                            y_vals = -waveform + y_offset  # Negative like MATLAB
+                                            
+                                            if ch == max_ch:
+                                                ax.plot(x_vals, y_vals, 'k-', linewidth=3)  # Max channel thicker black
+                                            else:
+                                                ax.plot(x_vals, y_vals, 'gray', linewidth=1, alpha=0.7)
+                                            
+                                            # Add channel number
+                                            ax.text(x_offset - 2, y_offset, f'{ch}', fontsize=8, ha='right', va='center')
+                                    
+                                    # Mark peaks and troughs on max channel
+                                    max_ch_waveform = waveforms[:, max_ch]
+                                    # Max channel is at center (0,0) since all offsets are relative to it
+                                    max_ch_x_offset = 0
+                                    max_ch_y_offset = 0
+                                    
+                                    # Detect and mark peaks/troughs (account for inverted waveform)
+                                    self.mark_peaks_and_troughs(ax, -max_ch_waveform, max_ch_x_offset, max_ch_y_offset, metrics, scaling_factor)
+                                    
+                                    # Set axis properties like MATLAB
+                                    ax.invert_yaxis()  # Reverse Y direction like MATLAB
+                            else:
+                                # Fallback: simple single channel display
+                                ax.plot(waveforms[:, max_ch], 'b-', linewidth=2)
+                                ax.text(0.5, 0.5, f'Raw waveforms\n(channel {max_ch})', 
+                                       ha='center', va='center', transform=ax.transAxes)
                         else:
                             # Single channel
                             ax.plot(waveforms, 'b-', alpha=0.7)
@@ -1324,21 +1361,21 @@ class InteractiveUnitQualityGUI:
                                                    distance=10,  # Increased from 5
                                                    prominence=trough_prominence)
             
-            # Mark all peaks with red circles
+            # Mark all peaks with red circles (on top)
             for i, peak_idx in enumerate(peaks):
                 ax.plot(peak_idx + x_offset, waveform[peak_idx] + y_offset, 'ro', markersize=6, 
-                       markeredgecolor='darkred', markeredgewidth=1)
+                       markeredgecolor='darkred', markeredgewidth=1, zorder=10)
                 # Label peak number
                 ax.text(peak_idx + x_offset, waveform[peak_idx] + y_offset + amp_range*0.1, f'peak {i+1}', 
-                       ha='center', va='bottom', fontsize=8, color='red', weight='bold')
+                       ha='center', va='bottom', fontsize=8, color='red', weight='bold', zorder=10)
             
-            # Mark all troughs with blue circles
+            # Mark all troughs with blue circles (on top)
             for i, trough_idx in enumerate(troughs):
                 ax.plot(trough_idx + x_offset, waveform[trough_idx] + y_offset, 'bo', markersize=6,
-                       markeredgecolor='darkblue', markeredgewidth=1)
+                       markeredgecolor='darkblue', markeredgewidth=1, zorder=10)
                 # Label trough number
                 ax.text(trough_idx + x_offset, waveform[trough_idx] + y_offset - amp_range*0.1, f'trough {i+1}', 
-                       ha='center', va='top', fontsize=8, color='blue', weight='bold')
+                       ha='center', va='top', fontsize=8, color='blue', weight='bold', zorder=10)
             
             # Draw horizontal duration line from main peak to main trough
             if len(peaks) > 0 and len(troughs) > 0:
@@ -1347,25 +1384,25 @@ class InteractiveUnitQualityGUI:
                 # Find main trough (most negative)
                 main_trough_idx = troughs[np.argmin(waveform[troughs])]
                 
-                # Draw horizontal line at a fixed y-position below the waveform
+                # Draw horizontal line at a fixed y-position below the waveform (on top)
                 line_y = y_offset - amp_range * 0.3  # Position line below waveform
                 ax.plot([main_peak_idx + x_offset, main_trough_idx + x_offset], 
                        [line_y, line_y], 
-                       'g-', linewidth=2, alpha=0.7)
+                       'g-', linewidth=2, alpha=0.7, zorder=10)
                 
-                # Add vertical lines to connect to peak and trough
+                # Add vertical lines to connect to peak and trough (on top)
                 ax.plot([main_peak_idx + x_offset, main_peak_idx + x_offset], 
                        [waveform[main_peak_idx] + y_offset, line_y], 
-                       'g--', linewidth=1, alpha=0.5)
+                       'g--', linewidth=1, alpha=0.5, zorder=10)
                 ax.plot([main_trough_idx + x_offset, main_trough_idx + x_offset], 
                        [waveform[main_trough_idx] + y_offset, line_y], 
-                       'g--', linewidth=1, alpha=0.5)
+                       'g--', linewidth=1, alpha=0.5, zorder=10)
                 
-                # Mark main peak and trough with larger markers
+                # Mark main peak and trough with larger markers (on top)
                 ax.plot(main_peak_idx + x_offset, waveform[main_peak_idx] + y_offset, 'ro', 
-                       markersize=8, markeredgecolor='darkred', markeredgewidth=2)
+                       markersize=8, markeredgecolor='darkred', markeredgewidth=2, zorder=11)
                 ax.plot(main_trough_idx + x_offset, waveform[main_trough_idx] + y_offset, 'bo', 
-                       markersize=8, markeredgecolor='darkblue', markeredgewidth=2)
+                       markersize=8, markeredgecolor='darkblue', markeredgewidth=2, zorder=11)
             
         except ImportError:
             # Fallback: simple peak/trough detection without scipy
