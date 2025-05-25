@@ -309,19 +309,19 @@ class InteractiveUnitQualityGUI:
             self.plot_raw_waveforms(ax_raw, unit_data)
             
             # 4. Spatial decay - subplot(6, 13, 29:33)
-            ax_spatial = plt.subplot2grid((6, 13), (2, 1), rowspan=1, colspan=5)
+            ax_spatial = plt.subplot2grid((6, 13), (2, 1), rowspan=2, colspan=6)
             self.plot_spatial_decay(ax_spatial, unit_data)
             
             # 5. ACG - subplot(6, 13, 35:39)
-            ax_acg = plt.subplot2grid((6, 13), (2, 7), rowspan=1, colspan=5)
+            ax_acg = plt.subplot2grid((6, 13), (2, 7), rowspan=2, colspan=6)
             self.plot_autocorrelogram(ax_acg, unit_data)
             
             # 6. Amplitudes over time - subplot(6, 13, [42:44, 55:57, 68:70])
-            ax_amplitude = plt.subplot2grid((6, 13), (3, 1), rowspan=3, colspan=9)
+            ax_amplitude = plt.subplot2grid((6, 13), (4, 1), rowspan=2, colspan=9)
             self.plot_amplitudes_over_time(ax_amplitude, unit_data)
             
             # 7. Amplitude fit - subplot(6, 13, [45:46, 58:59, 71:72])
-            ax_amp_fit = plt.subplot2grid((6, 13), (3, 11), rowspan=3, colspan=2)
+            ax_amp_fit = plt.subplot2grid((6, 13), (4, 11), rowspan=2, colspan=2)
             self.plot_amplitude_fit(ax_amp_fit, unit_data)
             
             plt.tight_layout()
@@ -758,27 +758,90 @@ class InteractiveUnitQualityGUI:
         self.add_metrics_text(ax, unit_data, 'amplitude')
         
     def plot_unit_location(self, ax, unit_data):
-        """Plot unit location on probe"""
-        # Get channel positions if available
-        if 'channel_positions' in self.ephys_data:
+        """Plot all units by depth vs log firing rate, colored by classification"""
+        # Define classification colors
+        classification_colors = {
+            'good': [0, 0.7, 0],        # Green
+            'mua': [1, 0.5, 0],         # Orange  
+            'noise': [0.7, 0.7, 0.7],  # Gray
+            'non-somatic': [0.5, 0, 0.5]  # Purple
+        }
+        
+        if 'channel_positions' in self.ephys_data and 'maxChannels' in self.quality_metrics:
             positions = self.ephys_data['channel_positions']
-            # Plot probe outline
-            if len(positions) > 0:
-                ax.scatter(positions[:, 0], positions[:, 1], c='lightgray', s=20, alpha=0.5)
-                
-                # Highlight current unit's channel
-                if 'maxChannels' in self.quality_metrics:
-                    max_ch = self.quality_metrics['maxChannels'][self.current_unit_idx]
+            max_channels = self.quality_metrics['maxChannels']
+            
+            # Get all unit classifications and firing rates
+            all_units = []
+            all_depths = []
+            all_firing_rates = []
+            all_colors = []
+            
+            for i, unit_id in enumerate(self.unique_units):
+                # Get max channel for this unit
+                if i < len(max_channels):
+                    max_ch = int(max_channels[i])
                     if max_ch < len(positions):
-                        ax.scatter(positions[int(max_ch), 0], positions[int(max_ch), 1], 
-                                 c='red', s=50, marker='o')
+                        # Use Y position as depth (inverted for probe coordinates)
+                        depth = positions[max_ch, 1]
+                        
+                        # Calculate firing rate for this unit
+                        unit_spike_mask = self.ephys_data['spike_clusters'] == unit_id
+                        unit_spike_times = self.ephys_data['spike_times'][unit_spike_mask]
+                        
+                        if len(unit_spike_times) > 0:
+                            duration = np.max(unit_spike_times) - np.min(unit_spike_times)
+                            if duration > 0:
+                                firing_rate = len(unit_spike_times) / duration
+                                
+                                # Get classification
+                                if hasattr(self, 'unit_classifications') and i < len(self.unit_classifications):
+                                    classification = self.unit_classifications[i]
+                                else:
+                                    classification = 'good'  # Default
+                                
+                                all_units.append(unit_id)
+                                all_depths.append(depth)
+                                all_firing_rates.append(max(firing_rate, 0.01))  # Avoid log(0)
+                                all_colors.append(classification_colors.get(classification, [0, 0, 0]))
+            
+            if len(all_units) > 0:
+                all_depths = np.array(all_depths)
+                all_firing_rates = np.array(all_firing_rates)
+                log_firing_rates = np.log10(all_firing_rates)
+                
+                # Plot all units
+                for i, (depth, log_fr, color, unit_id) in enumerate(zip(all_depths, log_firing_rates, all_colors, all_units)):
+                    is_current = unit_id == unit_data['unit_id']
+                    
+                    if is_current:
+                        # Current unit: larger with black outline
+                        ax.scatter(log_fr, depth, c=[color], s=80, edgecolors='black', 
+                                 linewidths=2, zorder=10)
+                    else:
+                        # Other units: smaller, no outline
+                        ax.scatter(log_fr, depth, c=[color], s=30, alpha=0.7, zorder=5)
+                
+                ax.set_xlabel('Log₁₀ firing rate (sp/s)')
+                ax.set_ylabel('Depth (μm)')
+                ax.invert_yaxis()  # Deeper = higher values, but show at bottom
+                
+                # Add legend
+                legend_elements = []
+                for class_name, color in classification_colors.items():
+                    legend_elements.append(plt.Line2D([0], [0], marker='o', color='w', 
+                                                    markerfacecolor=color, markersize=8, 
+                                                    label=class_name))
+                ax.legend(handles=legend_elements, loc='upper right', fontsize=8)
+                
+            else:
+                ax.text(0.5, 0.5, 'No units with\nvalid locations', 
+                        ha='center', va='center', transform=ax.transAxes)
         else:
-            ax.text(0.5, 0.5, 'Unit location\n(requires probe geometry)', 
+            ax.text(0.5, 0.5, 'Unit locations\n(requires probe geometry\nand max channels)', 
                     ha='center', va='center', transform=ax.transAxes)
-        ax.set_title('Location on probe')
-        ax.set_xlabel('X (μm)')
-        ax.set_ylabel('Y (μm)')
-        ax.invert_yaxis()  # MATLAB style
+        
+        ax.set_title('Units by depth')
         
     def plot_amplitude_fit(self, ax, unit_data):
         """Plot amplitude distribution with cutoff Gaussian fit like BombCell"""
@@ -1354,19 +1417,19 @@ class UnitQualityGUI:
         self.setup_raw_plot()
         
         # 4. Spatial decay - subplot(6, 13, 29:33)
-        self.ax_spatial = plt.subplot2grid((6, 13), (2, 1), rowspan=1, colspan=5)
+        self.ax_spatial = plt.subplot2grid((6, 13), (2, 1), rowspan=2, colspan=6)
         self.setup_spatial_plot()
         
         # 5. ACG - subplot(6, 13, 35:39)
-        self.ax_acg = plt.subplot2grid((6, 13), (2, 7), rowspan=1, colspan=5)
+        self.ax_acg = plt.subplot2grid((6, 13), (2, 7), rowspan=2, colspan=6)
         self.setup_acg_plot()
         
         # 6. Amplitudes over time - subplot(6, 13, [55:57, 68:70, 74:76])
-        self.ax_amplitude = plt.subplot2grid((6, 13), (3, 1), rowspan=3, colspan=9)
+        self.ax_amplitude = plt.subplot2grid((6, 13), (4, 1), rowspan=2, colspan=9)
         self.setup_amplitude_plot()
         
         # 7. Amplitude fit - subplot(6, 13, [78])
-        self.ax_amp_fit = plt.subplot2grid((6, 13), (3, 11), rowspan=3, colspan=2)
+        self.ax_amp_fit = plt.subplot2grid((6, 13), (4, 11), rowspan=2, colspan=2)
         self.setup_amplitude_fit_plot()
         
     def setup_location_plot(self):
