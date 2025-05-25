@@ -4,6 +4,8 @@ from matplotlib.widgets import Button
 import matplotlib.gridspec as gridspec
 from pathlib import Path
 import pandas as pd
+import pickle
+import os
 
 try:
     import ipywidgets as widgets
@@ -12,6 +14,322 @@ try:
 except ImportError:
     IPYWIDGETS_AVAILABLE = False
 
+def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
+    """
+    Pre-compute all visualization data for fast GUI loading (like MATLAB BombCell)
+    
+    Parameters:
+    -----------
+    ephys_data : dict
+        Ephys data dictionary
+    quality_metrics : dict  
+        Quality metrics dictionary
+    param : dict
+        Parameters dictionary
+    save_path : str, optional
+        Path to save pre-computed data. If directory, saves as 'for_GUI/gui_data.pkl'.
+        If None, attempts to save to param['ephysKilosortPath']/bombcell/for_GUI/
+    
+    Returns:
+    --------
+    gui_data : dict
+        Dictionary containing all pre-computed visualization data
+    """
+    if param.get("verbose", False):
+        print("Pre-computing GUI visualization data...")
+    
+    unique_units = np.unique(ephys_data['spike_clusters'])
+    n_units = len(unique_units)
+    
+    gui_data = {
+        'peak_locations': {},
+        'trough_locations': {},
+        'peak_trough_labels': {},
+        'duration_lines': {},
+        'spatial_decay_fits': {},
+        'amplitude_fits': {},
+        'channel_arrangements': {},
+        'waveform_scaling': {},
+        'acg_data': {}  # Pre-computed autocorrelograms
+    }
+    
+    # Import here to avoid dependency issues
+    try:
+        from scipy.signal import find_peaks
+        from scipy.optimize import curve_fit
+        from scipy import stats
+        SCIPY_AVAILABLE = True
+    except ImportError:
+        SCIPY_AVAILABLE = False
+        print("Warning: SciPy not available, using simplified computations")
+    
+    for unit_idx in range(n_units):
+        if unit_idx % 50 == 0 and param.get("verbose", False):
+            print(f"Processing unit {unit_idx}/{n_units}")
+            
+        unit_id = unique_units[unit_idx]
+        
+        # Get unit data
+        if 'templates' in ephys_data and unit_idx < len(ephys_data['templates']):
+            template = ephys_data['templates'][unit_idx]
+        elif 'template_waveforms' in ephys_data and unit_idx < len(ephys_data['template_waveforms']):
+            template = ephys_data['template_waveforms'][unit_idx]
+        else:
+            continue
+            
+        # Get max channel
+        if 'maxChannels' in quality_metrics and unit_idx < len(quality_metrics['maxChannels']):
+            max_ch = int(quality_metrics['maxChannels'][unit_idx])
+        else:
+            max_ch = 0
+            
+        # Pre-compute peak/trough detection
+        if template.size > 0 and len(template.shape) > 1 and max_ch < template.shape[1]:
+            max_ch_waveform = template[:, max_ch]
+            
+            if SCIPY_AVAILABLE:
+                # Peak detection parameters (same as GUI)
+                waveform_range = np.max(max_ch_waveform) - np.min(max_ch_waveform)
+                peak_height_threshold = np.max(max_ch_waveform) * 0.5
+                peak_prominence = waveform_range * 0.1
+                
+                # Find peaks and troughs
+                peaks, _ = find_peaks(max_ch_waveform, 
+                                    height=peak_height_threshold, 
+                                    distance=10,
+                                    prominence=peak_prominence)
+                                    
+                troughs, _ = find_peaks(-max_ch_waveform, 
+                                      height=-np.min(max_ch_waveform) * 0.5, 
+                                      distance=10,
+                                      prominence=waveform_range * 0.1)
+                
+                gui_data['peak_locations'][unit_idx] = peaks
+                gui_data['trough_locations'][unit_idx] = troughs
+                
+                # Pre-compute duration lines
+                if len(peaks) > 0 and len(troughs) > 0:
+                    main_peak_idx = peaks[np.argmax(max_ch_waveform[peaks])]
+                    main_trough_idx = troughs[np.argmin(max_ch_waveform[troughs])]
+                    gui_data['duration_lines'][unit_idx] = {
+                        'main_peak': main_peak_idx,
+                        'main_trough': main_trough_idx
+                    }
+            
+        # Pre-compute spatial decay information
+        if ('channel_positions' in ephys_data and 
+            'spatialDecaySlope' in quality_metrics and 
+            unit_idx < len(quality_metrics['spatialDecaySlope']) and
+            not np.isnan(quality_metrics['spatialDecaySlope'][unit_idx])):
+            
+            positions = ephys_data['channel_positions']
+            if max_ch < len(positions):
+                max_pos = positions[max_ch]
+                
+                # Find nearby channels (within 100μm)
+                nearby_channels = []
+                distances = []
+                amplitudes = []
+                
+                for ch in range(template.shape[1]):
+                    if ch < len(positions):
+                        distance = np.sqrt(np.sum((positions[ch] - max_pos)**2))
+                        if distance < 100:
+                            nearby_channels.append(ch)
+                            distances.append(distance)
+                            amplitudes.append(np.max(template[:, ch]))
+                
+                if len(nearby_channels) > 1:
+                    distances = np.array(distances)
+                    amplitudes = np.array(amplitudes)
+                    
+                    # Normalize amplitudes
+                    max_amp = np.max(amplitudes)
+                    if max_amp > 0:
+                        amplitudes = amplitudes / max_amp
+                        
+                        # Fit exponential decay
+                        valid_idx = (distances > 0) & (amplitudes > 0.05)
+                        if np.sum(valid_idx) > 1:
+                            try:
+                                x_fit = distances[valid_idx]
+                                y_fit = amplitudes[valid_idx]
+                                log_y = np.log(y_fit + 1e-10)
+                                coeffs = np.polyfit(x_fit, log_y, 1)
+                                
+                                # Generate fitted curve
+                                x_smooth = np.linspace(0, np.max(distances)*1.1, 100)
+                                y_smooth = np.exp(np.polyval(coeffs, x_smooth))
+                                
+                                gui_data['spatial_decay_fits'][unit_idx] = {
+                                    'channels': nearby_channels,
+                                    'distances': distances,
+                                    'amplitudes': amplitudes,
+                                    'fit_x': x_smooth,
+                                    'fit_y': y_smooth
+                                }
+                            except:
+                                pass
+        
+        # Pre-compute amplitude fit
+        spike_mask = ephys_data['spike_clusters'] == unit_id
+        if 'template_amplitudes' in ephys_data and np.sum(spike_mask) > 10:
+            amplitudes = ephys_data['template_amplitudes'][spike_mask]
+            
+            if SCIPY_AVAILABLE and len(amplitudes) > 10:
+                try:
+                    # Create histogram
+                    n_bins = min(50, int(len(amplitudes) / 10))
+                    hist_counts, bin_edges = np.histogram(amplitudes, bins=n_bins)
+                    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+                    
+                    # Fit cutoff Gaussian (like BombCell)
+                    def gaussian_cut(x, a, x0, sigma, xcut):
+                        g = a * np.exp(-(x - x0)**2 / (2 * sigma**2))
+                        g[x < xcut] = 0
+                        return g
+                    
+                    p0 = [np.max(hist_counts), np.median(amplitudes), 
+                          np.std(amplitudes), np.min(amplitudes)]
+                    bounds = ([0, np.min(amplitudes), 0, np.min(amplitudes)],
+                             [np.inf, np.max(amplitudes), np.ptp(amplitudes), np.median(amplitudes)])
+                    
+                    popt, _ = curve_fit(gaussian_cut, bin_centers, hist_counts, 
+                                      p0=p0, bounds=bounds, maxfev=5000)
+                    
+                    # Generate fit curve
+                    y_smooth = np.linspace(np.min(amplitudes), np.max(amplitudes), 200)
+                    x_smooth = gaussian_cut(y_smooth, *popt)
+                    
+                    # Calculate percentage missing
+                    norm_area_ndtr = stats.norm.cdf((popt[1] - popt[3]) / popt[2])
+                    percent_missing = 100 * (1 - norm_area_ndtr)
+                    
+                    gui_data['amplitude_fits'][unit_idx] = {
+                        'hist_counts': hist_counts,
+                        'bin_centers': bin_centers,
+                        'fit_x': x_smooth,
+                        'fit_y': y_smooth,
+                        'percent_missing': percent_missing,
+                        'fit_params': popt
+                    }
+                except:
+                    pass
+        
+        # Pre-compute channel arrangements
+        if 'channel_positions' in ephys_data and max_ch < len(ephys_data['channel_positions']):
+            positions = ephys_data['channel_positions']
+            max_pos = positions[max_ch]
+            
+            # Find channels within 100μm
+            channels_to_plot = []
+            for ch in range(template.shape[1]):
+                if ch < len(positions):
+                    distance = np.sqrt(np.sum((positions[ch] - max_pos)**2))
+                    if distance < 100:
+                        channels_to_plot.append(ch)
+            
+            # Limit to 20 channels
+            if len(channels_to_plot) > 20:
+                distances = [(ch, np.sqrt(np.sum((positions[ch] - max_pos)**2))) 
+                           for ch in channels_to_plot]
+                distances.sort(key=lambda x: x[1])
+                channels_to_plot = [ch for ch, _ in distances[:20]]
+            
+            gui_data['channel_arrangements'][unit_idx] = {
+                'channels': channels_to_plot,
+                'max_channel': max_ch,
+                'scaling_factor': np.ptp(max_ch_waveform) * 2.5 if template.size > 0 else 1.0
+            }
+        
+        # Skip ACG pre-computation - will be computed lazily in GUI to avoid slowdown
+        # Just store placeholder to indicate ACG needs computation
+        gui_data['acg_data'][unit_idx] = None
+    
+    # Save pre-computed data in "for_GUI" subfolder
+    # Determine save path
+    if save_path is None and 'ephysKilosortPath' in param:
+        # Auto-save to bombcell/for_GUI/ folder
+        bombcell_dir = os.path.join(param['ephysKilosortPath'], 'bombcell')
+        save_path = bombcell_dir
+        
+    if save_path:
+        # Create for_GUI subfolder
+        if os.path.isdir(save_path) or not os.path.splitext(save_path)[1]:
+            # If save_path is a directory, create for_GUI subfolder
+            gui_folder = os.path.join(save_path, "for_GUI")
+            os.makedirs(gui_folder, exist_ok=True)
+            final_save_path = os.path.join(gui_folder, "gui_data.pkl")
+        else:
+            # If save_path is a file path, put it in for_GUI subfolder
+            parent_dir = os.path.dirname(save_path)
+            gui_folder = os.path.join(parent_dir, "for_GUI")
+            os.makedirs(gui_folder, exist_ok=True)
+            filename = os.path.basename(save_path)
+            final_save_path = os.path.join(gui_folder, filename)
+        
+        try:
+            with open(final_save_path, 'wb') as f:
+                pickle.dump(gui_data, f)
+            if param.get("verbose", False):
+                print(f"✅ Pre-computed GUI data saved to: {final_save_path}")
+        except Exception as e:
+            if param.get("verbose", False):
+                print(f"❌ Failed to save GUI data: {e}")
+    else:
+        if param.get("verbose", False):
+            print("⚠️ No save path provided - GUI data not saved")
+    
+    if param.get("verbose", False):
+        print("Pre-computation complete!")
+    return gui_data
+
+def load_gui_data(load_path):
+    """
+    Load pre-computed GUI data
+    
+    Parameters:
+    -----------
+    load_path : str
+        Path to load GUI data from. Can be:
+        - Direct path to .pkl file
+        - Directory containing for_GUI/gui_data.pkl
+        - Directory where for_GUI/ subfolder will be checked
+    
+    Returns:
+    --------
+    gui_data : dict or None
+        Pre-computed GUI data, or None if not found
+    """
+    # Try different path options
+    possible_paths = []
+    
+    if load_path.endswith('.pkl'):
+        # Direct path to file
+        possible_paths.append(load_path)
+        # Also try in for_GUI subfolder
+        parent_dir = os.path.dirname(load_path)
+        gui_folder = os.path.join(parent_dir, "for_GUI", os.path.basename(load_path))
+        possible_paths.append(gui_folder)
+    else:
+        # Directory path - look for for_GUI/gui_data.pkl
+        possible_paths.append(os.path.join(load_path, "for_GUI", "gui_data.pkl"))
+        possible_paths.append(os.path.join(load_path, "gui_data.pkl"))
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            try:
+                with open(path, 'rb') as f:
+                    gui_data = pickle.load(f)
+                print(f"✅ Loaded GUI data from: {path}")
+                return gui_data
+            except Exception as e:
+                print(f"❌ Failed to load GUI data from {path}: {e}")
+                continue
+    
+    print(f"❌ GUI data file not found. Tried: {possible_paths}")
+    return None
+
 
 class InteractiveUnitQualityGUI:
     """
@@ -19,9 +337,15 @@ class InteractiveUnitQualityGUI:
     """
     
     def __init__(self, ephys_data, quality_metrics, ephys_properties=None, 
-                 raw_waveforms=None, param=None, unit_types=None):
+                 raw_waveforms=None, param=None, unit_types=None, gui_data=None):
         """
         Initialize the interactive GUI
+        
+        Parameters:
+        -----------
+        gui_data : dict, optional
+            Pre-computed GUI visualization data from precompute_gui_data()
+            If provided, will use pre-computed results for faster display
         """
         self.ephys_data = ephys_data
         self.quality_metrics = quality_metrics
@@ -30,9 +354,67 @@ class InteractiveUnitQualityGUI:
         self.param = param or {}
         self.unit_types = unit_types
         
+        # Auto-load GUI data if not provided but param has path info
+        if gui_data is None and param and 'ephysKilosortPath' in param:
+            # Try to auto-load from standard bombcell location
+            import os
+            ks_path = param['ephysKilosortPath']
+            possible_paths = [
+                os.path.join(ks_path, 'bombcell', 'for_GUI', 'gui_data.pkl'),
+                os.path.join(ks_path, 'for_GUI', 'gui_data.pkl'),
+                os.path.join(ks_path, 'gui_data.pkl')
+            ]
+            
+            for path in possible_paths:
+                if os.path.exists(path):
+                    try:
+                        gui_data = load_gui_data(os.path.dirname(path))
+                        if gui_data:
+                            print(f"🚀 Auto-loaded GUI data from: {path}")
+                            break
+                    except Exception as e:
+                        continue
+        
+        self.gui_data = gui_data  # Pre-computed visualization data
+        
+        # Detailed gui_data loading feedback
+        if gui_data:
+            print(f"✅ GUI data loaded successfully!")
+            print(f"   📊 Data types available: {list(gui_data.keys())}")
+            
+            # Check each data type
+            data_status = []
+            if 'peak_locations' in gui_data:
+                count = len(gui_data['peak_locations'])
+                data_status.append(f"Peak/trough detection: {count} units")
+                
+            if 'spatial_decay_fits' in gui_data:
+                count = len(gui_data['spatial_decay_fits'])
+                if count > 0:
+                    data_status.append(f"✅ Spatial decay fits: {count} units")
+                else:
+                    data_status.append(f"❌ Spatial decay fits: {count} units (none available)")
+                    
+            if 'amplitude_fits' in gui_data:
+                count = len(gui_data['amplitude_fits'])
+                if count > 0:
+                    data_status.append(f"✅ Amplitude fits: {count} units")
+                else:
+                    data_status.append(f"❌ Amplitude fits: {count} units (none available)")
+                    
+            if 'acg_data' in gui_data:
+                count = len(gui_data['acg_data'])
+                data_status.append(f"ACG data: {count} units (computed on-demand)")
+            
+            for status in data_status:
+                print(f"   {status}")
+        else:
+            print("❌ No pre-computed GUI data found - will compute everything real-time")
+        
         # Get unique units
         self.unique_units = np.unique(ephys_data['spike_clusters'])
         self.n_units = len(self.unique_units)
+        print(f"📊 Total units: {self.n_units}")
         self.current_unit_idx = 0
         
         # Setup widgets and display
@@ -263,11 +645,32 @@ class InteractiveUnitQualityGUI:
             
         # Get quality metrics for this unit
         unit_metrics = {}
-        for key, values in self.quality_metrics.items():
-            if hasattr(values, '__len__') and len(values) > unit_idx:
-                unit_metrics[key] = values[unit_idx]
+        
+        # Handle different quality_metrics formats
+        if isinstance(self.quality_metrics, list):
+            # List of dicts format: [{'phy_clusterID': 0, 'metric1': val, ...}, ...]
+            unit_found = False
+            for unit_dict in self.quality_metrics:
+                if unit_dict.get('phy_clusterID') == unit_id:
+                    unit_metrics = unit_dict.copy()
+                    unit_found = True
+                    break
+            if not unit_found:
+                unit_metrics = {'phy_clusterID': unit_id}
+                
+        elif isinstance(self.quality_metrics, dict):
+            if unit_id in self.quality_metrics:
+                # Dict with unit_id keys: {0: {'metric1': val, ...}, 1: {...}}
+                unit_metrics = self.quality_metrics[unit_id].copy()
             else:
-                unit_metrics[key] = np.nan
+                # Dict with metric keys: {'metric1': [val0, val1, ...], 'metric2': [...]}
+                for key, values in self.quality_metrics.items():
+                    if hasattr(values, '__len__') and len(values) > unit_idx:
+                        unit_metrics[key] = values[unit_idx]
+                    else:
+                        unit_metrics[key] = np.nan
+        else:
+            unit_metrics = {}
                 
         return {
             'unit_id': unit_id,
@@ -398,9 +801,9 @@ class InteractiveUnitQualityGUI:
                             waveform = template[:, ch]
                             ch_pos = positions[ch]
                             
-                            # Calculate X offset - use waveform width for proper side-by-side spacing
+                            # Calculate X offset - make waveforms closer together (half waveform width closer)
                             waveform_width = template.shape[0]  # Usually 82 samples
-                            x_offset = (ch_pos[0] - max_pos[0]) * waveform_width * 0.05  # Reduced spacing
+                            x_offset = (ch_pos[0] - max_pos[0]) * waveform_width * 0.025  # Halved spacing for closer waveforms
                             
                             # Calculate Y offset based on channel Y position (like MATLAB)
                             y_offset = (ch_pos[1] - max_pos[1]) / 100 * scaling_factor
@@ -414,8 +817,8 @@ class InteractiveUnitQualityGUI:
                             else:
                                 ax.plot(x_vals, y_vals, 'k-', linewidth=1, alpha=0.7)
                             
-                            # Add channel number
-                            ax.text(x_offset - 2, y_offset, f'{ch}', fontsize=8, ha='right', va='center')
+                            # Add channel number - position further to the left to avoid overlap
+                            ax.text(x_offset - waveform_width * 0.15, y_offset, f'{ch}', fontsize=8, ha='right', va='center')
                     
                     # Mark peaks and troughs on max channel
                     max_ch_waveform = template[:, max_ch]
@@ -429,13 +832,18 @@ class InteractiveUnitQualityGUI:
                     # Set axis properties like MATLAB
                     ax.invert_yaxis()  # Reverse Y direction like MATLAB
                     
+                    # Extend x-axis limits to accommodate channel number text on the left
+                    x_min, x_max = ax.get_xlim()
+                    text_padding = waveform_width * 0.2  # Extra space for channel numbers
+                    ax.set_xlim(x_min - text_padding, x_max)
+                    
             else:
                 # Fallback: simple single channel display
                 ax.plot(template[:, max_ch], 'k-', linewidth=2)
                 ax.text(0.5, 0.5, f'Template\n(channel {max_ch})', 
                        ha='center', va='center', transform=ax.transAxes)
                     
-        ax.set_title('Template waveforms')
+        ax.set_title('Template waveforms', fontsize=12, fontweight='bold', fontfamily='Arial')
         ax.set_xticks([])
         ax.set_yticks([])
         
@@ -451,7 +859,7 @@ class InteractiveUnitQualityGUI:
         if extract_raw != 1:
             ax.text(0.5, 0.5, 'Raw waveforms\n(extractRaw disabled)', 
                     ha='center', va='center', transform=ax.transAxes)
-            ax.set_title('Raw waveforms')
+            ax.set_title('Raw waveforms', fontsize=12, fontweight='bold', fontfamily='Arial')
             return
         
         if self.raw_waveforms is not None:
@@ -549,7 +957,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'Raw waveforms\n(not available)', 
                     ha='center', va='center', transform=ax.transAxes)
                     
-        ax.set_title('Raw waveforms')
+        ax.set_title('Raw waveforms', fontsize=12, fontweight='bold', fontfamily='Arial')
         ax.set_xticks([])
         ax.set_yticks([])
         # Remove aspect ratio constraint to prevent squishing
@@ -562,7 +970,39 @@ class InteractiveUnitQualityGUI:
         spike_times = unit_data['spike_times']
         metrics = unit_data['metrics']
         
-        if len(spike_times) > 1:
+        print(f"🔍 ACG: Starting for unit {self.current_unit_idx} with {len(spike_times)} spikes")
+        
+        # Check if we have pre-computed ACG data
+        print(f"🔍 ACG: CHECKING pre-computed data for unit {self.current_unit_idx}")
+        if self.gui_data:
+            print(f"   - has acg_data: {'acg_data' in self.gui_data}")
+            if 'acg_data' in self.gui_data:
+                print(f"   - unit {self.current_unit_idx} in acg_data: {self.current_unit_idx in self.gui_data['acg_data']}")
+        
+        if (self.gui_data and 
+            'acg_data' in self.gui_data and 
+            self.current_unit_idx in self.gui_data['acg_data'] and
+            self.gui_data['acg_data'][self.current_unit_idx] is not None):
+            
+            print(f"🚀 ACG: Using PRE-COMPUTED autocorrelogram for unit {self.current_unit_idx}")
+            acg_data = self.gui_data['acg_data'][self.current_unit_idx]
+            autocorr = acg_data['autocorr']
+            bin_centers = acg_data['bin_centers']
+            bin_size = acg_data['bin_size']
+            
+        elif len(spike_times) > 1:
+            # Check if this is the first time computing ACG and inform user
+            if (self.gui_data and 'acg_data' in self.gui_data and 
+                self.current_unit_idx in self.gui_data['acg_data'] and
+                self.gui_data['acg_data'][self.current_unit_idx] is None):
+                print(f"⏳ ACG: Computing autocorrelogram for unit {self.current_unit_idx} (first time, please wait...)")
+            else:
+                print(f"⚠️ ACG: Computing REAL-TIME autocorrelogram for unit {self.current_unit_idx}")
+            
+            # Show computing message on plot
+            ax.text(0.5, 0.5, f'Computing ACG for unit {self.current_unit_idx}...\n(This may take a moment)', 
+                   ha='center', va='center', transform=ax.transAxes, 
+                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
             # ACG calculation with MATLAB-style parameters
             max_lag = 0.05  # 50ms
             bin_size = 0.001  # 1ms bins
@@ -582,7 +1022,7 @@ class InteractiveUnitQualityGUI:
             else:
                 spike_subset = spike_times
             
-            # Calculate cross-correlation with itself
+            # Calculate cross-correlation with itself  
             for i, spike_time in enumerate(spike_subset[::10]):  # Subsample further for speed
                 # Find spikes within max_lag of this spike
                 time_diffs = spike_times - spike_time
@@ -596,23 +1036,34 @@ class InteractiveUnitQualityGUI:
             if len(spike_subset) > 0:
                 recording_duration = np.max(spike_times) - np.min(spike_times)
                 autocorr = autocorr / (len(spike_subset) * bin_size) if recording_duration > 0 else autocorr
-            
-            # Plot only positive lags (like MATLAB)
-            positive_mask = bin_centers >= 0
-            positive_centers = bin_centers[positive_mask]
-            positive_autocorr = autocorr[positive_mask]
-            
-            # Plot with wider bars like MATLAB
-            ax.bar(positive_centers * 1000, positive_autocorr, 
-                   width=bin_size*1000*0.9, color='grey', alpha=0.7, edgecolor='black', linewidth=0.5)
-            
-            # Calculate mean firing rate first to determine proper y-limits
-            mean_fr = 0
-            if len(spike_times) > 1:
-                recording_duration = np.max(spike_times) - np.min(spike_times)
-                if recording_duration > 0:
-                    mean_fr = len(spike_times) / recording_duration
-            
+                
+            # Cache the computed ACG for future use
+            if self.gui_data and 'acg_data' in self.gui_data:
+                self.gui_data['acg_data'][self.current_unit_idx] = {
+                    'autocorr': autocorr,
+                    'bin_centers': bin_centers,
+                    'bin_size': bin_size
+                }
+                print(f"✅ ACG: Cached autocorrelogram for unit {self.current_unit_idx} (will be faster next time)")
+        else:
+            print(f"⚠️ ACG: No spikes or pre-computed data for unit {self.current_unit_idx}")
+            return
+        
+        # Plot only positive lags (like MATLAB)
+        positive_mask = bin_centers >= 0
+        positive_centers = bin_centers[positive_mask]
+        positive_autocorr = autocorr[positive_mask]
+        
+        # Plot with wider bars like MATLAB
+        ax.bar(positive_centers * 1000, positive_autocorr, 
+               width=bin_size*1000*0.9, color='grey', alpha=0.7, edgecolor='black', linewidth=0.5)
+        
+        # Calculate mean firing rate first to determine proper y-limits
+        mean_fr = 0
+        if len(spike_times) > 1:
+            recording_duration = np.max(spike_times) - np.min(spike_times)
+            if recording_duration > 0:
+                mean_fr = len(spike_times) / recording_duration
             # Set limits to accommodate both data and mean firing rate line
             ax.set_xlim(0, max_lag * 1000)
             if len(positive_autocorr) > 0:
@@ -642,14 +1093,14 @@ class InteractiveUnitQualityGUI:
                 ax.axhline(mean_fr, color='orange', linewidth=3, linestyle='--', alpha=1.0, 
                           label=f'Mean FR = {mean_fr:.1f} sp/s', zorder=10)
                 
-        ax.set_title('Auto-correlogram')
-        ax.set_xlabel('Time (ms)')
-        ax.set_ylabel('Firing rate (sp/s)')
+        ax.set_title('Auto-correlogram', fontsize=12, fontweight='bold', fontfamily='Arial')
+        ax.set_xlabel('Time (ms)', fontsize=10, fontfamily='Arial')
+        ax.set_ylabel('Firing rate (sp/s)', fontsize=10, fontfamily='Arial')
         
         # Add legend in bottom right corner
         handles, labels = ax.get_legend_handles_labels()
         if handles:
-            ax.legend(handles, labels, loc='lower right', fontsize=8, framealpha=0.9)
+            ax.legend(handles, labels, loc='lower right', fontsize=11, framealpha=0.9)
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'acg')
@@ -762,7 +1213,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'Spatial decay\n(not computed)', 
                     ha='center', va='center', transform=ax.transAxes)
                     
-        ax.set_title('Spatial decay')
+        ax.set_title('Spatial decay', fontsize=12, fontweight='bold', fontfamily='Arial')
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'spatial')
@@ -836,8 +1287,8 @@ class InteractiveUnitQualityGUI:
                         ax.axvspan(center - bin_width/2, center + bin_width/2, 
                                   alpha=0.1, color='green', zorder=0)
                 
-        ax.set_title('Amplitudes over time')
-        ax.set_xlabel('Time (s)')
+        ax.set_title('Amplitudes over time', fontsize=12, fontweight='bold', fontfamily='Arial')
+        ax.set_xlabel('Time (s)', fontsize=10, fontfamily='Arial')
         ax.tick_params(axis='y', labelcolor='blue')
         
         # Store y-limits for amplitude fit plot consistency
@@ -939,7 +1390,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'Unit locations\n(requires probe geometry\nand max channels)', 
                     ha='center', va='center', transform=ax.transAxes)
         
-        ax.set_title('Units by depth')
+        ax.set_title('Units by depth', fontsize=14, fontweight='bold')
         
     def plot_amplitude_fit(self, ax, unit_data):
         """Plot amplitude distribution with cutoff Gaussian fit like BombCell"""
@@ -1043,7 +1494,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'No spike data\navailable', 
                     ha='center', va='center', transform=ax.transAxes)
                     
-        ax.set_title('Amplitude distribution')
+        ax.set_title('Amplitude distribution', fontsize=14, fontweight='bold')
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'amplitude_fit')
@@ -1177,9 +1628,10 @@ class InteractiveUnitQualityGUI:
                     break
                     
                 ax.text(0.98, y_pos, text, transform=ax.transAxes, 
-                       verticalalignment='top', horizontalalignment='right', fontsize=8, 
+                       verticalalignment='top', horizontalalignment='right', fontsize=12, 
                        color=color, weight='bold',
-                       bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9, edgecolor=color))
+                       bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.9, 
+                                edgecolor='lightgray', linewidth=1))
         
     def get_nearest_channels(self, peak_channel, n_channels, n_to_get=16):
         """Get nearest channels to peak channel like MATLAB - prioritize above/below"""
@@ -1341,93 +1793,116 @@ class InteractiveUnitQualityGUI:
     
     def mark_peaks_and_troughs(self, ax, waveform, x_offset, y_offset, metrics, amp_range):
         """Mark all peaks and troughs on waveform with duration line"""
-        try:
-            from scipy.signal import find_peaks
+        # Use pre-computed data if available for faster display
+        print(f"🔍 CHECKING pre-computed data for unit {self.current_unit_idx}")
+        print(f"   - gui_data exists: {self.gui_data is not None}")
+        if self.gui_data:
+            print(f"   - has peak_locations: {'peak_locations' in self.gui_data}")
+            print(f"   - has trough_locations: {'trough_locations' in self.gui_data}")
+            if 'peak_locations' in self.gui_data:
+                print(f"   - unit {self.current_unit_idx} in peak_locations: {self.current_unit_idx in self.gui_data['peak_locations']}")
+                print(f"   - available unit indices: {list(self.gui_data['peak_locations'].keys())[:10]}...")  # Show first 10
+        
+        if (self.gui_data and 
+            'peak_locations' in self.gui_data and 
+            'trough_locations' in self.gui_data and
+            self.current_unit_idx in self.gui_data['peak_locations']):
             
-            # More stringent peak detection to match visual perception
-            waveform_range = np.max(waveform) - np.min(waveform)
+            peaks = self.gui_data['peak_locations'][self.current_unit_idx]
+            troughs = self.gui_data['trough_locations'][self.current_unit_idx]
+            print(f"🚀 Using PRE-COMPUTED peaks/troughs for unit {self.current_unit_idx}")
             
-            # Find all peaks (positive deflections) - use higher threshold and prominence
-            peak_height_threshold = np.max(waveform) * 0.5  # Increased from 0.2 to 0.5
-            peak_prominence = waveform_range * 0.1  # Require 10% of waveform range prominence
-            peaks, peak_properties = find_peaks(waveform, 
-                                               height=peak_height_threshold, 
-                                               distance=10,  # Increased from 5
-                                               prominence=peak_prominence)
-            
-            # Find all troughs (negative deflections) - similar stringent criteria
-            trough_height_threshold = -np.min(waveform) * 0.5  # Increased from 0.2 to 0.5
-            trough_prominence = waveform_range * 0.1
-            troughs, trough_properties = find_peaks(-waveform, 
-                                                   height=trough_height_threshold, 
+        else:
+            # Fallback to real-time computation
+            print(f"⚠️ Computing peaks/troughs REAL-TIME for unit {self.current_unit_idx}")
+            try:
+                from scipy.signal import find_peaks
+                
+                # More stringent peak detection to match visual perception
+                waveform_range = np.max(waveform) - np.min(waveform)
+                
+                # Find all peaks (positive deflections) - use higher threshold and prominence
+                peak_height_threshold = np.max(waveform) * 0.5  # Increased from 0.2 to 0.5
+                peak_prominence = waveform_range * 0.1  # Require 10% of waveform range prominence
+                peaks, peak_properties = find_peaks(waveform, 
+                                                   height=peak_height_threshold, 
                                                    distance=10,  # Increased from 5
-                                                   prominence=trough_prominence)
-            
-            # Mark all peaks with red circles (on top)
-            for i, peak_idx in enumerate(peaks):
-                ax.plot(peak_idx + x_offset, waveform[peak_idx] + y_offset, 'ro', markersize=6, 
-                       markeredgecolor='darkred', markeredgewidth=1, zorder=10)
-                # Label peak number
-                ax.text(peak_idx + x_offset, waveform[peak_idx] + y_offset + amp_range*0.1, f'peak {i+1}', 
-                       ha='center', va='bottom', fontsize=8, color='red', weight='bold', zorder=10)
-            
-            # Mark all troughs with blue circles (on top)
-            for i, trough_idx in enumerate(troughs):
-                ax.plot(trough_idx + x_offset, waveform[trough_idx] + y_offset, 'bo', markersize=6,
-                       markeredgecolor='darkblue', markeredgewidth=1, zorder=10)
-                # Label trough number
-                ax.text(trough_idx + x_offset, waveform[trough_idx] + y_offset - amp_range*0.1, f'trough {i+1}', 
-                       ha='center', va='top', fontsize=8, color='blue', weight='bold', zorder=10)
-            
-            # Draw horizontal duration line from main peak to main trough
-            if len(peaks) > 0 and len(troughs) > 0:
-                # Find main peak (highest amplitude)
-                main_peak_idx = peaks[np.argmax(waveform[peaks])]
-                # Find main trough (most negative)
-                main_trough_idx = troughs[np.argmin(waveform[troughs])]
+                                                   prominence=peak_prominence)
                 
-                # Draw horizontal line at a fixed y-position below the waveform (on top)
-                line_y = y_offset - amp_range * 0.3  # Position line below waveform
-                ax.plot([main_peak_idx + x_offset, main_trough_idx + x_offset], 
-                       [line_y, line_y], 
-                       'g-', linewidth=2, alpha=0.7, zorder=10)
-                
-                # Add vertical lines to connect to peak and trough (on top)
-                ax.plot([main_peak_idx + x_offset, main_peak_idx + x_offset], 
-                       [waveform[main_peak_idx] + y_offset, line_y], 
-                       'g--', linewidth=1, alpha=0.5, zorder=10)
-                ax.plot([main_trough_idx + x_offset, main_trough_idx + x_offset], 
-                       [waveform[main_trough_idx] + y_offset, line_y], 
-                       'g--', linewidth=1, alpha=0.5, zorder=10)
-                
-                # Mark main peak and trough with larger markers (on top)
-                ax.plot(main_peak_idx + x_offset, waveform[main_peak_idx] + y_offset, 'ro', 
-                       markersize=8, markeredgecolor='darkred', markeredgewidth=2, zorder=11)
-                ax.plot(main_trough_idx + x_offset, waveform[main_trough_idx] + y_offset, 'bo', 
-                       markersize=8, markeredgecolor='darkblue', markeredgewidth=2, zorder=11)
-            
-        except ImportError:
-            # Fallback: simple peak/trough detection without scipy
-            max_idx = np.argmax(waveform)
-            min_idx = np.argmin(waveform)
-            
-            # Mark main peak and trough
-            ax.plot(max_idx + x_offset, waveform[max_idx] + y_offset, 'ro', markersize=6)
-            ax.plot(min_idx + x_offset, waveform[min_idx] + y_offset, 'bo', markersize=6)
-            
-            # Draw horizontal duration line
-            line_y = y_offset - amp_range * 0.3
-            ax.plot([max_idx + x_offset, min_idx + x_offset], 
+                # Find all troughs (negative deflections) - similar stringent criteria
+                trough_height_threshold = -np.min(waveform) * 0.5  # Increased from 0.2 to 0.5
+                trough_prominence = waveform_range * 0.1
+                troughs, trough_properties = find_peaks(-waveform, 
+                                                       height=trough_height_threshold, 
+                                                       distance=10,  # Increased from 5
+                                                       prominence=trough_prominence)
+            except ImportError:
+                # Fallback without scipy
+                max_idx = np.argmax(waveform)
+                min_idx = np.argmin(waveform)
+                peaks = [max_idx] if len(waveform) > 0 else []
+                troughs = [min_idx] if len(waveform) > 0 else []
+        
+        # Plot peaks and troughs (works for both pre-computed and real-time data)
+        # Find main peak and trough for special highlighting
+        main_peak_idx = None
+        main_trough_idx = None
+        
+        if len(peaks) > 0:
+            main_peak_idx = peaks[np.argmax(waveform[peaks])]
+        if len(troughs) > 0:
+            main_trough_idx = troughs[np.argmin(waveform[troughs])]
+        
+        # Plot all peaks with red dots
+        legend_elements = []
+        for i, peak_idx in enumerate(peaks):
+            if peak_idx == main_peak_idx:
+                # Main peak: larger, darker marker
+                ax.plot(peak_idx + x_offset, waveform[peak_idx] + y_offset, 'ro', 
+                       markersize=12, markeredgecolor='darkred', markeredgewidth=2, 
+                       markerfacecolor='red', zorder=11, label='Main peak' if i == 0 else "")
+            else:
+                # Regular peaks: smaller, lighter markers
+                ax.plot(peak_idx + x_offset, waveform[peak_idx] + y_offset, 'ro', 
+                       markersize=8, markeredgecolor='red', markeredgewidth=1, 
+                       markerfacecolor='lightcoral', alpha=0.8, zorder=10, 
+                       label='Peaks' if i == 0 and peak_idx != main_peak_idx else "")
+        
+        # Plot all troughs with blue dots
+        for i, trough_idx in enumerate(troughs):
+            if trough_idx == main_trough_idx:
+                # Main trough: larger, darker marker
+                ax.plot(trough_idx + x_offset, waveform[trough_idx] + y_offset, 'bo', 
+                       markersize=12, markeredgecolor='darkblue', markeredgewidth=2, 
+                       markerfacecolor='blue', zorder=11, label='Main trough' if i == 0 else "")
+            else:
+                # Regular troughs: smaller, lighter markers
+                ax.plot(trough_idx + x_offset, waveform[trough_idx] + y_offset, 'bo', 
+                       markersize=8, markeredgecolor='blue', markeredgewidth=1, 
+                       markerfacecolor='lightblue', alpha=0.8, zorder=10,
+                       label='Troughs' if i == 0 and trough_idx != main_trough_idx else "")
+        
+        # Draw horizontal duration line from main peak to main trough
+        if main_peak_idx is not None and main_trough_idx is not None:
+            # Draw horizontal line at a fixed y-position below the waveform
+            line_y = y_offset - amp_range * 0.3  # Position line below waveform
+            ax.plot([main_peak_idx + x_offset, main_trough_idx + x_offset], 
                    [line_y, line_y], 
-                   'g-', linewidth=2, alpha=0.7)
+                   'g-', linewidth=3, alpha=0.8, zorder=10, label='Duration')
             
             # Add vertical lines to connect to peak and trough
-            ax.plot([max_idx + x_offset, max_idx + x_offset], 
-                   [waveform[max_idx] + y_offset, line_y], 
-                   'g--', linewidth=1, alpha=0.5)
-            ax.plot([min_idx + x_offset, min_idx + x_offset], 
-                   [waveform[min_idx] + y_offset, line_y], 
-                   'g--', linewidth=1, alpha=0.5)
+            ax.plot([main_peak_idx + x_offset, main_peak_idx + x_offset], 
+                   [waveform[main_peak_idx] + y_offset, line_y], 
+                   'g--', linewidth=2, alpha=0.6, zorder=10)
+            ax.plot([main_trough_idx + x_offset, main_trough_idx + x_offset], 
+                   [waveform[main_trough_idx] + y_offset, line_y], 
+                   'g--', linewidth=2, alpha=0.6, zorder=10)
+        
+        # Add legend for peaks/troughs at bottom of plot
+        handles, labels = ax.get_legend_handles_labels()
+        if handles:
+            ax.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, -0.1), 
+                     ncol=len(handles), fontsize=9, frameon=True, framealpha=0.9)
     
     def get_nearby_channels_for_spatial_decay(self, peak_channel, n_channels):
         """Get nearby channels for spatial decay plot - fewer points like MATLAB"""
@@ -1978,12 +2453,18 @@ def load_metrics_for_gui(ks_dir, quality_metrics, ephys_properties=None, param=N
         except FileNotFoundError:
             raw_waveforms = None
     
+    # Ensure param has the ks_dir path for auto-loading GUI data
+    if param is None:
+        param = {}
+    if 'ephysKilosortPath' not in param:
+        param['ephysKilosortPath'] = ks_dir
+    
     return {
         'ephys_data': ephys_data,
         'quality_metrics': quality_metrics,
         'ephys_properties': ephys_properties,
         'raw_waveforms': raw_waveforms,
-        'param': param or {}
+        'param': param
     }
 
 
