@@ -522,9 +522,12 @@ class InteractiveUnitQualityGUI:
             type_nav_section
         ], layout=widgets.Layout(justify_content='center'))
         
-        # Unit input controls
-        unit_input_controls = widgets.HBox([
-            self.unit_input, self.goto_unit_btn
+        # Slider and unit input controls combined
+        slider_and_input = widgets.HBox([
+            self.unit_slider,
+            widgets.Label('  Go to:  '),
+            self.unit_input, 
+            self.goto_unit_btn
         ])
         
         # Classification controls (hidden for now)
@@ -534,8 +537,7 @@ class InteractiveUnitQualityGUI:
         
         # Full interface
         interface = widgets.VBox([
-            self.unit_slider,
-            unit_input_controls,
+            slider_and_input,
             self.unit_info,
             nav_controls,
             # classify_controls,  # Hidden for now
@@ -726,9 +728,9 @@ class InteractiveUnitQualityGUI:
         }
         title_color = title_colors.get(unit_type_str, "black")
         
-        # Simple title with unit number, phy ID, and type, colored by classification
+        # Simple title with unit number, phy ID, and type, colored by classification (large and centered)
         info_html = f"""
-        <h3 style="color: {title_color};">Unit {unit_data['unit_id']} (phy ID = {self.current_unit_idx}, {self.current_unit_idx+1}/{self.n_units}) - {unit_type_str}</h3>
+        <h1 style="color: {title_color}; text-align: center; font-size: 24px; margin: 10px 0;">Unit {unit_data['unit_id']} (phy ID = {self.current_unit_idx}, {self.current_unit_idx+1}/{self.n_units}) - {unit_type_str}</h1>
         """
         
         self.unit_info.value = info_html
@@ -1418,7 +1420,7 @@ class InteractiveUnitQualityGUI:
                         ax.scatter(log_fr, depth, c=[color], s=30, alpha=0.7, zorder=5)
                 
                 ax.set_xlabel('Log₁₀ firing rate (sp/s)', fontsize=13, fontfamily="DejaVu Sans")
-                ax.set_ylabel('Depth (μm)', fontsize=13, fontfamily="DejaVu Sans")
+                ax.set_ylabel('Depth from tip of probe (μm)', fontsize=13, fontfamily="DejaVu Sans")
                 ax.tick_params(labelsize=13)
                 ax.invert_yaxis()  # Deeper = higher values, but show at bottom
                 
@@ -1429,6 +1431,38 @@ class InteractiveUnitQualityGUI:
                                                     markerfacecolor=color, markersize=8, 
                                                     label=class_name))
                 ax.legend(handles=legend_elements, loc='upper right', fontsize=8)
+                
+                # Add click interactivity to navigate to units
+                def on_location_click(event):
+                    if event.inaxes == ax and event.xdata is not None and event.ydata is not None:
+                        # Find the closest unit to the click
+                        click_x, click_y = event.xdata, event.ydata
+                        min_distance = float('inf')
+                        closest_unit_idx = None
+                        
+                        # Get current axis limits for normalization
+                        xlims = ax.get_xlim()
+                        ylims = ax.get_ylim()
+                        
+                        for i, (unit_id, log_fr, depth) in enumerate(zip(all_units, all_firing_rates, all_depths)):
+                            # Calculate distance in data coordinates (simpler approach)
+                            dx = (log_fr - click_x) / (xlims[1] - xlims[0])  # Normalize by axis range
+                            dy = (depth - click_y) / (ylims[1] - ylims[0])   # Normalize by axis range
+                            
+                            distance = np.sqrt(dx**2 + dy**2)
+                            if distance < min_distance:
+                                min_distance = distance
+                                closest_unit_idx = list(self.unique_units).index(unit_id)
+                        
+                        # Navigate to the closest unit if click is close enough
+                        if min_distance < 0.1 and closest_unit_idx is not None:  # 10% of normalized plot area
+                            self.current_unit_idx = closest_unit_idx
+                            self.unit_slider.value = closest_unit_idx
+                            print(f"Clicked on unit {closest_unit_idx} (unit_id: {self.unique_units[closest_unit_idx]})")
+                
+                # Store the click handler and connect it
+                self._location_click_handler = on_location_click
+                ax.figure.canvas.mpl_connect('button_press_event', self._location_click_handler)
                 
             else:
                 ax.text(0.5, 0.5, 'No units with\nvalid locations', 
