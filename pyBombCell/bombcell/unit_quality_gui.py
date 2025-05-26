@@ -442,19 +442,29 @@ class InteractiveUnitQualityGUI:
         )
         self.goto_unit_btn = widgets.Button(description='Go', button_style='primary')
         
-        # Navigation buttons
-        self.prev_btn = widgets.Button(description='← unit', button_style='info')
-        self.next_btn = widgets.Button(description='unit →', button_style='info')
+        # Navigation buttons (bold arrows, same height as others)
+        self.prev_btn = widgets.Button(description='◀', button_style='info', 
+                                      layout=widgets.Layout(width='50px', height='32px'))
+        self.next_btn = widgets.Button(description='▶', button_style='info',
+                                      layout=widgets.Layout(width='50px', height='32px'))
         
-        # Unit type navigation - both directions
-        self.goto_prev_good_btn = widgets.Button(description='← good', button_style='success')
-        self.goto_good_btn = widgets.Button(description='good →', button_style='success')
-        self.goto_prev_mua_btn = widgets.Button(description='← mua', button_style='warning')
-        self.goto_mua_btn = widgets.Button(description='mua →', button_style='warning')
-        self.goto_prev_noise_btn = widgets.Button(description='← noise', button_style='danger')
-        self.goto_noise_btn = widgets.Button(description='noise →', button_style='danger')
-        self.goto_prev_nonsomatic_btn = widgets.Button(description='← non-soma', button_style='primary')
-        self.goto_nonsomatic_btn = widgets.Button(description='non-soma →', button_style='primary')
+        # Unit type navigation - both directions (consistent height)
+        self.goto_prev_good_btn = widgets.Button(description='← good', button_style='success',
+                                                 layout=widgets.Layout(height='32px'))
+        self.goto_good_btn = widgets.Button(description='good →', button_style='success',
+                                           layout=widgets.Layout(height='32px'))
+        self.goto_prev_mua_btn = widgets.Button(description='← mua', button_style='warning',
+                                               layout=widgets.Layout(height='32px'))
+        self.goto_mua_btn = widgets.Button(description='mua →', button_style='warning',
+                                          layout=widgets.Layout(height='32px'))
+        self.goto_prev_noise_btn = widgets.Button(description='← noise', button_style='danger',
+                                                  layout=widgets.Layout(height='32px'))
+        self.goto_noise_btn = widgets.Button(description='noise →', button_style='danger',
+                                            layout=widgets.Layout(height='32px'))
+        self.goto_prev_nonsomatic_btn = widgets.Button(description='← non-\nsoma', button_style='primary',
+                                                      layout=widgets.Layout(width='120px', height='32px'))
+        self.goto_nonsomatic_btn = widgets.Button(description='non-\nsoma →', button_style='primary',
+                                                  layout=widgets.Layout(width='120px', height='32px'))
         
         # Unit info display
         self.unit_info = widgets.HTML(value="")
@@ -488,21 +498,29 @@ class InteractiveUnitQualityGUI:
         
     def display_gui(self):
         """Display the GUI"""
-        # Instructional text above navigation controls
-        nav_instructions = widgets.VBox([
-            widgets.HTML("<b>Go to next/prev. unit:</b>"),
-            widgets.HTML("<b>Go to next/prev. good, MUA, non-soma or noise unit:</b>")
-        ])
+        # Basic navigation section (prev/next unit)
+        basic_nav_text = widgets.HTML("<b>Go to next/prev. unit:</b>", layout=widgets.Layout(text_align='center'))
+        basic_nav_buttons = widgets.HBox([
+            self.prev_btn, self.next_btn
+        ], layout=widgets.Layout(justify_content='center'))
+        basic_nav_section = widgets.VBox([basic_nav_text, basic_nav_buttons])
         
-        # Navigation controls
-        nav_controls = widgets.HBox([
-            self.prev_btn, self.next_btn, 
-            widgets.Label('  |  '),
+        # Unit type navigation section
+        type_nav_text = widgets.HTML("<b>Go to next/prev. good, MUA, non-soma or noise unit:</b>", layout=widgets.Layout(text_align='center'))
+        type_nav_buttons = widgets.HBox([
             self.goto_prev_good_btn, self.goto_good_btn,
             self.goto_prev_mua_btn, self.goto_mua_btn,
             self.goto_prev_noise_btn, self.goto_noise_btn,
             self.goto_prev_nonsomatic_btn, self.goto_nonsomatic_btn
-        ])
+        ], layout=widgets.Layout(justify_content='center'))
+        type_nav_section = widgets.VBox([type_nav_text, type_nav_buttons])
+        
+        # Combined navigation controls
+        nav_controls = widgets.HBox([
+            basic_nav_section,
+            widgets.Label('  |  '),
+            type_nav_section
+        ], layout=widgets.Layout(justify_content='center'))
         
         # Unit input controls
         unit_input_controls = widgets.HBox([
@@ -519,7 +537,6 @@ class InteractiveUnitQualityGUI:
             self.unit_slider,
             unit_input_controls,
             self.unit_info,
-            nav_instructions,
             nav_controls,
             # classify_controls,  # Hidden for now
             self.plot_output
@@ -982,15 +999,7 @@ class InteractiveUnitQualityGUI:
         spike_times = unit_data['spike_times']
         metrics = unit_data['metrics']
         
-        print(f"🔍 ACG: Starting for unit {self.current_unit_idx} with {len(spike_times)} spikes")
-        
         # Check if we have pre-computed ACG data
-        print(f"🔍 ACG: CHECKING pre-computed data for unit {self.current_unit_idx}")
-        if self.gui_data:
-            print(f"   - has acg_data: {'acg_data' in self.gui_data}")
-            if 'acg_data' in self.gui_data:
-                print(f"   - unit {self.current_unit_idx} in acg_data: {self.current_unit_idx in self.gui_data['acg_data']}")
-        
         if (self.gui_data and 
             'acg_data' in self.gui_data and 
             self.current_unit_idx in self.gui_data['acg_data'] and
