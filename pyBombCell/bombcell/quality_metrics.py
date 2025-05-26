@@ -1179,6 +1179,12 @@ def waveform_shape(
         spatial_decay_points = np.full((1, NUM_CHANNELS_FOR_FIT), np.nan)
         spatial_decay_slope = np.nan
         waveform_baseline = np.nan
+        scnd_peak_to_trough_ratio = np.nan
+        peak1_to_peak2_ratio = np.nan
+        main_peak_to_trough_ratio = np.nan
+        trough_to_peak2_ratio = np.nan
+        peak_before_width = np.nan
+        mainTrough_width = np.nan
     else:
         this_waveform_fit = this_waveform
         if np.size(this_waveform) == 82:  # Checking if the waveform length is 82 (KS4)
@@ -1364,9 +1370,10 @@ def waveform_shape(
                     usedMaxAfter = 0
                     
         # Get main peak values for ratios (MATLAB lines 131-135)
-        mainPeak_before_size = np.max(PKS_before) if len(PKS_before) > 0 else 0
-        mainPeak_after_size = np.max(PKS_after) if len(PKS_after) > 0 else 0
-        mainTrough_size = np.max(TRS) if len(TRS) > 0 else 0
+        # Use absolute values to find the largest peaks/troughs
+        mainPeak_before_size = np.max(np.abs(PKS_before)) if len(PKS_before) > 0 else 0
+        mainPeak_after_size = np.max(np.abs(PKS_after)) if len(PKS_after) > 0 else 0
+        mainTrough_size = np.max(TRS) if len(TRS) > 0 else 0  # TRS is already magnitudes from inverted waveform
         
         # Combine peak information - final filtering (MATLAB lines 137-147)
         if usedMaxBefore == 1 and len(PKS_before) > 0 and mainPeak_before_size < min_prominence * 0.5:  # MATLAB line 138
@@ -1419,6 +1426,8 @@ def waveform_shape(
         # plt.plot(this_waveform, 'r-', linewidth=2)  
         # plt.show()  # This will display the plot
 
+        # Initialize spatial decay slope
+        spatial_decay_slope = np.nan
 
         if param["computeSpatialDecay"]:
             if np.min(np.diff(np.unique(channel_positions[:, 1]))) < 30:
@@ -1524,14 +1533,14 @@ def waveform_shape(
                     spatial_decay_slope = -out_exp[0]
 
         # get waveform baseline fraction
-        if ~np.isnan(waveform_baseline_window)[0]:
-            waveform_baseline = np.max(
-                np.abs(
-                    this_waveform[
-                        waveform_baseline_window[0] : waveform_baseline_window[1]
-                    ]
-                )
-            ) / np.max(np.abs(this_waveform))
+        waveform_baseline = np.nan
+        if waveform_baseline_window is not None and len(waveform_baseline_window) >= 2:
+            if ~np.isnan(waveform_baseline_window[0]) and ~np.isnan(waveform_baseline_window[1]):
+                baseline_segment = this_waveform_fit[
+                    int(waveform_baseline_window[0]) : int(waveform_baseline_window[1])
+                ]
+                if len(baseline_segment) > 0:
+                    waveform_baseline = np.max(np.abs(baseline_segment)) / np.max(np.abs(this_waveform_fit))
 
         # plt.plot(channel_distances, spatial_decay_points,'o', label = 'Data')
         # plt.plot(channel_distances, out_linear[1] + channel_distances * out_linear[0], label = f'linear fit grad = {out_linear[0]:.4f}')
@@ -1541,6 +1550,12 @@ def waveform_shape(
         # plt.legend()
 
         trough = np.max(troughs)
+    # Ensure GUI variables are always defined
+    peak_locs_for_gui = locals().get('peakLocs', locals().get('PKS', np.array([])))
+    trough_locs_for_gui = locals().get('trough_locs', np.array([]))
+    peak_loc_for_duration_gui = locals().get('peak_loc_for_duration', np.nan)
+    trough_loc_for_duration_gui = locals().get('trough_loc_for_duration', np.nan)
+    
     return (
         n_peaks,
         n_troughs,
@@ -1553,6 +1568,10 @@ def waveform_shape(
         trough_to_peak2_ratio,
         peak_before_width,
         mainTrough_width,
+        peak_locs_for_gui,
+        trough_locs_for_gui,
+        peak_loc_for_duration_gui,
+        trough_loc_for_duration_gui,
         param,
     )
 

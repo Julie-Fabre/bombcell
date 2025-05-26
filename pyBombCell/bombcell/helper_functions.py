@@ -751,6 +751,8 @@ def get_all_quality_metrics(
         gui_data = {
             'peak_locations': {},
             'trough_locations': {},
+            'peak_loc_for_duration': {},
+            'trough_loc_for_duration': {},
             'peak_trough_labels': {},
             'duration_lines': {},
             'spatial_decay_fits': {},
@@ -912,6 +914,10 @@ def get_all_quality_metrics(
             quality_metrics["troughToPeak2Ratio"][unit_idx],
             quality_metrics["mainPeak_before_width"][unit_idx],
             quality_metrics["mainTrough_width"][unit_idx],
+            peak_locs_gui,
+            trough_locs_gui,
+            peak_loc_for_duration_gui,
+            trough_loc_for_duration_gui,
             param,
         ) = qm.waveform_shape(
             template_waveforms,
@@ -922,6 +928,39 @@ def get_all_quality_metrics(
             param,
         )
         runtimes_waveform_shape[unit_idx] = time.time() - time_tmp
+
+        # Store GUI-specific data if it's being precomputed
+        if gui_data is not None:
+            # Initialize GUI data keys if they don't exist
+            if 'peak_locations' not in gui_data:
+                gui_data['peak_locations'] = {}
+            if 'trough_locations' not in gui_data:
+                gui_data['trough_locations'] = {}
+            if 'peak_loc_for_duration' not in gui_data:
+                gui_data['peak_loc_for_duration'] = {}
+            if 'trough_loc_for_duration' not in gui_data:
+                gui_data['trough_loc_for_duration'] = {}
+            
+            # Store the data, handling numpy arrays and NaN values properly
+            try:
+                if hasattr(peak_locs_gui, '__len__') and len(peak_locs_gui) > 0:
+                    gui_data['peak_locations'][this_unit] = peak_locs_gui.tolist() if hasattr(peak_locs_gui, 'tolist') else peak_locs_gui
+                else:
+                    gui_data['peak_locations'][this_unit] = []
+                    
+                if hasattr(trough_locs_gui, '__len__') and len(trough_locs_gui) > 0:
+                    gui_data['trough_locations'][this_unit] = trough_locs_gui.tolist() if hasattr(trough_locs_gui, 'tolist') else trough_locs_gui
+                else:
+                    gui_data['trough_locations'][this_unit] = []
+                    
+                gui_data['peak_loc_for_duration'][this_unit] = peak_loc_for_duration_gui if not np.isnan(peak_loc_for_duration_gui) else None
+                gui_data['trough_loc_for_duration'][this_unit] = trough_loc_for_duration_gui if not np.isnan(trough_loc_for_duration_gui) else None
+            except Exception as e:
+                # Fallback to empty if there's any issue
+                gui_data['peak_locations'][this_unit] = []
+                gui_data['trough_locations'][this_unit] = []
+                gui_data['peak_loc_for_duration'][this_unit] = None
+                gui_data['trough_loc_for_duration'][this_unit] = None
 
         # amplitude
         if raw_waveforms_full is not None and param["extractRaw"] and param['gain_to_uV'] is not None:
