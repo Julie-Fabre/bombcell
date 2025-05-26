@@ -748,32 +748,36 @@ class InteractiveUnitQualityGUI:
             fig = plt.figure(figsize=(18, 12))
             fig.patch.set_facecolor('white')
             
-            # 1. Unit location plot (left column) - subplot(6, 13, [1, 14, 27, 40, 53, 66])
-            ax_location = plt.subplot2grid((6, 13), (0, 0), rowspan=6, colspan=1)
+            # 1. Unit location plot (left column) - subplot(8, 13, spans all rows)
+            ax_location = plt.subplot2grid((8, 13), (0, 0), rowspan=8, colspan=1)
             self.plot_unit_location(ax_location, unit_data)
             
-            # 2. Template waveforms - subplot(6, 13, [2:7, 15:20])
-            ax_template = plt.subplot2grid((6, 13), (0, 1), rowspan=2, colspan=6)
+            # 2. Template waveforms - subplot(8, 13, top row)
+            ax_template = plt.subplot2grid((8, 13), (0, 1), rowspan=2, colspan=6)
             self.plot_template_waveform(ax_template, unit_data)
             
-            # 3. Raw waveforms - subplot(6, 13, [8:13, 21:26])
-            ax_raw = plt.subplot2grid((6, 13), (0, 7), rowspan=2, colspan=6)
+            # 3. Raw waveforms - subplot(8, 13, top right)
+            ax_raw = plt.subplot2grid((8, 13), (0, 7), rowspan=2, colspan=6)
             self.plot_raw_waveforms(ax_raw, unit_data)
             
-            # 4. Spatial decay - subplot(6, 13, 29:33)
-            ax_spatial = plt.subplot2grid((6, 13), (2, 1), rowspan=2, colspan=6)
+            # 4. Spatial decay - subplot(8, 13, middle left)
+            ax_spatial = plt.subplot2grid((8, 13), (2, 1), rowspan=2, colspan=6)
             self.plot_spatial_decay(ax_spatial, unit_data)
             
-            # 5. ACG - subplot(6, 13, 35:39)
-            ax_acg = plt.subplot2grid((6, 13), (2, 7), rowspan=2, colspan=6)
+            # 5. ACG - subplot(8, 13, middle right)
+            ax_acg = plt.subplot2grid((8, 13), (2, 7), rowspan=2, colspan=6)
             self.plot_autocorrelogram(ax_acg, unit_data)
             
-            # 6. Amplitudes over time - subplot(6, 13, [42:44, 55:57, 68:70])
-            ax_amplitude = plt.subplot2grid((6, 13), (4, 1), rowspan=2, colspan=9)
+            # 6. Amplitudes over time - normal size
+            ax_amplitude = plt.subplot2grid((8, 13), (4, 1), rowspan=2, colspan=9)
             self.plot_amplitudes_over_time(ax_amplitude, unit_data)
             
-            # 7. Amplitude fit - subplot(6, 13, [45:46, 58:59, 71:72])
-            ax_amp_fit = plt.subplot2grid((6, 13), (4, 11), rowspan=2, colspan=2)
+            # 6b. Time bin metrics (tiny plot below amplitude)
+            ax_bin_metrics = plt.subplot2grid((8, 13), (6, 1), rowspan=1, colspan=9, sharex=ax_amplitude)
+            self.plot_time_bin_metrics(ax_bin_metrics, unit_data)
+            
+            # 7. Amplitude fit - reduced size to match amplitude height
+            ax_amp_fit = plt.subplot2grid((8, 13), (4, 11), rowspan=2, colspan=2)
             self.plot_amplitude_fit(ax_amp_fit, unit_data)
             
             plt.tight_layout()
@@ -1327,6 +1331,10 @@ class InteractiveUnitQualityGUI:
                 ax2.tick_params(labelsize=13)
                 ax2.tick_params(axis='y', labelcolor='orange')
                 
+                # Add subtle time bin indicators to amplitude plot
+                for bin_edge in time_bins:
+                    ax.axvline(bin_edge, color='gray', alpha=0.2, linewidth=0.3, linestyle='--', zorder=0)
+                
                 # Highlight good presence bins
                 for i, (center, good) in enumerate(zip(bin_centers, good_presence)):
                     if good:
@@ -1335,8 +1343,9 @@ class InteractiveUnitQualityGUI:
                                   alpha=0.1, color='green', zorder=0)
                 
         ax.set_title('Amplitudes over time', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
-        ax.set_xlabel('Time (s)', fontsize=13, fontfamily="DejaVu Sans")
-        ax.tick_params(labelsize=13)
+        # Remove x-axis labels since time bin plot below will show them
+        ax.set_xlabel('')
+        ax.tick_params(labelsize=13, labelbottom=False)  # Hide x-axis labels
         ax.tick_params(axis='y', labelcolor='blue')
         
         # Store y-limits for amplitude fit plot consistency
@@ -1344,6 +1353,88 @@ class InteractiveUnitQualityGUI:
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'amplitude')
+    
+    def plot_time_bin_metrics(self, ax, unit_data):
+        """Plot time bin metrics: presence ratio, RPV rate, and percentage spikes missing"""
+        spike_times = unit_data['spike_times']
+        metrics = unit_data['metrics']
+        
+        if len(spike_times) > 0:
+            # Calculate time bins (same as amplitude plot for alignment)
+            total_duration = np.max(spike_times) - np.min(spike_times)
+            n_bins = max(20, int(total_duration / 60))  # ~1 minute bins, minimum 20 bins
+            time_bins = np.linspace(np.min(spike_times), np.max(spike_times), n_bins + 1)
+            bin_centers = (time_bins[:-1] + time_bins[1:]) / 2
+            bin_width = time_bins[1] - time_bins[0]
+            
+            # Calculate firing rate and presence ratio per bin
+            bin_counts, _ = np.histogram(spike_times, bins=time_bins)
+            firing_rates = bin_counts / bin_width
+            
+            # Presence ratio per bin (0 to 1)
+            presence_threshold = 0.1 * np.mean(bin_counts) if np.mean(bin_counts) > 0 else 0.1
+            presence_ratio = np.minimum(bin_counts / presence_threshold, 1.0)  # Cap at 1.0
+            
+            # Plot presence ratio (always available)
+            ax.plot(bin_centers, presence_ratio, 'g-', linewidth=2, label='Presence ratio', alpha=0.8)
+            
+            # Add time bin indicators (vertical lines)
+            for bin_edge in time_bins:
+                ax.axvline(bin_edge, color='gray', alpha=0.3, linewidth=0.5, linestyle='--')
+            
+            # Check if time chunk computations are enabled
+            compute_time_chunks = self.param.get('computeTimeChunks', False) if self.param else False
+            
+            if compute_time_chunks:
+                # RPV rate per bin (placeholder - would need actual RPV computation per bin)
+                # For now, use a simplified approximation based on ISI violations
+                rpv_rates = np.zeros(len(bin_centers))
+                for i, (start, end) in enumerate(zip(time_bins[:-1], time_bins[1:])):
+                    bin_spike_times = spike_times[(spike_times >= start) & (spike_times < end)]
+                    if len(bin_spike_times) > 1:
+                        isis = np.diff(bin_spike_times)
+                        rpv_violations = np.sum(isis < 0.002)  # 2ms refractory period
+                        rpv_rates[i] = rpv_violations / len(bin_spike_times) if len(bin_spike_times) > 0 else 0
+                
+                # Percentage spikes missing per bin (placeholder - would need drift estimation per bin)
+                # For now, use a simplified metric based on amplitude variability
+                perc_missing = np.zeros(len(bin_centers))
+                if 'template_amplitudes' in self.ephys_data:
+                    unit_id = unit_data['unit_id']
+                    spike_mask = self.ephys_data['spike_clusters'] == unit_id
+                    amplitudes = self.ephys_data['template_amplitudes'][spike_mask]
+                    
+                    for i, (start, end) in enumerate(zip(time_bins[:-1], time_bins[1:])):
+                        bin_spike_mask = (spike_times >= start) & (spike_times < end)
+                        if np.sum(bin_spike_mask) > 5:  # Need enough spikes for meaningful stats
+                            bin_amplitudes = amplitudes[bin_spike_mask]
+                            # Simple heuristic: percentage missing based on amplitude drop
+                            expected_mean = np.mean(amplitudes)
+                            actual_mean = np.mean(bin_amplitudes)
+                            perc_missing[i] = max(0, (expected_mean - actual_mean) / expected_mean * 100)
+                
+                # Plot RPV rate and percentage missing
+                ax.plot(bin_centers, rpv_rates, 'r-', linewidth=2, label='RPV rate', alpha=0.8)
+                ax.plot(bin_centers, perc_missing / 100, 'b-', linewidth=2, label='% missing (scaled)', alpha=0.8)
+            
+            # Formatting for tiny plot
+            ax.set_xlabel('Time (s)', fontsize=10, fontfamily="DejaVu Sans")
+            ax.set_ylabel('Metrics', fontsize=10, fontfamily="DejaVu Sans")
+            ax.tick_params(labelsize=9)
+            ax.set_ylim(0, 1.1)  # Standard scale for all metrics
+            
+            # Add compact legend
+            ax.legend(loc='upper right', fontsize=8, framealpha=0.9, prop={'family': 'DejaVu Sans'})
+            
+            # Make plot as compact as possible
+            ax.margins(y=0.05)
+            ax.spines['top'].set_visible(False)  # Remove top border for cleaner look
+        else:
+            ax.text(0.5, 0.5, 'No spikes\nfor bin analysis', ha='center', va='center', 
+                   transform=ax.transAxes, fontfamily="DejaVu Sans", fontsize=9)
+            ax.set_xlabel('Time (s)', fontsize=10, fontfamily="DejaVu Sans")
+            ax.set_ylabel('Metrics', fontsize=10, fontfamily="DejaVu Sans")
+            ax.tick_params(labelsize=9)
         
     def plot_unit_location(self, ax, unit_data):
         """Plot all units by depth vs log firing rate, colored by classification"""
