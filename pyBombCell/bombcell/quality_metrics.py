@@ -348,7 +348,7 @@ def is_peak_cutoff(spike_counts_per_amp_bin_gaussian):
     return not_cutoff
 
 
-def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param, metric = False):
+def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param, metric = False, return_per_bin = False):
     """
     This function estimates the percentage of spike missing from a unit.
 
@@ -363,14 +363,18 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param,
     param : dict
         The param dictionary
     metric : bool, optional
-    If True will return the average percent spikes missing, by default False
+        If True will return the average percent spikes missing, by default False
+    return_per_bin : bool, optional
+        If True will return per-bin data for GUI plotting, by default False
 
     Returns
     -------
-    percent_missing_gaussian : float
-        The estimated percentage of spikes missing when sing a gaussian approximation
-    percent_missing_symmetric : float
-        The estimated percentage of spikes missing when sing a gaussian approximation
+    percent_missing_gaussian : float or ndarray
+        The estimated percentage of spikes missing when using a gaussian approximation
+    percent_missing_symmetric : float or ndarray 
+        The estimated percentage of spikes missing when using a symmetric approximation
+    per_bin_data : dict, optional
+        If return_per_bin=True, returns dict with 'time_bins', 'percent_missing_gaussian_per_bin', 'percent_missing_symmetric_per_bin'
     """
 
     percent_missing_gaussian = np.zeros(time_chunks.shape[0] - 1)
@@ -539,16 +543,32 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param,
                 plt.legend()
                 plt.show()
     
+    # Store per-bin data for GUI
+    per_bin_data = None
+    if return_per_bin:
+        per_bin_data = {
+            'time_bins': time_chunks,
+            'percent_missing_gaussian_per_bin': percent_missing_gaussian.copy(),
+            'percent_missing_symmetric_per_bin': percent_missing_symmetric.copy()
+        }
+
     if metric:
         percent_missing_gaussian = np.mean(percent_missing_gaussian)
         percent_missing_symmetric = np.mean(percent_missing_symmetric)
 
-    return (
-        percent_missing_gaussian,
-        percent_missing_symmetric
-    )
+    if return_per_bin:
+        return (
+            percent_missing_gaussian,
+            percent_missing_symmetric,
+            per_bin_data
+        )
+    else:
+        return (
+            percent_missing_gaussian,
+            percent_missing_symmetric
+        )
 
-def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, param):
+def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, param, return_per_bin = False):
     """
     This function estimates the fraction of refractory period violations for a given unit.
 
@@ -569,6 +589,8 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
         - hillOrLlobetMethod: boolean to choose method
         - plotDetails: boolean to enable plotting (default: False)
         - RPV_tauR_estimate: index of tauR to use for plotting (optional)
+    return_per_bin : bool, optional
+        If True will return per-bin data for GUI plotting, by default False
 
     Returns
     -------
@@ -576,6 +598,8 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
         The fraction of refractory period violations for the unit
     num_violations : ndarray
         The number of refractory period violations for the unit
+    per_bin_data : dict, optional
+        If return_per_bin=True, returns dict with 'time_bins', 'fraction_RPVs_per_bin'
     """
     import numpy as np
     import matplotlib.pyplot as plt
@@ -780,7 +804,18 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
         plt.tight_layout()
         plt.show()
     
-    return fraction_RPVs, num_violations
+    # Store per-bin data for GUI
+    per_bin_data = None
+    if return_per_bin:
+        per_bin_data = {
+            'time_bins': time_chunks,
+            'fraction_RPVs_per_bin': fraction_RPVs.copy()  # Shape: (n_time_chunks, n_tauR_values)
+        }
+
+    if return_per_bin:
+        return fraction_RPVs, num_violations, per_bin_data
+    else:
+        return fraction_RPVs, num_violations
 
 
 def time_chunks_to_keep(
@@ -979,6 +1014,7 @@ def max_drift_estimate(
     this_unit,
     channel_positions,
     param,
+    return_per_bin = False
 ):
     """
     Calculates the drift of the unit using the PC components for each channels
@@ -999,6 +1035,8 @@ def max_drift_estimate(
         The (x,y) positions of each channel
     param : dict
         The param dictionary
+    return_per_bin : bool, optional
+        If True will return per-bin data for GUI plotting, by default False
 
     Returns
     -------
@@ -1006,6 +1044,8 @@ def max_drift_estimate(
         The maximum drift estimated from the unit 
     cumulative_drift_estimate : float
         The cumulative drift estimated over the recording session
+    per_bin_data : dict, optional
+        If return_per_bin=True, returns dict with 'time_bins', 'median_spike_depth_per_bin'
     """
     channel_positions_z = channel_positions[:, 1]
     driftBinSize = param["driftBinSize"]
@@ -1059,7 +1099,18 @@ def max_drift_estimate(
         np.abs(np.diff(median_spike_depth[~np.isnan(median_spike_depth)]))
     )
 
-    return max_drift_estimate, cumulative_drift_estimate
+    # Store per-bin data for GUI
+    per_bin_data = None
+    if return_per_bin:
+        per_bin_data = {
+            'time_bins': time_bins,
+            'median_spike_depth_per_bin': median_spike_depth.copy()
+        }
+
+    if return_per_bin:
+        return max_drift_estimate, cumulative_drift_estimate, per_bin_data
+    else:
+        return max_drift_estimate, cumulative_drift_estimate
 
 
 def linear_fit(x, m, c):

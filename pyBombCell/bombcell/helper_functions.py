@@ -439,7 +439,7 @@ def set_unit_nan(unit_idx, quality_metrics, not_enough_spikes):
 
 def _precompute_unit_gui_data(unit_idx, unit_id, template_waveforms, quality_metrics, 
                              spike_clusters, template_amplitudes, channel_positions, 
-                             gui_data, param):
+                             gui_data, param, per_bin_data=None):
     """Helper function to precompute GUI data for a single unit during quality metrics computation"""
     try:
         template = template_waveforms[unit_idx]
@@ -661,6 +661,12 @@ def _precompute_unit_gui_data(unit_idx, unit_id, template_waveforms, quality_met
         # ACG placeholder (computed lazily in GUI)
         gui_data['acg_data'][unit_id] = None
         
+        # Store per-bin data for time bin metrics plotting
+        if per_bin_data:
+            if 'per_bin_metrics' not in gui_data:
+                gui_data['per_bin_metrics'] = {}
+            gui_data['per_bin_metrics'][unit_id] = per_bin_data
+        
     except Exception as e:
         if param.get("verbose", False):
             print(f"Warning: GUI data precomputation failed for unit {unit_id}: {e}")
@@ -801,15 +807,16 @@ def get_all_quality_metrics(
         (
             percent_missing_gaussian,
             percent_missing_symmetric,
+            perc_missing_per_bin_data
         ) = qm.perc_spikes_missing(
-            these_amplitudes, these_spike_times, time_chunks, param
+            these_amplitudes, these_spike_times, time_chunks, param, return_per_bin=True
         )
         runtimes_spikes_missing_1[unit_idx] = time.time() - time_tmp
 
         # fraction contamination
         time_tmp = time.time()
-        fraction_RPVs, num_violations = qm.fraction_RP_violations(
-            these_spike_times, these_amplitudes, time_chunks, param
+        fraction_RPVs, num_violations, rpv_per_bin_data = qm.fraction_RP_violations(
+            these_spike_times, these_amplitudes, time_chunks, param, return_per_bin=True
         )
         runtimes_RPV_1[unit_idx] = time.time() - time_tmp
 
@@ -879,6 +886,7 @@ def get_all_quality_metrics(
         (
             quality_metrics["maxDriftEstimate"][unit_idx],
             quality_metrics["cumDriftEstimate"][unit_idx],
+            drift_per_bin_data
         ) = qm.max_drift_estimate(
             pc_features,
             pc_features_idx,
@@ -887,6 +895,7 @@ def get_all_quality_metrics(
             this_unit,
             channel_positions,
             param,
+            return_per_bin=True
         )
         runtimes_max_drift[unit_idx] = time.time() - time_tmp
 
@@ -983,9 +992,15 @@ def get_all_quality_metrics(
 
         # Precompute GUI data during quality metrics computation
         if unit_idx < len(template_waveforms):
+            # Collect per-bin data for this unit
+            unit_per_bin_data = {
+                'perc_missing': perc_missing_per_bin_data,
+                'rpv': rpv_per_bin_data,
+                'drift': drift_per_bin_data
+            }
             _precompute_unit_gui_data(unit_idx, this_unit, template_waveforms, quality_metrics, 
                                     spike_clusters, template_amplitudes, channel_positions, 
-                                    gui_data, param)
+                                    gui_data, param, unit_per_bin_data)
 
     # Save GUI data after processing all units
     if param.get("verbose", False):

@@ -1073,12 +1073,17 @@ class InteractiveUnitQualityGUI:
         ax.bar(positive_centers * 1000, positive_autocorr, 
                width=bin_size*1000*0.9, color='grey', alpha=0.7, edgecolor='black', linewidth=0.5)
         
-        # Calculate mean firing rate first to determine proper y-limits
+        # Get mean firing rate from metrics or calculate if not available
         mean_fr = 0
         if len(spike_times) > 1:
-            recording_duration = np.max(spike_times) - np.min(spike_times)
-            if recording_duration > 0:
-                mean_fr = len(spike_times) / recording_duration
+            # Use pre-computed firing rate if available
+            if 'firing_rate_mean' in metrics and not np.isnan(metrics['firing_rate_mean']):
+                mean_fr = metrics['firing_rate_mean']
+            else:
+                # Fallback calculation - but this should match the expected baseline for ACG
+                recording_duration = np.max(spike_times) - np.min(spike_times)
+                if recording_duration > 0:
+                    mean_fr = len(spike_times) / recording_duration
             # Set limits to accommodate both data and mean firing rate line
             ax.set_xlim(0, max_lag * 1000)
             if len(positive_autocorr) > 0:
@@ -1090,63 +1095,82 @@ class InteractiveUnitQualityGUI:
                 y_max = mean_fr * 1.1 if mean_fr > 0 else 10
                 ax.set_ylim(0, y_max)
             
-            # Add tauR vertical line - use milliseconds and ensure it's visible
-            tau_r = metrics.get('tauR_estimated', None)
+            # Calculate correct tauR using RPV_window_index
+            tau_r = None
+            if (self.param and 'tauR_valuesMin' in self.param and 'tauR_valuesMax' in self.param and 
+                'tauR_valuesStep' in self.param and 'RPV_window_index' in metrics):
+                try:
+                    tau_r_min = self.param['tauR_valuesMin'] * 1000  # Convert to ms
+                    tau_r_max = self.param['tauR_valuesMax'] * 1000  # Convert to ms
+                    tau_r_step = self.param['tauR_valuesStep'] * 1000  # Convert to ms
+                    rpv_index = int(metrics['RPV_window_index'])
+                    
+                    # Calculate tauR array and get the correct value
+                    tau_r_array = np.arange(tau_r_min, tau_r_max + tau_r_step, tau_r_step)
+                    if 0 <= rpv_index < len(tau_r_array):
+                        tau_r = tau_r_array[rpv_index]
+                except (KeyError, ValueError, IndexError):
+                    pass
+            
+            # Fallback to estimatedTauR if RPV_window_index method fails
             if tau_r is None:
-                # Try alternative parameter names
-                tau_r = metrics.get('estimatedTauR', None)
-            if tau_r is None:
-                # Use a default value if not available
-                tau_r = 2.0  # 2ms default refractory period
-                
+                tau_r = metrics.get('tauR_estimated', None)
+                if tau_r is None:
+                    tau_r = metrics.get('estimatedTauR', None)
+                if tau_r is None:
+                    tau_r = 2.0  # 2ms default refractory period
+                    
             if tau_r is not None:
                 ax.axvline(tau_r, color='red', linewidth=3, linestyle='--', alpha=1.0, 
                           label=f'τR = {tau_r:.1f}ms', zorder=10)
             
             # Add mean firing rate horizontal line
             if mean_fr > 0:
-                ax.axhline(mean_fr, color='orange', linewidth=3, linestyle='--', alpha=1.0, 
-                          label=f'Mean FR = {mean_fr:.1f} sp/s', zorder=10)
+                ax.axhline(mean_fr, color='magenta', linewidth=3, linestyle='--', alpha=1.0, 
+                          label=f'Mean FR = {mean_fr:.1f} sp/s', zorder=5)  # Lower zorder so legend appears above
                 
         ax.set_title('Auto-correlogram', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         ax.set_xlabel('Time (ms)', fontsize=13, fontfamily="DejaVu Sans")
         ax.set_ylabel('Firing rate (sp/s)', fontsize=13, fontfamily="DejaVu Sans")
         ax.tick_params(labelsize=13)
         
-        # Add legend in top right corner
-        handles, labels = ax.get_legend_handles_labels()
-        if handles:
-            ax.legend(handles, labels, loc='upper right', fontsize=13, framealpha=0.9,
-                     prop={'family': 'DejaVu Sans'})
-        
-        # Add tauR range information if min/max tauR are different
+        # Add tauR range visualization if min/max tauR are different
+        range_text_for_legend = None
         if self.param and 'tauR_valuesMin' in self.param and 'tauR_valuesMax' in self.param:
-            tau_r_min = self.param['tauR_valuesMin']
-            tau_r_max = self.param['tauR_valuesMax'] 
+            tau_r_min_ms = self.param['tauR_valuesMin'] * 1000  # Convert to ms
+            tau_r_max_ms = self.param['tauR_valuesMax'] * 1000  # Convert to ms
             
             # Check if min and max are different (indicating a range)
-            if tau_r_min != tau_r_max:
-                # Get the chosen tauR for this unit
-                metrics = unit_data['metrics']
-                chosen_tau_r = metrics.get('estimatedTauR', 'N/A')
+            if tau_r_min_ms != tau_r_max_ms:
+                # Add grey horizontal arrow and dotted vertical lines for range
+                y_pos = ax.get_ylim()[1] * 0.95  # Position near top
                 
-                # Format the range text
-                range_text = f"τR range: {tau_r_min}-{tau_r_max} ms"
-                chosen_text = f"Chosen τR: {chosen_tau_r} ms" if chosen_tau_r != 'N/A' else "Chosen τR: N/A"
+                # Add dotted vertical lines at range boundaries
+                ax.axvline(tau_r_min_ms, color='grey', linewidth=1, linestyle=':', alpha=0.7, zorder=5)
+                ax.axvline(tau_r_max_ms, color='grey', linewidth=1, linestyle=':', alpha=0.7, zorder=5)
                 
-                # Add range text at top left
-                ax.text(0.02, 0.98, range_text, transform=ax.transAxes, 
-                       verticalalignment='top', horizontalalignment='left', fontsize=13, 
-                       color='blue', weight='bold', fontfamily="DejaVu Sans",
-                       bbox=dict(boxstyle='round,pad=0.4', facecolor='lightblue', alpha=0.8, 
-                                edgecolor='blue', linewidth=1), zorder=20)
+                # Add horizontal arrow between the lines
+                ax.annotate('', xy=(tau_r_max_ms, y_pos), xytext=(tau_r_min_ms, y_pos),
+                           arrowprops=dict(arrowstyle='<->', color='grey', lw=2, alpha=0.7),
+                           zorder=5)
                 
-                # Add chosen tauR text below range
-                ax.text(0.02, 0.88, chosen_text, transform=ax.transAxes, 
-                       verticalalignment='top', horizontalalignment='left', fontsize=13, 
-                       color='darkgreen', weight='bold', fontfamily="DejaVu Sans",
-                       bbox=dict(boxstyle='round,pad=0.4', facecolor='lightgreen', alpha=0.8, 
-                                edgecolor='darkgreen', linewidth=1), zorder=20)
+                # Prepare range text for legend
+                range_text_for_legend = f"τR range: {tau_r_min_ms:.1f}-{tau_r_max_ms:.1f} ms"
+        
+        # Add legend in top right corner with range information
+        handles, labels = ax.get_legend_handles_labels()
+        if range_text_for_legend:
+            # Add range text to legend labels
+            labels.append(range_text_for_legend)
+            # Create a dummy handle for the range text (invisible line)
+            import matplotlib.lines as mlines
+            range_handle = mlines.Line2D([], [], color='grey', alpha=0.7, linestyle='-')
+            handles.append(range_handle)
+        
+        if handles:
+            legend = ax.legend(handles, labels, loc='upper right', fontsize=11, framealpha=0.9,
+                             prop={'family': 'DejaVu Sans'})
+            legend.set_zorder(15)  # Set zorder after creation to appear above all lines
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'acg')
@@ -1189,7 +1213,7 @@ class InteractiveUnitQualityGUI:
                             amplitudes = amplitudes / max_amp
                             
                             # Plot spatial decay points
-                            ax.scatter(distances, amplitudes, s=30, alpha=0.8, color='blue', edgecolor='black')
+                            ax.scatter(distances, amplitudes, s=30, alpha=0.8, color='darkcyan', edgecolor='black')
                             
                             # Fit line (linear in log space for exponential)
                             valid_idx = (distances > 0) & (amplitudes > 0.05)
@@ -1209,7 +1233,7 @@ class InteractiveUnitQualityGUI:
                                 y_smooth = np.exp(np.polyval(coeffs, x_smooth))
                                 # Only plot where y values are reasonable
                                 valid_y = (y_smooth > 0) & (y_smooth < 10)  # Avoid extreme values
-                                ax.plot(x_smooth[valid_y], y_smooth[valid_y], 'r-', linewidth=2, alpha=0.8)
+                                ax.plot(x_smooth[valid_y], y_smooth[valid_y], color='darkslateblue', linewidth=2, alpha=0.8)
                             
                             ax.set_xlabel('Distance (μm)', fontsize=13, fontfamily="DejaVu Sans")
                             ax.set_ylabel('Normalized amplitude', fontsize=13, fontfamily="DejaVu Sans")
@@ -1299,11 +1323,11 @@ class InteractiveUnitQualityGUI:
                 ax2 = ax.twinx()
                 
                 # Plot firing rate as step plot (outline only)
-                ax2.step(bin_centers, firing_rates, where='mid', color='orange', 
+                ax2.step(bin_centers, firing_rates, where='mid', color='magenta', 
                         linewidth=2.5, alpha=0.8, label='Firing rate')
-                ax2.set_ylabel('Firing rate (sp/s)', color='orange', fontsize=13, fontfamily="DejaVu Sans")
+                ax2.set_ylabel('Firing rate (sp/s)', color='magenta', fontsize=13, fontfamily="DejaVu Sans")
                 ax2.tick_params(labelsize=13)
-                ax2.tick_params(axis='y', labelcolor='orange')
+                ax2.tick_params(axis='y', labelcolor='magenta')
                 
                 
             else:
@@ -1315,11 +1339,11 @@ class InteractiveUnitQualityGUI:
                 
                 # Create twin axis for firing rate  
                 ax2 = ax.twinx()
-                ax2.step(bin_centers, firing_rates, where='mid', color='orange', 
+                ax2.step(bin_centers, firing_rates, where='mid', color='magenta', 
                         linewidth=2.5, alpha=0.8, label='Firing rate')
-                ax2.set_ylabel('Firing rate (sp/s)', color='orange', fontsize=13, fontfamily="DejaVu Sans")
+                ax2.set_ylabel('Firing rate (sp/s)', color='magenta', fontsize=13, fontfamily="DejaVu Sans")
                 ax2.tick_params(labelsize=13)
-                ax2.tick_params(axis='y', labelcolor='orange')
+                ax2.tick_params(axis='y', labelcolor='magenta')
                 
                 # Add subtle time bin indicators to amplitude plot
                 for bin_edge in time_bins:
@@ -1341,64 +1365,86 @@ class InteractiveUnitQualityGUI:
         """Plot time bin metrics: presence ratio, RPV rate, and percentage spikes missing"""
         spike_times = unit_data['spike_times']
         metrics = unit_data['metrics']
+        unit_id = unit_data['unit_id']
         
         if len(spike_times) > 0:
-            # Calculate time bins (same as amplitude plot for alignment)
-            total_duration = np.max(spike_times) - np.min(spike_times)
-            n_bins = max(20, int(total_duration / 60))  # ~1 minute bins, minimum 20 bins
-            time_bins = np.linspace(np.min(spike_times), np.max(spike_times), n_bins + 1)
-            bin_centers = (time_bins[:-1] + time_bins[1:]) / 2
-            bin_width = time_bins[1] - time_bins[0]
+            # Try to get saved per-bin data from GUI precomputation
+            per_bin_data = None
+            if hasattr(self, 'gui_data') and self.gui_data is not None:
+                per_bin_data = self.gui_data.get('per_bin_metrics', {}).get(unit_id)
             
-            # Calculate firing rate and presence ratio per bin
-            bin_counts, _ = np.histogram(spike_times, bins=time_bins)
-            firing_rates = bin_counts / bin_width
-            
-            # Presence ratio per bin (0 to 1)
-            presence_threshold = 0.1 * np.mean(bin_counts) if np.mean(bin_counts) > 0 else 0.1
-            presence_ratio = np.minimum(bin_counts / presence_threshold, 1.0)  # Cap at 1.0
-            
-            # Plot presence ratio (always available)
-            ax.plot(bin_centers, presence_ratio, 'g-', linewidth=2, label='Presence ratio', alpha=0.8)
-            
-            # Add time bin indicators (vertical lines)
-            for bin_edge in time_bins:
-                ax.axvline(bin_edge, color='gray', alpha=0.3, linewidth=0.5, linestyle='--')
-            
-            # Check if time chunk computations are enabled
-            compute_time_chunks = self.param.get('computeTimeChunks', False) if self.param else False
-            
-            if compute_time_chunks:
-                # RPV rate per bin (placeholder - would need actual RPV computation per bin)
-                # For now, use a simplified approximation based on ISI violations
-                rpv_rates = np.zeros(len(bin_centers))
-                for i, (start, end) in enumerate(zip(time_bins[:-1], time_bins[1:])):
-                    bin_spike_times = spike_times[(spike_times >= start) & (spike_times < end)]
-                    if len(bin_spike_times) > 1:
-                        isis = np.diff(bin_spike_times)
-                        rpv_violations = np.sum(isis < 0.002)  # 2ms refractory period
-                        rpv_rates[i] = rpv_violations / len(bin_spike_times) if len(bin_spike_times) > 0 else 0
+            if per_bin_data and self.param.get('computeTimeChunks', False):
+                # Use actual per-bin quality metrics data 
                 
-                # Percentage spikes missing per bin (placeholder - would need drift estimation per bin)
-                # For now, use a simplified metric based on amplitude variability
-                perc_missing = np.zeros(len(bin_centers))
-                if 'template_amplitudes' in self.ephys_data:
-                    unit_id = unit_data['unit_id']
-                    spike_mask = self.ephys_data['spike_clusters'] == unit_id
-                    amplitudes = self.ephys_data['template_amplitudes'][spike_mask]
-                    
-                    for i, (start, end) in enumerate(zip(time_bins[:-1], time_bins[1:])):
-                        bin_spike_mask = (spike_times >= start) & (spike_times < end)
-                        if np.sum(bin_spike_mask) > 5:  # Need enough spikes for meaningful stats
-                            bin_amplitudes = amplitudes[bin_spike_mask]
-                            # Simple heuristic: percentage missing based on amplitude drop
-                            expected_mean = np.mean(amplitudes)
-                            actual_mean = np.mean(bin_amplitudes)
-                            perc_missing[i] = max(0, (expected_mean - actual_mean) / expected_mean * 100)
+                # Get RPV data
+                rpv_data = per_bin_data.get('rpv')
+                if rpv_data and 'time_bins' in rpv_data and 'fraction_RPVs_per_bin' in rpv_data:
+                    time_bins = rpv_data['time_bins']
+                    bin_centers = (time_bins[:-1] + time_bins[1:]) / 2
+                    # Use the estimated tau_R index for plotting (usually the middle value)
+                    rpv_matrix = rpv_data['fraction_RPVs_per_bin']  # Shape: (n_time_chunks, n_tauR)
+                    if rpv_matrix.shape[1] > 0:
+                        # Use middle tau_R value or estimated index if available
+                        tau_r_idx = rpv_matrix.shape[1] // 2
+                        if hasattr(self, 'param') and 'RPV_tauR_estimate' in metrics:
+                            try:
+                                tau_r_idx = int(metrics['RPV_window_index'])
+                            except:
+                                pass
+                        rpv_rates = rpv_matrix[:, tau_r_idx]
+                    else:
+                        rpv_rates = np.zeros(len(bin_centers))
+                else:
+                    rpv_rates = None
                 
-                # Plot RPV rate and percentage missing
-                ax.plot(bin_centers, rpv_rates, 'r-', linewidth=2, label='RPV rate', alpha=0.8)
-                ax.plot(bin_centers, perc_missing / 100, 'b-', linewidth=2, label='% missing (scaled)', alpha=0.8)
+                # Get percentage missing data
+                perc_missing_data = per_bin_data.get('perc_missing')
+                if perc_missing_data and 'percent_missing_gaussian_per_bin' in perc_missing_data:
+                    perc_missing = perc_missing_data['percent_missing_gaussian_per_bin']
+                else:
+                    perc_missing = None
+                
+                # Calculate presence ratio per bin using spike counts
+                bin_counts, _ = np.histogram(spike_times, bins=time_bins)
+                bin_width = time_bins[1] - time_bins[0]
+                presence_threshold = 0.1 * np.mean(bin_counts) if np.mean(bin_counts) > 0 else 0.1
+                presence_ratio = np.minimum(bin_counts / presence_threshold, 1.0)  # Cap at 1.0
+                
+                # Plot presence ratio (always available)
+                ax.plot(bin_centers, presence_ratio, color='forestgreen', linewidth=2, label='Presence ratio', alpha=0.8)
+                
+                # Plot actual quality metrics if available
+                if rpv_rates is not None:
+                    ax.plot(bin_centers, rpv_rates, color='purple', linewidth=2, label='RPV rate', alpha=0.8)
+                
+                if perc_missing is not None:
+                    ax.plot(bin_centers, perc_missing / 100, color='indigo', linewidth=2, label='% missing (scaled)', alpha=0.8)
+                
+                # Add time bin indicators 
+                for bin_edge in time_bins:
+                    ax.axvline(bin_edge, color='gray', alpha=0.3, linewidth=0.5, linestyle='--')
+                
+            else:
+                # Fallback: compute simplified metrics on the fly
+                total_duration = np.max(spike_times) - np.min(spike_times)
+                n_bins = max(20, int(total_duration / 60))  # ~1 minute bins, minimum 20 bins
+                time_bins = np.linspace(np.min(spike_times), np.max(spike_times), n_bins + 1)
+                bin_centers = (time_bins[:-1] + time_bins[1:]) / 2
+                bin_width = time_bins[1] - time_bins[0]
+                
+                # Calculate firing rate and presence ratio per bin
+                bin_counts, _ = np.histogram(spike_times, bins=time_bins)
+                
+                # Presence ratio per bin (0 to 1)
+                presence_threshold = 0.1 * np.mean(bin_counts) if np.mean(bin_counts) > 0 else 0.1
+                presence_ratio = np.minimum(bin_counts / presence_threshold, 1.0)  # Cap at 1.0
+                
+                # Plot presence ratio (always available)
+                ax.plot(bin_centers, presence_ratio, color='forestgreen', linewidth=2, label='Presence ratio', alpha=0.8)
+                
+                # Add time bin indicators
+                for bin_edge in time_bins:
+                    ax.axvline(bin_edge, color='gray', alpha=0.3, linewidth=0.5, linestyle='--')
             
             # Formatting for tiny plot
             ax.set_xlabel('Time (s)', fontsize=13, fontfamily="DejaVu Sans")
@@ -1762,7 +1808,8 @@ class InteractiveUnitQualityGUI:
             ]
         elif plot_type == 'amplitude':
             metric_info = [
-                ('maxDriftEstimate', f"Max drift: {format_metric(metrics.get('maxDriftEstimate'), 1)} μm")
+                ('maxDriftEstimate', f"Max drift: {format_metric(metrics.get('maxDriftEstimate'), 1)} μm"),
+                ('presenceRatio', f"Presence ratio: {format_metric(metrics.get('presenceRatio'), 3)}")
             ]
         elif plot_type == 'amplitude_fit':
             metric_info = [
@@ -1772,7 +1819,7 @@ class InteractiveUnitQualityGUI:
         # Add colored text to plot with proper spacing
         if metric_info:
             y_start = 0.15 if plot_type == 'acg' else 0.95  # Bottom for ACG, top for others
-            line_height = 0.08  # Increased spacing to prevent overlaps
+            line_height = 0.12  # Much larger spacing to prevent overlaps
             
             for i, (metric_name, text) in enumerate(metric_info):
                 color = get_metric_color(metric_name, format_metric(metrics.get(metric_name)), self.param)
@@ -2250,7 +2297,7 @@ class UnitQualityGUI:
         # Dual y-axis like MATLAB
         self.ax_amplitude_right = self.ax_amplitude.twinx()
         self.ax_amplitude.set_ylabel('Template scaling', color='k', fontsize=13, fontfamily="DejaVu Sans")
-        self.ax_amplitude_right.set_ylabel('Firing rate (sp/sec)', color='orange', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_amplitude_right.set_ylabel('Firing rate (sp/sec)', color='magenta', fontsize=13, fontfamily="DejaVu Sans")
         self.ax_amplitude_right.tick_params(labelsize=13)
         
     def setup_amplitude_fit_plot(self):
@@ -2512,8 +2559,8 @@ class UnitQualityGUI:
                 firing_rates = hist / bin_size
                 bin_centers = time_bins[:-1] + bin_size/2
                 
-                # Plot on right y-axis (orange, like MATLAB)
-                self.ax_amplitude_right.stairs(firing_rates, time_bins, color='orange', linewidth=2)
+                # Plot on right y-axis (magenta, avoiding classification colors)
+                self.ax_amplitude_right.stairs(firing_rates, time_bins, color='magenta', linewidth=2)
                 
             # Simulate template amplitudes (left y-axis)
             n_points = min(len(spike_times), 1000)
@@ -2547,7 +2594,7 @@ class UnitQualityGUI:
         mu, sigma = stats.norm.fit(amplitudes)
         fit_y = np.linspace(amplitudes.min(), amplitudes.max(), 100)
         fit_x = len(amplitudes) * np.diff(bins)[0] * stats.norm.pdf(fit_y, mu, sigma)
-        self.ax_amp_fit.plot(fit_x, fit_y, 'orange', linewidth=2)
+        self.ax_amp_fit.plot(fit_x, fit_y, color='gold', linewidth=2)
         
     def get_unit_type_string(self, unit_idx):
         """Get unit type string"""
