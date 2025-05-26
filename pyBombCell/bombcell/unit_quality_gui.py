@@ -442,29 +442,29 @@ class InteractiveUnitQualityGUI:
         )
         self.goto_unit_btn = widgets.Button(description='Go', button_style='primary')
         
-        # Navigation buttons (bold arrows, same height as others)
+        # Navigation buttons (bold arrows, bigger)
         self.prev_btn = widgets.Button(description='◀', button_style='info', 
-                                      layout=widgets.Layout(width='50px', height='32px'))
+                                      layout=widgets.Layout(width='70px', height='32px'))
         self.next_btn = widgets.Button(description='▶', button_style='info',
-                                      layout=widgets.Layout(width='50px', height='32px'))
+                                      layout=widgets.Layout(width='70px', height='32px'))
         
-        # Unit type navigation - both directions (consistent height)
-        self.goto_prev_good_btn = widgets.Button(description='← good', button_style='success',
-                                                 layout=widgets.Layout(height='32px'))
-        self.goto_good_btn = widgets.Button(description='good →', button_style='success',
-                                           layout=widgets.Layout(height='32px'))
-        self.goto_prev_mua_btn = widgets.Button(description='← mua', button_style='warning',
-                                               layout=widgets.Layout(height='32px'))
-        self.goto_mua_btn = widgets.Button(description='mua →', button_style='warning',
-                                          layout=widgets.Layout(height='32px'))
-        self.goto_prev_noise_btn = widgets.Button(description='← noise', button_style='danger',
-                                                  layout=widgets.Layout(height='32px'))
-        self.goto_noise_btn = widgets.Button(description='noise →', button_style='danger',
-                                            layout=widgets.Layout(height='32px'))
-        self.goto_prev_nonsomatic_btn = widgets.Button(description='← non-\nsoma', button_style='primary',
-                                                      layout=widgets.Layout(width='120px', height='32px'))
-        self.goto_nonsomatic_btn = widgets.Button(description='non-\nsoma →', button_style='primary',
-                                                  layout=widgets.Layout(width='120px', height='32px'))
+        # Unit type navigation - both directions (slightly smaller for good/mua/noise)
+        self.goto_prev_good_btn = widgets.Button(description='◀ good', button_style='success',
+                                                 layout=widgets.Layout(width='80px', height='32px'))
+        self.goto_good_btn = widgets.Button(description='good ▶', button_style='success',
+                                           layout=widgets.Layout(width='80px', height='32px'))
+        self.goto_prev_mua_btn = widgets.Button(description='◀ mua', button_style='warning',
+                                               layout=widgets.Layout(width='75px', height='32px'))
+        self.goto_mua_btn = widgets.Button(description='mua ▶', button_style='warning',
+                                          layout=widgets.Layout(width='75px', height='32px'))
+        self.goto_prev_noise_btn = widgets.Button(description='◀ noise', button_style='danger',
+                                                  layout=widgets.Layout(width='85px', height='32px'))
+        self.goto_noise_btn = widgets.Button(description='noise ▶', button_style='danger',
+                                            layout=widgets.Layout(width='85px', height='32px'))
+        self.goto_prev_nonsomatic_btn = widgets.Button(description='◀ non-somatic', button_style='primary',
+                                                      layout=widgets.Layout(width='150px', height='32px'))
+        self.goto_nonsomatic_btn = widgets.Button(description='non-somatic ▶', button_style='primary',
+                                                  layout=widgets.Layout(width='150px', height='32px'))
         
         # Unit info display
         self.unit_info = widgets.HTML(value="")
