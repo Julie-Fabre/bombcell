@@ -1762,7 +1762,8 @@ class InteractiveUnitQualityGUI:
             ]
         elif plot_type == 'amplitude':
             metric_info = [
-                ('maxDriftEstimate', f"Max drift: {format_metric(metrics.get('maxDriftEstimate'), 1)} μm")
+                ('maxDriftEstimate', f"Max drift: {format_metric(metrics.get('maxDriftEstimate'), 1)} μm"),
+                ('presenceRatio', f"Presence ratio: {format_metric(metrics.get('presenceRatio'), 3)}")
             ]
         elif plot_type == 'amplitude_fit':
             metric_info = [
@@ -1772,7 +1773,7 @@ class InteractiveUnitQualityGUI:
         # Add colored text to plot with proper spacing
         if metric_info:
             y_start = 0.15 if plot_type == 'acg' else 0.95  # Bottom for ACG, top for others
-            line_height = 0.08  # Increased spacing to prevent overlaps
+            line_height = 0.12  # Much larger spacing to prevent overlaps
             
             for i, (metric_name, text) in enumerate(metric_info):
                 color = get_metric_color(metric_name, format_metric(metrics.get(metric_name)), self.param)
