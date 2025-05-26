@@ -1762,8 +1762,7 @@ class InteractiveUnitQualityGUI:
             ]
         elif plot_type == 'amplitude':
             metric_info = [
-                ('maxDriftEstimate', f"Max drift: {format_metric(metrics.get('maxDriftEstimate'), 1)} μm"),
-                ('presenceRatio', f"Presence: {format_metric(metrics.get('presenceRatio'), 3)}")
+                ('maxDriftEstimate', f"Max drift: {format_metric(metrics.get('maxDriftEstimate'), 1)} μm")
             ]
         elif plot_type == 'amplitude_fit':
             metric_info = [
