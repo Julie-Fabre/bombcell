@@ -506,7 +506,7 @@ class InteractiveUnitQualityGUI:
         basic_nav_section = widgets.VBox([basic_nav_text, basic_nav_buttons])
         
         # Unit type navigation section
-        type_nav_text = widgets.HTML("<b>Go to next/prev. good, MUA, non-soma or noise unit:</b>", layout=widgets.Layout(text_align='center'))
+        type_nav_text = widgets.HTML("<b>Go to next/prev. good, MUA, non-somatic or noise unit:</b>", layout=widgets.Layout(text_align='center'))
         type_nav_buttons = widgets.HBox([
             self.goto_prev_good_btn, self.goto_good_btn,
             self.goto_prev_mua_btn, self.goto_mua_btn,
