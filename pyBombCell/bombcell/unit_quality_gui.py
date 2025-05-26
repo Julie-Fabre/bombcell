@@ -1794,15 +1794,6 @@ class InteractiveUnitQualityGUI:
     
     def mark_peaks_and_troughs(self, ax, waveform, x_offset, y_offset, metrics, amp_range):
         """Mark all peaks and troughs on waveform with duration line"""
-        # Use pre-computed data if available for faster display
-        print(f"🔍 CHECKING pre-computed data for unit {self.current_unit_idx}")
-        print(f"   - gui_data exists: {self.gui_data is not None}")
-        if self.gui_data:
-            print(f"   - has peak_locations: {'peak_locations' in self.gui_data}")
-            print(f"   - has trough_locations: {'trough_locations' in self.gui_data}")
-            if 'peak_locations' in self.gui_data:
-                print(f"   - unit {self.current_unit_idx} in peak_locations: {self.current_unit_idx in self.gui_data['peak_locations']}")
-                print(f"   - available unit indices: {list(self.gui_data['peak_locations'].keys())[:10]}...")  # Show first 10
         
         if (self.gui_data and 
             'peak_locations' in self.gui_data and 
@@ -1811,11 +1802,9 @@ class InteractiveUnitQualityGUI:
             
             peaks = self.gui_data['peak_locations'][self.current_unit_idx]
             troughs = self.gui_data['trough_locations'][self.current_unit_idx]
-            print(f"🚀 Using PRE-COMPUTED peaks/troughs for unit {self.current_unit_idx}")
             
         else:
             # Fallback to real-time computation
-            print(f"⚠️ Computing peaks/troughs REAL-TIME for unit {self.current_unit_idx}")
             try:
                 from scipy.signal import find_peaks
                 
@@ -1849,47 +1838,47 @@ class InteractiveUnitQualityGUI:
         main_peak_idx = None
         main_trough_idx = None
         
-        print(f"DEBUG: Waveform shape: {waveform.shape}, min: {np.nanmin(waveform):.3f}, max: {np.nanmax(waveform):.3f}")
-        print(f"DEBUG: Found {len(peaks)} peaks at {peaks}")
-        print(f"DEBUG: Found {len(troughs)} troughs at {troughs}")
         
-        # ROBUST approach: Find the main peak and main trough separately
-        # Main peak: highest positive point in waveform
-        if len(peaks) > 0:
-            # Use detected peaks and find the highest one
-            main_peak_idx = peaks[np.argmax(waveform[peaks])]
-            print(f"DEBUG: Main peak from detected peaks: {main_peak_idx}, value: {waveform[main_peak_idx]:.3f}")
+        # Use pre-computed duration indices from quality metrics if available
+        if (self.gui_data and 
+            'peak_loc_for_duration' in self.gui_data and 
+            'trough_loc_for_duration' in self.gui_data and
+            self.current_unit_idx in self.gui_data['peak_loc_for_duration']):
+            
+            main_peak_idx = self.gui_data['peak_loc_for_duration'][self.current_unit_idx]
+            main_trough_idx = self.gui_data['trough_loc_for_duration'][self.current_unit_idx]
+            
         else:
-            # Fallback: find highest point in entire waveform
-            main_peak_idx = np.nanargmax(waveform)
-            print(f"DEBUG: Main peak from fallback: {main_peak_idx}, value: {waveform[main_peak_idx]:.3f}")
-        
-        # Main trough: lowest negative point in waveform  
-        if len(troughs) > 0:
-            # Use detected troughs and find the deepest one
-            main_trough_idx = troughs[np.argmin(waveform[troughs])]
-            print(f"DEBUG: Main trough from detected troughs: {main_trough_idx}, value: {waveform[main_trough_idx]:.3f}")
-        else:
-            # Fallback: find lowest point in entire waveform
-            main_trough_idx = np.nanargmin(waveform)
-            print(f"DEBUG: Main trough from fallback: {main_trough_idx}, value: {waveform[main_trough_idx]:.3f}")
+            # Fallback: Use largest absolute values among detected peaks/troughs
+            # Main peak: peak with largest absolute value among detected peaks
+            if len(peaks) > 0:
+                peak_values = waveform[peaks]
+                peak_abs_values = np.abs(peak_values)
+                main_peak_idx = peaks[np.argmax(peak_abs_values)]
+            else:
+                # Fallback: absolute maximum
+                main_peak_idx = np.argmax(np.abs(waveform))
+            
+            # Main trough: trough with largest absolute value among detected troughs
+            if len(troughs) > 0:
+                trough_values = waveform[troughs]  # These are the actual negative values
+                trough_abs_values = np.abs(trough_values)  # Convert to absolute values
+                main_trough_idx = troughs[np.argmax(trough_abs_values)]  # Largest absolute = deepest trough
+            else:
+                # Fallback: absolute minimum  
+                min_idx = np.argmin(waveform)
+                max_idx = np.argmax(waveform)
+                # Choose the one with larger absolute value
+                if abs(waveform[min_idx]) > abs(waveform[max_idx]):
+                    main_trough_idx = min_idx
+                else:
+                    main_trough_idx = max_idx
         
         # Ensure indices are valid integers
         if main_peak_idx is not None:
             main_peak_idx = int(main_peak_idx)
         if main_trough_idx is not None:
             main_trough_idx = int(main_trough_idx)
-            
-        print(f"DEBUG: Final main_peak_idx: {main_peak_idx}, main_trough_idx: {main_trough_idx}")
-        
-        # Sanity check: ensure peak is higher than trough
-        if (main_peak_idx is not None and main_trough_idx is not None and 
-            waveform[main_peak_idx] <= waveform[main_trough_idx]):
-            print(f"DEBUG: WARNING - Peak value {waveform[main_peak_idx]:.3f} <= Trough value {waveform[main_trough_idx]:.3f}")
-            # Swap if needed
-            if waveform[main_peak_idx] < 0 and waveform[main_trough_idx] > 0:
-                main_peak_idx, main_trough_idx = main_trough_idx, main_peak_idx
-                print(f"DEBUG: Swapped indices. New main_peak_idx: {main_peak_idx}, main_trough_idx: {main_trough_idx}")
         
         # Plot all peaks with red dots
         legend_elements = []
@@ -1922,19 +1911,38 @@ class InteractiveUnitQualityGUI:
         
         # Draw horizontal duration line from main peak to main trough
         if main_peak_idx is not None and main_trough_idx is not None:
-            # Draw horizontal line at a fixed y-position below the waveform
-            line_y = y_offset - amp_range * 0.3  # Position line below waveform
-            ax.plot([main_peak_idx + x_offset, main_trough_idx + x_offset], 
-                   [line_y, line_y], 
-                   'g-', linewidth=3, alpha=0.8, zorder=10, label='Duration')
+            # Since the y-axis is inverted, we need to position the duration line appropriately
+            # The waveform data is inverted (negative of original), and the y-axis display is inverted
+            # So we want the duration line to appear below the waveform when viewed
             
-            # Add vertical lines to connect to peak and trough
-            ax.plot([main_peak_idx + x_offset, main_peak_idx + x_offset], 
-                   [waveform[main_peak_idx] + y_offset, line_y], 
-                   'g--', linewidth=2, alpha=0.6, zorder=10)
-            ax.plot([main_trough_idx + x_offset, main_trough_idx + x_offset], 
-                   [waveform[main_trough_idx] + y_offset, line_y], 
-                   'g--', linewidth=2, alpha=0.6, zorder=10)
+            waveform_min = np.min(waveform) + y_offset  # Most negative value (appears at top due to inversion)
+            waveform_max = np.max(waveform) + y_offset  # Most positive value (appears at bottom due to inversion)
+            waveform_range = waveform_max - waveform_min
+            
+            # Since y-axis is inverted, "below" the waveform means higher y-values
+            # Position line above the maximum value (which appears below due to inversion)
+            line_y = waveform_max + waveform_range * 0.2  # 20% "below" the visual waveform
+            
+            peak_x = main_peak_idx + x_offset
+            trough_x = main_trough_idx + x_offset
+            peak_y = waveform[main_peak_idx] + y_offset
+            trough_y = waveform[main_trough_idx] + y_offset
+            
+            # Draw all three lines with distinct styles and proper visibility
+            # Use purple color as requested
+            duration_color = '#8A2BE2'  # Purple - highly visible
+            
+            # 1. Horizontal duration line (solid line) - add to legend
+            ax.plot([peak_x, trough_x], [line_y, line_y], 
+                   color=duration_color, linewidth=3, solid_capstyle='round', zorder=20, label='Duration')
+            
+            # 2. Vertical line from peak to duration line (dashed)
+            ax.plot([peak_x, peak_x], [peak_y, line_y], 
+                   color=duration_color, linewidth=2, linestyle='--', zorder=19)
+            
+            # 3. Vertical line from trough to duration line (dashed)
+            ax.plot([trough_x, trough_x], [trough_y, line_y], 
+                   color=duration_color, linewidth=2, linestyle='--', zorder=19)
         
         # Add legend for peaks/troughs at bottom of plot
         handles, labels = ax.get_legend_handles_labels()
