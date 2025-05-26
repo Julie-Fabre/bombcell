@@ -801,9 +801,9 @@ class InteractiveUnitQualityGUI:
                             waveform = template[:, ch]
                             ch_pos = positions[ch]
                             
-                            # Calculate X offset - make waveforms closer together (half waveform width closer)
+                            # Calculate X offset - use probe geometry with reasonable separation
                             waveform_width = template.shape[0]  # Usually 82 samples
-                            x_offset = (ch_pos[0] - max_pos[0]) * waveform_width * 0.025  # Halved spacing for closer waveforms
+                            x_offset = (ch_pos[0] - max_pos[0]) * waveform_width * 0.04  # Slightly increased from original 0.025
                             
                             # Calculate Y offset based on channel Y position (like MATLAB)
                             y_offset = (ch_pos[1] - max_pos[1]) / 100 * scaling_factor
@@ -817,8 +817,8 @@ class InteractiveUnitQualityGUI:
                             else:
                                 ax.plot(x_vals, y_vals, 'k-', linewidth=1, alpha=0.7)
                             
-                            # Add channel number - position further to the left to avoid overlap
-                            ax.text(x_offset - waveform_width * 0.15, y_offset, f'{ch}', fontsize=13, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
+                            # Add channel number closer to waveform
+                            ax.text(x_offset - waveform_width * 0.05, y_offset, f'{ch}', fontsize=13, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
                     
                     # Mark peaks and troughs on max channel
                     max_ch_waveform = template[:, max_ch]
@@ -832,18 +832,13 @@ class InteractiveUnitQualityGUI:
                     # Set axis properties like MATLAB
                     ax.invert_yaxis()  # Reverse Y direction like MATLAB
                     
-                    # Extend x-axis limits to accommodate channel number text on the left
-                    x_min, x_max = ax.get_xlim()
-                    text_padding = waveform_width * 0.2  # Extra space for channel numbers
-                    ax.set_xlim(x_min - text_padding, x_max)
-                    
             else:
                 # Fallback: simple single channel display
                 ax.plot(template[:, max_ch], 'k-', linewidth=2)
                 ax.text(0.5, 0.5, f'Template\n(channel {max_ch})', 
                        ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Template waveforms', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Template waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         ax.set_xticks([])
         ax.set_yticks([])
         
@@ -859,7 +854,7 @@ class InteractiveUnitQualityGUI:
         if extract_raw != 1:
             ax.text(0.5, 0.5, 'Raw waveforms\n(extractRaw disabled)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
-            ax.set_title('Raw waveforms', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
+            ax.set_title('Raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
             return
         
         if self.raw_waveforms is not None:
@@ -911,9 +906,9 @@ class InteractiveUnitQualityGUI:
                                             waveform = waveforms[:, ch]
                                             ch_pos = positions[ch]
                                             
-                                            # Calculate X offset - use waveform width for proper side-by-side spacing
+                                            # Calculate X offset - use probe geometry with reasonable separation
                                             waveform_width = waveforms.shape[0]  # Usually 82 samples
-                                            x_offset = (ch_pos[0] - max_pos[0]) * waveform_width * 0.05  # Reduced spacing
+                                            x_offset = (ch_pos[0] - max_pos[0]) * waveform_width * 0.06  # Slightly increased from original 0.05
                                             
                                             # Calculate Y offset based on channel Y position (like MATLAB)
                                             y_offset = (ch_pos[1] - max_pos[1]) / 100 * scaling_factor
@@ -927,8 +922,8 @@ class InteractiveUnitQualityGUI:
                                             else:
                                                 ax.plot(x_vals, y_vals, 'gray', linewidth=1, alpha=0.7)
                                             
-                                            # Add channel number
-                                            ax.text(x_offset - 2, y_offset, f'{ch}', fontsize=13, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
+                                            # Add channel number closer to waveform
+                                            ax.text(x_offset - waveform_width * 0.02, y_offset, f'{ch}', fontsize=13, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
                                     
                                     # Mark peaks and troughs on max channel
                                     max_ch_waveform = waveforms[:, max_ch]
@@ -957,7 +952,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'Raw waveforms\n(not available)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Raw waveforms', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         ax.set_xticks([])
         ax.set_yticks([])
         # Remove aspect ratio constraint to prevent squishing
@@ -999,10 +994,6 @@ class InteractiveUnitQualityGUI:
             else:
                 print(f"⚠️ ACG: Computing REAL-TIME autocorrelogram for unit {self.current_unit_idx}")
             
-            # Show computing message on plot
-            ax.text(0.5, 0.5, f'Computing ACG for unit {self.current_unit_idx}...\n(This may take a moment)', 
-                   ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans",
-                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
             # ACG calculation with MATLAB-style parameters
             max_lag = 0.05  # 50ms
             bin_size = 0.001  # 1ms bins
@@ -1093,16 +1084,45 @@ class InteractiveUnitQualityGUI:
                 ax.axhline(mean_fr, color='orange', linewidth=3, linestyle='--', alpha=1.0, 
                           label=f'Mean FR = {mean_fr:.1f} sp/s', zorder=10)
                 
-        ax.set_title('Auto-correlogram', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Auto-correlogram', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         ax.set_xlabel('Time (ms)', fontsize=13, fontfamily="DejaVu Sans")
         ax.set_ylabel('Firing rate (sp/s)', fontsize=13, fontfamily="DejaVu Sans")
         ax.tick_params(labelsize=13)
         
-        # Add legend in bottom right corner
+        # Add legend in top right corner
         handles, labels = ax.get_legend_handles_labels()
         if handles:
-            ax.legend(handles, labels, loc='lower right', fontsize=10, framealpha=0.9,
+            ax.legend(handles, labels, loc='upper right', fontsize=13, framealpha=0.9,
                      prop={'family': 'DejaVu Sans'})
+        
+        # Add tauR range information if min/max tauR are different
+        if self.param and 'tauR_valuesMin' in self.param and 'tauR_valuesMax' in self.param:
+            tau_r_min = self.param['tauR_valuesMin']
+            tau_r_max = self.param['tauR_valuesMax'] 
+            
+            # Check if min and max are different (indicating a range)
+            if tau_r_min != tau_r_max:
+                # Get the chosen tauR for this unit
+                metrics = unit_data['metrics']
+                chosen_tau_r = metrics.get('estimatedTauR', 'N/A')
+                
+                # Format the range text
+                range_text = f"τR range: {tau_r_min}-{tau_r_max} ms"
+                chosen_text = f"Chosen τR: {chosen_tau_r} ms" if chosen_tau_r != 'N/A' else "Chosen τR: N/A"
+                
+                # Add range text at top left
+                ax.text(0.02, 0.98, range_text, transform=ax.transAxes, 
+                       verticalalignment='top', horizontalalignment='left', fontsize=13, 
+                       color='blue', weight='bold', fontfamily="DejaVu Sans",
+                       bbox=dict(boxstyle='round,pad=0.4', facecolor='lightblue', alpha=0.8, 
+                                edgecolor='blue', linewidth=1), zorder=20)
+                
+                # Add chosen tauR text below range
+                ax.text(0.02, 0.88, chosen_text, transform=ax.transAxes, 
+                       verticalalignment='top', horizontalalignment='left', fontsize=13, 
+                       color='darkgreen', weight='bold', fontfamily="DejaVu Sans",
+                       bbox=dict(boxstyle='round,pad=0.4', facecolor='lightgreen', alpha=0.8, 
+                                edgecolor='darkgreen', linewidth=1), zorder=20)
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'acg')
@@ -1216,7 +1236,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'Spatial decay\n(not computed)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Spatial decay', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Spatial decay', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'spatial')
@@ -1294,7 +1314,7 @@ class InteractiveUnitQualityGUI:
                         ax.axvspan(center - bin_width/2, center + bin_width/2, 
                                   alpha=0.1, color='green', zorder=0)
                 
-        ax.set_title('Amplitudes over time', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Amplitudes over time', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         ax.set_xlabel('Time (s)', fontsize=13, fontfamily="DejaVu Sans")
         ax.tick_params(labelsize=13)
         ax.tick_params(axis='y', labelcolor='blue')
@@ -1399,7 +1419,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'Unit locations\n(requires probe geometry\nand max channels)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
         
-        ax.set_title('Units by depth', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Units by depth', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         
     def plot_amplitude_fit(self, ax, unit_data):
         """Plot amplitude distribution with cutoff Gaussian fit like BombCell"""
@@ -1475,7 +1495,7 @@ class InteractiveUnitQualityGUI:
                             # Display percentage like BombCell
                             ax.text(0.5, 0.98, f'{percent_missing:.1f}', 
                                    transform=ax.transAxes, va='top', ha='center',
-                                   color=[0.7, 0.7, 0.7], fontsize=10, weight='bold')
+                                   color=[0.7, 0.7, 0.7], fontsize=13, weight='bold')
                             
                         except Exception as e:
                             # Fallback to simple stats
@@ -1504,7 +1524,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'No spike data\navailable', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Amplitude distribution', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Amplitude distribution', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'amplitude_fit')
@@ -1626,7 +1646,7 @@ class InteractiveUnitQualityGUI:
             
         # Add colored text to plot with proper spacing
         if metric_info:
-            y_start = 0.95
+            y_start = 0.15 if plot_type == 'acg' else 0.95  # Bottom for ACG, top for others
             line_height = 0.08  # Increased spacing to prevent overlaps
             
             for i, (metric_name, text) in enumerate(metric_info):
@@ -1957,7 +1977,7 @@ class InteractiveUnitQualityGUI:
         handles, labels = ax.get_legend_handles_labels()
         if handles:
             ax.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, -0.1), 
-                     ncol=len(handles), fontsize=10, frameon=True, framealpha=0.9,
+                     ncol=len(handles), fontsize=13, frameon=True, framealpha=0.9,
                      prop={'family': 'DejaVu Sans'})
     
     def get_nearby_channels_for_spatial_decay(self, peak_channel, n_channels):
@@ -2063,7 +2083,7 @@ class UnitQualityGUI:
         
     def setup_location_plot(self):
         """Setup unit location on probe plot"""
-        self.ax_location.set_title('Location on probe')
+        self.ax_location.set_title('Location on probe', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         self.ax_location.set_xlabel('Norm. log rate', fontsize=13, fontfamily="DejaVu Sans")
         self.ax_location.set_ylabel('Depth from tip (μm)', fontsize=13, fontfamily="DejaVu Sans")
         self.ax_location.tick_params(labelsize=13)
@@ -2071,35 +2091,35 @@ class UnitQualityGUI:
         
     def setup_template_plot(self):
         """Setup template waveform plot"""
-        self.ax_template.set_title('Template waveforms')
+        self.ax_template.set_title('Template waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         self.ax_template.set_xticks([])
         self.ax_template.set_yticks([])
         self.ax_template.invert_yaxis()
         
     def setup_raw_plot(self):
         """Setup raw waveform plot"""
-        self.ax_raw.set_title('Raw waveforms')
+        self.ax_raw.set_title('Raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         self.ax_raw.set_xticks([])
         self.ax_raw.set_yticks([])
         self.ax_raw.invert_yaxis()
         
     def setup_spatial_plot(self):
         """Setup spatial decay plot"""
-        self.ax_spatial.set_title('Spatial decay')
+        self.ax_spatial.set_title('Spatial decay', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         self.ax_spatial.set_ylabel('Ampli. (a.u.)', fontsize=13, fontfamily="DejaVu Sans")
         self.ax_spatial.set_xlabel('Distance', fontsize=13, fontfamily="DejaVu Sans")
         self.ax_spatial.tick_params(labelsize=13)
         
     def setup_acg_plot(self):
         """Setup auto-correlogram plot"""
-        self.ax_acg.set_title('Auto-correlogram')
+        self.ax_acg.set_title('Auto-correlogram', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         self.ax_acg.set_xlabel('Time (ms)', fontsize=13, fontfamily="DejaVu Sans")
         self.ax_acg.set_ylabel('sp/s', fontsize=13, fontfamily="DejaVu Sans")
         self.ax_acg.tick_params(labelsize=13)
         
     def setup_amplitude_plot(self):
         """Setup amplitude over time plot"""
-        self.ax_amplitude.set_title('Amplitudes over time')
+        self.ax_amplitude.set_title('Amplitudes over time', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         self.ax_amplitude.set_xlabel('Experiment time (s)', fontsize=13, fontfamily="DejaVu Sans")
         self.ax_amplitude.tick_params(labelsize=13)
         # Dual y-axis like MATLAB
@@ -2110,7 +2130,7 @@ class UnitQualityGUI:
         
     def setup_amplitude_fit_plot(self):
         """Setup amplitude fit plot"""
-        self.ax_amp_fit.set_title('Amplitude fit')
+        self.ax_amp_fit.set_title('Amplitude fit', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         
     def setup_navigation(self):
         """Setup navigation buttons at bottom"""
