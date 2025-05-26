@@ -818,7 +818,7 @@ class InteractiveUnitQualityGUI:
                                 ax.plot(x_vals, y_vals, 'k-', linewidth=1, alpha=0.7)
                             
                             # Add channel number - position further to the left to avoid overlap
-                            ax.text(x_offset - waveform_width * 0.15, y_offset, f'{ch}', fontsize=8, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
+                            ax.text(x_offset - waveform_width * 0.15, y_offset, f'{ch}', fontsize=13, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
                     
                     # Mark peaks and troughs on max channel
                     max_ch_waveform = template[:, max_ch]
@@ -843,7 +843,7 @@ class InteractiveUnitQualityGUI:
                 ax.text(0.5, 0.5, f'Template\n(channel {max_ch})', 
                        ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Template waveforms', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Template waveforms', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
         ax.set_xticks([])
         ax.set_yticks([])
         
@@ -859,7 +859,7 @@ class InteractiveUnitQualityGUI:
         if extract_raw != 1:
             ax.text(0.5, 0.5, 'Raw waveforms\n(extractRaw disabled)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
-            ax.set_title('Raw waveforms', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
+            ax.set_title('Raw waveforms', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
             return
         
         if self.raw_waveforms is not None:
@@ -928,7 +928,7 @@ class InteractiveUnitQualityGUI:
                                                 ax.plot(x_vals, y_vals, 'gray', linewidth=1, alpha=0.7)
                                             
                                             # Add channel number
-                                            ax.text(x_offset - 2, y_offset, f'{ch}', fontsize=8, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
+                                            ax.text(x_offset - 2, y_offset, f'{ch}', fontsize=13, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
                                     
                                     # Mark peaks and troughs on max channel
                                     max_ch_waveform = waveforms[:, max_ch]
@@ -957,7 +957,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'Raw waveforms\n(not available)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Raw waveforms', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Raw waveforms', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
         ax.set_xticks([])
         ax.set_yticks([])
         # Remove aspect ratio constraint to prevent squishing
@@ -1093,9 +1093,10 @@ class InteractiveUnitQualityGUI:
                 ax.axhline(mean_fr, color='orange', linewidth=3, linestyle='--', alpha=1.0, 
                           label=f'Mean FR = {mean_fr:.1f} sp/s', zorder=10)
                 
-        ax.set_title('Auto-correlogram', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
-        ax.set_xlabel('Time (ms)', fontsize=10, fontfamily="DejaVu Sans")
-        ax.set_ylabel('Firing rate (sp/s)', fontsize=10, fontfamily="DejaVu Sans")
+        ax.set_title('Auto-correlogram', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_xlabel('Time (ms)', fontsize=13, fontfamily="DejaVu Sans")
+        ax.set_ylabel('Firing rate (sp/s)', fontsize=13, fontfamily="DejaVu Sans")
+        ax.tick_params(labelsize=13)
         
         # Add legend in bottom right corner
         handles, labels = ax.get_legend_handles_labels()
@@ -1166,8 +1167,9 @@ class InteractiveUnitQualityGUI:
                                 valid_y = (y_smooth > 0) & (y_smooth < 10)  # Avoid extreme values
                                 ax.plot(x_smooth[valid_y], y_smooth[valid_y], 'r-', linewidth=2, alpha=0.8)
                             
-                            ax.set_xlabel('Distance (μm)')
-                            ax.set_ylabel('Normalized amplitude')
+                            ax.set_xlabel('Distance (μm)', fontsize=13, fontfamily="DejaVu Sans")
+                            ax.set_ylabel('Normalized amplitude', fontsize=13, fontfamily="DejaVu Sans")
+                            ax.tick_params(labelsize=13)
                             
                             # Set y-limits to show all data AND fitted line with generous padding
                             data_y_min = np.min(amplitudes)
@@ -1214,7 +1216,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'Spatial decay\n(not computed)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Spatial decay', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Spatial decay', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'spatial')
@@ -1249,7 +1251,8 @@ class InteractiveUnitQualityGUI:
                 
                 # Plot amplitudes with slightly bigger dots
                 ax.scatter(spike_times, amplitudes, s=3, alpha=0.6, color='black', edgecolors='none')
-                ax.set_ylabel('Template scaling', color='blue')
+                ax.set_ylabel('Template scaling', color='blue', fontsize=13, fontfamily="DejaVu Sans")
+                ax.tick_params(labelsize=13)
                 
                 # Create twin axis for firing rate
                 ax2 = ax.twinx()
@@ -1257,7 +1260,8 @@ class InteractiveUnitQualityGUI:
                 # Plot firing rate as step plot (outline only)
                 ax2.step(bin_centers, firing_rates, where='mid', color='orange', 
                         linewidth=2.5, alpha=0.8, label='Firing rate')
-                ax2.set_ylabel('Firing rate (sp/s)', color='orange')
+                ax2.set_ylabel('Firing rate (sp/s)', color='orange', fontsize=13, fontfamily="DejaVu Sans")
+                ax2.tick_params(labelsize=13)
                 ax2.tick_params(axis='y', labelcolor='orange')
                 
                 # Highlight time bins with good presence ratio
@@ -1272,13 +1276,15 @@ class InteractiveUnitQualityGUI:
                 # Just plot spike times as raster with bigger dots
                 y_pos = np.ones_like(spike_times)
                 ax.scatter(spike_times, y_pos, s=3, alpha=0.6, color='black', edgecolors='none')
-                ax.set_ylabel('Spikes', color='blue')
+                ax.set_ylabel('Spikes', color='blue', fontsize=13, fontfamily="DejaVu Sans")
+                ax.tick_params(labelsize=13)
                 
                 # Create twin axis for firing rate  
                 ax2 = ax.twinx()
                 ax2.step(bin_centers, firing_rates, where='mid', color='orange', 
                         linewidth=2.5, alpha=0.8, label='Firing rate')
-                ax2.set_ylabel('Firing rate (sp/s)', color='orange')
+                ax2.set_ylabel('Firing rate (sp/s)', color='orange', fontsize=13, fontfamily="DejaVu Sans")
+                ax2.tick_params(labelsize=13)
                 ax2.tick_params(axis='y', labelcolor='orange')
                 
                 # Highlight good presence bins
@@ -1288,8 +1294,9 @@ class InteractiveUnitQualityGUI:
                         ax.axvspan(center - bin_width/2, center + bin_width/2, 
                                   alpha=0.1, color='green', zorder=0)
                 
-        ax.set_title('Amplitudes over time', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
-        ax.set_xlabel('Time (s)', fontsize=10, fontfamily="DejaVu Sans")
+        ax.set_title('Amplitudes over time', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_xlabel('Time (s)', fontsize=13, fontfamily="DejaVu Sans")
+        ax.tick_params(labelsize=13)
         ax.tick_params(axis='y', labelcolor='blue')
         
         # Store y-limits for amplitude fit plot consistency
@@ -1372,8 +1379,9 @@ class InteractiveUnitQualityGUI:
                         # Other units: smaller, no outline
                         ax.scatter(log_fr, depth, c=[color], s=30, alpha=0.7, zorder=5)
                 
-                ax.set_xlabel('Log₁₀ firing rate (sp/s)')
-                ax.set_ylabel('Depth (μm)')
+                ax.set_xlabel('Log₁₀ firing rate (sp/s)', fontsize=13, fontfamily="DejaVu Sans")
+                ax.set_ylabel('Depth (μm)', fontsize=13, fontfamily="DejaVu Sans")
+                ax.tick_params(labelsize=13)
                 ax.invert_yaxis()  # Deeper = higher values, but show at bottom
                 
                 # Add legend
@@ -1391,7 +1399,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'Unit locations\n(requires probe geometry\nand max channels)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
         
-        ax.set_title('Units by depth', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Units by depth', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
         
     def plot_amplitude_fit(self, ax, unit_data):
         """Plot amplitude distribution with cutoff Gaussian fit like BombCell"""
@@ -1478,8 +1486,9 @@ class InteractiveUnitQualityGUI:
                         ax.text(0.5, 0.5, 'SciPy required\nfor fitting', 
                                ha='center', va='center', transform=ax.transAxes)
                     
-                    ax.set_xlabel('count')
-                    ax.set_ylabel('amplitude')
+                    ax.set_xlabel('count', fontsize=13, fontfamily="DejaVu Sans")
+                    ax.set_ylabel('amplitude', fontsize=13, fontfamily="DejaVu Sans")
+                    ax.tick_params(labelsize=13)
                     
                     # Set y-limits to match amplitude plot if available
                     if amp_ylim is not None:
@@ -1495,7 +1504,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'No spike data\navailable', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Amplitude distribution', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Amplitude distribution', fontsize=13, fontweight='bold', fontfamily="DejaVu Sans")
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'amplitude_fit')
@@ -1629,7 +1638,7 @@ class InteractiveUnitQualityGUI:
                     break
                     
                 ax.text(0.98, y_pos, text, transform=ax.transAxes, 
-                       verticalalignment='top', horizontalalignment='right', fontsize=12, 
+                       verticalalignment='top', horizontalalignment='right', fontsize=13, 
                        color=color, weight='bold', fontfamily="DejaVu Sans",
                        bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.9, 
                                 edgecolor='lightgray', linewidth=1), zorder=20)
@@ -2055,8 +2064,9 @@ class UnitQualityGUI:
     def setup_location_plot(self):
         """Setup unit location on probe plot"""
         self.ax_location.set_title('Location on probe')
-        self.ax_location.set_xlabel('Norm. log rate')
-        self.ax_location.set_ylabel('Depth from tip (μm)')
+        self.ax_location.set_xlabel('Norm. log rate', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_location.set_ylabel('Depth from tip (μm)', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_location.tick_params(labelsize=13)
         self.ax_location.invert_yaxis()  # MATLAB uses 'YDir', 'reverse'
         
     def setup_template_plot(self):
@@ -2076,23 +2086,27 @@ class UnitQualityGUI:
     def setup_spatial_plot(self):
         """Setup spatial decay plot"""
         self.ax_spatial.set_title('Spatial decay')
-        self.ax_spatial.set_ylabel('Ampli. (a.u.)')
-        self.ax_spatial.set_xlabel('Distance')
+        self.ax_spatial.set_ylabel('Ampli. (a.u.)', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_spatial.set_xlabel('Distance', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_spatial.tick_params(labelsize=13)
         
     def setup_acg_plot(self):
         """Setup auto-correlogram plot"""
         self.ax_acg.set_title('Auto-correlogram')
-        self.ax_acg.set_xlabel('Time (ms)')
-        self.ax_acg.set_ylabel('sp/s')
+        self.ax_acg.set_xlabel('Time (ms)', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_acg.set_ylabel('sp/s', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_acg.tick_params(labelsize=13)
         
     def setup_amplitude_plot(self):
         """Setup amplitude over time plot"""
         self.ax_amplitude.set_title('Amplitudes over time')
-        self.ax_amplitude.set_xlabel('Experiment time (s)')
+        self.ax_amplitude.set_xlabel('Experiment time (s)', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_amplitude.tick_params(labelsize=13)
         # Dual y-axis like MATLAB
         self.ax_amplitude_right = self.ax_amplitude.twinx()
-        self.ax_amplitude.set_ylabel('Template scaling', color='k')
-        self.ax_amplitude_right.set_ylabel('Firing rate (sp/sec)', color='orange')
+        self.ax_amplitude.set_ylabel('Template scaling', color='k', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_amplitude_right.set_ylabel('Firing rate (sp/sec)', color='orange', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_amplitude_right.tick_params(labelsize=13)
         
     def setup_amplitude_fit_plot(self):
         """Setup amplitude fit plot"""
