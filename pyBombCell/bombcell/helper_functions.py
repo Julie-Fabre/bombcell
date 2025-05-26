@@ -682,13 +682,13 @@ def _save_gui_data(gui_data, save_path, unique_templates, param):
         if param.get("verbose", False):
             spatial_decay_count = len(gui_data['spatial_decay_fits'])
             amplitude_fits_count = len(gui_data['amplitude_fits'])
-            print(f"✅ GUI visualization data saved to: {gui_data_path}")
+            print(f"GUI visualization data saved to: {gui_data_path}")
             print(f"   Generated spatial decay fits: {spatial_decay_count}/{len(unique_templates)} units")
             print(f"   Generated amplitude fits: {amplitude_fits_count}/{len(unique_templates)} units")
         
     except Exception as e:
         if param.get("verbose", False):
-            print(f"⚠️ GUI data saving failed (GUI will still work): {e}")
+            print(f"GUI data saving failed (GUI will still work): {e}")
 
 
 def get_all_quality_metrics(
@@ -989,7 +989,7 @@ def get_all_quality_metrics(
 
     # Save GUI data after processing all units
     if param.get("verbose", False):
-        print("\n💾 Saving GUI visualization data...")
+        print("\nSaving GUI visualization data...")
     _save_gui_data(gui_data, save_path, unique_templates, param)
 
     runtimes = {
@@ -1050,8 +1050,8 @@ def run_bombcell(ks_dir, save_path, param):
     if param.get("verbose", False):
         print("🚀 Starting BombCell quality metrics pipeline...")
         print(f"📁 Processing data from: {ks_dir}")
-        print(f"💾 Results will be saved to: {save_path}")
-        print("\n📊 Loading ephys data...")
+        print(f"Results will be saved to: {save_path}")
+        print("\nLoading ephys data...")
     
     (
         spike_times_samples,
@@ -1064,7 +1064,7 @@ def run_bombcell(ks_dir, save_path, param):
     ) = load_ephys_data(ks_dir)
     
     if param.get("verbose", False):
-        print(f"✅ Loaded ephys data: {len(np.unique(spike_clusters))} units, {len(spike_times_samples):,} spikes")
+        print(f"Loaded ephys data: {len(np.unique(spike_clusters))} units, {len(spike_times_samples):,} spikes")
 
     # Extract or load in raw waveforms
     if param["raw_data_file"] is not None:
@@ -1170,12 +1170,12 @@ def run_bombcell(ks_dir, save_path, param):
     )  # JF: this should be inside bc.get_all_quality_metrics
 
     if param.get("verbose", False):
-        print("\n📊 Generating summary plots...")
+        print("\nGenerating summary plots...")
     
     plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_string, param)
 
     if param.get("verbose", False):
-        print("\n💾 Saving results...")
+        print("\nSaving results...")
     
     save_results(
         quality_metrics,

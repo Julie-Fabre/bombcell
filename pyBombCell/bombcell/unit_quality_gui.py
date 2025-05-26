@@ -272,13 +272,13 @@ def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
             with open(final_save_path, 'wb') as f:
                 pickle.dump(gui_data, f)
             if param.get("verbose", False):
-                print(f"✅ Pre-computed GUI data saved to: {final_save_path}")
+                print(f"Pre-computed GUI data saved to: {final_save_path}")
         except Exception as e:
             if param.get("verbose", False):
-                print(f"❌ Failed to save GUI data: {e}")
+                print(f"Failed to save GUI data: {e}")
     else:
         if param.get("verbose", False):
-            print("⚠️ No save path provided - GUI data not saved")
+            print("No save path provided - GUI data not saved")
     
     if param.get("verbose", False):
         print("Pre-computation complete!")
@@ -321,13 +321,13 @@ def load_gui_data(load_path):
             try:
                 with open(path, 'rb') as f:
                     gui_data = pickle.load(f)
-                print(f"✅ Loaded GUI data from: {path}")
+                print(f"Loaded GUI data from: {path}")
                 return gui_data
             except Exception as e:
-                print(f"❌ Failed to load GUI data from {path}: {e}")
+                print(f"Failed to load GUI data from {path}: {e}")
                 continue
     
-    print(f"❌ GUI data file not found. Tried: {possible_paths}")
+    print(f"GUI data file not found. Tried: {possible_paths}")
     return None
 
 
@@ -379,8 +379,8 @@ class InteractiveUnitQualityGUI:
         
         # Detailed gui_data loading feedback
         if gui_data:
-            print(f"✅ GUI data loaded successfully!")
-            print(f"   📊 Data types available: {list(gui_data.keys())}")
+            print(f"GUI data loaded successfully!")
+            print(f"   Data types available: {list(gui_data.keys())}")
             
             # Check each data type
             data_status = []
@@ -391,16 +391,16 @@ class InteractiveUnitQualityGUI:
             if 'spatial_decay_fits' in gui_data:
                 count = len(gui_data['spatial_decay_fits'])
                 if count > 0:
-                    data_status.append(f"✅ Spatial decay fits: {count} units")
+                    data_status.append(f"Spatial decay fits: {count} units")
                 else:
-                    data_status.append(f"❌ Spatial decay fits: {count} units (none available)")
+                    data_status.append(f"Spatial decay fits: {count} units (none available)")
                     
             if 'amplitude_fits' in gui_data:
                 count = len(gui_data['amplitude_fits'])
                 if count > 0:
-                    data_status.append(f"✅ Amplitude fits: {count} units")
+                    data_status.append(f"Amplitude fits: {count} units")
                 else:
-                    data_status.append(f"❌ Amplitude fits: {count} units (none available)")
+                    data_status.append(f"Amplitude fits: {count} units (none available)")
                     
             if 'acg_data' in gui_data:
                 count = len(gui_data['acg_data'])
@@ -409,12 +409,12 @@ class InteractiveUnitQualityGUI:
             for status in data_status:
                 print(f"   {status}")
         else:
-            print("❌ No pre-computed GUI data found - will compute everything real-time")
+            print("No pre-computed GUI data found - will compute everything real-time")
         
         # Get unique units
         self.unique_units = np.unique(ephys_data['spike_clusters'])
         self.n_units = len(self.unique_units)
-        print(f"📊 Total units: {self.n_units}")
+        print(f"Total units: {self.n_units}")
         self.current_unit_idx = 0
         
         # Setup widgets and display
@@ -442,19 +442,29 @@ class InteractiveUnitQualityGUI:
         )
         self.goto_unit_btn = widgets.Button(description='Go', button_style='primary')
         
-        # Navigation buttons
-        self.prev_btn = widgets.Button(description='← unit', button_style='info')
-        self.next_btn = widgets.Button(description='unit →', button_style='info')
+        # Navigation buttons (bold arrows, bigger)
+        self.prev_btn = widgets.Button(description='◀', button_style='info', 
+                                      layout=widgets.Layout(width='70px', height='32px'))
+        self.next_btn = widgets.Button(description='▶', button_style='info',
+                                      layout=widgets.Layout(width='70px', height='32px'))
         
-        # Unit type navigation - both directions
-        self.goto_prev_good_btn = widgets.Button(description='← good', button_style='success')
-        self.goto_good_btn = widgets.Button(description='good →', button_style='success')
-        self.goto_prev_mua_btn = widgets.Button(description='← mua', button_style='warning')
-        self.goto_mua_btn = widgets.Button(description='mua →', button_style='warning')
-        self.goto_prev_noise_btn = widgets.Button(description='← noise', button_style='danger')
-        self.goto_noise_btn = widgets.Button(description='noise →', button_style='danger')
-        self.goto_prev_nonsomatic_btn = widgets.Button(description='← non-soma', button_style='primary')
-        self.goto_nonsomatic_btn = widgets.Button(description='non-soma →', button_style='primary')
+        # Unit type navigation - both directions (slightly smaller for good/mua/noise)
+        self.goto_prev_good_btn = widgets.Button(description='◀ good', button_style='success',
+                                                 layout=widgets.Layout(width='80px', height='32px'))
+        self.goto_good_btn = widgets.Button(description='good ▶', button_style='success',
+                                           layout=widgets.Layout(width='80px', height='32px'))
+        self.goto_prev_mua_btn = widgets.Button(description='◀ mua', button_style='warning',
+                                               layout=widgets.Layout(width='75px', height='32px'))
+        self.goto_mua_btn = widgets.Button(description='mua ▶', button_style='warning',
+                                          layout=widgets.Layout(width='75px', height='32px'))
+        self.goto_prev_noise_btn = widgets.Button(description='◀ noise', button_style='danger',
+                                                  layout=widgets.Layout(width='85px', height='32px'))
+        self.goto_noise_btn = widgets.Button(description='noise ▶', button_style='danger',
+                                            layout=widgets.Layout(width='85px', height='32px'))
+        self.goto_prev_nonsomatic_btn = widgets.Button(description='◀ non-somatic', button_style='primary',
+                                                      layout=widgets.Layout(width='150px', height='32px'))
+        self.goto_nonsomatic_btn = widgets.Button(description='non-somatic ▶', button_style='primary',
+                                                  layout=widgets.Layout(width='150px', height='32px'))
         
         # Unit info display
         self.unit_info = widgets.HTML(value="")
@@ -488,19 +498,36 @@ class InteractiveUnitQualityGUI:
         
     def display_gui(self):
         """Display the GUI"""
-        # Navigation controls
-        nav_controls = widgets.HBox([
-            self.prev_btn, self.next_btn, 
-            widgets.Label('  |  '),
+        # Basic navigation section (prev/next unit)
+        basic_nav_text = widgets.HTML("<b>Go to next/prev. unit:</b>", layout=widgets.Layout(text_align='center'))
+        basic_nav_buttons = widgets.HBox([
+            self.prev_btn, self.next_btn
+        ], layout=widgets.Layout(justify_content='center'))
+        basic_nav_section = widgets.VBox([basic_nav_text, basic_nav_buttons])
+        
+        # Unit type navigation section
+        type_nav_text = widgets.HTML("<b>Go to next/prev. good, MUA, non-somatic or noise unit:</b>", layout=widgets.Layout(text_align='center'))
+        type_nav_buttons = widgets.HBox([
             self.goto_prev_good_btn, self.goto_good_btn,
             self.goto_prev_mua_btn, self.goto_mua_btn,
             self.goto_prev_noise_btn, self.goto_noise_btn,
             self.goto_prev_nonsomatic_btn, self.goto_nonsomatic_btn
-        ])
+        ], layout=widgets.Layout(justify_content='center'))
+        type_nav_section = widgets.VBox([type_nav_text, type_nav_buttons])
         
-        # Unit input controls
-        unit_input_controls = widgets.HBox([
-            self.unit_input, self.goto_unit_btn
+        # Combined navigation controls
+        nav_controls = widgets.HBox([
+            basic_nav_section,
+            widgets.Label('  |  '),
+            type_nav_section
+        ], layout=widgets.Layout(justify_content='center'))
+        
+        # Slider and unit input controls combined
+        slider_and_input = widgets.HBox([
+            self.unit_slider,
+            widgets.Label('  Go to:  '),
+            self.unit_input, 
+            self.goto_unit_btn
         ])
         
         # Classification controls (hidden for now)
@@ -510,8 +537,7 @@ class InteractiveUnitQualityGUI:
         
         # Full interface
         interface = widgets.VBox([
-            self.unit_slider,
-            unit_input_controls,
+            slider_and_input,
             self.unit_info,
             nav_controls,
             # classify_controls,  # Hidden for now
@@ -702,9 +728,9 @@ class InteractiveUnitQualityGUI:
         }
         title_color = title_colors.get(unit_type_str, "black")
         
-        # Simple title with unit number, phy ID, and type, colored by classification
+        # Simple title with unit number, phy ID, and type, colored by classification (large and centered)
         info_html = f"""
-        <h3 style="color: {title_color};">Unit {unit_data['unit_id']} (phy ID = {self.current_unit_idx}, {self.current_unit_idx+1}/{self.n_units}) - {unit_type_str}</h3>
+        <h1 style="color: {title_color}; text-align: center; font-size: 24px; margin: 10px 0;">Unit {unit_data['unit_id']} (phy ID = {self.current_unit_idx}, {self.current_unit_idx+1}/{self.n_units}) - {unit_type_str}</h1>
         """
         
         self.unit_info.value = info_html
@@ -801,9 +827,9 @@ class InteractiveUnitQualityGUI:
                             waveform = template[:, ch]
                             ch_pos = positions[ch]
                             
-                            # Calculate X offset - make waveforms closer together (half waveform width closer)
+                            # Calculate X offset - use probe geometry with reasonable separation
                             waveform_width = template.shape[0]  # Usually 82 samples
-                            x_offset = (ch_pos[0] - max_pos[0]) * waveform_width * 0.025  # Halved spacing for closer waveforms
+                            x_offset = (ch_pos[0] - max_pos[0]) * waveform_width * 0.04  # Slightly increased from original 0.025
                             
                             # Calculate Y offset based on channel Y position (like MATLAB)
                             y_offset = (ch_pos[1] - max_pos[1]) / 100 * scaling_factor
@@ -817,8 +843,8 @@ class InteractiveUnitQualityGUI:
                             else:
                                 ax.plot(x_vals, y_vals, 'k-', linewidth=1, alpha=0.7)
                             
-                            # Add channel number - position further to the left to avoid overlap
-                            ax.text(x_offset - waveform_width * 0.15, y_offset, f'{ch}', fontsize=8, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
+                            # Add channel number closer to waveform
+                            ax.text(x_offset - waveform_width * 0.05, y_offset, f'{ch}', fontsize=13, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
                     
                     # Mark peaks and troughs on max channel
                     max_ch_waveform = template[:, max_ch]
@@ -832,20 +858,20 @@ class InteractiveUnitQualityGUI:
                     # Set axis properties like MATLAB
                     ax.invert_yaxis()  # Reverse Y direction like MATLAB
                     
-                    # Extend x-axis limits to accommodate channel number text on the left
-                    x_min, x_max = ax.get_xlim()
-                    text_padding = waveform_width * 0.2  # Extra space for channel numbers
-                    ax.set_xlim(x_min - text_padding, x_max)
-                    
             else:
                 # Fallback: simple single channel display
                 ax.plot(template[:, max_ch], 'k-', linewidth=2)
                 ax.text(0.5, 0.5, f'Template\n(channel {max_ch})', 
                        ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Template waveforms', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Template waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         ax.set_xticks([])
         ax.set_yticks([])
+        
+        # Extend x-axis limits to accommodate channel number text (right side only)
+        x_min, x_max = ax.get_xlim()
+        text_padding = 100  # Padding for text labels on right side
+        ax.set_xlim(x_min, x_max + text_padding)
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'template')
@@ -859,7 +885,7 @@ class InteractiveUnitQualityGUI:
         if extract_raw != 1:
             ax.text(0.5, 0.5, 'Raw waveforms\n(extractRaw disabled)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
-            ax.set_title('Raw waveforms', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
+            ax.set_title('Raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
             return
         
         if self.raw_waveforms is not None:
@@ -911,9 +937,9 @@ class InteractiveUnitQualityGUI:
                                             waveform = waveforms[:, ch]
                                             ch_pos = positions[ch]
                                             
-                                            # Calculate X offset - use waveform width for proper side-by-side spacing
+                                            # Calculate X offset - use probe geometry with reasonable separation
                                             waveform_width = waveforms.shape[0]  # Usually 82 samples
-                                            x_offset = (ch_pos[0] - max_pos[0]) * waveform_width * 0.05  # Reduced spacing
+                                            x_offset = (ch_pos[0] - max_pos[0]) * waveform_width * 0.06  # Slightly increased from original 0.05
                                             
                                             # Calculate Y offset based on channel Y position (like MATLAB)
                                             y_offset = (ch_pos[1] - max_pos[1]) / 100 * scaling_factor
@@ -927,8 +953,8 @@ class InteractiveUnitQualityGUI:
                                             else:
                                                 ax.plot(x_vals, y_vals, 'gray', linewidth=1, alpha=0.7)
                                             
-                                            # Add channel number
-                                            ax.text(x_offset - 2, y_offset, f'{ch}', fontsize=8, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
+                                            # Add channel number closer to waveform
+                                            ax.text(x_offset - waveform_width * 0.02, y_offset, f'{ch}', fontsize=13, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
                                     
                                     # Mark peaks and troughs on max channel
                                     max_ch_waveform = waveforms[:, max_ch]
@@ -957,10 +983,15 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'Raw waveforms\n(not available)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Raw waveforms', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         ax.set_xticks([])
         ax.set_yticks([])
         # Remove aspect ratio constraint to prevent squishing
+        
+        # Extend x-axis limits to accommodate channel number text (right side only)
+        x_min, x_max = ax.get_xlim()
+        text_padding = 100  # Padding for text labels on right side
+        ax.set_xlim(x_min, x_max + text_padding)
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'raw')
@@ -970,15 +1001,7 @@ class InteractiveUnitQualityGUI:
         spike_times = unit_data['spike_times']
         metrics = unit_data['metrics']
         
-        print(f"🔍 ACG: Starting for unit {self.current_unit_idx} with {len(spike_times)} spikes")
-        
         # Check if we have pre-computed ACG data
-        print(f"🔍 ACG: CHECKING pre-computed data for unit {self.current_unit_idx}")
-        if self.gui_data:
-            print(f"   - has acg_data: {'acg_data' in self.gui_data}")
-            if 'acg_data' in self.gui_data:
-                print(f"   - unit {self.current_unit_idx} in acg_data: {self.current_unit_idx in self.gui_data['acg_data']}")
-        
         if (self.gui_data and 
             'acg_data' in self.gui_data and 
             self.current_unit_idx in self.gui_data['acg_data'] and
@@ -991,18 +1014,8 @@ class InteractiveUnitQualityGUI:
             bin_size = acg_data['bin_size']
             
         elif len(spike_times) > 1:
-            # Check if this is the first time computing ACG and inform user
-            if (self.gui_data and 'acg_data' in self.gui_data and 
-                self.current_unit_idx in self.gui_data['acg_data'] and
-                self.gui_data['acg_data'][self.current_unit_idx] is None):
-                print(f"⏳ ACG: Computing autocorrelogram for unit {self.current_unit_idx} (first time, please wait...)")
-            else:
-                print(f"⚠️ ACG: Computing REAL-TIME autocorrelogram for unit {self.current_unit_idx}")
+            # ACG calculation will proceed without status messages
             
-            # Show computing message on plot
-            ax.text(0.5, 0.5, f'Computing ACG for unit {self.current_unit_idx}...\n(This may take a moment)', 
-                   ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans",
-                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
             # ACG calculation with MATLAB-style parameters
             max_lag = 0.05  # 50ms
             bin_size = 0.001  # 1ms bins
@@ -1044,9 +1057,7 @@ class InteractiveUnitQualityGUI:
                     'bin_centers': bin_centers,
                     'bin_size': bin_size
                 }
-                print(f"✅ ACG: Cached autocorrelogram for unit {self.current_unit_idx} (will be faster next time)")
         else:
-            print(f"⚠️ ACG: No spikes or pre-computed data for unit {self.current_unit_idx}")
             return
         
         # Plot only positive lags (like MATLAB)
@@ -1093,15 +1104,45 @@ class InteractiveUnitQualityGUI:
                 ax.axhline(mean_fr, color='orange', linewidth=3, linestyle='--', alpha=1.0, 
                           label=f'Mean FR = {mean_fr:.1f} sp/s', zorder=10)
                 
-        ax.set_title('Auto-correlogram', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
-        ax.set_xlabel('Time (ms)', fontsize=10, fontfamily="DejaVu Sans")
-        ax.set_ylabel('Firing rate (sp/s)', fontsize=10, fontfamily="DejaVu Sans")
+        ax.set_title('Auto-correlogram', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_xlabel('Time (ms)', fontsize=13, fontfamily="DejaVu Sans")
+        ax.set_ylabel('Firing rate (sp/s)', fontsize=13, fontfamily="DejaVu Sans")
+        ax.tick_params(labelsize=13)
         
-        # Add legend in bottom right corner
+        # Add legend in top right corner
         handles, labels = ax.get_legend_handles_labels()
         if handles:
-            ax.legend(handles, labels, loc='lower right', fontsize=10, framealpha=0.9,
+            ax.legend(handles, labels, loc='upper right', fontsize=13, framealpha=0.9,
                      prop={'family': 'DejaVu Sans'})
+        
+        # Add tauR range information if min/max tauR are different
+        if self.param and 'tauR_valuesMin' in self.param and 'tauR_valuesMax' in self.param:
+            tau_r_min = self.param['tauR_valuesMin']
+            tau_r_max = self.param['tauR_valuesMax'] 
+            
+            # Check if min and max are different (indicating a range)
+            if tau_r_min != tau_r_max:
+                # Get the chosen tauR for this unit
+                metrics = unit_data['metrics']
+                chosen_tau_r = metrics.get('estimatedTauR', 'N/A')
+                
+                # Format the range text
+                range_text = f"τR range: {tau_r_min}-{tau_r_max} ms"
+                chosen_text = f"Chosen τR: {chosen_tau_r} ms" if chosen_tau_r != 'N/A' else "Chosen τR: N/A"
+                
+                # Add range text at top left
+                ax.text(0.02, 0.98, range_text, transform=ax.transAxes, 
+                       verticalalignment='top', horizontalalignment='left', fontsize=13, 
+                       color='blue', weight='bold', fontfamily="DejaVu Sans",
+                       bbox=dict(boxstyle='round,pad=0.4', facecolor='lightblue', alpha=0.8, 
+                                edgecolor='blue', linewidth=1), zorder=20)
+                
+                # Add chosen tauR text below range
+                ax.text(0.02, 0.88, chosen_text, transform=ax.transAxes, 
+                       verticalalignment='top', horizontalalignment='left', fontsize=13, 
+                       color='darkgreen', weight='bold', fontfamily="DejaVu Sans",
+                       bbox=dict(boxstyle='round,pad=0.4', facecolor='lightgreen', alpha=0.8, 
+                                edgecolor='darkgreen', linewidth=1), zorder=20)
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'acg')
@@ -1166,8 +1207,9 @@ class InteractiveUnitQualityGUI:
                                 valid_y = (y_smooth > 0) & (y_smooth < 10)  # Avoid extreme values
                                 ax.plot(x_smooth[valid_y], y_smooth[valid_y], 'r-', linewidth=2, alpha=0.8)
                             
-                            ax.set_xlabel('Distance (μm)')
-                            ax.set_ylabel('Normalized amplitude')
+                            ax.set_xlabel('Distance (μm)', fontsize=13, fontfamily="DejaVu Sans")
+                            ax.set_ylabel('Normalized amplitude', fontsize=13, fontfamily="DejaVu Sans")
+                            ax.tick_params(labelsize=13)
                             
                             # Set y-limits to show all data AND fitted line with generous padding
                             data_y_min = np.min(amplitudes)
@@ -1214,7 +1256,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'Spatial decay\n(not computed)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Spatial decay', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Spatial decay', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'spatial')
@@ -1249,7 +1291,8 @@ class InteractiveUnitQualityGUI:
                 
                 # Plot amplitudes with slightly bigger dots
                 ax.scatter(spike_times, amplitudes, s=3, alpha=0.6, color='black', edgecolors='none')
-                ax.set_ylabel('Template scaling', color='blue')
+                ax.set_ylabel('Template scaling', color='blue', fontsize=13, fontfamily="DejaVu Sans")
+                ax.tick_params(labelsize=13)
                 
                 # Create twin axis for firing rate
                 ax2 = ax.twinx()
@@ -1257,7 +1300,8 @@ class InteractiveUnitQualityGUI:
                 # Plot firing rate as step plot (outline only)
                 ax2.step(bin_centers, firing_rates, where='mid', color='orange', 
                         linewidth=2.5, alpha=0.8, label='Firing rate')
-                ax2.set_ylabel('Firing rate (sp/s)', color='orange')
+                ax2.set_ylabel('Firing rate (sp/s)', color='orange', fontsize=13, fontfamily="DejaVu Sans")
+                ax2.tick_params(labelsize=13)
                 ax2.tick_params(axis='y', labelcolor='orange')
                 
                 # Highlight time bins with good presence ratio
@@ -1272,13 +1316,15 @@ class InteractiveUnitQualityGUI:
                 # Just plot spike times as raster with bigger dots
                 y_pos = np.ones_like(spike_times)
                 ax.scatter(spike_times, y_pos, s=3, alpha=0.6, color='black', edgecolors='none')
-                ax.set_ylabel('Spikes', color='blue')
+                ax.set_ylabel('Spikes', color='blue', fontsize=13, fontfamily="DejaVu Sans")
+                ax.tick_params(labelsize=13)
                 
                 # Create twin axis for firing rate  
                 ax2 = ax.twinx()
                 ax2.step(bin_centers, firing_rates, where='mid', color='orange', 
                         linewidth=2.5, alpha=0.8, label='Firing rate')
-                ax2.set_ylabel('Firing rate (sp/s)', color='orange')
+                ax2.set_ylabel('Firing rate (sp/s)', color='orange', fontsize=13, fontfamily="DejaVu Sans")
+                ax2.tick_params(labelsize=13)
                 ax2.tick_params(axis='y', labelcolor='orange')
                 
                 # Highlight good presence bins
@@ -1288,8 +1334,9 @@ class InteractiveUnitQualityGUI:
                         ax.axvspan(center - bin_width/2, center + bin_width/2, 
                                   alpha=0.1, color='green', zorder=0)
                 
-        ax.set_title('Amplitudes over time', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
-        ax.set_xlabel('Time (s)', fontsize=10, fontfamily="DejaVu Sans")
+        ax.set_title('Amplitudes over time', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_xlabel('Time (s)', fontsize=13, fontfamily="DejaVu Sans")
+        ax.tick_params(labelsize=13)
         ax.tick_params(axis='y', labelcolor='blue')
         
         # Store y-limits for amplitude fit plot consistency
@@ -1372,8 +1419,9 @@ class InteractiveUnitQualityGUI:
                         # Other units: smaller, no outline
                         ax.scatter(log_fr, depth, c=[color], s=30, alpha=0.7, zorder=5)
                 
-                ax.set_xlabel('Log₁₀ firing rate (sp/s)')
-                ax.set_ylabel('Depth (μm)')
+                ax.set_xlabel('Log₁₀ firing rate (sp/s)', fontsize=13, fontfamily="DejaVu Sans")
+                ax.set_ylabel('Depth from tip of probe (μm)', fontsize=13, fontfamily="DejaVu Sans")
+                ax.tick_params(labelsize=13)
                 ax.invert_yaxis()  # Deeper = higher values, but show at bottom
                 
                 # Add legend
@@ -1384,6 +1432,38 @@ class InteractiveUnitQualityGUI:
                                                     label=class_name))
                 ax.legend(handles=legend_elements, loc='upper right', fontsize=8)
                 
+                # Add click interactivity to navigate to units
+                def on_location_click(event):
+                    if event.inaxes == ax and event.xdata is not None and event.ydata is not None:
+                        # Find the closest unit to the click
+                        click_x, click_y = event.xdata, event.ydata
+                        min_distance = float('inf')
+                        closest_unit_idx = None
+                        
+                        # Get current axis limits for normalization
+                        xlims = ax.get_xlim()
+                        ylims = ax.get_ylim()
+                        
+                        for i, (unit_id, log_fr, depth) in enumerate(zip(all_units, all_firing_rates, all_depths)):
+                            # Calculate distance in data coordinates (simpler approach)
+                            dx = (log_fr - click_x) / (xlims[1] - xlims[0])  # Normalize by axis range
+                            dy = (depth - click_y) / (ylims[1] - ylims[0])   # Normalize by axis range
+                            
+                            distance = np.sqrt(dx**2 + dy**2)
+                            if distance < min_distance:
+                                min_distance = distance
+                                closest_unit_idx = list(self.unique_units).index(unit_id)
+                        
+                        # Navigate to the closest unit if click is close enough
+                        if min_distance < 0.1 and closest_unit_idx is not None:  # 10% of normalized plot area
+                            self.current_unit_idx = closest_unit_idx
+                            self.unit_slider.value = closest_unit_idx
+                            print(f"Clicked on unit {closest_unit_idx} (unit_id: {self.unique_units[closest_unit_idx]})")
+                
+                # Store the click handler and connect it
+                self._location_click_handler = on_location_click
+                ax.figure.canvas.mpl_connect('button_press_event', self._location_click_handler)
+                
             else:
                 ax.text(0.5, 0.5, 'No units with\nvalid locations', 
                         ha='center', va='center', transform=ax.transAxes)
@@ -1391,7 +1471,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'Unit locations\n(requires probe geometry\nand max channels)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
         
-        ax.set_title('Units by depth', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Units by depth', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         
     def plot_amplitude_fit(self, ax, unit_data):
         """Plot amplitude distribution with cutoff Gaussian fit like BombCell"""
@@ -1467,7 +1547,7 @@ class InteractiveUnitQualityGUI:
                             # Display percentage like BombCell
                             ax.text(0.5, 0.98, f'{percent_missing:.1f}', 
                                    transform=ax.transAxes, va='top', ha='center',
-                                   color=[0.7, 0.7, 0.7], fontsize=10, weight='bold')
+                                   color=[0.7, 0.7, 0.7], fontsize=13, weight='bold')
                             
                         except Exception as e:
                             # Fallback to simple stats
@@ -1478,8 +1558,9 @@ class InteractiveUnitQualityGUI:
                         ax.text(0.5, 0.5, 'SciPy required\nfor fitting', 
                                ha='center', va='center', transform=ax.transAxes)
                     
-                    ax.set_xlabel('count')
-                    ax.set_ylabel('amplitude')
+                    ax.set_xlabel('count', fontsize=13, fontfamily="DejaVu Sans")
+                    ax.set_ylabel('amplitude', fontsize=13, fontfamily="DejaVu Sans")
+                    ax.tick_params(labelsize=13)
                     
                     # Set y-limits to match amplitude plot if available
                     if amp_ylim is not None:
@@ -1495,7 +1576,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'No spike data\navailable', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Amplitude distribution', fontsize=12, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Amplitude distribution', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'amplitude_fit')
@@ -1617,7 +1698,7 @@ class InteractiveUnitQualityGUI:
             
         # Add colored text to plot with proper spacing
         if metric_info:
-            y_start = 0.95
+            y_start = 0.15 if plot_type == 'acg' else 0.95  # Bottom for ACG, top for others
             line_height = 0.08  # Increased spacing to prevent overlaps
             
             for i, (metric_name, text) in enumerate(metric_info):
@@ -1629,7 +1710,7 @@ class InteractiveUnitQualityGUI:
                     break
                     
                 ax.text(0.98, y_pos, text, transform=ax.transAxes, 
-                       verticalalignment='top', horizontalalignment='right', fontsize=12, 
+                       verticalalignment='top', horizontalalignment='right', fontsize=13, 
                        color=color, weight='bold', fontfamily="DejaVu Sans",
                        bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.9, 
                                 edgecolor='lightgray', linewidth=1), zorder=20)
@@ -1948,7 +2029,7 @@ class InteractiveUnitQualityGUI:
         handles, labels = ax.get_legend_handles_labels()
         if handles:
             ax.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, -0.1), 
-                     ncol=len(handles), fontsize=10, frameon=True, framealpha=0.9,
+                     ncol=len(handles), fontsize=13, frameon=True, framealpha=0.9,
                      prop={'family': 'DejaVu Sans'})
     
     def get_nearby_channels_for_spatial_decay(self, peak_channel, n_channels):
@@ -2054,49 +2135,54 @@ class UnitQualityGUI:
         
     def setup_location_plot(self):
         """Setup unit location on probe plot"""
-        self.ax_location.set_title('Location on probe')
-        self.ax_location.set_xlabel('Norm. log rate')
-        self.ax_location.set_ylabel('Depth from tip (μm)')
+        self.ax_location.set_title('Location on probe', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        self.ax_location.set_xlabel('Norm. log rate', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_location.set_ylabel('Depth from tip (μm)', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_location.tick_params(labelsize=13)
         self.ax_location.invert_yaxis()  # MATLAB uses 'YDir', 'reverse'
         
     def setup_template_plot(self):
         """Setup template waveform plot"""
-        self.ax_template.set_title('Template waveforms')
+        self.ax_template.set_title('Template waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         self.ax_template.set_xticks([])
         self.ax_template.set_yticks([])
         self.ax_template.invert_yaxis()
         
     def setup_raw_plot(self):
         """Setup raw waveform plot"""
-        self.ax_raw.set_title('Raw waveforms')
+        self.ax_raw.set_title('Raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         self.ax_raw.set_xticks([])
         self.ax_raw.set_yticks([])
         self.ax_raw.invert_yaxis()
         
     def setup_spatial_plot(self):
         """Setup spatial decay plot"""
-        self.ax_spatial.set_title('Spatial decay')
-        self.ax_spatial.set_ylabel('Ampli. (a.u.)')
-        self.ax_spatial.set_xlabel('Distance')
+        self.ax_spatial.set_title('Spatial decay', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        self.ax_spatial.set_ylabel('Ampli. (a.u.)', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_spatial.set_xlabel('Distance', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_spatial.tick_params(labelsize=13)
         
     def setup_acg_plot(self):
         """Setup auto-correlogram plot"""
-        self.ax_acg.set_title('Auto-correlogram')
-        self.ax_acg.set_xlabel('Time (ms)')
-        self.ax_acg.set_ylabel('sp/s')
+        self.ax_acg.set_title('Auto-correlogram', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        self.ax_acg.set_xlabel('Time (ms)', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_acg.set_ylabel('sp/s', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_acg.tick_params(labelsize=13)
         
     def setup_amplitude_plot(self):
         """Setup amplitude over time plot"""
-        self.ax_amplitude.set_title('Amplitudes over time')
-        self.ax_amplitude.set_xlabel('Experiment time (s)')
+        self.ax_amplitude.set_title('Amplitudes over time', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        self.ax_amplitude.set_xlabel('Experiment time (s)', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_amplitude.tick_params(labelsize=13)
         # Dual y-axis like MATLAB
         self.ax_amplitude_right = self.ax_amplitude.twinx()
-        self.ax_amplitude.set_ylabel('Template scaling', color='k')
-        self.ax_amplitude_right.set_ylabel('Firing rate (sp/sec)', color='orange')
+        self.ax_amplitude.set_ylabel('Template scaling', color='k', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_amplitude_right.set_ylabel('Firing rate (sp/sec)', color='orange', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_amplitude_right.tick_params(labelsize=13)
         
     def setup_amplitude_fit_plot(self):
         """Setup amplitude fit plot"""
-        self.ax_amp_fit.set_title('Amplitude fit')
+        self.ax_amp_fit.set_title('Amplitude fit', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         
     def setup_navigation(self):
         """Setup navigation buttons at bottom"""
