@@ -842,6 +842,11 @@ class InteractiveUnitQualityGUI:
         ax.set_xticks([])
         ax.set_yticks([])
         
+        # Extend x-axis limits to accommodate channel number text (right side only)
+        x_min, x_max = ax.get_xlim()
+        text_padding = 100  # Padding for text labels on right side
+        ax.set_xlim(x_min, x_max + text_padding)
+        
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'template')
         
@@ -956,6 +961,11 @@ class InteractiveUnitQualityGUI:
         ax.set_xticks([])
         ax.set_yticks([])
         # Remove aspect ratio constraint to prevent squishing
+        
+        # Extend x-axis limits to accommodate channel number text (right side only)
+        x_min, x_max = ax.get_xlim()
+        text_padding = 100  # Padding for text labels on right side
+        ax.set_xlim(x_min, x_max + text_padding)
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'raw')
