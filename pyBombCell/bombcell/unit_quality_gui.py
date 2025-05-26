@@ -272,13 +272,13 @@ def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
             with open(final_save_path, 'wb') as f:
                 pickle.dump(gui_data, f)
             if param.get("verbose", False):
-                print(f"✅ Pre-computed GUI data saved to: {final_save_path}")
+                print(f"Pre-computed GUI data saved to: {final_save_path}")
         except Exception as e:
             if param.get("verbose", False):
-                print(f"❌ Failed to save GUI data: {e}")
+                print(f"Failed to save GUI data: {e}")
     else:
         if param.get("verbose", False):
-            print("⚠️ No save path provided - GUI data not saved")
+            print("No save path provided - GUI data not saved")
     
     if param.get("verbose", False):
         print("Pre-computation complete!")
@@ -321,13 +321,13 @@ def load_gui_data(load_path):
             try:
                 with open(path, 'rb') as f:
                     gui_data = pickle.load(f)
-                print(f"✅ Loaded GUI data from: {path}")
+                print(f"Loaded GUI data from: {path}")
                 return gui_data
             except Exception as e:
-                print(f"❌ Failed to load GUI data from {path}: {e}")
+                print(f"Failed to load GUI data from {path}: {e}")
                 continue
     
-    print(f"❌ GUI data file not found. Tried: {possible_paths}")
+    print(f"GUI data file not found. Tried: {possible_paths}")
     return None
 
 
@@ -379,8 +379,8 @@ class InteractiveUnitQualityGUI:
         
         # Detailed gui_data loading feedback
         if gui_data:
-            print(f"✅ GUI data loaded successfully!")
-            print(f"   📊 Data types available: {list(gui_data.keys())}")
+            print(f"GUI data loaded successfully!")
+            print(f"   Data types available: {list(gui_data.keys())}")
             
             # Check each data type
             data_status = []
@@ -391,16 +391,16 @@ class InteractiveUnitQualityGUI:
             if 'spatial_decay_fits' in gui_data:
                 count = len(gui_data['spatial_decay_fits'])
                 if count > 0:
-                    data_status.append(f"✅ Spatial decay fits: {count} units")
+                    data_status.append(f"Spatial decay fits: {count} units")
                 else:
-                    data_status.append(f"❌ Spatial decay fits: {count} units (none available)")
+                    data_status.append(f"Spatial decay fits: {count} units (none available)")
                     
             if 'amplitude_fits' in gui_data:
                 count = len(gui_data['amplitude_fits'])
                 if count > 0:
-                    data_status.append(f"✅ Amplitude fits: {count} units")
+                    data_status.append(f"Amplitude fits: {count} units")
                 else:
-                    data_status.append(f"❌ Amplitude fits: {count} units (none available)")
+                    data_status.append(f"Amplitude fits: {count} units (none available)")
                     
             if 'acg_data' in gui_data:
                 count = len(gui_data['acg_data'])
@@ -409,12 +409,12 @@ class InteractiveUnitQualityGUI:
             for status in data_status:
                 print(f"   {status}")
         else:
-            print("❌ No pre-computed GUI data found - will compute everything real-time")
+            print("No pre-computed GUI data found - will compute everything real-time")
         
         # Get unique units
         self.unique_units = np.unique(ephys_data['spike_clusters'])
         self.n_units = len(self.unique_units)
-        print(f"📊 Total units: {self.n_units}")
+        print(f"Total units: {self.n_units}")
         self.current_unit_idx = 0
         
         # Setup widgets and display
@@ -488,6 +488,12 @@ class InteractiveUnitQualityGUI:
         
     def display_gui(self):
         """Display the GUI"""
+        # Instructional text above navigation controls
+        nav_instructions = widgets.VBox([
+            widgets.HTML("<b>Go to next/prev. unit:</b>"),
+            widgets.HTML("<b>Go to next/prev. good, MUA, non-soma or noise unit:</b>")
+        ])
+        
         # Navigation controls
         nav_controls = widgets.HBox([
             self.prev_btn, self.next_btn, 
@@ -513,6 +519,7 @@ class InteractiveUnitQualityGUI:
             self.unit_slider,
             unit_input_controls,
             self.unit_info,
+            nav_instructions,
             nav_controls,
             # classify_controls,  # Hidden for now
             self.plot_output
@@ -996,13 +1003,7 @@ class InteractiveUnitQualityGUI:
             bin_size = acg_data['bin_size']
             
         elif len(spike_times) > 1:
-            # Check if this is the first time computing ACG and inform user
-            if (self.gui_data and 'acg_data' in self.gui_data and 
-                self.current_unit_idx in self.gui_data['acg_data'] and
-                self.gui_data['acg_data'][self.current_unit_idx] is None):
-                print(f"⏳ ACG: Computing autocorrelogram for unit {self.current_unit_idx} (first time, please wait...)")
-            else:
-                print(f"⚠️ ACG: Computing REAL-TIME autocorrelogram for unit {self.current_unit_idx}")
+            # ACG calculation will proceed without status messages
             
             # ACG calculation with MATLAB-style parameters
             max_lag = 0.05  # 50ms
@@ -1045,9 +1046,7 @@ class InteractiveUnitQualityGUI:
                     'bin_centers': bin_centers,
                     'bin_size': bin_size
                 }
-                print(f"✅ ACG: Cached autocorrelogram for unit {self.current_unit_idx} (will be faster next time)")
         else:
-            print(f"⚠️ ACG: No spikes or pre-computed data for unit {self.current_unit_idx}")
             return
         
         # Plot only positive lags (like MATLAB)
