@@ -1286,9 +1286,6 @@ class InteractiveUnitQualityGUI:
             bin_counts, _ = np.histogram(spike_times, bins=time_bins)
             firing_rates = bin_counts / bin_width
             
-            # Calculate presence ratio per bin (assuming threshold of >0 spikes for presence)
-            presence_threshold = 0.1 * np.mean(bin_counts)  # 10% of mean rate
-            good_presence = bin_counts > presence_threshold
             
             if 'template_amplitudes' in self.ephys_data:
                 amplitudes = self.ephys_data['template_amplitudes'][spike_mask]
@@ -1308,13 +1305,6 @@ class InteractiveUnitQualityGUI:
                 ax2.tick_params(labelsize=13)
                 ax2.tick_params(axis='y', labelcolor='orange')
                 
-                # Highlight time bins with good presence ratio
-                for i, (center, good) in enumerate(zip(bin_centers, good_presence)):
-                    if good:
-                        # Add subtle green background for good presence bins
-                        y_min, y_max = ax.get_ylim()
-                        ax.axvspan(center - bin_width/2, center + bin_width/2, 
-                                  alpha=0.1, color='green', zorder=0)
                 
             else:
                 # Just plot spike times as raster with bigger dots
@@ -1335,14 +1325,7 @@ class InteractiveUnitQualityGUI:
                 for bin_edge in time_bins:
                     ax.axvline(bin_edge, color='gray', alpha=0.2, linewidth=0.3, linestyle='--', zorder=0)
                 
-                # Highlight good presence bins
-                for i, (center, good) in enumerate(zip(bin_centers, good_presence)):
-                    if good:
-                        y_min, y_max = ax.get_ylim()
-                        ax.axvspan(center - bin_width/2, center + bin_width/2, 
-                                  alpha=0.1, color='green', zorder=0)
-                
-        ax.set_title('Amplitudes over time', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Amplitude (template scaling factor) over time', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         # Remove x-axis labels since time bin plot below will show them
         ax.set_xlabel('')
         ax.tick_params(labelsize=13, labelbottom=False)  # Hide x-axis labels
@@ -1418,23 +1401,23 @@ class InteractiveUnitQualityGUI:
                 ax.plot(bin_centers, perc_missing / 100, 'b-', linewidth=2, label='% missing (scaled)', alpha=0.8)
             
             # Formatting for tiny plot
-            ax.set_xlabel('Time (s)', fontsize=10, fontfamily="DejaVu Sans")
-            ax.set_ylabel('Metrics', fontsize=10, fontfamily="DejaVu Sans")
-            ax.tick_params(labelsize=9)
+            ax.set_xlabel('Time (s)', fontsize=13, fontfamily="DejaVu Sans")
+            ax.set_ylabel('Metrics', fontsize=13, fontfamily="DejaVu Sans")
+            ax.tick_params(labelsize=13)
             ax.set_ylim(0, 1.1)  # Standard scale for all metrics
             
             # Add compact legend
-            ax.legend(loc='upper right', fontsize=8, framealpha=0.9, prop={'family': 'DejaVu Sans'})
+            ax.legend(loc='upper right', fontsize=13, framealpha=0.9, prop={'family': 'DejaVu Sans'})
             
             # Make plot as compact as possible
             ax.margins(y=0.05)
             ax.spines['top'].set_visible(False)  # Remove top border for cleaner look
         else:
             ax.text(0.5, 0.5, 'No spikes\nfor bin analysis', ha='center', va='center', 
-                   transform=ax.transAxes, fontfamily="DejaVu Sans", fontsize=9)
-            ax.set_xlabel('Time (s)', fontsize=10, fontfamily="DejaVu Sans")
-            ax.set_ylabel('Metrics', fontsize=10, fontfamily="DejaVu Sans")
-            ax.tick_params(labelsize=9)
+                   transform=ax.transAxes, fontfamily="DejaVu Sans", fontsize=13)
+            ax.set_xlabel('Time (s)', fontsize=13, fontfamily="DejaVu Sans")
+            ax.set_ylabel('Metrics', fontsize=13, fontfamily="DejaVu Sans")
+            ax.tick_params(labelsize=13)
         
     def plot_unit_location(self, ax, unit_data):
         """Plot all units by depth vs log firing rate, colored by classification"""
