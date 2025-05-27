@@ -1404,7 +1404,7 @@ class InteractiveUnitQualityGUI:
                             if isinstance(unit_metrics, dict) and 'drift' in unit_metrics:
                                 drift_data = unit_metrics['drift']
                                 
-                                # Check for time bins and drift values
+                                # Use pre-computed drift data only - never compute in GUI
                                 if (isinstance(drift_data, dict) and 
                                     'time_bins' in drift_data and 
                                     'median_spike_depth_per_bin' in drift_data):
@@ -1412,8 +1412,20 @@ class InteractiveUnitQualityGUI:
                                     drift_time_bins = drift_data['time_bins']
                                     drift_values = drift_data['median_spike_depth_per_bin']
                                     
-                                    # Calculate drift bin centers for plotting
-                                    if len(drift_time_bins) > 1 and len(drift_values) > 0:
+                                    # Check if pre-computed bins match expected bin size - only plot if they match
+                                    expected_bin_size = self.param.get('driftBinSize', 60)  # Default 60 seconds
+                                    plot_drift = False
+                                    
+                                    if len(drift_time_bins) > 1:
+                                        actual_bin_size = drift_time_bins[1] - drift_time_bins[0]
+                                        # Allow some tolerance for floating point differences
+                                        if abs(actual_bin_size - expected_bin_size) <= 1.0:
+                                            plot_drift = True
+                                        else:
+                                            print(f"Drift not plotted: Pre-computed bin size ({actual_bin_size:.1f}s) differs from param.driftBinSize ({expected_bin_size}s)")
+                                    
+                                    # Only plot if drift data matches expected bin size
+                                    if plot_drift and len(drift_values) > 0:
                                         drift_bin_centers = (drift_time_bins[:-1] + drift_time_bins[1:]) / 2
                                         
                                         # Create third axis for drift
@@ -1485,7 +1497,7 @@ class InteractiveUnitQualityGUI:
                             if isinstance(unit_metrics, dict) and 'drift' in unit_metrics:
                                 drift_data = unit_metrics['drift']
                                 
-                                # Check for time bins and drift values
+                                # Use pre-computed drift data only - never compute in GUI
                                 if (isinstance(drift_data, dict) and 
                                     'time_bins' in drift_data and 
                                     'median_spike_depth_per_bin' in drift_data):
@@ -1493,8 +1505,20 @@ class InteractiveUnitQualityGUI:
                                     drift_time_bins = drift_data['time_bins']
                                     drift_values = drift_data['median_spike_depth_per_bin']
                                     
-                                    # Calculate drift bin centers for plotting
-                                    if len(drift_time_bins) > 1 and len(drift_values) > 0:
+                                    # Check if pre-computed bins match expected bin size - only plot if they match
+                                    expected_bin_size = self.param.get('driftBinSize', 60)  # Default 60 seconds
+                                    plot_drift = False
+                                    
+                                    if len(drift_time_bins) > 1:
+                                        actual_bin_size = drift_time_bins[1] - drift_time_bins[0]
+                                        # Allow some tolerance for floating point differences
+                                        if abs(actual_bin_size - expected_bin_size) <= 1.0:
+                                            plot_drift = True
+                                        else:
+                                            print(f"Drift not plotted: Pre-computed bin size ({actual_bin_size:.1f}s) differs from param.driftBinSize ({expected_bin_size}s)")
+                                    
+                                    # Only plot if drift data matches expected bin size
+                                    if plot_drift and len(drift_values) > 0:
                                         drift_bin_centers = (drift_time_bins[:-1] + drift_time_bins[1:]) / 2
                                         
                                         # Create third axis for drift
@@ -1545,9 +1569,16 @@ class InteractiveUnitQualityGUI:
             'per_bin_metrics' in self.gui_data and 
             self.current_unit_idx in self.gui_data['per_bin_metrics'] and
             'drift' in self.gui_data['per_bin_metrics'][self.current_unit_idx]):
+            
+            # Add clarification if both drift and time chunks are computed
+            if self.param.get('computeTimeChunks', False):
+                drift_label = 'Drift (good time chunks only)'
+            else:
+                drift_label = 'Drift'
+                
             legend_elements.append(
                 mlines.Line2D([], [], color='lightpink', linestyle='-', linewidth=2.5, 
-                             label='Drift')
+                             label=drift_label)
             )
         
         # Add legend below the plot with visible background if we have elements
