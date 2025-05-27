@@ -1314,8 +1314,33 @@ class InteractiveUnitQualityGUI:
             if 'template_amplitudes' in self.ephys_data:
                 amplitudes = self.ephys_data['template_amplitudes'][spike_mask]
                 
-                # Plot amplitudes with slightly bigger dots
-                ax.scatter(spike_times, amplitudes, s=3, alpha=0.6, color='black', edgecolors='none')
+                # Color spikes based on goodTimeChunks if computeTimeChunks is enabled
+                spike_colors = np.full(len(spike_times), 'darkorange')  # Default: bad chunks (orange)
+                
+                if self.param and self.param.get('computeTimeChunks', False):
+                    # Use useTheseTimesStart and useTheseTimesStop from metrics
+                    good_start_times = metrics.get('useTheseTimesStart', None)
+                    good_stop_times = metrics.get('useTheseTimesStop', None)
+                    
+                    if good_start_times is not None and good_stop_times is not None:
+                        # Ensure they are arrays
+                        if np.isscalar(good_start_times):
+                            good_start_times = [good_start_times]
+                        if np.isscalar(good_stop_times):
+                            good_stop_times = [good_stop_times]
+                        
+                        # Color spikes green if they fall within any good time chunk
+                        for start_time, stop_time in zip(good_start_times, good_stop_times):
+                            if not (np.isnan(start_time) or np.isnan(stop_time)):
+                                good_spike_mask = (spike_times >= start_time) & (spike_times <= stop_time)
+                                spike_colors[good_spike_mask] = 'green'  # Good chunks: green
+                
+                # Plot amplitudes with colored dots based on good/bad time chunks
+                unique_colors = np.unique(spike_colors)
+                for color in unique_colors:
+                    color_mask = spike_colors == color
+                    ax.scatter(spike_times[color_mask], amplitudes[color_mask], 
+                              s=3, alpha=0.6, c=color, edgecolors='none')
                 ax.set_ylabel('Template scaling', color='blue', fontsize=13, fontfamily="DejaVu Sans")
                 ax.tick_params(labelsize=13)
                 
@@ -1331,9 +1356,34 @@ class InteractiveUnitQualityGUI:
                 
                 
             else:
-                # Just plot spike times as raster with bigger dots
+                # Color spikes based on goodTimeChunks if computeTimeChunks is enabled (fallback - no amplitudes)
                 y_pos = np.ones_like(spike_times)
-                ax.scatter(spike_times, y_pos, s=3, alpha=0.6, color='black', edgecolors='none')
+                spike_colors = np.full(len(spike_times), 'darkorange')  # Default: bad chunks (orange)
+                
+                if self.param and self.param.get('computeTimeChunks', False):
+                    # Use useTheseTimesStart and useTheseTimesStop from metrics
+                    good_start_times = metrics.get('useTheseTimesStart', None)
+                    good_stop_times = metrics.get('useTheseTimesStop', None)
+                    
+                    if good_start_times is not None and good_stop_times is not None:
+                        # Ensure they are arrays
+                        if np.isscalar(good_start_times):
+                            good_start_times = [good_start_times]
+                        if np.isscalar(good_stop_times):
+                            good_stop_times = [good_stop_times]
+                        
+                        # Color spikes green if they fall within any good time chunk
+                        for start_time, stop_time in zip(good_start_times, good_stop_times):
+                            if not (np.isnan(start_time) or np.isnan(stop_time)):
+                                good_spike_mask = (spike_times >= start_time) & (spike_times <= stop_time)
+                                spike_colors[good_spike_mask] = 'green'  # Good chunks: green
+                
+                # Plot spike times as raster with colored dots based on good/bad time chunks
+                unique_colors = np.unique(spike_colors)
+                for color in unique_colors:
+                    color_mask = spike_colors == color
+                    ax.scatter(spike_times[color_mask], y_pos[color_mask], 
+                              s=3, alpha=0.6, c=color, edgecolors='none')
                 ax.set_ylabel('Spikes', color='blue', fontsize=13, fontfamily="DejaVu Sans")
                 ax.tick_params(labelsize=13)
                 
@@ -1358,6 +1408,23 @@ class InteractiveUnitQualityGUI:
         # Store y-limits for amplitude fit plot consistency
         self._amplitude_ylim = ax.get_ylim()
         
+        # Add legend for time chunk coloring if computeTimeChunks is enabled
+        if self.param and self.param.get('computeTimeChunks', False):
+            # Create legend elements with dots instead of patches
+            import matplotlib.lines as mlines
+            legend_elements = [
+                mlines.Line2D([], [], color='green', marker='o', linestyle='None', 
+                             markersize=6, label='Spikes in good time chunks'),
+                mlines.Line2D([], [], color='darkorange', marker='o', linestyle='None', 
+                             markersize=6, label='Spikes in MUA time chunks')
+            ]
+            # Add legend below the plot with visible background
+            legend = ax.legend(handles=legend_elements, bbox_to_anchor=(0.5, -0.05), 
+                             loc='upper center', ncol=2, fontsize=10,
+                             framealpha=0.8, facecolor='white', edgecolor='black', 
+                             prop={'family': 'DejaVu Sans'})
+            legend.set_zorder(15)  # Ensure legend appears above plot elements
+        
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'amplitude')
     
@@ -1380,6 +1447,15 @@ class InteractiveUnitQualityGUI:
                 rpv_data = per_bin_data.get('rpv')
                 if rpv_data and 'time_bins' in rpv_data and 'fraction_RPVs_per_bin' in rpv_data:
                     time_bins = rpv_data['time_bins']
+                    # Adjust time bins to start at first spike time
+                    if len(spike_times) > 0:
+                        first_spike_time = np.min(spike_times)
+                        if time_bins[0] < first_spike_time:
+                            # Find the first bin that includes/after the first spike
+                            first_bin_idx = np.searchsorted(time_bins, first_spike_time) - 1
+                            first_bin_idx = max(0, first_bin_idx)  # Ensure non-negative
+                            time_bins = time_bins[first_bin_idx:]
+                    
                     bin_centers = (time_bins[:-1] + time_bins[1:]) / 2
                     # Use the estimated tau_R index for plotting (usually the middle value)
                     rpv_matrix = rpv_data['fraction_RPVs_per_bin']  # Shape: (n_time_chunks, n_tauR)
@@ -1392,6 +1468,13 @@ class InteractiveUnitQualityGUI:
                             except:
                                 pass
                         rpv_rates = rpv_matrix[:, tau_r_idx]
+                        # Adjust rpv_rates to match truncated time_bins if needed
+                        if len(spike_times) > 0:
+                            first_spike_time = np.min(spike_times)
+                            if rpv_data['time_bins'][0] < first_spike_time:
+                                first_bin_idx = np.searchsorted(rpv_data['time_bins'], first_spike_time) - 1
+                                first_bin_idx = max(0, first_bin_idx)
+                                rpv_rates = rpv_rates[first_bin_idx:len(time_bins)-1]  # Match bin_centers length
                     else:
                         rpv_rates = np.zeros(len(bin_centers))
                 else:
@@ -1401,6 +1484,13 @@ class InteractiveUnitQualityGUI:
                 perc_missing_data = per_bin_data.get('perc_missing')
                 if perc_missing_data and 'percent_missing_gaussian_per_bin' in perc_missing_data:
                     perc_missing = perc_missing_data['percent_missing_gaussian_per_bin']
+                    # Adjust perc_missing to match truncated time_bins if needed
+                    if len(spike_times) > 0:
+                        first_spike_time = np.min(spike_times)
+                        if rpv_data and 'time_bins' in rpv_data and rpv_data['time_bins'][0] < first_spike_time:
+                            first_bin_idx = np.searchsorted(rpv_data['time_bins'], first_spike_time) - 1
+                            first_bin_idx = max(0, first_bin_idx)
+                            perc_missing = perc_missing[first_bin_idx:len(time_bins)-1]  # Match bin_centers length
                 else:
                     perc_missing = None
                 
@@ -1410,8 +1500,16 @@ class InteractiveUnitQualityGUI:
                 presence_threshold = 0.1 * np.mean(bin_counts) if np.mean(bin_counts) > 0 else 0.1
                 presence_ratio = np.minimum(bin_counts / presence_threshold, 1.0)  # Cap at 1.0
                 
-                # Plot presence ratio (always available)
-                ax.plot(bin_centers, presence_ratio, color='forestgreen', linewidth=2, label='Presence ratio', alpha=0.8)
+                # Add grey background for all time chunks (p missing and RPV chunks)
+                for i, (start_time, end_time) in enumerate(zip(time_bins[:-1], time_bins[1:])):
+                    ax.axvspan(start_time, end_time, color='lightgrey', alpha=0.3, zorder=0)
+                
+                # Add light green background for presence ratio bins on top
+                for i, (start_time, end_time) in enumerate(zip(time_bins[:-1], time_bins[1:])):
+                    if i < len(presence_ratio):
+                        # Use presence ratio value to determine green intensity
+                        green_alpha = min(presence_ratio[i] * 0.4, 0.4)  # Cap alpha at 0.4
+                        ax.axvspan(start_time, end_time, color='lightgreen', alpha=green_alpha, zorder=1)
                 
                 # Plot actual quality metrics if available
                 if rpv_rates is not None:
@@ -1420,9 +1518,63 @@ class InteractiveUnitQualityGUI:
                 if perc_missing is not None:
                     ax.plot(bin_centers, perc_missing / 100, color='indigo', linewidth=2, label='% missing (scaled)', alpha=0.8)
                 
-                # Add time bin indicators 
-                for bin_edge in time_bins:
+                # Plot presence ratio line on top
+                ax.plot(bin_centers, presence_ratio, color='forestgreen', linewidth=2, label='Presence ratio', alpha=0.8)
+                
+                # Determine good time chunks based on quality thresholds
+                good_chunks = np.ones(len(bin_centers), dtype=bool)  # Start assuming all are good
+                
+                # Apply quality criteria if available
+                if rpv_rates is not None:
+                    max_rpv = self.param.get('maxRPVviolations', 0.1) if self.param else 0.1
+                    good_chunks &= (rpv_rates <= max_rpv)
+                
+                if perc_missing is not None:
+                    max_missing = self.param.get('maxPercSpikesMissing', 20) if self.param else 20
+                    good_chunks &= (perc_missing <= max_missing)
+                
+                # Always check presence ratio
+                min_presence = self.param.get('minPresenceRatio', 0.7) if self.param else 0.7
+                good_chunks &= (presence_ratio >= min_presence)
+                
+                # Add time bin indicators
+                for i, bin_edge in enumerate(time_bins[:-1]):
                     ax.axvline(bin_edge, color='gray', alpha=0.3, linewidth=0.5, linestyle='--')
+                
+                # Add final bin edge
+                ax.axvline(time_bins[-1], color='gray', alpha=0.3, linewidth=0.5, linestyle='--')
+                
+                # Add arrows and dotted lines for good chunks
+                good_chunk_ranges = []
+                chunk_start = None
+                for i, is_good in enumerate(good_chunks):
+                    if is_good and chunk_start is None:
+                        chunk_start = bin_centers[i]
+                    elif not is_good and chunk_start is not None:
+                        good_chunk_ranges.append((chunk_start, bin_centers[i-1]))
+                        chunk_start = None
+                # Handle case where good chunk extends to end
+                if chunk_start is not None:
+                    good_chunk_ranges.append((chunk_start, bin_centers[-1]))
+                
+                # Add arrows and dotted lines for good chunk ranges
+                y_max = ax.get_ylim()[1]
+                arrow_y = y_max * 0.9
+                for start_time, end_time in good_chunk_ranges:
+                    # Dotted vertical lines at start and end
+                    ax.axvline(start_time, color='darkgreen', linewidth=2, linestyle=':', alpha=0.8, zorder=5)
+                    ax.axvline(end_time, color='darkgreen', linewidth=2, linestyle=':', alpha=0.8, zorder=5)
+                    
+                    # Arrow between them
+                    ax.annotate('', xy=(end_time, arrow_y), xytext=(start_time, arrow_y),
+                               arrowprops=dict(arrowstyle='<->', color='darkgreen', lw=2, alpha=0.8),
+                               zorder=5)
+                    
+                    # Label for good chunks
+                    mid_time = (start_time + end_time) / 2
+                    ax.text(mid_time, arrow_y + y_max * 0.05, 'Good', 
+                           ha='center', va='bottom', color='darkgreen', fontweight='bold',
+                           fontsize=10, alpha=0.9, zorder=5)
                 
             else:
                 # Fallback: compute simplified metrics on the fly
@@ -1442,7 +1594,7 @@ class InteractiveUnitQualityGUI:
                 # Plot presence ratio (always available)
                 ax.plot(bin_centers, presence_ratio, color='forestgreen', linewidth=2, label='Presence ratio', alpha=0.8)
                 
-                # Add time bin indicators
+                # Add time bin indicators (fallback case - no per-bin quality data)
                 for bin_edge in time_bins:
                     ax.axvline(bin_edge, color='gray', alpha=0.3, linewidth=0.5, linestyle='--')
             
