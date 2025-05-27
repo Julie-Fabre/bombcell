@@ -1500,42 +1500,42 @@ class InteractiveUnitQualityGUI:
                 presence_threshold = 0.1 * np.mean(bin_counts) if np.mean(bin_counts) > 0 else 0.1
                 presence_ratio = np.minimum(bin_counts / presence_threshold, 1.0)  # Cap at 1.0
                 
-                # Add grey background for all time chunks (p missing and RPV chunks)
-                for i, (start_time, end_time) in enumerate(zip(time_bins[:-1], time_bins[1:])):
-                    ax.axvspan(start_time, end_time, color='lightgrey', alpha=0.3, zorder=0)
+                # Use useTheseTimesStart and useTheseTimesStop to determine good time chunks
+                good_start_times = metrics.get('useTheseTimesStart', None)
+                good_stop_times = metrics.get('useTheseTimesStop', None)
                 
-                # Add light green background for presence ratio bins on top
+                # Add background coloring: orange by default, green for good time chunks
                 for i, (start_time, end_time) in enumerate(zip(time_bins[:-1], time_bins[1:])):
-                    if i < len(presence_ratio):
-                        # Use presence ratio value to determine green intensity
-                        green_alpha = min(presence_ratio[i] * 0.4, 0.4)  # Cap alpha at 0.4
-                        ax.axvspan(start_time, end_time, color='lightgreen', alpha=green_alpha, zorder=1)
+                    # Default: orange background for bad chunks
+                    chunk_color = 'orange'
+                    
+                    # Check if this time bin overlaps with any good time chunk
+                    if good_start_times is not None and good_stop_times is not None:
+                        # Ensure they are arrays
+                        if np.isscalar(good_start_times):
+                            good_start_times = [good_start_times]
+                        if np.isscalar(good_stop_times):
+                            good_stop_times = [good_stop_times]
+                        
+                        # Check overlap with any good time chunk
+                        for g_start, g_stop in zip(good_start_times, good_stop_times):
+                            if not (np.isnan(g_start) or np.isnan(g_stop)):
+                                # Check if time bin overlaps with good chunk
+                                if start_time < g_stop and end_time > g_start:
+                                    chunk_color = 'lightgreen'
+                                    break
+                    
+                    ax.axvspan(start_time, end_time, color=chunk_color, alpha=0.3, zorder=0)
                 
-                # Plot actual quality metrics if available
+                # Plot actual quality metrics as step plots
                 if rpv_rates is not None:
-                    ax.plot(bin_centers, rpv_rates, color='purple', linewidth=2, label='RPV rate', alpha=0.8)
+                    ax.step(bin_centers, rpv_rates, where='mid', color='purple', linewidth=2, label='RPV rate', alpha=0.8)
                 
                 if perc_missing is not None:
-                    ax.plot(bin_centers, perc_missing / 100, color='indigo', linewidth=2, label='% missing (scaled)', alpha=0.8)
+                    ax.step(bin_centers, perc_missing / 100, where='mid', color='darkorange', linewidth=2, label='% missing (1=100%)', alpha=0.8)
                 
-                # Plot presence ratio line on top
-                ax.plot(bin_centers, presence_ratio, color='forestgreen', linewidth=2, label='Presence ratio', alpha=0.8)
-                
-                # Determine good time chunks based on quality thresholds
-                good_chunks = np.ones(len(bin_centers), dtype=bool)  # Start assuming all are good
-                
-                # Apply quality criteria if available
-                if rpv_rates is not None:
-                    max_rpv = self.param.get('maxRPVviolations', 0.1) if self.param else 0.1
-                    good_chunks &= (rpv_rates <= max_rpv)
-                
-                if perc_missing is not None:
-                    max_missing = self.param.get('maxPercSpikesMissing', 20) if self.param else 20
-                    good_chunks &= (perc_missing <= max_missing)
-                
-                # Always check presence ratio
-                min_presence = self.param.get('minPresenceRatio', 0.7) if self.param else 0.7
-                good_chunks &= (presence_ratio >= min_presence)
+                # Plot presence ratio step line on top
+                ax.step(bin_centers, presence_ratio, where='mid', color='forestgreen', linewidth=2, label='Presence ratio', alpha=0.8)
                 
                 # Add time bin indicators
                 for i, bin_edge in enumerate(time_bins[:-1]):
@@ -1544,37 +1544,33 @@ class InteractiveUnitQualityGUI:
                 # Add final bin edge
                 ax.axvline(time_bins[-1], color='gray', alpha=0.3, linewidth=0.5, linestyle='--')
                 
-                # Add arrows and dotted lines for good chunks
-                good_chunk_ranges = []
-                chunk_start = None
-                for i, is_good in enumerate(good_chunks):
-                    if is_good and chunk_start is None:
-                        chunk_start = bin_centers[i]
-                    elif not is_good and chunk_start is not None:
-                        good_chunk_ranges.append((chunk_start, bin_centers[i-1]))
-                        chunk_start = None
-                # Handle case where good chunk extends to end
-                if chunk_start is not None:
-                    good_chunk_ranges.append((chunk_start, bin_centers[-1]))
-                
-                # Add arrows and dotted lines for good chunk ranges
-                y_max = ax.get_ylim()[1]
-                arrow_y = y_max * 0.9
-                for start_time, end_time in good_chunk_ranges:
-                    # Dotted vertical lines at start and end
-                    ax.axvline(start_time, color='darkgreen', linewidth=2, linestyle=':', alpha=0.8, zorder=5)
-                    ax.axvline(end_time, color='darkgreen', linewidth=2, linestyle=':', alpha=0.8, zorder=5)
+                # Add arrows and dotted lines for good chunk ranges using useTheseTimesStart/Stop
+                if good_start_times is not None and good_stop_times is not None:
+                    y_max = ax.get_ylim()[1]
+                    arrow_y = y_max * 0.9
                     
-                    # Arrow between them
-                    ax.annotate('', xy=(end_time, arrow_y), xytext=(start_time, arrow_y),
-                               arrowprops=dict(arrowstyle='<->', color='darkgreen', lw=2, alpha=0.8),
-                               zorder=5)
+                    # Ensure they are arrays
+                    if np.isscalar(good_start_times):
+                        good_start_times = [good_start_times]
+                    if np.isscalar(good_stop_times):
+                        good_stop_times = [good_stop_times]
                     
-                    # Label for good chunks
-                    mid_time = (start_time + end_time) / 2
-                    ax.text(mid_time, arrow_y + y_max * 0.05, 'Good', 
-                           ha='center', va='bottom', color='darkgreen', fontweight='bold',
-                           fontsize=10, alpha=0.9, zorder=5)
+                    for g_start, g_stop in zip(good_start_times, good_stop_times):
+                        if not (np.isnan(g_start) or np.isnan(g_stop)):
+                            # Dotted vertical lines at start and end
+                            ax.axvline(g_start, color='darkgreen', linewidth=2, linestyle=':', alpha=0.8, zorder=5)
+                            ax.axvline(g_stop, color='darkgreen', linewidth=2, linestyle=':', alpha=0.8, zorder=5)
+                            
+                            # Arrow between them
+                            ax.annotate('', xy=(g_stop, arrow_y), xytext=(g_start, arrow_y),
+                                       arrowprops=dict(arrowstyle='<->', color='darkgreen', lw=2, alpha=0.8),
+                                       zorder=5)
+                            
+                            # Label for good chunks
+                            mid_time = (g_start + g_stop) / 2
+                            ax.text(mid_time, arrow_y + y_max * 0.05, 'Good', 
+                                   ha='center', va='bottom', color='darkgreen', fontweight='bold',
+                                   fontsize=10, alpha=0.9, zorder=5)
                 
             else:
                 # Fallback: compute simplified metrics on the fly
@@ -1591,8 +1587,8 @@ class InteractiveUnitQualityGUI:
                 presence_threshold = 0.1 * np.mean(bin_counts) if np.mean(bin_counts) > 0 else 0.1
                 presence_ratio = np.minimum(bin_counts / presence_threshold, 1.0)  # Cap at 1.0
                 
-                # Plot presence ratio (always available)
-                ax.plot(bin_centers, presence_ratio, color='forestgreen', linewidth=2, label='Presence ratio', alpha=0.8)
+                # Plot presence ratio as step plot
+                ax.step(bin_centers, presence_ratio, where='mid', color='forestgreen', linewidth=2, label='Presence ratio', alpha=0.8)
                 
                 # Add time bin indicators (fallback case - no per-bin quality data)
                 for bin_edge in time_bins:
