@@ -697,6 +697,12 @@ class InteractiveUnitQualityGUI:
                         unit_metrics[key] = values[unit_idx]
                     else:
                         unit_metrics[key] = np.nan
+        elif hasattr(self.quality_metrics, 'iloc'):
+            # DataFrame format from bc.load_bc_results()
+            if unit_idx < len(self.quality_metrics):
+                unit_metrics = self.quality_metrics.iloc[unit_idx].to_dict()
+            else:
+                unit_metrics = {}
         else:
             unit_metrics = {}
                 
@@ -746,43 +752,44 @@ class InteractiveUnitQualityGUI:
         with self.plot_output:
             clear_output(wait=True)
             
-            # Create figure with exact MATLAB layout (6x13 grid)
-            fig = plt.figure(figsize=(18, 12))
+            # Create figure with tighter grid spacing 
+            fig = plt.figure(figsize=(20, 14))
             fig.patch.set_facecolor('white')
             
-            # 1. Unit location plot (left column) - subplot(8, 13, spans all rows)
-            ax_location = plt.subplot2grid((8, 13), (0, 0), rowspan=8, colspan=1)
+            # 1. Unit location plot (left column) - subplot(10, 15, spans all rows)
+            ax_location = plt.subplot2grid((10, 15), (0, 0), rowspan=10, colspan=1)
             self.plot_unit_location(ax_location, unit_data)
             
-            # 2. Template waveforms - subplot(8, 13, top row)
-            ax_template = plt.subplot2grid((8, 13), (0, 1), rowspan=2, colspan=6)
+            # 2. Template waveforms - rows 0-1
+            ax_template = plt.subplot2grid((10, 15), (0, 2), rowspan=2, colspan=6)
             self.plot_template_waveform(ax_template, unit_data)
             
-            # 3. Raw waveforms - subplot(8, 13, top right)
-            ax_raw = plt.subplot2grid((8, 13), (0, 7), rowspan=2, colspan=6)
+            # 3. Raw waveforms - rows 0-1
+            ax_raw = plt.subplot2grid((10, 15), (0, 9), rowspan=2, colspan=6)
             self.plot_raw_waveforms(ax_raw, unit_data)
             
-            # 4. Spatial decay - subplot(8, 13, middle left)
-            ax_spatial = plt.subplot2grid((8, 13), (2, 1), rowspan=2, colspan=6)
+            # 4. Spatial decay - rows 3-4 (uniform gap after row 2)
+            ax_spatial = plt.subplot2grid((10, 15), (3, 2), rowspan=2, colspan=6)
             self.plot_spatial_decay(ax_spatial, unit_data)
             
-            # 5. ACG - subplot(8, 13, middle right)
-            ax_acg = plt.subplot2grid((8, 13), (2, 7), rowspan=2, colspan=6)
+            # 5. ACG - rows 3-4 (uniform gap after row 2)
+            ax_acg = plt.subplot2grid((10, 15), (3, 9), rowspan=2, colspan=6)
             self.plot_autocorrelogram(ax_acg, unit_data)
             
-            # 6. Amplitudes over time - normal size
-            ax_amplitude = plt.subplot2grid((8, 13), (4, 1), rowspan=2, colspan=9)
+            # 6. Amplitudes over time - rows 6-7 (uniform gap after row 5)
+            ax_amplitude = plt.subplot2grid((10, 15), (6, 2), rowspan=2, colspan=10)
             self.plot_amplitudes_over_time(ax_amplitude, unit_data)
             
-            # 6b. Time bin metrics (tiny plot below amplitude)
-            ax_bin_metrics = plt.subplot2grid((8, 13), (6, 1), rowspan=1, colspan=9, sharex=ax_amplitude)
+            # 6b. Time bin metrics - row 9 (uniform gap after row 8)
+            ax_bin_metrics = plt.subplot2grid((10, 15), (9, 2), rowspan=1, colspan=10, sharex=ax_amplitude)
             self.plot_time_bin_metrics(ax_bin_metrics, unit_data)
             
-            # 7. Amplitude fit - reduced size to match amplitude height
-            ax_amp_fit = plt.subplot2grid((8, 13), (4, 11), rowspan=2, colspan=2)
+            # 7. Amplitude fit - positioned to match amplitude height (rows 6-7)
+            ax_amp_fit = plt.subplot2grid((10, 15), (6, 13), rowspan=2, colspan=2)
             self.plot_amplitude_fit(ax_amp_fit, unit_data)
             
-            plt.tight_layout()
+            # Adjust subplot margins manually with tighter spacing
+            plt.subplots_adjust(left=0.06, right=0.83, top=0.95, bottom=0.08, hspace=0.15, wspace=0.15)
             plt.show()
             
     def plot_template_waveform(self, ax, unit_data):
@@ -1207,7 +1214,7 @@ class InteractiveUnitQualityGUI:
         metrics = unit_data['metrics']
         
         # Check if spatial decay metrics are available
-        if 'spatialDecaySlope' in metrics and not np.isnan(metrics['spatialDecaySlope']):
+        if 'spatialDecaySlope' in metrics and not pd.isna(metrics['spatialDecaySlope']):
             max_ch = int(metrics.get('maxChannels', 0))
             template = unit_data['template']
             
@@ -1386,7 +1393,6 @@ class InteractiveUnitQualityGUI:
                     hasattr(self, 'gui_data') and self.gui_data is not None):
                     
                     unit_idx = self.current_unit_idx
-                    print(f"DEBUG: Checking drift for unit {unit_idx}")
                     
                     # Check if per_bin_metrics exists and contains drift data
                     if 'per_bin_metrics' in self.gui_data:
@@ -1395,50 +1401,44 @@ class InteractiveUnitQualityGUI:
                         # Check if unit has per-bin metrics data
                         if unit_idx in per_bin_metrics:
                             unit_metrics = per_bin_metrics[unit_idx]
-                            print(f"DEBUG: unit_metrics type: {type(unit_metrics)}")
-                            print(f"DEBUG: unit_metrics keys: {list(unit_metrics.keys()) if isinstance(unit_metrics, dict) else 'Not a dict'}")
                             
                             # Look for drift data in unit metrics
                             if isinstance(unit_metrics, dict) and 'drift' in unit_metrics:
                                 drift_data = unit_metrics['drift']
-                                print(f"DEBUG: Found drift data for unit {unit_idx}")
-                                print(f"DEBUG: drift_data type: {type(drift_data)}")
-                                print(f"DEBUG: drift_data keys: {list(drift_data.keys()) if isinstance(drift_data, dict) else 'Not a dict'}")
                                 
-                                # Check for time bins and drift values
+                                # Use pre-computed drift data only - never compute in GUI
                                 if (isinstance(drift_data, dict) and 
                                     'time_bins' in drift_data and 
                                     'median_spike_depth_per_bin' in drift_data):
                                     
                                     drift_time_bins = drift_data['time_bins']
                                     drift_values = drift_data['median_spike_depth_per_bin']
-                                    print(f"DEBUG: drift_time_bins shape: {np.array(drift_time_bins).shape}")
-                                    print(f"DEBUG: drift_values shape: {np.array(drift_values).shape}")
                                     
-                                    # Calculate drift bin centers for plotting
-                                    if len(drift_time_bins) > 1 and len(drift_values) > 0:
+                                    # Check if pre-computed bins match expected bin size - only plot if they match
+                                    expected_bin_size = self.param.get('driftBinSize', 60)  # Default 60 seconds
+                                    plot_drift = False
+                                    
+                                    if len(drift_time_bins) > 1:
+                                        actual_bin_size = drift_time_bins[1] - drift_time_bins[0]
+                                        # Allow some tolerance for floating point differences
+                                        if abs(actual_bin_size - expected_bin_size) <= 1.0:
+                                            plot_drift = True
+                                        else:
+                                            print(f"Drift not plotted: Pre-computed bin size ({actual_bin_size:.1f}s) differs from param.driftBinSize ({expected_bin_size}s)")
+                                    
+                                    # Only plot if drift data matches expected bin size
+                                    if plot_drift and len(drift_values) > 0:
                                         drift_bin_centers = (drift_time_bins[:-1] + drift_time_bins[1:]) / 2
                                         
                                         # Create third axis for drift
                                         ax3 = ax.twinx()
-                                        ax3.spines['right'].set_position(('outward', 60))
+                                        ax3.spines['right'].set_position(('outward', 80))
                                         
                                         # Plot drift as step plot
                                         ax3.step(drift_bin_centers, drift_values, where='mid', 
-                                                color='darkcyan', linewidth=2, alpha=0.8, label='Drift')
-                                        ax3.set_ylabel('Drift (μm)', color='darkcyan', fontsize=13, fontfamily="DejaVu Sans")
-                                        ax3.tick_params(axis='y', labelcolor='darkcyan', labelsize=13)
-                                        print("DEBUG: Drift plot added successfully")
-                                    else:
-                                        print("DEBUG: drift_time_bins or drift_values too short")
-                                else:
-                                    print("DEBUG: drift_data missing expected keys")
-                            else:
-                                print("DEBUG: No 'drift' key in unit metrics")
-                        else:
-                            print(f"DEBUG: Unit {unit_idx} not found in per_bin_metrics")
-                    else:
-                        print("DEBUG: No per_bin_metrics in gui_data")
+                                                color='lightpink', linewidth=2.5, alpha=0.9, label='Drift')
+                                        ax3.set_ylabel('Drift (μm)', color='lightpink', fontsize=13, fontfamily="DejaVu Sans")
+                                        ax3.tick_params(axis='y', labelcolor='lightpink', labelsize=13)
                 
                 
             else:
@@ -1486,7 +1486,6 @@ class InteractiveUnitQualityGUI:
                     hasattr(self, 'gui_data') and self.gui_data is not None):
                     
                     unit_idx = self.current_unit_idx
-                    print(f"DEBUG: Checking drift for unit {unit_idx}")
                     
                     # Check if per_bin_metrics exists and contains drift data
                     if 'per_bin_metrics' in self.gui_data:
@@ -1495,50 +1494,44 @@ class InteractiveUnitQualityGUI:
                         # Check if unit has per-bin metrics data
                         if unit_idx in per_bin_metrics:
                             unit_metrics = per_bin_metrics[unit_idx]
-                            print(f"DEBUG: unit_metrics type: {type(unit_metrics)}")
-                            print(f"DEBUG: unit_metrics keys: {list(unit_metrics.keys()) if isinstance(unit_metrics, dict) else 'Not a dict'}")
                             
                             # Look for drift data in unit metrics
                             if isinstance(unit_metrics, dict) and 'drift' in unit_metrics:
                                 drift_data = unit_metrics['drift']
-                                print(f"DEBUG: Found drift data for unit {unit_idx}")
-                                print(f"DEBUG: drift_data type: {type(drift_data)}")
-                                print(f"DEBUG: drift_data keys: {list(drift_data.keys()) if isinstance(drift_data, dict) else 'Not a dict'}")
                                 
-                                # Check for time bins and drift values
+                                # Use pre-computed drift data only - never compute in GUI
                                 if (isinstance(drift_data, dict) and 
                                     'time_bins' in drift_data and 
                                     'median_spike_depth_per_bin' in drift_data):
                                     
                                     drift_time_bins = drift_data['time_bins']
                                     drift_values = drift_data['median_spike_depth_per_bin']
-                                    print(f"DEBUG: drift_time_bins shape: {np.array(drift_time_bins).shape}")
-                                    print(f"DEBUG: drift_values shape: {np.array(drift_values).shape}")
                                     
-                                    # Calculate drift bin centers for plotting
-                                    if len(drift_time_bins) > 1 and len(drift_values) > 0:
+                                    # Check if pre-computed bins match expected bin size - only plot if they match
+                                    expected_bin_size = self.param.get('driftBinSize', 60)  # Default 60 seconds
+                                    plot_drift = False
+                                    
+                                    if len(drift_time_bins) > 1:
+                                        actual_bin_size = drift_time_bins[1] - drift_time_bins[0]
+                                        # Allow some tolerance for floating point differences
+                                        if abs(actual_bin_size - expected_bin_size) <= 1.0:
+                                            plot_drift = True
+                                        else:
+                                            print(f"Drift not plotted: Pre-computed bin size ({actual_bin_size:.1f}s) differs from param.driftBinSize ({expected_bin_size}s)")
+                                    
+                                    # Only plot if drift data matches expected bin size
+                                    if plot_drift and len(drift_values) > 0:
                                         drift_bin_centers = (drift_time_bins[:-1] + drift_time_bins[1:]) / 2
                                         
                                         # Create third axis for drift
                                         ax3 = ax.twinx()
-                                        ax3.spines['right'].set_position(('outward', 60))
+                                        ax3.spines['right'].set_position(('outward', 80))
                                         
                                         # Plot drift as step plot
                                         ax3.step(drift_bin_centers, drift_values, where='mid', 
-                                                color='darkcyan', linewidth=2, alpha=0.8, label='Drift')
-                                        ax3.set_ylabel('Drift (μm)', color='darkcyan', fontsize=13, fontfamily="DejaVu Sans")
-                                        ax3.tick_params(axis='y', labelcolor='darkcyan', labelsize=13)
-                                        print("DEBUG: Drift plot added successfully")
-                                    else:
-                                        print("DEBUG: drift_time_bins or drift_values too short")
-                                else:
-                                    print("DEBUG: drift_data missing expected keys")
-                            else:
-                                print("DEBUG: No 'drift' key in unit metrics")
-                        else:
-                            print(f"DEBUG: Unit {unit_idx} not found in per_bin_metrics")
-                    else:
-                        print("DEBUG: No per_bin_metrics in gui_data")
+                                                color='lightpink', linewidth=2.5, alpha=0.9, label='Drift')
+                                        ax3.set_ylabel('Drift (μm)', color='lightpink', fontsize=13, fontfamily="DejaVu Sans")
+                                        ax3.tick_params(axis='y', labelcolor='lightpink', labelsize=13)
                 
                 # Add subtle time bin indicators to amplitude plot
                 for bin_edge in time_bins:
@@ -1553,19 +1546,48 @@ class InteractiveUnitQualityGUI:
         # Store y-limits for amplitude fit plot consistency
         self._amplitude_ylim = ax.get_ylim()
         
-        # Add legend for time chunk coloring if computeTimeChunks is enabled
+        # Add legend for time chunk coloring and drift if enabled
+        import matplotlib.lines as mlines
+        legend_elements = []
+        
+        # Add time chunk legend elements if computeTimeChunks is enabled
         if self.param and self.param.get('computeTimeChunks', False):
-            # Create legend elements with dots instead of patches
-            import matplotlib.lines as mlines
-            legend_elements = [
+            legend_elements.extend([
                 mlines.Line2D([], [], color='green', marker='o', linestyle='None', 
                              markersize=6, label='Spikes in good time chunks'),
                 mlines.Line2D([], [], color='darkorange', marker='o', linestyle='None', 
                              markersize=6, label='Spikes in MUA time chunks')
-            ]
-            # Add legend below the plot with visible background
+            ])
+        
+        # Add drift and firing rate legend elements
+        legend_elements.append(
+            mlines.Line2D([], [], color='magenta', linestyle='-', linewidth=2.5, 
+                         label='Firing rate')
+        )
+        
+        # Add drift if computeDrift is enabled and drift data exists
+        if (self.param and self.param.get('computeDrift', False) and 
+            hasattr(self, 'gui_data') and self.gui_data is not None and
+            'per_bin_metrics' in self.gui_data and 
+            self.current_unit_idx in self.gui_data['per_bin_metrics'] and
+            'drift' in self.gui_data['per_bin_metrics'][self.current_unit_idx]):
+            
+            # Add clarification if both drift and time chunks are computed
+            if self.param.get('computeTimeChunks', False):
+                drift_label = 'Drift (good time chunks only)'
+            else:
+                drift_label = 'Drift'
+                
+            legend_elements.append(
+                mlines.Line2D([], [], color='lightpink', linestyle='-', linewidth=2.5, 
+                             label=drift_label)
+            )
+        
+        # Add legend below the plot with visible background if we have elements
+        if legend_elements:
+            ncols = min(len(legend_elements), 4)  # Max 4 columns
             legend = ax.legend(handles=legend_elements, bbox_to_anchor=(0.5, -0.05), 
-                             loc='upper center', ncol=2, fontsize=10,
+                             loc='upper center', ncol=ncols, fontsize=10,
                              framealpha=0.8, facecolor='white', edgecolor='black', 
                              prop={'family': 'DejaVu Sans'})
             legend.set_zorder(15)  # Ensure legend appears above plot elements
