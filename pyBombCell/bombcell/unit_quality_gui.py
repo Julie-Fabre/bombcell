@@ -1018,6 +1018,28 @@ class InteractiveUnitQualityGUI:
             bin_size = acg_data['bin_size']
             
         elif len(spike_times) > 1:
+            # Filter spike times to good time chunks if computeTimeChunks is enabled
+            filtered_spike_times = spike_times.copy()
+            if self.param and self.param.get('computeTimeChunks', False):
+                good_start_times = metrics.get('useTheseTimesStart', None)
+                good_stop_times = metrics.get('useTheseTimesStop', None)
+                
+                if good_start_times is not None and good_stop_times is not None:
+                    # Ensure they are arrays
+                    if np.isscalar(good_start_times):
+                        good_start_times = [good_start_times]
+                    if np.isscalar(good_stop_times):
+                        good_stop_times = [good_stop_times]
+                    
+                    # Create mask for spikes in good time chunks
+                    good_spike_mask = np.zeros(len(spike_times), dtype=bool)
+                    for g_start, g_stop in zip(good_start_times, good_stop_times):
+                        if not (np.isnan(g_start) or np.isnan(g_stop)):
+                            good_spike_mask |= (spike_times >= g_start) & (spike_times <= g_stop)
+                    
+                    # Filter spike times to only good time chunks
+                    filtered_spike_times = spike_times[good_spike_mask]
+            
             # ACG calculation will proceed without status messages
             
             # ACG calculation with MATLAB-style parameters
@@ -1033,16 +1055,16 @@ class InteractiveUnitQualityGUI:
             autocorr = np.zeros(len(bin_centers))
             
             # For efficiency, subsample spikes if there are too many
-            if len(spike_times) > 10000:
-                indices = np.random.choice(len(spike_times), 10000, replace=False)
-                spike_subset = spike_times[indices]
+            if len(filtered_spike_times) > 10000:
+                indices = np.random.choice(len(filtered_spike_times), 10000, replace=False)
+                spike_subset = filtered_spike_times[indices]
             else:
-                spike_subset = spike_times
+                spike_subset = filtered_spike_times
             
             # Calculate cross-correlation with itself  
             for i, spike_time in enumerate(spike_subset[::10]):  # Subsample further for speed
                 # Find spikes within max_lag of this spike
-                time_diffs = spike_times - spike_time
+                time_diffs = filtered_spike_times - spike_time
                 valid_diffs = time_diffs[(np.abs(time_diffs) <= max_lag) & (time_diffs != 0)]
                 
                 if len(valid_diffs) > 0:
@@ -1051,7 +1073,7 @@ class InteractiveUnitQualityGUI:
             
             # Convert to firing rate (spikes/sec)
             if len(spike_subset) > 0:
-                recording_duration = np.max(spike_times) - np.min(spike_times)
+                recording_duration = np.max(filtered_spike_times) - np.min(filtered_spike_times) if len(filtered_spike_times) > 0 else 1
                 autocorr = autocorr / (len(spike_subset) * bin_size) if recording_duration > 0 else autocorr
                 
             # Cache the computed ACG for future use
@@ -1075,15 +1097,18 @@ class InteractiveUnitQualityGUI:
         
         # Get mean firing rate from metrics or calculate if not available
         mean_fr = 0
-        if len(spike_times) > 1:
-            # Use pre-computed firing rate if available
-            if 'firing_rate_mean' in metrics and not np.isnan(metrics['firing_rate_mean']):
+        # Use filtered spike times for firing rate calculation when computeTimeChunks is enabled
+        spikes_for_fr = filtered_spike_times if 'filtered_spike_times' in locals() else spike_times
+        
+        if len(spikes_for_fr) > 1:
+            # Use pre-computed firing rate if available (but may need to adjust for filtered data)
+            if 'firing_rate_mean' in metrics and not np.isnan(metrics['firing_rate_mean']) and not (self.param and self.param.get('computeTimeChunks', False)):
                 mean_fr = metrics['firing_rate_mean']
             else:
-                # Fallback calculation - but this should match the expected baseline for ACG
-                recording_duration = np.max(spike_times) - np.min(spike_times)
+                # Calculate firing rate from filtered spike times
+                recording_duration = np.max(spikes_for_fr) - np.min(spikes_for_fr)
                 if recording_duration > 0:
-                    mean_fr = len(spike_times) / recording_duration
+                    mean_fr = len(spikes_for_fr) / recording_duration
             # Set limits to accommodate both data and mean firing rate line
             ax.set_xlim(0, max_lag * 1000)
             if len(positive_autocorr) > 0:
@@ -1759,6 +1784,27 @@ class InteractiveUnitQualityGUI:
             
             if 'template_amplitudes' in self.ephys_data:
                 amplitudes = self.ephys_data['template_amplitudes'][spike_mask]
+                
+                # Filter to good time chunks if computeTimeChunks is enabled
+                if self.param and self.param.get('computeTimeChunks', False):
+                    good_start_times = metrics.get('useTheseTimesStart', None)
+                    good_stop_times = metrics.get('useTheseTimesStop', None)
+                    
+                    if good_start_times is not None and good_stop_times is not None:
+                        # Ensure they are arrays
+                        if np.isscalar(good_start_times):
+                            good_start_times = [good_start_times]
+                        if np.isscalar(good_stop_times):
+                            good_stop_times = [good_stop_times]
+                        
+                        # Create mask for spikes in good time chunks
+                        good_spike_mask = np.zeros(len(spike_times), dtype=bool)
+                        for g_start, g_stop in zip(good_start_times, good_stop_times):
+                            if not (np.isnan(g_start) or np.isnan(g_stop)):
+                                good_spike_mask |= (spike_times >= g_start) & (spike_times <= g_stop)
+                        
+                        # Filter amplitudes to only good time chunks
+                        amplitudes = amplitudes[good_spike_mask]
                 
                 if len(amplitudes) > 10:  # Need sufficient data for fit
                     # Create histogram with count (not density) like BombCell
