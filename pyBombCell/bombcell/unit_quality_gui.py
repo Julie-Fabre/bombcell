@@ -1600,8 +1600,9 @@ class InteractiveUnitQualityGUI:
             ax.tick_params(labelsize=13)
             ax.set_ylim(0, 1.1)  # Standard scale for all metrics
             
-            # Add compact legend
-            ax.legend(loc='upper right', fontsize=13, framealpha=0.9, prop={'family': 'DejaVu Sans'})
+            # Add legend at the top of the plot
+            ax.legend(bbox_to_anchor=(0.5, 1.02), loc='lower center', ncol=3, fontsize=11,
+                     framealpha=0.9, prop={'family': 'DejaVu Sans'})
             
             # Make plot as compact as possible
             ax.margins(y=0.05)
