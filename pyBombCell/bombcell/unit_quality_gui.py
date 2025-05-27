@@ -751,39 +751,39 @@ class InteractiveUnitQualityGUI:
             clear_output(wait=True)
             
             # Create figure with tighter grid spacing 
-            fig = plt.figure(figsize=(20, 13))
+            fig = plt.figure(figsize=(20, 14))
             fig.patch.set_facecolor('white')
             
-            # 1. Unit location plot (left column) - subplot(9, 15, spans all rows)
-            ax_location = plt.subplot2grid((9, 15), (0, 0), rowspan=9, colspan=1)
+            # 1. Unit location plot (left column) - subplot(10, 15, spans all rows)
+            ax_location = plt.subplot2grid((10, 15), (0, 0), rowspan=10, colspan=1)
             self.plot_unit_location(ax_location, unit_data)
             
-            # 2. Template waveforms - rows 0-1, gap from location
-            ax_template = plt.subplot2grid((9, 15), (0, 2), rowspan=2, colspan=6)
+            # 2. Template waveforms - rows 0-1
+            ax_template = plt.subplot2grid((10, 15), (0, 2), rowspan=2, colspan=6)
             self.plot_template_waveform(ax_template, unit_data)
             
-            # 3. Raw waveforms - rows 0-1, small gap from template
-            ax_raw = plt.subplot2grid((9, 15), (0, 9), rowspan=2, colspan=6)
+            # 3. Raw waveforms - rows 0-1
+            ax_raw = plt.subplot2grid((10, 15), (0, 9), rowspan=2, colspan=6)
             self.plot_raw_waveforms(ax_raw, unit_data)
             
-            # 4. Spatial decay - rows 2-3, gap from location
-            ax_spatial = plt.subplot2grid((9, 15), (2, 2), rowspan=2, colspan=6)
+            # 4. Spatial decay - rows 3-4 (uniform gap after row 2)
+            ax_spatial = plt.subplot2grid((10, 15), (3, 2), rowspan=2, colspan=6)
             self.plot_spatial_decay(ax_spatial, unit_data)
             
-            # 5. ACG - rows 2-3, small gap from spatial
-            ax_acg = plt.subplot2grid((9, 15), (2, 9), rowspan=2, colspan=6)
+            # 5. ACG - rows 3-4 (uniform gap after row 2)
+            ax_acg = plt.subplot2grid((10, 15), (3, 9), rowspan=2, colspan=6)
             self.plot_autocorrelogram(ax_acg, unit_data)
             
-            # 6. Amplitudes over time - rows 5-6, spans most width
-            ax_amplitude = plt.subplot2grid((9, 15), (5, 2), rowspan=2, colspan=10)
+            # 6. Amplitudes over time - rows 6-7 (uniform gap after row 5)
+            ax_amplitude = plt.subplot2grid((10, 15), (6, 2), rowspan=2, colspan=10)
             self.plot_amplitudes_over_time(ax_amplitude, unit_data)
             
-            # 6b. Time bin metrics - row 8, spans same width as amplitude
-            ax_bin_metrics = plt.subplot2grid((9, 15), (8, 2), rowspan=1, colspan=10, sharex=ax_amplitude)
+            # 6b. Time bin metrics - row 9 (uniform gap after row 8)
+            ax_bin_metrics = plt.subplot2grid((10, 15), (9, 2), rowspan=1, colspan=10, sharex=ax_amplitude)
             self.plot_time_bin_metrics(ax_bin_metrics, unit_data)
             
-            # 7. Amplitude fit - positioned to match amplitude height, small gap
-            ax_amp_fit = plt.subplot2grid((9, 15), (5, 13), rowspan=2, colspan=2)
+            # 7. Amplitude fit - positioned to match amplitude height (rows 6-7)
+            ax_amp_fit = plt.subplot2grid((10, 15), (6, 13), rowspan=2, colspan=2)
             self.plot_amplitude_fit(ax_amp_fit, unit_data)
             
             # Adjust subplot margins manually with tighter spacing
