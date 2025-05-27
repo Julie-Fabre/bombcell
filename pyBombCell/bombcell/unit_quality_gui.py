@@ -1379,6 +1379,64 @@ class InteractiveUnitQualityGUI:
                 ax2.tick_params(labelsize=13)
                 ax2.tick_params(axis='y', labelcolor='magenta')
                 
+                # Add drift plot if computeDrift is enabled
+                if (self.param and self.param.get('computeDrift', False) and 
+                    hasattr(self, 'gui_data') and self.gui_data is not None):
+                    
+                    unit_idx = self.current_unit_idx
+                    print(f"DEBUG: Checking drift for unit {unit_idx}")
+                    
+                    # Check if per_bin_metrics exists and contains drift data
+                    if 'per_bin_metrics' in self.gui_data:
+                        per_bin_metrics = self.gui_data['per_bin_metrics']
+                        print(f"DEBUG: per_bin_metrics keys: {list(per_bin_metrics.keys())}")
+                        
+                        # Look for drift data - could be under different keys
+                        if 'drift' in per_bin_metrics:
+                            drift_data = per_bin_metrics['drift']
+                            print(f"DEBUG: Found drift data, checking unit {unit_idx}")
+                            
+                            # Check if drift data has per-unit information
+                            if isinstance(drift_data, dict) and unit_idx in drift_data:
+                                unit_drift_data = drift_data[unit_idx]
+                                print(f"DEBUG: unit_drift_data type: {type(unit_drift_data)}")
+                                print(f"DEBUG: unit_drift_data keys: {list(unit_drift_data.keys()) if isinstance(unit_drift_data, dict) else 'Not a dict'}")
+                                
+                                # Check for time bins and drift values
+                                if (isinstance(unit_drift_data, dict) and 
+                                    'time_bins' in unit_drift_data and 
+                                    'median_spike_depth_per_bin' in unit_drift_data):
+                                    
+                                    drift_time_bins = unit_drift_data['time_bins']
+                                    drift_values = unit_drift_data['median_spike_depth_per_bin']
+                                    print(f"DEBUG: drift_time_bins shape: {np.array(drift_time_bins).shape}")
+                                    print(f"DEBUG: drift_values shape: {np.array(drift_values).shape}")
+                                    
+                                    # Calculate drift bin centers for plotting
+                                    if len(drift_time_bins) > 1:
+                                        drift_bin_centers = (drift_time_bins[:-1] + drift_time_bins[1:]) / 2
+                                        
+                                        # Create third axis for drift
+                                        ax3 = ax.twinx()
+                                        ax3.spines['right'].set_position(('outward', 60))
+                                        
+                                        # Plot drift as step plot
+                                        ax3.step(drift_bin_centers, drift_values, where='mid', 
+                                                color='darkcyan', linewidth=2, alpha=0.8, label='Drift')
+                                        ax3.set_ylabel('Drift (μm)', color='darkcyan', fontsize=13, fontfamily="DejaVu Sans")
+                                        ax3.tick_params(axis='y', labelcolor='darkcyan', labelsize=13)
+                                        print("DEBUG: Drift plot added successfully")
+                                    else:
+                                        print("DEBUG: drift_time_bins too short")
+                                else:
+                                    print("DEBUG: unit_drift_data missing expected keys")
+                            else:
+                                print(f"DEBUG: No drift data for unit {unit_idx}")
+                        else:
+                            print("DEBUG: No 'drift' key in per_bin_metrics")
+                    else:
+                        print("DEBUG: No per_bin_metrics in gui_data")
+                
                 
             else:
                 # Color spikes based on goodTimeChunks if computeTimeChunks is enabled (fallback - no amplitudes)
@@ -1419,6 +1477,64 @@ class InteractiveUnitQualityGUI:
                 ax2.set_ylabel('Firing rate (sp/s)', color='magenta', fontsize=13, fontfamily="DejaVu Sans")
                 ax2.tick_params(labelsize=13)
                 ax2.tick_params(axis='y', labelcolor='magenta')
+                
+                # Add drift plot if computeDrift is enabled
+                if (self.param and self.param.get('computeDrift', False) and 
+                    hasattr(self, 'gui_data') and self.gui_data is not None):
+                    
+                    unit_idx = self.current_unit_idx
+                    print(f"DEBUG: Checking drift for unit {unit_idx}")
+                    
+                    # Check if per_bin_metrics exists and contains drift data
+                    if 'per_bin_metrics' in self.gui_data:
+                        per_bin_metrics = self.gui_data['per_bin_metrics']
+                        print(f"DEBUG: per_bin_metrics keys: {list(per_bin_metrics.keys())}")
+                        
+                        # Look for drift data - could be under different keys
+                        if 'drift' in per_bin_metrics:
+                            drift_data = per_bin_metrics['drift']
+                            print(f"DEBUG: Found drift data, checking unit {unit_idx}")
+                            
+                            # Check if drift data has per-unit information
+                            if isinstance(drift_data, dict) and unit_idx in drift_data:
+                                unit_drift_data = drift_data[unit_idx]
+                                print(f"DEBUG: unit_drift_data type: {type(unit_drift_data)}")
+                                print(f"DEBUG: unit_drift_data keys: {list(unit_drift_data.keys()) if isinstance(unit_drift_data, dict) else 'Not a dict'}")
+                                
+                                # Check for time bins and drift values
+                                if (isinstance(unit_drift_data, dict) and 
+                                    'time_bins' in unit_drift_data and 
+                                    'median_spike_depth_per_bin' in unit_drift_data):
+                                    
+                                    drift_time_bins = unit_drift_data['time_bins']
+                                    drift_values = unit_drift_data['median_spike_depth_per_bin']
+                                    print(f"DEBUG: drift_time_bins shape: {np.array(drift_time_bins).shape}")
+                                    print(f"DEBUG: drift_values shape: {np.array(drift_values).shape}")
+                                    
+                                    # Calculate drift bin centers for plotting
+                                    if len(drift_time_bins) > 1:
+                                        drift_bin_centers = (drift_time_bins[:-1] + drift_time_bins[1:]) / 2
+                                        
+                                        # Create third axis for drift
+                                        ax3 = ax.twinx()
+                                        ax3.spines['right'].set_position(('outward', 60))
+                                        
+                                        # Plot drift as step plot
+                                        ax3.step(drift_bin_centers, drift_values, where='mid', 
+                                                color='darkcyan', linewidth=2, alpha=0.8, label='Drift')
+                                        ax3.set_ylabel('Drift (μm)', color='darkcyan', fontsize=13, fontfamily="DejaVu Sans")
+                                        ax3.tick_params(axis='y', labelcolor='darkcyan', labelsize=13)
+                                        print("DEBUG: Drift plot added successfully")
+                                    else:
+                                        print("DEBUG: drift_time_bins too short")
+                                else:
+                                    print("DEBUG: unit_drift_data missing expected keys")
+                            else:
+                                print(f"DEBUG: No drift data for unit {unit_idx}")
+                        else:
+                            print("DEBUG: No 'drift' key in per_bin_metrics")
+                    else:
+                        print("DEBUG: No per_bin_metrics in gui_data")
                 
                 # Add subtle time bin indicators to amplitude plot
                 for bin_edge in time_bins:
