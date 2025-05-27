@@ -1389,31 +1389,32 @@ class InteractiveUnitQualityGUI:
                     # Check if per_bin_metrics exists and contains drift data
                     if 'per_bin_metrics' in self.gui_data:
                         per_bin_metrics = self.gui_data['per_bin_metrics']
-                        print(f"DEBUG: per_bin_metrics keys: {list(per_bin_metrics.keys())}")
                         
-                        # Look for drift data - could be under different keys
-                        if 'drift' in per_bin_metrics:
-                            drift_data = per_bin_metrics['drift']
-                            print(f"DEBUG: Found drift data, checking unit {unit_idx}")
+                        # Check if unit has per-bin metrics data
+                        if unit_idx in per_bin_metrics:
+                            unit_metrics = per_bin_metrics[unit_idx]
+                            print(f"DEBUG: unit_metrics type: {type(unit_metrics)}")
+                            print(f"DEBUG: unit_metrics keys: {list(unit_metrics.keys()) if isinstance(unit_metrics, dict) else 'Not a dict'}")
                             
-                            # Check if drift data has per-unit information
-                            if isinstance(drift_data, dict) and unit_idx in drift_data:
-                                unit_drift_data = drift_data[unit_idx]
-                                print(f"DEBUG: unit_drift_data type: {type(unit_drift_data)}")
-                                print(f"DEBUG: unit_drift_data keys: {list(unit_drift_data.keys()) if isinstance(unit_drift_data, dict) else 'Not a dict'}")
+                            # Look for drift data in unit metrics
+                            if isinstance(unit_metrics, dict) and 'drift' in unit_metrics:
+                                drift_data = unit_metrics['drift']
+                                print(f"DEBUG: Found drift data for unit {unit_idx}")
+                                print(f"DEBUG: drift_data type: {type(drift_data)}")
+                                print(f"DEBUG: drift_data keys: {list(drift_data.keys()) if isinstance(drift_data, dict) else 'Not a dict'}")
                                 
                                 # Check for time bins and drift values
-                                if (isinstance(unit_drift_data, dict) and 
-                                    'time_bins' in unit_drift_data and 
-                                    'median_spike_depth_per_bin' in unit_drift_data):
+                                if (isinstance(drift_data, dict) and 
+                                    'time_bins' in drift_data and 
+                                    'median_spike_depth_per_bin' in drift_data):
                                     
-                                    drift_time_bins = unit_drift_data['time_bins']
-                                    drift_values = unit_drift_data['median_spike_depth_per_bin']
+                                    drift_time_bins = drift_data['time_bins']
+                                    drift_values = drift_data['median_spike_depth_per_bin']
                                     print(f"DEBUG: drift_time_bins shape: {np.array(drift_time_bins).shape}")
                                     print(f"DEBUG: drift_values shape: {np.array(drift_values).shape}")
                                     
                                     # Calculate drift bin centers for plotting
-                                    if len(drift_time_bins) > 1:
+                                    if len(drift_time_bins) > 1 and len(drift_values) > 0:
                                         drift_bin_centers = (drift_time_bins[:-1] + drift_time_bins[1:]) / 2
                                         
                                         # Create third axis for drift
@@ -1427,13 +1428,13 @@ class InteractiveUnitQualityGUI:
                                         ax3.tick_params(axis='y', labelcolor='darkcyan', labelsize=13)
                                         print("DEBUG: Drift plot added successfully")
                                     else:
-                                        print("DEBUG: drift_time_bins too short")
+                                        print("DEBUG: drift_time_bins or drift_values too short")
                                 else:
-                                    print("DEBUG: unit_drift_data missing expected keys")
+                                    print("DEBUG: drift_data missing expected keys")
                             else:
-                                print(f"DEBUG: No drift data for unit {unit_idx}")
+                                print("DEBUG: No 'drift' key in unit metrics")
                         else:
-                            print("DEBUG: No 'drift' key in per_bin_metrics")
+                            print(f"DEBUG: Unit {unit_idx} not found in per_bin_metrics")
                     else:
                         print("DEBUG: No per_bin_metrics in gui_data")
                 
@@ -1488,31 +1489,32 @@ class InteractiveUnitQualityGUI:
                     # Check if per_bin_metrics exists and contains drift data
                     if 'per_bin_metrics' in self.gui_data:
                         per_bin_metrics = self.gui_data['per_bin_metrics']
-                        print(f"DEBUG: per_bin_metrics keys: {list(per_bin_metrics.keys())}")
                         
-                        # Look for drift data - could be under different keys
-                        if 'drift' in per_bin_metrics:
-                            drift_data = per_bin_metrics['drift']
-                            print(f"DEBUG: Found drift data, checking unit {unit_idx}")
+                        # Check if unit has per-bin metrics data
+                        if unit_idx in per_bin_metrics:
+                            unit_metrics = per_bin_metrics[unit_idx]
+                            print(f"DEBUG: unit_metrics type: {type(unit_metrics)}")
+                            print(f"DEBUG: unit_metrics keys: {list(unit_metrics.keys()) if isinstance(unit_metrics, dict) else 'Not a dict'}")
                             
-                            # Check if drift data has per-unit information
-                            if isinstance(drift_data, dict) and unit_idx in drift_data:
-                                unit_drift_data = drift_data[unit_idx]
-                                print(f"DEBUG: unit_drift_data type: {type(unit_drift_data)}")
-                                print(f"DEBUG: unit_drift_data keys: {list(unit_drift_data.keys()) if isinstance(unit_drift_data, dict) else 'Not a dict'}")
+                            # Look for drift data in unit metrics
+                            if isinstance(unit_metrics, dict) and 'drift' in unit_metrics:
+                                drift_data = unit_metrics['drift']
+                                print(f"DEBUG: Found drift data for unit {unit_idx}")
+                                print(f"DEBUG: drift_data type: {type(drift_data)}")
+                                print(f"DEBUG: drift_data keys: {list(drift_data.keys()) if isinstance(drift_data, dict) else 'Not a dict'}")
                                 
                                 # Check for time bins and drift values
-                                if (isinstance(unit_drift_data, dict) and 
-                                    'time_bins' in unit_drift_data and 
-                                    'median_spike_depth_per_bin' in unit_drift_data):
+                                if (isinstance(drift_data, dict) and 
+                                    'time_bins' in drift_data and 
+                                    'median_spike_depth_per_bin' in drift_data):
                                     
-                                    drift_time_bins = unit_drift_data['time_bins']
-                                    drift_values = unit_drift_data['median_spike_depth_per_bin']
+                                    drift_time_bins = drift_data['time_bins']
+                                    drift_values = drift_data['median_spike_depth_per_bin']
                                     print(f"DEBUG: drift_time_bins shape: {np.array(drift_time_bins).shape}")
                                     print(f"DEBUG: drift_values shape: {np.array(drift_values).shape}")
                                     
                                     # Calculate drift bin centers for plotting
-                                    if len(drift_time_bins) > 1:
+                                    if len(drift_time_bins) > 1 and len(drift_values) > 0:
                                         drift_bin_centers = (drift_time_bins[:-1] + drift_time_bins[1:]) / 2
                                         
                                         # Create third axis for drift
@@ -1526,13 +1528,13 @@ class InteractiveUnitQualityGUI:
                                         ax3.tick_params(axis='y', labelcolor='darkcyan', labelsize=13)
                                         print("DEBUG: Drift plot added successfully")
                                     else:
-                                        print("DEBUG: drift_time_bins too short")
+                                        print("DEBUG: drift_time_bins or drift_values too short")
                                 else:
-                                    print("DEBUG: unit_drift_data missing expected keys")
+                                    print("DEBUG: drift_data missing expected keys")
                             else:
-                                print(f"DEBUG: No drift data for unit {unit_idx}")
+                                print("DEBUG: No 'drift' key in unit metrics")
                         else:
-                            print("DEBUG: No 'drift' key in per_bin_metrics")
+                            print(f"DEBUG: Unit {unit_idx} not found in per_bin_metrics")
                     else:
                         print("DEBUG: No per_bin_metrics in gui_data")
                 
