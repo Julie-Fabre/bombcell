@@ -11,6 +11,7 @@ try:
     import ipywidgets as widgets
     from IPython.display import display, clear_output
     IPYWIDGETS_AVAILABLE = True
+    print("ipywidgets available - using interactive GUI")
 except ImportError:
     IPYWIDGETS_AVAILABLE = False
 
@@ -337,7 +338,7 @@ class InteractiveUnitQualityGUI:
     """
     
     def __init__(self, ephys_data, quality_metrics, ephys_properties=None, 
-                 raw_waveforms=None, param=None, unit_types=None, gui_data=None):
+                 raw_waveforms=None, param=None, unit_types=None, gui_data=None, save_path=None):
         """
         Initialize the interactive GUI
         
@@ -353,6 +354,7 @@ class InteractiveUnitQualityGUI:
         self.raw_waveforms = raw_waveforms
         self.param = param or {}
         self.unit_types = unit_types
+        self.save_path = save_path
         
         # Auto-load GUI data if not provided but param has path info
         if gui_data is None and param and 'ephysKilosortPath' in param:
@@ -362,9 +364,9 @@ class InteractiveUnitQualityGUI:
             possible_paths = [
                 os.path.join(ks_path, 'bombcell', 'for_GUI', 'gui_data.pkl'),
                 os.path.join(ks_path, 'for_GUI', 'gui_data.pkl'),
-                os.path.join(ks_path, 'gui_data.pkl')
+                os.path.join(ks_path, 'gui_data.pkl'),
+                os.path.join(save_path, 'for_GUI', 'gui_data.pkl'),
             ]
-            
             for path in possible_paths:
                 if os.path.exists(path):
                     try:
@@ -3035,7 +3037,7 @@ def load_metrics_for_gui(ks_dir, quality_metrics, ephys_properties=None, param=N
 
 
 def unit_quality_gui(ephys_data_or_path=None, quality_metrics=None, ephys_properties=None, 
-                     unit_types=None, param=None, ks_dir=None):
+                     unit_types=None, param=None, ks_dir=None, save_path=None):
     """
     Launch the Unit Quality GUI - Python equivalent of unitQualityGUI_synced
     
@@ -3053,6 +3055,8 @@ def unit_quality_gui(ephys_data_or_path=None, quality_metrics=None, ephys_proper
         Parameters dictionary
     ks_dir : str, optional
         Alternative parameter name for kilosort directory path (for backward compatibility)
+    save_path : str, optional
+        Path where precomputed gui data could have been saved
         
     Returns
     -------
@@ -3062,7 +3066,9 @@ def unit_quality_gui(ephys_data_or_path=None, quality_metrics=None, ephys_proper
     # Handle backward compatibility with ks_dir parameter
     if ks_dir is not None:
         ephys_data_or_path = ks_dir
-    
+    # Handle case where save_path is not provided
+    if save_path is None:
+        save_path = ks_dir
     # Check if input is a path or already loaded data
     if isinstance(ephys_data_or_path, dict):
         # Data is already loaded
@@ -3085,7 +3091,8 @@ def unit_quality_gui(ephys_data_or_path=None, quality_metrics=None, ephys_proper
             ephys_properties=ephys_properties,
             raw_waveforms=raw_waveforms,
             param=param,
-            unit_types=unit_types
+            unit_types=unit_types,
+            save_path=save_path
         )
     else:
         gui = UnitQualityGUI(
