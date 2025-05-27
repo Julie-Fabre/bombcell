@@ -230,9 +230,17 @@ def load_bc_results(bc_path):
     # BombCell params ML
     param_path = os.path.join(bc_path, "_bc_parameters._bc_qMetrics.parquet")
     if os.path.exists(param_path):
-        param = pd.read_parquet(param_path)
+        param_df = pd.read_parquet(param_path)
+        # Convert DataFrame to dictionary for compatibility with quality functions
+        if len(param_df) == 1:
+            # Single row - convert to dictionary using iloc[0]
+            param = param_df.iloc[0].to_dict()
+        else:
+            # Multiple rows - use first row
+            param = param_df.iloc[0].to_dict()
     else:
         print("Parameter file not found")
+        param = None
 
     # BombCell quality metrics
     quality_metrics_path = os.path.join(bc_path, "templates._bc_qMetrics.parquet")
