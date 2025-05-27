@@ -1018,6 +1018,28 @@ class InteractiveUnitQualityGUI:
             bin_size = acg_data['bin_size']
             
         elif len(spike_times) > 1:
+            # Filter spike times to good time chunks if computeTimeChunks is enabled
+            filtered_spike_times = spike_times.copy()
+            if self.param and self.param.get('computeTimeChunks', False):
+                good_start_times = metrics.get('useTheseTimesStart', None)
+                good_stop_times = metrics.get('useTheseTimesStop', None)
+                
+                if good_start_times is not None and good_stop_times is not None:
+                    # Ensure they are arrays
+                    if np.isscalar(good_start_times):
+                        good_start_times = [good_start_times]
+                    if np.isscalar(good_stop_times):
+                        good_stop_times = [good_stop_times]
+                    
+                    # Create mask for spikes in good time chunks
+                    good_spike_mask = np.zeros(len(spike_times), dtype=bool)
+                    for g_start, g_stop in zip(good_start_times, good_stop_times):
+                        if not (np.isnan(g_start) or np.isnan(g_stop)):
+                            good_spike_mask |= (spike_times >= g_start) & (spike_times <= g_stop)
+                    
+                    # Filter spike times to only good time chunks
+                    filtered_spike_times = spike_times[good_spike_mask]
+            
             # ACG calculation will proceed without status messages
             
             # ACG calculation with MATLAB-style parameters
@@ -1033,16 +1055,16 @@ class InteractiveUnitQualityGUI:
             autocorr = np.zeros(len(bin_centers))
             
             # For efficiency, subsample spikes if there are too many
-            if len(spike_times) > 10000:
-                indices = np.random.choice(len(spike_times), 10000, replace=False)
-                spike_subset = spike_times[indices]
+            if len(filtered_spike_times) > 10000:
+                indices = np.random.choice(len(filtered_spike_times), 10000, replace=False)
+                spike_subset = filtered_spike_times[indices]
             else:
-                spike_subset = spike_times
+                spike_subset = filtered_spike_times
             
             # Calculate cross-correlation with itself  
             for i, spike_time in enumerate(spike_subset[::10]):  # Subsample further for speed
                 # Find spikes within max_lag of this spike
-                time_diffs = spike_times - spike_time
+                time_diffs = filtered_spike_times - spike_time
                 valid_diffs = time_diffs[(np.abs(time_diffs) <= max_lag) & (time_diffs != 0)]
                 
                 if len(valid_diffs) > 0:
@@ -1051,7 +1073,7 @@ class InteractiveUnitQualityGUI:
             
             # Convert to firing rate (spikes/sec)
             if len(spike_subset) > 0:
-                recording_duration = np.max(spike_times) - np.min(spike_times)
+                recording_duration = np.max(filtered_spike_times) - np.min(filtered_spike_times) if len(filtered_spike_times) > 0 else 1
                 autocorr = autocorr / (len(spike_subset) * bin_size) if recording_duration > 0 else autocorr
                 
             # Cache the computed ACG for future use
@@ -1075,15 +1097,18 @@ class InteractiveUnitQualityGUI:
         
         # Get mean firing rate from metrics or calculate if not available
         mean_fr = 0
-        if len(spike_times) > 1:
-            # Use pre-computed firing rate if available
-            if 'firing_rate_mean' in metrics and not np.isnan(metrics['firing_rate_mean']):
+        # Use filtered spike times for firing rate calculation when computeTimeChunks is enabled
+        spikes_for_fr = filtered_spike_times if 'filtered_spike_times' in locals() else spike_times
+        
+        if len(spikes_for_fr) > 1:
+            # Use pre-computed firing rate if available (but may need to adjust for filtered data)
+            if 'firing_rate_mean' in metrics and not np.isnan(metrics['firing_rate_mean']) and not (self.param and self.param.get('computeTimeChunks', False)):
                 mean_fr = metrics['firing_rate_mean']
             else:
-                # Fallback calculation - but this should match the expected baseline for ACG
-                recording_duration = np.max(spike_times) - np.min(spike_times)
+                # Calculate firing rate from filtered spike times
+                recording_duration = np.max(spikes_for_fr) - np.min(spikes_for_fr)
                 if recording_duration > 0:
-                    mean_fr = len(spike_times) / recording_duration
+                    mean_fr = len(spikes_for_fr) / recording_duration
             # Set limits to accommodate both data and mean firing rate line
             ax.set_xlim(0, max_lag * 1000)
             if len(positive_autocorr) > 0:
@@ -1314,8 +1339,33 @@ class InteractiveUnitQualityGUI:
             if 'template_amplitudes' in self.ephys_data:
                 amplitudes = self.ephys_data['template_amplitudes'][spike_mask]
                 
-                # Plot amplitudes with slightly bigger dots
-                ax.scatter(spike_times, amplitudes, s=3, alpha=0.6, color='black', edgecolors='none')
+                # Color spikes based on goodTimeChunks if computeTimeChunks is enabled
+                spike_colors = np.full(len(spike_times), 'darkorange')  # Default: bad chunks (orange)
+                
+                if self.param and self.param.get('computeTimeChunks', False):
+                    # Use useTheseTimesStart and useTheseTimesStop from metrics
+                    good_start_times = metrics.get('useTheseTimesStart', None)
+                    good_stop_times = metrics.get('useTheseTimesStop', None)
+                    
+                    if good_start_times is not None and good_stop_times is not None:
+                        # Ensure they are arrays
+                        if np.isscalar(good_start_times):
+                            good_start_times = [good_start_times]
+                        if np.isscalar(good_stop_times):
+                            good_stop_times = [good_stop_times]
+                        
+                        # Color spikes green if they fall within any good time chunk
+                        for start_time, stop_time in zip(good_start_times, good_stop_times):
+                            if not (np.isnan(start_time) or np.isnan(stop_time)):
+                                good_spike_mask = (spike_times >= start_time) & (spike_times <= stop_time)
+                                spike_colors[good_spike_mask] = 'green'  # Good chunks: green
+                
+                # Plot amplitudes with colored dots based on good/bad time chunks
+                unique_colors = np.unique(spike_colors)
+                for color in unique_colors:
+                    color_mask = spike_colors == color
+                    ax.scatter(spike_times[color_mask], amplitudes[color_mask], 
+                              s=3, alpha=0.6, c=color, edgecolors='none')
                 ax.set_ylabel('Template scaling', color='blue', fontsize=13, fontfamily="DejaVu Sans")
                 ax.tick_params(labelsize=13)
                 
@@ -1329,11 +1379,95 @@ class InteractiveUnitQualityGUI:
                 ax2.tick_params(labelsize=13)
                 ax2.tick_params(axis='y', labelcolor='magenta')
                 
+                # Add drift plot if computeDrift is enabled
+                if (self.param and self.param.get('computeDrift', False) and 
+                    hasattr(self, 'gui_data') and self.gui_data is not None):
+                    
+                    unit_idx = self.current_unit_idx
+                    print(f"DEBUG: Checking drift for unit {unit_idx}")
+                    
+                    # Check if per_bin_metrics exists and contains drift data
+                    if 'per_bin_metrics' in self.gui_data:
+                        per_bin_metrics = self.gui_data['per_bin_metrics']
+                        
+                        # Check if unit has per-bin metrics data
+                        if unit_idx in per_bin_metrics:
+                            unit_metrics = per_bin_metrics[unit_idx]
+                            print(f"DEBUG: unit_metrics type: {type(unit_metrics)}")
+                            print(f"DEBUG: unit_metrics keys: {list(unit_metrics.keys()) if isinstance(unit_metrics, dict) else 'Not a dict'}")
+                            
+                            # Look for drift data in unit metrics
+                            if isinstance(unit_metrics, dict) and 'drift' in unit_metrics:
+                                drift_data = unit_metrics['drift']
+                                print(f"DEBUG: Found drift data for unit {unit_idx}")
+                                print(f"DEBUG: drift_data type: {type(drift_data)}")
+                                print(f"DEBUG: drift_data keys: {list(drift_data.keys()) if isinstance(drift_data, dict) else 'Not a dict'}")
+                                
+                                # Check for time bins and drift values
+                                if (isinstance(drift_data, dict) and 
+                                    'time_bins' in drift_data and 
+                                    'median_spike_depth_per_bin' in drift_data):
+                                    
+                                    drift_time_bins = drift_data['time_bins']
+                                    drift_values = drift_data['median_spike_depth_per_bin']
+                                    print(f"DEBUG: drift_time_bins shape: {np.array(drift_time_bins).shape}")
+                                    print(f"DEBUG: drift_values shape: {np.array(drift_values).shape}")
+                                    
+                                    # Calculate drift bin centers for plotting
+                                    if len(drift_time_bins) > 1 and len(drift_values) > 0:
+                                        drift_bin_centers = (drift_time_bins[:-1] + drift_time_bins[1:]) / 2
+                                        
+                                        # Create third axis for drift
+                                        ax3 = ax.twinx()
+                                        ax3.spines['right'].set_position(('outward', 60))
+                                        
+                                        # Plot drift as step plot
+                                        ax3.step(drift_bin_centers, drift_values, where='mid', 
+                                                color='darkcyan', linewidth=2, alpha=0.8, label='Drift')
+                                        ax3.set_ylabel('Drift (μm)', color='darkcyan', fontsize=13, fontfamily="DejaVu Sans")
+                                        ax3.tick_params(axis='y', labelcolor='darkcyan', labelsize=13)
+                                        print("DEBUG: Drift plot added successfully")
+                                    else:
+                                        print("DEBUG: drift_time_bins or drift_values too short")
+                                else:
+                                    print("DEBUG: drift_data missing expected keys")
+                            else:
+                                print("DEBUG: No 'drift' key in unit metrics")
+                        else:
+                            print(f"DEBUG: Unit {unit_idx} not found in per_bin_metrics")
+                    else:
+                        print("DEBUG: No per_bin_metrics in gui_data")
+                
                 
             else:
-                # Just plot spike times as raster with bigger dots
+                # Color spikes based on goodTimeChunks if computeTimeChunks is enabled (fallback - no amplitudes)
                 y_pos = np.ones_like(spike_times)
-                ax.scatter(spike_times, y_pos, s=3, alpha=0.6, color='black', edgecolors='none')
+                spike_colors = np.full(len(spike_times), 'darkorange')  # Default: bad chunks (orange)
+                
+                if self.param and self.param.get('computeTimeChunks', False):
+                    # Use useTheseTimesStart and useTheseTimesStop from metrics
+                    good_start_times = metrics.get('useTheseTimesStart', None)
+                    good_stop_times = metrics.get('useTheseTimesStop', None)
+                    
+                    if good_start_times is not None and good_stop_times is not None:
+                        # Ensure they are arrays
+                        if np.isscalar(good_start_times):
+                            good_start_times = [good_start_times]
+                        if np.isscalar(good_stop_times):
+                            good_stop_times = [good_stop_times]
+                        
+                        # Color spikes green if they fall within any good time chunk
+                        for start_time, stop_time in zip(good_start_times, good_stop_times):
+                            if not (np.isnan(start_time) or np.isnan(stop_time)):
+                                good_spike_mask = (spike_times >= start_time) & (spike_times <= stop_time)
+                                spike_colors[good_spike_mask] = 'green'  # Good chunks: green
+                
+                # Plot spike times as raster with colored dots based on good/bad time chunks
+                unique_colors = np.unique(spike_colors)
+                for color in unique_colors:
+                    color_mask = spike_colors == color
+                    ax.scatter(spike_times[color_mask], y_pos[color_mask], 
+                              s=3, alpha=0.6, c=color, edgecolors='none')
                 ax.set_ylabel('Spikes', color='blue', fontsize=13, fontfamily="DejaVu Sans")
                 ax.tick_params(labelsize=13)
                 
@@ -1344,6 +1478,65 @@ class InteractiveUnitQualityGUI:
                 ax2.set_ylabel('Firing rate (sp/s)', color='magenta', fontsize=13, fontfamily="DejaVu Sans")
                 ax2.tick_params(labelsize=13)
                 ax2.tick_params(axis='y', labelcolor='magenta')
+                
+                # Add drift plot if computeDrift is enabled
+                if (self.param and self.param.get('computeDrift', False) and 
+                    hasattr(self, 'gui_data') and self.gui_data is not None):
+                    
+                    unit_idx = self.current_unit_idx
+                    print(f"DEBUG: Checking drift for unit {unit_idx}")
+                    
+                    # Check if per_bin_metrics exists and contains drift data
+                    if 'per_bin_metrics' in self.gui_data:
+                        per_bin_metrics = self.gui_data['per_bin_metrics']
+                        
+                        # Check if unit has per-bin metrics data
+                        if unit_idx in per_bin_metrics:
+                            unit_metrics = per_bin_metrics[unit_idx]
+                            print(f"DEBUG: unit_metrics type: {type(unit_metrics)}")
+                            print(f"DEBUG: unit_metrics keys: {list(unit_metrics.keys()) if isinstance(unit_metrics, dict) else 'Not a dict'}")
+                            
+                            # Look for drift data in unit metrics
+                            if isinstance(unit_metrics, dict) and 'drift' in unit_metrics:
+                                drift_data = unit_metrics['drift']
+                                print(f"DEBUG: Found drift data for unit {unit_idx}")
+                                print(f"DEBUG: drift_data type: {type(drift_data)}")
+                                print(f"DEBUG: drift_data keys: {list(drift_data.keys()) if isinstance(drift_data, dict) else 'Not a dict'}")
+                                
+                                # Check for time bins and drift values
+                                if (isinstance(drift_data, dict) and 
+                                    'time_bins' in drift_data and 
+                                    'median_spike_depth_per_bin' in drift_data):
+                                    
+                                    drift_time_bins = drift_data['time_bins']
+                                    drift_values = drift_data['median_spike_depth_per_bin']
+                                    print(f"DEBUG: drift_time_bins shape: {np.array(drift_time_bins).shape}")
+                                    print(f"DEBUG: drift_values shape: {np.array(drift_values).shape}")
+                                    
+                                    # Calculate drift bin centers for plotting
+                                    if len(drift_time_bins) > 1 and len(drift_values) > 0:
+                                        drift_bin_centers = (drift_time_bins[:-1] + drift_time_bins[1:]) / 2
+                                        
+                                        # Create third axis for drift
+                                        ax3 = ax.twinx()
+                                        ax3.spines['right'].set_position(('outward', 60))
+                                        
+                                        # Plot drift as step plot
+                                        ax3.step(drift_bin_centers, drift_values, where='mid', 
+                                                color='darkcyan', linewidth=2, alpha=0.8, label='Drift')
+                                        ax3.set_ylabel('Drift (μm)', color='darkcyan', fontsize=13, fontfamily="DejaVu Sans")
+                                        ax3.tick_params(axis='y', labelcolor='darkcyan', labelsize=13)
+                                        print("DEBUG: Drift plot added successfully")
+                                    else:
+                                        print("DEBUG: drift_time_bins or drift_values too short")
+                                else:
+                                    print("DEBUG: drift_data missing expected keys")
+                            else:
+                                print("DEBUG: No 'drift' key in unit metrics")
+                        else:
+                            print(f"DEBUG: Unit {unit_idx} not found in per_bin_metrics")
+                    else:
+                        print("DEBUG: No per_bin_metrics in gui_data")
                 
                 # Add subtle time bin indicators to amplitude plot
                 for bin_edge in time_bins:
@@ -1357,6 +1550,23 @@ class InteractiveUnitQualityGUI:
         
         # Store y-limits for amplitude fit plot consistency
         self._amplitude_ylim = ax.get_ylim()
+        
+        # Add legend for time chunk coloring if computeTimeChunks is enabled
+        if self.param and self.param.get('computeTimeChunks', False):
+            # Create legend elements with dots instead of patches
+            import matplotlib.lines as mlines
+            legend_elements = [
+                mlines.Line2D([], [], color='green', marker='o', linestyle='None', 
+                             markersize=6, label='Spikes in good time chunks'),
+                mlines.Line2D([], [], color='darkorange', marker='o', linestyle='None', 
+                             markersize=6, label='Spikes in MUA time chunks')
+            ]
+            # Add legend below the plot with visible background
+            legend = ax.legend(handles=legend_elements, bbox_to_anchor=(0.5, -0.05), 
+                             loc='upper center', ncol=2, fontsize=10,
+                             framealpha=0.8, facecolor='white', edgecolor='black', 
+                             prop={'family': 'DejaVu Sans'})
+            legend.set_zorder(15)  # Ensure legend appears above plot elements
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'amplitude')
@@ -1380,6 +1590,15 @@ class InteractiveUnitQualityGUI:
                 rpv_data = per_bin_data.get('rpv')
                 if rpv_data and 'time_bins' in rpv_data and 'fraction_RPVs_per_bin' in rpv_data:
                     time_bins = rpv_data['time_bins']
+                    # Adjust time bins to start at first spike time
+                    if len(spike_times) > 0:
+                        first_spike_time = np.min(spike_times)
+                        if time_bins[0] < first_spike_time:
+                            # Find the first bin that includes/after the first spike
+                            first_bin_idx = np.searchsorted(time_bins, first_spike_time) - 1
+                            first_bin_idx = max(0, first_bin_idx)  # Ensure non-negative
+                            time_bins = time_bins[first_bin_idx:]
+                    
                     bin_centers = (time_bins[:-1] + time_bins[1:]) / 2
                     # Use the estimated tau_R index for plotting (usually the middle value)
                     rpv_matrix = rpv_data['fraction_RPVs_per_bin']  # Shape: (n_time_chunks, n_tauR)
@@ -1392,6 +1611,13 @@ class InteractiveUnitQualityGUI:
                             except:
                                 pass
                         rpv_rates = rpv_matrix[:, tau_r_idx]
+                        # Adjust rpv_rates to match truncated time_bins if needed
+                        if len(spike_times) > 0:
+                            first_spike_time = np.min(spike_times)
+                            if rpv_data['time_bins'][0] < first_spike_time:
+                                first_bin_idx = np.searchsorted(rpv_data['time_bins'], first_spike_time) - 1
+                                first_bin_idx = max(0, first_bin_idx)
+                                rpv_rates = rpv_rates[first_bin_idx:len(time_bins)-1]  # Match bin_centers length
                     else:
                         rpv_rates = np.zeros(len(bin_centers))
                 else:
@@ -1401,6 +1627,13 @@ class InteractiveUnitQualityGUI:
                 perc_missing_data = per_bin_data.get('perc_missing')
                 if perc_missing_data and 'percent_missing_gaussian_per_bin' in perc_missing_data:
                     perc_missing = perc_missing_data['percent_missing_gaussian_per_bin']
+                    # Adjust perc_missing to match truncated time_bins if needed
+                    if len(spike_times) > 0:
+                        first_spike_time = np.min(spike_times)
+                        if rpv_data and 'time_bins' in rpv_data and rpv_data['time_bins'][0] < first_spike_time:
+                            first_bin_idx = np.searchsorted(rpv_data['time_bins'], first_spike_time) - 1
+                            first_bin_idx = max(0, first_bin_idx)
+                            perc_missing = perc_missing[first_bin_idx:len(time_bins)-1]  # Match bin_centers length
                 else:
                     perc_missing = None
                 
@@ -1410,19 +1643,77 @@ class InteractiveUnitQualityGUI:
                 presence_threshold = 0.1 * np.mean(bin_counts) if np.mean(bin_counts) > 0 else 0.1
                 presence_ratio = np.minimum(bin_counts / presence_threshold, 1.0)  # Cap at 1.0
                 
-                # Plot presence ratio (always available)
-                ax.plot(bin_centers, presence_ratio, color='forestgreen', linewidth=2, label='Presence ratio', alpha=0.8)
+                # Use useTheseTimesStart and useTheseTimesStop to determine good time chunks
+                good_start_times = metrics.get('useTheseTimesStart', None)
+                good_stop_times = metrics.get('useTheseTimesStop', None)
                 
-                # Plot actual quality metrics if available
+                # Add background coloring: orange by default, green for good time chunks
+                for i, (start_time, end_time) in enumerate(zip(time_bins[:-1], time_bins[1:])):
+                    # Default: orange background for bad chunks
+                    chunk_color = 'orange'
+                    
+                    # Check if this time bin overlaps with any good time chunk
+                    if good_start_times is not None and good_stop_times is not None:
+                        # Ensure they are arrays
+                        if np.isscalar(good_start_times):
+                            good_start_times = [good_start_times]
+                        if np.isscalar(good_stop_times):
+                            good_stop_times = [good_stop_times]
+                        
+                        # Check overlap with any good time chunk
+                        for g_start, g_stop in zip(good_start_times, good_stop_times):
+                            if not (np.isnan(g_start) or np.isnan(g_stop)):
+                                # Check if time bin overlaps with good chunk
+                                if start_time < g_stop and end_time > g_start:
+                                    chunk_color = 'lightgreen'
+                                    break
+                    
+                    ax.axvspan(start_time, end_time, color=chunk_color, alpha=0.3, zorder=0)
+                
+                # Plot actual quality metrics as step plots
                 if rpv_rates is not None:
-                    ax.plot(bin_centers, rpv_rates, color='purple', linewidth=2, label='RPV rate', alpha=0.8)
+                    ax.step(bin_centers, rpv_rates, where='mid', color='purple', linewidth=2, label='RPV rate', alpha=0.8)
                 
                 if perc_missing is not None:
-                    ax.plot(bin_centers, perc_missing / 100, color='indigo', linewidth=2, label='% missing (scaled)', alpha=0.8)
+                    ax.step(bin_centers, perc_missing / 100, where='mid', color='darkorange', linewidth=2, label='% missing (1=100%)', alpha=0.8)
                 
-                # Add time bin indicators 
-                for bin_edge in time_bins:
+                # Plot presence ratio step line on top
+                ax.step(bin_centers, presence_ratio, where='mid', color='forestgreen', linewidth=2, label='Presence ratio', alpha=0.8)
+                
+                # Add time bin indicators
+                for i, bin_edge in enumerate(time_bins[:-1]):
                     ax.axvline(bin_edge, color='gray', alpha=0.3, linewidth=0.5, linestyle='--')
+                
+                # Add final bin edge
+                ax.axvline(time_bins[-1], color='gray', alpha=0.3, linewidth=0.5, linestyle='--')
+                
+                # Add arrows and dotted lines for good chunk ranges using useTheseTimesStart/Stop
+                if good_start_times is not None and good_stop_times is not None:
+                    y_max = ax.get_ylim()[1]
+                    arrow_y = y_max * 0.9
+                    
+                    # Ensure they are arrays
+                    if np.isscalar(good_start_times):
+                        good_start_times = [good_start_times]
+                    if np.isscalar(good_stop_times):
+                        good_stop_times = [good_stop_times]
+                    
+                    for g_start, g_stop in zip(good_start_times, good_stop_times):
+                        if not (np.isnan(g_start) or np.isnan(g_stop)):
+                            # Dotted vertical lines at start and end
+                            ax.axvline(g_start, color='darkgreen', linewidth=2, linestyle=':', alpha=0.8, zorder=5)
+                            ax.axvline(g_stop, color='darkgreen', linewidth=2, linestyle=':', alpha=0.8, zorder=5)
+                            
+                            # Arrow between them
+                            ax.annotate('', xy=(g_stop, arrow_y), xytext=(g_start, arrow_y),
+                                       arrowprops=dict(arrowstyle='<->', color='darkgreen', lw=2, alpha=0.8),
+                                       zorder=5)
+                            
+                            # Label for good chunks
+                            mid_time = (g_start + g_stop) / 2
+                            ax.text(mid_time, arrow_y + y_max * 0.05, 'Good', 
+                                   ha='center', va='bottom', color='darkgreen', fontweight='bold',
+                                   fontsize=10, alpha=0.9, zorder=5)
                 
             else:
                 # Fallback: compute simplified metrics on the fly
@@ -1439,10 +1730,10 @@ class InteractiveUnitQualityGUI:
                 presence_threshold = 0.1 * np.mean(bin_counts) if np.mean(bin_counts) > 0 else 0.1
                 presence_ratio = np.minimum(bin_counts / presence_threshold, 1.0)  # Cap at 1.0
                 
-                # Plot presence ratio (always available)
-                ax.plot(bin_centers, presence_ratio, color='forestgreen', linewidth=2, label='Presence ratio', alpha=0.8)
+                # Plot presence ratio as step plot
+                ax.step(bin_centers, presence_ratio, where='mid', color='forestgreen', linewidth=2, label='Presence ratio', alpha=0.8)
                 
-                # Add time bin indicators
+                # Add time bin indicators (fallback case - no per-bin quality data)
                 for bin_edge in time_bins:
                     ax.axvline(bin_edge, color='gray', alpha=0.3, linewidth=0.5, linestyle='--')
             
@@ -1452,8 +1743,9 @@ class InteractiveUnitQualityGUI:
             ax.tick_params(labelsize=13)
             ax.set_ylim(0, 1.1)  # Standard scale for all metrics
             
-            # Add compact legend
-            ax.legend(loc='upper right', fontsize=13, framealpha=0.9, prop={'family': 'DejaVu Sans'})
+            # Add legend at the top of the plot
+            ax.legend(bbox_to_anchor=(0.5, 1.02), loc='lower center', ncol=3, fontsize=11,
+                     framealpha=0.9, prop={'family': 'DejaVu Sans'})
             
             # Make plot as compact as possible
             ax.margins(y=0.05)
@@ -1610,6 +1902,27 @@ class InteractiveUnitQualityGUI:
             
             if 'template_amplitudes' in self.ephys_data:
                 amplitudes = self.ephys_data['template_amplitudes'][spike_mask]
+                
+                # Filter to good time chunks if computeTimeChunks is enabled
+                if self.param and self.param.get('computeTimeChunks', False):
+                    good_start_times = metrics.get('useTheseTimesStart', None)
+                    good_stop_times = metrics.get('useTheseTimesStop', None)
+                    
+                    if good_start_times is not None and good_stop_times is not None:
+                        # Ensure they are arrays
+                        if np.isscalar(good_start_times):
+                            good_start_times = [good_start_times]
+                        if np.isscalar(good_stop_times):
+                            good_stop_times = [good_stop_times]
+                        
+                        # Create mask for spikes in good time chunks
+                        good_spike_mask = np.zeros(len(spike_times), dtype=bool)
+                        for g_start, g_stop in zip(good_start_times, good_stop_times):
+                            if not (np.isnan(g_start) or np.isnan(g_stop)):
+                                good_spike_mask |= (spike_times >= g_start) & (spike_times <= g_stop)
+                        
+                        # Filter amplitudes to only good time chunks
+                        amplitudes = amplitudes[good_spike_mask]
                 
                 if len(amplitudes) > 10:  # Need sufficient data for fit
                     # Create histogram with count (not density) like BombCell
