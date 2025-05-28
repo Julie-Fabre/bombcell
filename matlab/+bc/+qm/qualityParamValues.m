@@ -176,12 +176,12 @@ param.lratioMax = 0.3; % maximum l-ratio value
 param.ssMin = NaN; % minimum silhouette score 
 
 % other classification params
-param.minAmplitude = 20; % in uV
+param.minAmplitude = 40; % in uV
 param.maxRPVviolations = 0.1; % fraction
 param.maxPercSpikesMissing = 20; % in percentage
 param.minNumSpikes = 300; % number of spikes
 param.maxDrift = 100; % in micrometers 
 param.minPresenceRatio = 0.7; % fraction
-param.minSNR = 1;
+param.minSNR = 5;
 
 end

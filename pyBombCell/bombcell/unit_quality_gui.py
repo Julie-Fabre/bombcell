@@ -1270,7 +1270,7 @@ class InteractiveUnitQualityGUI:
                                 ax.plot(x_smooth[valid_y], y_smooth[valid_y], color='darkslateblue', linewidth=2, alpha=0.8)
                             
                             ax.set_xlabel('Distance (μm)', fontsize=13, fontfamily="DejaVu Sans")
-                            ax.set_ylabel('Normalized amplitude', fontsize=13, fontfamily="DejaVu Sans")
+                            ax.set_ylabel('Scaling factor', fontsize=13, fontfamily="DejaVu Sans")
                             ax.tick_params(labelsize=13)
                             
                             # Set y-limits to show all data AND fitted line with generous padding
@@ -1537,7 +1537,7 @@ class InteractiveUnitQualityGUI:
                 for bin_edge in time_bins:
                     ax.axvline(bin_edge, color='gray', alpha=0.2, linewidth=0.3, linestyle='--', zorder=0)
                 
-        ax.set_title('Amplitude (template scaling factor) over time', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Scaling factor over time', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         # Remove x-axis labels since time bin plot below will show them
         ax.set_xlabel('')
         ax.tick_params(labelsize=13, labelbottom=False)  # Hide x-axis labels
@@ -1661,11 +1661,42 @@ class InteractiveUnitQualityGUI:
                 else:
                     perc_missing = None
                 
-                # Calculate presence ratio per bin using spike counts
-                bin_counts, _ = np.histogram(spike_times, bins=time_bins)
-                bin_width = time_bins[1] - time_bins[0]
-                presence_threshold = 0.1 * np.mean(bin_counts) if np.mean(bin_counts) > 0 else 0.1
-                presence_ratio = np.minimum(bin_counts / presence_threshold, 1.0)  # Cap at 1.0
+                # Calculate presence ratio per time chunk using proper algorithm
+                presence_ratio_bin_size = self.param.get('presenceRatioBinSize', 60)  # Default 60 seconds
+                presence_ratios = []
+                
+                for i in range(len(time_bins) - 1):
+                    chunk_start = time_bins[i]
+                    chunk_end = time_bins[i + 1]
+                    chunk_spike_times = spike_times[(spike_times >= chunk_start) & (spike_times < chunk_end)]
+                    
+                    if len(chunk_spike_times) > 0:
+                        # Create presence ratio bins within this time chunk
+                        presence_bins = np.arange(chunk_start, chunk_end, presence_ratio_bin_size)
+                        if len(presence_bins) < 2:
+                            # If chunk is smaller than presence ratio bin size, use the chunk itself
+                            presence_bins = np.array([chunk_start, chunk_end])
+                        
+                        # Count spikes per presence ratio bin
+                        spikes_per_bin = np.array([
+                            np.sum((chunk_spike_times >= presence_bins[j]) & 
+                                   (chunk_spike_times < presence_bins[j + 1]))
+                            for j in range(len(presence_bins) - 1)
+                        ])
+                        
+                        # Calculate presence ratio: fraction of bins with spikes >= 5% of 90th percentile
+                        if len(spikes_per_bin) > 0 and np.max(spikes_per_bin) > 0:
+                            threshold = 0.05 * np.percentile(spikes_per_bin, 90)
+                            full_bins = (spikes_per_bin >= threshold).astype(int)
+                            chunk_presence_ratio = full_bins.sum() / len(full_bins)
+                        else:
+                            chunk_presence_ratio = 0.0
+                    else:
+                        chunk_presence_ratio = 0.0
+                    
+                    presence_ratios.append(chunk_presence_ratio)
+                
+                presence_ratio = np.array(presence_ratios)
                 
                 # Use useTheseTimesStart and useTheseTimesStop to determine good time chunks
                 good_start_times = metrics.get('useTheseTimesStart', None)
@@ -1750,9 +1781,42 @@ class InteractiveUnitQualityGUI:
                 # Calculate firing rate and presence ratio per bin
                 bin_counts, _ = np.histogram(spike_times, bins=time_bins)
                 
-                # Presence ratio per bin (0 to 1)
-                presence_threshold = 0.1 * np.mean(bin_counts) if np.mean(bin_counts) > 0 else 0.1
-                presence_ratio = np.minimum(bin_counts / presence_threshold, 1.0)  # Cap at 1.0
+                # Calculate presence ratio per time bin using proper algorithm
+                presence_ratio_bin_size = self.param.get('presenceRatioBinSize', 60)  # Default 60 seconds
+                presence_ratios = []
+                
+                for i in range(len(time_bins) - 1):
+                    bin_start = time_bins[i]
+                    bin_end = time_bins[i + 1]
+                    bin_spike_times = spike_times[(spike_times >= bin_start) & (spike_times < bin_end)]
+                    
+                    if len(bin_spike_times) > 0:
+                        # Create presence ratio bins within this time bin
+                        presence_bins = np.arange(bin_start, bin_end, presence_ratio_bin_size)
+                        if len(presence_bins) < 2:
+                            # If bin is smaller than presence ratio bin size, use the bin itself
+                            presence_bins = np.array([bin_start, bin_end])
+                        
+                        # Count spikes per presence ratio bin
+                        spikes_per_bin = np.array([
+                            np.sum((bin_spike_times >= presence_bins[j]) & 
+                                   (bin_spike_times < presence_bins[j + 1]))
+                            for j in range(len(presence_bins) - 1)
+                        ])
+                        
+                        # Calculate presence ratio: fraction of bins with spikes >= 5% of 90th percentile
+                        if len(spikes_per_bin) > 0 and np.max(spikes_per_bin) > 0:
+                            threshold = 0.05 * np.percentile(spikes_per_bin, 90)
+                            full_bins = (spikes_per_bin >= threshold).astype(int)
+                            bin_presence_ratio = full_bins.sum() / len(full_bins)
+                        else:
+                            bin_presence_ratio = 0.0
+                    else:
+                        bin_presence_ratio = 0.0
+                    
+                    presence_ratios.append(bin_presence_ratio)
+                
+                presence_ratio = np.array(presence_ratios)
                 
                 # Plot presence ratio as step plot
                 ax.step(bin_centers, presence_ratio, where='mid', color='forestgreen', linewidth=2, label='Presence ratio', alpha=0.8)
@@ -2016,7 +2080,7 @@ class InteractiveUnitQualityGUI:
                                ha='center', va='center', transform=ax.transAxes)
                     
                     ax.set_xlabel('count', fontsize=13, fontfamily="DejaVu Sans")
-                    ax.set_ylabel('amplitude', fontsize=13, fontfamily="DejaVu Sans")
+                    ax.set_ylabel('Scaling factor', fontsize=13, fontfamily="DejaVu Sans")
                     ax.tick_params(labelsize=13)
                     
                     # Set y-limits to match amplitude plot if available
@@ -2024,16 +2088,16 @@ class InteractiveUnitQualityGUI:
                         ax.set_ylim(amp_ylim)
                         
                 else:
-                    ax.text(0.5, 0.5, 'Insufficient data\nfor amplitude fit', 
+                    ax.text(0.5, 0.5, 'Insufficient data\nfor scaling factor fit', 
                             ha='center', va='center', transform=ax.transAxes)
             else:
-                ax.text(0.5, 0.5, 'No amplitude data\navailable', 
+                ax.text(0.5, 0.5, 'No scaling factor data\navailable', 
                         ha='center', va='center', transform=ax.transAxes)
         else:
             ax.text(0.5, 0.5, 'No spike data\navailable', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Amplitude distribution', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Scaling factor distribution', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'amplitude_fit')
@@ -2628,18 +2692,18 @@ class UnitQualityGUI:
         
     def setup_amplitude_plot(self):
         """Setup amplitude over time plot"""
-        self.ax_amplitude.set_title('Amplitudes over time', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        self.ax_amplitude.set_title('Scaling factor over time', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         self.ax_amplitude.set_xlabel('Experiment time (s)', fontsize=13, fontfamily="DejaVu Sans")
         self.ax_amplitude.tick_params(labelsize=13)
         # Dual y-axis like MATLAB
         self.ax_amplitude_right = self.ax_amplitude.twinx()
-        self.ax_amplitude.set_ylabel('Template scaling', color='k', fontsize=13, fontfamily="DejaVu Sans")
+        self.ax_amplitude.set_ylabel('Scaling factor', color='k', fontsize=13, fontfamily="DejaVu Sans")
         self.ax_amplitude_right.set_ylabel('Firing rate (sp/sec)', color='magenta', fontsize=13, fontfamily="DejaVu Sans")
         self.ax_amplitude_right.tick_params(labelsize=13)
         
     def setup_amplitude_fit_plot(self):
         """Setup amplitude fit plot"""
-        self.ax_amp_fit.set_title('Amplitude fit', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        self.ax_amp_fit.set_title('Scaling factor fit', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         
     def setup_navigation(self):
         """Setup navigation buttons at bottom"""

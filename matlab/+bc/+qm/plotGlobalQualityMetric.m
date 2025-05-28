@@ -240,148 +240,22 @@ if param.plotGlobal
                 end
                 binsize_offset = h.BinWidth / 2;
 
-                % Add horizontal lines above histogram at 0.9
+                % Add horizontal lines
+                yLim = ylim(ax);
                 xLim = xlim(ax);
-                % Extend x-axis to make room for text labels
-                xRange = xLim(2) - xLim(1);
-                xlim(ax, [xLim(1) - 0.1*xRange, xLim(2) + 0.1*xRange]);
-                xLim = xlim(ax);
-                lineY = 0.9; % Position lines at 0.9
+                lineY = yLim(1) - 0.02 * (yLim(2) - yLim(1)); % Position lines slightly below the plot
 
                 if ~isnan(metricThresh1(i)) || ~isnan(metricThresh2(i))
                     if ~isnan(metricThresh1(i)) && ~isnan(metricThresh2(i))
-                        % Add vertical lines for thresholds (adjust for discrete metrics)
-                        metricName = metricNames{i};
-                        if ismember(metricName, {'nPeaks', 'nTroughs'})
-                            % For discrete metrics, place lines at bin edges
-                            line(ax, [metricThresh1(i) + 0.5, metricThresh1(i) + 0.5], [0, 1], 'Color', 'k', 'LineWidth', 2);
-                            line(ax, [metricThresh2(i) + 0.5, metricThresh2(i) + 0.5], [0, 1], 'Color', 'k', 'LineWidth', 2);
-                        else
-                            % For continuous metrics, place lines at exact values
-                            line(ax, [metricThresh1(i), metricThresh1(i)], [0, 1], 'Color', 'k', 'LineWidth', 2);
-                            line(ax, [metricThresh2(i), metricThresh2(i)], [0, 1], 'Color', 'k', 'LineWidth', 2);
-                        end
-                        % Add horizontal colored lines (adjust for discrete metrics)
-                        if ismember(metricName, {'nPeaks', 'nTroughs'})
-                            % For discrete metrics, extend lines to full bin width
-                            line(ax, [xLim(1), metricThresh1(i) + 0.5], [lineY, lineY], 'Color', metricLineCols(i, 1:3), 'LineWidth', 6);
-                            line(ax, [metricThresh1(i) + 0.5, metricThresh2(i) + 0.5], [lineY, lineY], 'Color', metricLineCols(i, 4:6), 'LineWidth', 6);
-                            line(ax, [metricThresh2(i) + 0.5, xLim(2)], [lineY, lineY], 'Color', metricLineCols(i, 7:9), 'LineWidth', 6);
-                        else
-                            % For continuous metrics, use normal positioning
-                            line(ax, [xLim(1), metricThresh1(i)], [lineY, lineY], 'Color', metricLineCols(i, 1:3), 'LineWidth', 6);
-                            line(ax, [metricThresh1(i), metricThresh2(i)], [lineY, lineY], 'Color', metricLineCols(i, 4:6), 'LineWidth', 6);
-                            line(ax, [metricThresh2(i), xLim(2)], [lineY, lineY], 'Color', metricLineCols(i, 7:9), 'LineWidth', 6);
-                        end
-                        
-                        % Add classification labels with arrows
-                        midpoint1 = (xLim(1) + metricThresh1(i)) / 2;
-                        midpoint2 = (metricThresh1(i) + metricThresh2(i)) / 2;
-                        midpoint3 = (metricThresh2(i) + xLim(2)) / 2;
-                        textY = 0.95; % Position text at 0.95
-                        
-                        % Determine metric type based on metric name
-                        metricName = metricNames{i};
-                        if ismember(metricName, {'nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope'})
-                            % Noise metrics: both thresholds -> Noise, Neuronal, Noise
-                            text(ax, midpoint1, textY, '↓ Noise', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 1:3), 'FontWeight', 'bold');
-                            text(ax, midpoint2, textY, '↓ Neuronal', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 4:6), 'FontWeight', 'bold');
-                            text(ax, midpoint3, textY, '↓ Noise', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 7:9), 'FontWeight', 'bold');
-                        elseif ismember(metricName, {'peak1ToPeak2Ratio', 'mainPeakToTroughRatio'})
-                            % Non-somatic metrics: both thresholds -> Non-somatic, Somatic, Non-somatic
-                            text(ax, midpoint1, textY, '↓ Non-somatic', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 1:3), 'FontWeight', 'bold');
-                            text(ax, midpoint2, textY, '↓ Somatic', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 4:6), 'FontWeight', 'bold');
-                            text(ax, midpoint3, textY, '↓ Non-somatic', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 7:9), 'FontWeight', 'bold');
-                        else
-                            % MUA metrics: both thresholds -> MUA, Good, MUA
-                            text(ax, midpoint1, textY, '↓ MUA', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 1:3), 'FontWeight', 'bold');
-                            text(ax, midpoint2, textY, '↓ Good', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 4:6), 'FontWeight', 'bold');
-                            text(ax, midpoint3, textY, '↓ MUA', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 7:9), 'FontWeight', 'bold');
-                        end
-                        
+                        line(ax, [xLim(1) + binsize_offset, metricThresh1(i) + binsize_offset], [lineY, lineY], 'Color', metricLineCols(i, 1:3), 'LineWidth', 6);
+                        line(ax, [metricThresh1(i) + binsize_offset, metricThresh2(i) + binsize_offset], [lineY, lineY], 'Color', metricLineCols(i, 4:6), 'LineWidth', 6);
+                        line(ax, [metricThresh2(i) + binsize_offset, xLim(2) + binsize_offset], [lineY, lineY], 'Color', metricLineCols(i, 7:9), 'LineWidth', 6);
                     elseif ~isnan(metricThresh1(i))
-                        % Add vertical line for threshold (adjust for discrete metrics)
-                        metricName = metricNames{i};
-                        if ismember(metricName, {'nPeaks', 'nTroughs'})
-                            % For discrete metrics, place line at bin edge
-                            line(ax, [metricThresh1(i) + 0.5, metricThresh1(i) + 0.5], [0, 1], 'Color', 'k', 'LineWidth', 2);
-                        else
-                            % For continuous metrics, place line at exact value
-                            line(ax, [metricThresh1(i), metricThresh1(i)], [0, 1], 'Color', 'k', 'LineWidth', 2);
-                        end
-                        % Add horizontal colored lines (adjust for discrete metrics)
-                        if ismember(metricName, {'nPeaks', 'nTroughs'})
-                            % For discrete metrics, extend lines to full bin width
-                            line(ax, [xLim(1), metricThresh1(i) + 0.5], [lineY, lineY], 'Color', metricLineCols(i, 1:3), 'LineWidth', 6);
-                            line(ax, [metricThresh1(i) + 0.5, xLim(2)], [lineY, lineY], 'Color', metricLineCols(i, 4:6), 'LineWidth', 6);
-                        else
-                            % For continuous metrics, use normal positioning
-                            line(ax, [xLim(1), metricThresh1(i)], [lineY, lineY], 'Color', metricLineCols(i, 1:3), 'LineWidth', 6);
-                            line(ax, [metricThresh1(i), xLim(2)], [lineY, lineY], 'Color', metricLineCols(i, 4:6), 'LineWidth', 6);
-                        end
-                        
-                        % Add classification labels for single threshold
-                        midpoint1 = (xLim(1) + metricThresh1(i)) / 2;
-                        midpoint2 = (metricThresh1(i) + xLim(2)) / 2;
-                        textY = 0.95; % Position text at 0.95
-                        
-                        % Determine metric type based on metric name
-                        metricName = metricNames{i};
-                        if ismember(metricName, {'nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope'})
-                            % Noise metrics: thresh1 only -> Neuronal, Noise
-                            text(ax, midpoint1, textY, '↓ Neuronal', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 1:3), 'FontWeight', 'bold');
-                            text(ax, midpoint2, textY, '↓ Noise', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 4:6), 'FontWeight', 'bold');
-                        elseif ismember(metricName, {'peak1ToPeak2Ratio', 'mainPeakToTroughRatio'})
-                            % Non-somatic metrics: thresh1 only -> Somatic, Non-somatic
-                            text(ax, midpoint1, textY, '↓ Somatic', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 1:3), 'FontWeight', 'bold');
-                            text(ax, midpoint2, textY, '↓ Non-somatic', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 4:6), 'FontWeight', 'bold');
-                        else
-                            % MUA metrics: thresh1 only -> Good, MUA
-                            text(ax, midpoint1, textY, '↓ Good', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 1:3), 'FontWeight', 'bold');
-                            text(ax, midpoint2, textY, '↓ MUA', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 4:6), 'FontWeight', 'bold');
-                        end
-                        
+                        line(ax, [xLim(1) + binsize_offset, metricThresh1(i) + binsize_offset], [lineY, lineY], 'Color', metricLineCols(i, 1:3), 'LineWidth', 6);
+                        line(ax, [metricThresh1(i) + binsize_offset, xLim(2) + binsize_offset], [lineY, lineY], 'Color', metricLineCols(i, 4:6), 'LineWidth', 6);
                     elseif ~isnan(metricThresh2(i))
-                        % Add vertical line for threshold (adjust for discrete metrics)
-                        metricName = metricNames{i};
-                        if ismember(metricName, {'nPeaks', 'nTroughs'})
-                            % For discrete metrics, place line at bin edge
-                            line(ax, [metricThresh2(i) + 0.5, metricThresh2(i) + 0.5], [0, 1], 'Color', 'k', 'LineWidth', 2);
-                        else
-                            % For continuous metrics, place line at exact value
-                            line(ax, [metricThresh2(i), metricThresh2(i)], [0, 1], 'Color', 'k', 'LineWidth', 2);
-                        end
-                        % Add horizontal colored lines (adjust for discrete metrics)
-                        if ismember(metricName, {'nPeaks', 'nTroughs'})
-                            % For discrete metrics, extend lines to full bin width
-                            line(ax, [xLim(1), metricThresh2(i) + 0.5], [lineY, lineY], 'Color', metricLineCols(i, 1:3), 'LineWidth', 6);
-                            line(ax, [metricThresh2(i) + 0.5, xLim(2)], [lineY, lineY], 'Color', metricLineCols(i, 4:6), 'LineWidth', 6);
-                        else
-                            % For continuous metrics, use normal positioning
-                            line(ax, [xLim(1), metricThresh2(i)], [lineY, lineY], 'Color', metricLineCols(i, 1:3), 'LineWidth', 6);
-                            line(ax, [metricThresh2(i), xLim(2)], [lineY, lineY], 'Color', metricLineCols(i, 4:6), 'LineWidth', 6);
-                        end
-                        
-                        % Add classification labels for threshold 2 only
-                        midpoint1 = (xLim(1) + metricThresh2(i)) / 2;
-                        midpoint2 = (metricThresh2(i) + xLim(2)) / 2;
-                        textY = 0.95; % Position text at 0.95
-                        
-                        % Determine metric type based on metric name
-                        metricName = metricNames{i};
-                        if ismember(metricName, {'nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope'})
-                            % Noise metrics: thresh2 only -> Noise, Neuronal
-                            text(ax, midpoint1, textY, '↓ Noise', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 1:3), 'FontWeight', 'bold');
-                            text(ax, midpoint2, textY, '↓ Neuronal', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 4:6), 'FontWeight', 'bold');
-                        elseif ismember(metricName, {'peak1ToPeak2Ratio', 'mainPeakToTroughRatio'})
-                            % Non-somatic metrics: thresh2 only -> Non-somatic, Somatic
-                            text(ax, midpoint1, textY, '↓ Non-somatic', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 1:3), 'FontWeight', 'bold');
-                            text(ax, midpoint2, textY, '↓ Somatic', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 4:6), 'FontWeight', 'bold');
-                        else
-                            % MUA metrics: thresh2 only -> MUA, Good
-                            text(ax, midpoint1, textY, '↓ MUA', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 1:3), 'FontWeight', 'bold');
-                            text(ax, midpoint2, textY, '↓ Good', 'HorizontalAlignment', 'center', 'FontSize', 10, 'Color', metricLineCols(i, 4:6), 'FontWeight', 'bold');
-                        end
+                        line(ax, [xLim(1) + binsize_offset, metricThresh2(i) + binsize_offset], [lineY, lineY], 'Color', metricLineCols(i, 1:3), 'LineWidth', 6);
+                        line(ax, [metricThresh2(i) + binsize_offset, xLim(2) + binsize_offset], [lineY, lineY], 'Color', metricLineCols(i, 4:6), 'LineWidth', 6);
                     end
                 end
 
@@ -390,8 +264,8 @@ if param.plotGlobal
                 end
                 xlabel(ax, metricNames_SHORT{i}, 'FontSize', 13)
 
-                % Set histogram limits from 0 to 1
-                ylim(ax, [0, 1]);
+                % Adjust axis limits to accommodate the lines
+                ylim(ax, [yLim(1) - 0.1 * (yLim(2) - yLim(1)), yLim(2)]);
                 ax.FontSize = 12;
 
                 axis tight;
