@@ -918,10 +918,10 @@ if plotRaw
 end
 
 %% 9. update hg plot
+try
 guiData2 = guidata(unitQualityGuiHandle.histogramFigure);
 % Update histogram figure
 figure(unitQualityGuiHandle.histogramFigure);
-
 metricNames = fieldnames(guiData2.histogramAxes);
 for i = 1:length(metricNames)
     metricName = metricNames{i};
@@ -961,6 +961,10 @@ for i = 1:length(metricNames)
     % Adjust y-axis limits to accommodate taller quiver and text
     %newYLim = [yLim(1) - 0.15 * (yLim(2) - yLim(1)), yLim(2)];
     %ylim(ax, newYLim);
+end
+
+catch % figure was closed by user
+    
 end
 end
 
@@ -1176,3 +1180,4 @@ metricThresh2 = metricThresh2(indices_ordered);
 plotConditions = plotConditions(indices_ordered);
 metricLineCols = metricLineCols(indices_ordered, :);
 end
+

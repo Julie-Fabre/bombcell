@@ -5,7 +5,7 @@ function [qMetric, unitType] = runAllQualityMetrics(param, spikeTimes_samples, s
 % Inputs
 % ------
 % param: parameter structure. See bc_qualityParamValues for all fields
-%   anf information about them.
+%   and information about them.
 %
 % spikeTimes_samples: nSpikes × 1 uint64 vector giving each spike time in samples (*not* seconds)
 %
