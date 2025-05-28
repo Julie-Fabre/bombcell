@@ -2524,7 +2524,7 @@ class UnitQualityGUI:
     """
     
     def __init__(self, ephys_data, quality_metrics, ephys_properties=None, 
-                 raw_waveforms=None, param=None, unit_types=None):
+                 raw_waveforms=None, param=None, unit_types=None, save_path=None):
         """
         Initialize the MATLAB-style GUI
         """
@@ -2995,7 +2995,7 @@ class UnitQualityGUI:
             self.goto_next_noise(None)
 
 
-def load_metrics_for_gui(ks_dir, quality_metrics, ephys_properties=None, param=None):
+def load_metrics_for_gui(ks_dir, quality_metrics, ephys_properties=None, param=None, save_path=None):
     """
     Load and prepare data for GUI - Python equivalent of loadMetricsForGUI.m
     
@@ -3009,6 +3009,8 @@ def load_metrics_for_gui(ks_dir, quality_metrics, ephys_properties=None, param=N
         Ephys properties from compute_all_ephys_properties
     param : dict, optional
         Parameters dictionary
+    save_path : str, optional
+        Path where bombcell data was saved. If None, defaults to ks_dir/bombcell
         
     Returns
     -------
@@ -3031,14 +3033,20 @@ def load_metrics_for_gui(ks_dir, quality_metrics, ephys_properties=None, param=N
         'channel_positions': ephys_data_tuple[6]
     }
     
+    # Determine the save path for bombcell data
+    if save_path is None:
+        bombcell_path = Path(ks_dir) / "bombcell"
+    else:
+        bombcell_path = Path(save_path)
+    
     # Load raw waveforms if available
     raw_waveforms = None
-    raw_wf_path = Path(ks_dir) / "bombcell" / "templates._bc_rawWaveforms.npy"
+    raw_wf_path = bombcell_path / "templates._bc_rawWaveforms.npy"
     if raw_wf_path.exists():
         try:
             raw_waveforms = {
                 'average': np.load(raw_wf_path, allow_pickle=True),
-                'peak_channels': np.load(Path(ks_dir) / "bombcell" / "templates._bc_rawWaveformPeakChannels.npy", allow_pickle=True)
+                'peak_channels': np.load(bombcell_path / "templates._bc_rawWaveformPeakChannels.npy", allow_pickle=True)
             }
         except FileNotFoundError:
             raw_waveforms = None
@@ -3100,7 +3108,7 @@ def unit_quality_gui(ephys_data_or_path=None, quality_metrics=None, ephys_proper
             param = {}
     else:
         # Load data from path
-        gui_data = load_metrics_for_gui(ephys_data_or_path, quality_metrics, ephys_properties, param)
+        gui_data = load_metrics_for_gui(ephys_data_or_path, quality_metrics, ephys_properties, param, save_path)
         ephys_data = gui_data['ephys_data']
         raw_waveforms = gui_data['raw_waveforms']
         param = gui_data['param']
@@ -3123,7 +3131,8 @@ def unit_quality_gui(ephys_data_or_path=None, quality_metrics=None, ephys_proper
             ephys_properties=ephys_properties,
             raw_waveforms=raw_waveforms,
             param=param,
-            unit_types=unit_types
+            unit_types=unit_types,
+            save_path=save_path
         )
     
     return gui
