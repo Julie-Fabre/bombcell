@@ -101,9 +101,9 @@ def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
                                     prominence=peak_prominence)
                                     
                 troughs, _ = find_peaks(-max_ch_waveform, 
-                                      height=-np.min(max_ch_waveform) * 0.5, 
-                                      distance=10,
-                                      prominence=waveform_range * 0.1)
+                                      height=-np.min(max_ch_waveform) * 0.2,  # Less restrictive
+                                      distance=5,  # Allow closer troughs
+                                      prominence=waveform_range * 0.05)  # Less restrictive
                 
                 gui_data['peak_locations'][unit_idx] = peaks
                 gui_data['trough_locations'][unit_idx] = troughs
@@ -1014,6 +1014,10 @@ class InteractiveUnitQualityGUI:
         spike_times = unit_data['spike_times']
         metrics = unit_data['metrics']
         
+        # Set default parameters
+        max_lag = 0.05  # 50ms
+        bin_size = 0.001  # 1ms bins
+        
         # Check if we have pre-computed ACG data
         if (self.gui_data and 
             'acg_data' in self.gui_data and 
@@ -1050,10 +1054,7 @@ class InteractiveUnitQualityGUI:
                     filtered_spike_times = spike_times[good_spike_mask]
             
             # ACG calculation will proceed without status messages
-            
-            # ACG calculation with MATLAB-style parameters
-            max_lag = 0.05  # 50ms
-            bin_size = 0.001  # 1ms bins
+            # (max_lag and bin_size already defined above)
             
             # Calculate proper autocorrelogram (not just ISIs)
             # Create bins centered around 0
@@ -2402,8 +2403,8 @@ class InteractiveUnitQualityGUI:
             'trough_locations' in self.gui_data and
             self.current_unit_idx in self.gui_data['peak_locations']):
             
-            peaks = self.gui_data['peak_locations'][self.current_unit_idx]
-            troughs = self.gui_data['trough_locations'][self.current_unit_idx]
+            peaks = list(self.gui_data['peak_locations'][self.current_unit_idx])
+            troughs = list(self.gui_data['trough_locations'][self.current_unit_idx])
             
         else:
             # Fallback to real-time computation
@@ -2421,19 +2422,43 @@ class InteractiveUnitQualityGUI:
                                                    distance=10,  # Increased from 5
                                                    prominence=peak_prominence)
                 
-                # Find all troughs (negative deflections) - similar stringent criteria
-                trough_height_threshold = -np.min(waveform) * 0.5  # Increased from 0.2 to 0.5
-                trough_prominence = waveform_range * 0.1
+                # Find all troughs (negative deflections) - less restrictive to catch all troughs
+                trough_height_threshold = -np.min(waveform) * 0.2  # Reduced from 0.5 to 0.2 to be less restrictive
+                trough_prominence = waveform_range * 0.05  # Reduced from 0.1 to 0.05 to be less restrictive
                 troughs, trough_properties = find_peaks(-waveform, 
                                                        height=trough_height_threshold, 
-                                                       distance=10,  # Increased from 5
+                                                       distance=5,  # Reduced from 10 to allow closer troughs
                                                        prominence=trough_prominence)
             except ImportError:
-                # Fallback without scipy
-                max_idx = np.argmax(waveform)
-                min_idx = np.argmin(waveform)
-                peaks = [max_idx] if len(waveform) > 0 else []
-                troughs = [min_idx] if len(waveform) > 0 else []
+                # Fallback without scipy - find multiple troughs using simple approach
+                if len(waveform) > 0:
+                    # Find all local minima as potential troughs
+                    troughs = []
+                    # Look for local minima (points lower than neighbors)
+                    for i in range(1, len(waveform) - 1):
+                        if (waveform[i] < waveform[i-1] and 
+                            waveform[i] < waveform[i+1] and 
+                            waveform[i] < np.min(waveform) * 0.8):  # Must be at least 80% of minimum
+                            troughs.append(i)
+                    
+                    # If no troughs found, use the global minimum
+                    if len(troughs) == 0:
+                        troughs = [np.argmin(waveform)]
+                    
+                    # Find peaks similarly
+                    peaks = []
+                    for i in range(1, len(waveform) - 1):
+                        if (waveform[i] > waveform[i-1] and 
+                            waveform[i] > waveform[i+1] and 
+                            waveform[i] > np.max(waveform) * 0.8):  # Must be at least 80% of maximum
+                            peaks.append(i)
+                    
+                    # If no peaks found, use the global maximum
+                    if len(peaks) == 0:
+                        peaks = [np.argmax(waveform)]
+                else:
+                    peaks = []
+                    troughs = []
         
         # Plot peaks and troughs (works for both pre-computed and real-time data)
         # Find main peak and trough for special highlighting and duration calculation
@@ -2497,7 +2522,7 @@ class InteractiveUnitQualityGUI:
                        markerfacecolor='lightcoral', alpha=0.8, zorder=10, 
                        label='Peaks' if i == 0 and peak_idx != main_peak_idx else "")
         
-        # Plot all troughs with blue dots
+        # Plot all troughs with blue dots (ensure all detected troughs are shown)
         for i, trough_idx in enumerate(troughs):
             if trough_idx == main_trough_idx:
                 # Main trough: larger, darker marker
