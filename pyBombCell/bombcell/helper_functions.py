@@ -793,8 +793,7 @@ def get_all_quality_metrics(
         # number of spikes
         quality_metrics["nSpikes"][unit_idx] = these_spike_times.shape[0]
 
-        # Ignoring for the moment as need to find a way to get the same shape as actual results for percent_missings
-        # and fraction RPVs # JF: what?
+
         if these_spike_times.size < 50:
             quality_metrics, not_enough_spikes = set_unit_nan(
                 unit_idx, quality_metrics, not_enough_spikes
