@@ -1346,7 +1346,7 @@ def waveform_shape(
         if len(PKS_before) == 0:  # MATLAB line 67
             if trough_loc > 3:  # MATLAB line 68
                 peakLocs_before_temp, peak_dict_before_temp = find_peaks(
-                    this_waveform[:trough_loc], prominence=0.01*np.nanmax(np.abs(this_waveform)), width=0
+                    this_waveform[:trough_loc], prominence=0.015*np.nanmax(np.abs(this_waveform)), width=0
                 )
                 PKS_before = this_waveform[peakLocs_before_temp]
                 peakLocs_before = peakLocs_before_temp
@@ -1355,9 +1355,10 @@ def waveform_shape(
                 if len(PKS_before) > 1:  # MATLAB lines 73-79
                     if len(prominences_before_temp) > 0 and not np.all(np.isnan(prominences_before_temp)):
                         max_peak_idx = np.nanargmax(prominences_before_temp)
-                        # nanargmax returns a scalar, no need to index it
+                        # MATLAB: Keep only the peak with maximum prominence
+                        peakLocs_before = np.array([peakLocs_before[max_peak_idx]])
+                        PKS_before = np.array([PKS_before[max_peak_idx]]) 
                         width_before = widths_before_temp[max_peak_idx]
-                        # Don't reduce PKS_before to single peak - keep all peaks!
                     else:
                         width_before = widths_before_temp[0] if len(widths_before_temp) > 0 else np.nan
                 elif len(widths_before_temp) == 1:
@@ -1381,7 +1382,7 @@ def waveform_shape(
         if len(PKS_after) == 0:  # MATLAB line 94
             if len(this_waveform) - trough_loc > 3:  # MATLAB line 95
                 peakLocs_after_temp, peak_dict_after_temp = find_peaks(
-                    this_waveform[trough_loc:], prominence=0.01*np.nanmax(np.abs(this_waveform)), width=0
+                    this_waveform[trough_loc:], prominence=0.015*np.nanmax(np.abs(this_waveform)), width=0
                 )
                 PKS_after = this_waveform[trough_loc:][peakLocs_after_temp]
                 peakLocs_after = peakLocs_after_temp + trough_loc  # MATLAB line 97
@@ -1390,9 +1391,10 @@ def waveform_shape(
                 if len(PKS_after) > 1:  # MATLAB lines 101-107
                     if len(prominences_after_temp) > 0 and not np.all(np.isnan(prominences_after_temp)):
                         max_peak_idx = np.nanargmax(prominences_after_temp)
-                        # nanargmax returns a scalar, no need to index it
+                        # MATLAB: Keep only the peak with maximum prominence
+                        peakLocs_after = np.array([peakLocs_after[max_peak_idx]])
+                        PKS_after = np.array([PKS_after[max_peak_idx]])
                         width_after = widths_after_temp[max_peak_idx]
-                        # Don't reduce PKS_after to single peak - keep all peaks!
                     else:
                         width_after = widths_after_temp[0] if len(widths_after_temp) > 0 else np.nan
                 elif len(widths_after_temp) == 1:

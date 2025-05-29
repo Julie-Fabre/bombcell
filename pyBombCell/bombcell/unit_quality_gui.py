@@ -101,9 +101,9 @@ def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
                                     prominence=peak_prominence)
                                     
                 troughs, _ = find_peaks(-max_ch_waveform, 
-                                      height=-np.min(max_ch_waveform) * 0.2,  # Less restrictive
-                                      distance=5,  # Allow closer troughs
-                                      prominence=waveform_range * 0.05)  # Less restrictive
+                                      height=-np.min(max_ch_waveform) * 0.5, 
+                                      distance=10,
+                                      prominence=waveform_range * 0.1)
                 
                 gui_data['peak_locations'][unit_idx] = peaks
                 gui_data['trough_locations'][unit_idx] = troughs
@@ -1376,7 +1376,7 @@ class InteractiveUnitQualityGUI:
                     color_mask = spike_colors == color
                     ax.scatter(spike_times[color_mask], amplitudes[color_mask], 
                               s=3, alpha=0.6, c=color, edgecolors='none')
-                ax.set_ylabel('Template scaling', color='blue', fontsize=13, fontfamily="DejaVu Sans")
+                ax.set_ylabel('Scaling factor', color='blue', fontsize=13, fontfamily="DejaVu Sans")
                 ax.tick_params(labelsize=13)
                 
                 # Create twin axis for firing rate
@@ -2406,6 +2406,7 @@ class InteractiveUnitQualityGUI:
             peaks = list(self.gui_data['peak_locations'][self.current_unit_idx])
             troughs = list(self.gui_data['trough_locations'][self.current_unit_idx])
             
+            
         else:
             # Fallback to real-time computation
             try:
@@ -2422,12 +2423,12 @@ class InteractiveUnitQualityGUI:
                                                    distance=10,  # Increased from 5
                                                    prominence=peak_prominence)
                 
-                # Find all troughs (negative deflections) - less restrictive to catch all troughs
-                trough_height_threshold = -np.min(waveform) * 0.2  # Reduced from 0.5 to 0.2 to be less restrictive
-                trough_prominence = waveform_range * 0.05  # Reduced from 0.1 to 0.05 to be less restrictive
+                # Find all troughs (negative deflections) 
+                trough_height_threshold = -np.min(waveform) * 0.5
+                trough_prominence = waveform_range * 0.1
                 troughs, trough_properties = find_peaks(-waveform, 
                                                        height=trough_height_threshold, 
-                                                       distance=5,  # Reduced from 10 to allow closer troughs
+                                                       distance=10,
                                                        prominence=trough_prominence)
             except ImportError:
                 # Fallback without scipy - find multiple troughs using simple approach
