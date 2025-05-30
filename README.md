@@ -69,7 +69,7 @@ conda activate bombcell
 ```
 2. Clone latest bombcell repository from github
 ```bash
-git clone https://github.com/Julie-Fabre/bombcell.git
+git clone -b bleeding_edge https://github.com/Julie-Fabre/bombcell.git
 ```
 3. Install bombcell from local repository
 ```bash
