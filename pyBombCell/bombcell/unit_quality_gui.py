@@ -935,7 +935,7 @@ class InteractiveUnitQualityGUI:
         # Check if raw extraction is enabled
         extract_raw = self.param.get('extractRaw', 0)
         if extract_raw != 1:
-            ax.text(0.5, 0.5, 'Raw waveforms\n(extractRaw disabled)', 
+            ax.text(0.5, 0.5, 'Mean raw waveforms\n(extractRaw disabled)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
             ax.set_title('Raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
             return
@@ -987,6 +987,11 @@ class InteractiveUnitQualityGUI:
                                     
                                     # Create time axis
                                     time_axis = np.arange(waveforms.shape[0])
+                                    # Adjust time axis to center spike at 0 (assuming spike is at sample 20 for KS4)
+                                    if waveforms.shape[0] == 61:  # Kilosort 4
+                                        time_axis = time_axis - 20
+                                    elif waveforms.shape[0] == 82:  # Kilosort < 4
+                                        time_axis = time_axis - 41
                                     
                                     # Plot each channel at its spatial position
                                     for ch in channels_to_plot:
@@ -1010,17 +1015,11 @@ class InteractiveUnitQualityGUI:
                                             else:
                                                 ax.plot(x_vals, y_vals, 'gray', linewidth=1, alpha=0.7)
                                             
-                                            # Add channel number closer to waveform
-                                            ax.text(x_offset - waveform_width * 0.02, y_offset, f'{ch}', fontsize=13, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
+                                            # Add channel number to the left of waveform
+                                            # Position based on the leftmost point of the waveform (time_axis[0])
+                                            ax.text(time_axis[0] + x_offset - 5, y_offset, f'{ch}', fontsize=13, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
                                     
-                                    # Mark peaks and troughs on max channel
-                                    max_ch_waveform = waveforms[:, max_ch] if max_ch < waveforms.shape[1] else waveforms[:, 0]
-                                    # Max channel is at center (0,0) since all offsets are relative to it
-                                    max_ch_x_offset = 0
-                                    max_ch_y_offset = 0
-                                    
-                                    # Detect and mark peaks/troughs (account for inverted waveform)
-                                    self.mark_peaks_and_troughs(ax, -max_ch_waveform, max_ch_x_offset, max_ch_y_offset, metrics, scaling_factor)
+                                    # Don't mark peaks and troughs on this spatial plot
                                     
                                     # Set axis properties like MATLAB
                                     ax.invert_yaxis()  # Reverse Y direction like MATLAB
