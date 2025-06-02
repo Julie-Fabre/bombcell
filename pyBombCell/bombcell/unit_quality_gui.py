@@ -791,41 +791,41 @@ class InteractiveUnitQualityGUI:
         with self.plot_output:
             clear_output(wait=True)
             
-            # Create figure with extended width for histograms
-            fig = plt.figure(figsize=(30, 14))
+            # Create figure with extended width AND height for histograms
+            fig = plt.figure(figsize=(30, 18))
             fig.patch.set_facecolor('white')
             
-            # LEFT HALF - Original GUI (columns 0-14)
+            # LEFT HALF - Original GUI (columns 0-14) - DOUBLED GRID ROWS
             # 1. Unit location plot (left column)
-            ax_location = plt.subplot2grid((10, 30), (0, 0), rowspan=10, colspan=1)
+            ax_location = plt.subplot2grid((20, 30), (0, 0), rowspan=20, colspan=1)
             self.plot_unit_location(ax_location, unit_data)
             
-            # 2. Template waveforms - rows 0-1
-            ax_template = plt.subplot2grid((10, 30), (0, 2), rowspan=2, colspan=6)
+            # 2. Template waveforms - rows 0-3 (doubled)
+            ax_template = plt.subplot2grid((20, 30), (0, 2), rowspan=4, colspan=6)
             self.plot_template_waveform(ax_template, unit_data)
             
-            # 3. Raw waveforms - rows 0-1  
-            ax_raw = plt.subplot2grid((10, 30), (0, 9), rowspan=2, colspan=6)
+            # 3. Raw waveforms - rows 0-3 (doubled)
+            ax_raw = plt.subplot2grid((20, 30), (0, 9), rowspan=4, colspan=6)
             self.plot_raw_waveforms(ax_raw, unit_data)
             
-            # 4. Spatial decay - rows 3-4
-            ax_spatial = plt.subplot2grid((10, 30), (3, 2), rowspan=2, colspan=6)
+            # 4. Spatial decay - rows 6-9 (doubled)
+            ax_spatial = plt.subplot2grid((20, 30), (6, 2), rowspan=4, colspan=6)
             self.plot_spatial_decay(ax_spatial, unit_data)
             
-            # 5. ACG - rows 3-4
-            ax_acg = plt.subplot2grid((10, 30), (3, 9), rowspan=2, colspan=6)
+            # 5. ACG - rows 6-9 (doubled)
+            ax_acg = plt.subplot2grid((20, 30), (6, 9), rowspan=4, colspan=6)
             self.plot_autocorrelogram(ax_acg, unit_data)
             
-            # 6. Amplitudes over time - rows 6-7
-            ax_amplitude = plt.subplot2grid((10, 30), (6, 2), rowspan=2, colspan=10)
+            # 6. Amplitudes over time - rows 12-15 (doubled)
+            ax_amplitude = plt.subplot2grid((20, 30), (12, 2), rowspan=4, colspan=10)
             self.plot_amplitudes_over_time(ax_amplitude, unit_data)
             
-            # 6b. Time bin metrics - row 9
-            ax_bin_metrics = plt.subplot2grid((10, 30), (9, 2), rowspan=1, colspan=10, sharex=ax_amplitude)
+            # 6b. Time bin metrics - rows 18-19 (doubled)
+            ax_bin_metrics = plt.subplot2grid((20, 30), (18, 2), rowspan=2, colspan=10, sharex=ax_amplitude)
             self.plot_time_bin_metrics(ax_bin_metrics, unit_data)
             
-            # 7. Amplitude fit - rows 6-7
-            ax_amp_fit = plt.subplot2grid((10, 30), (6, 13), rowspan=2, colspan=2)
+            # 7. Amplitude fit - rows 12-15 (doubled)
+            ax_amp_fit = plt.subplot2grid((20, 30), (12, 13), rowspan=4, colspan=2)
             self.plot_amplitude_fit(ax_amp_fit, unit_data)
             
             # RIGHT HALF - Histogram panel (columns 16-29)
@@ -2809,23 +2809,25 @@ class InteractiveUnitQualityGUI:
         # Calculate how many rows of plots we need
         rows_of_plots = (num_subplots + cols - 1) // cols
         
-        # Distribute plots evenly across ALL 10 rows with uniform spacing
+        # Distribute plots evenly across ALL 10 rows with UNIFORM spacing
         if rows_of_plots == 1:
             # Single row - use most of the space
             plot_positions = [1]
             plot_height = 8
         elif rows_of_plots == 2:
             # Two rows - even distribution
-            plot_positions = [0, 5]
+            plot_positions = [0, 6]
             plot_height = 4
         elif rows_of_plots == 3:
-            # Three rows - even distribution
-            plot_positions = [0, 3, 6]
-            plot_height = 3
-        elif rows_of_plots == 4:
-            # Four rows - even distribution
-            plot_positions = [0, 2, 5, 8]
+            # Three rows - HUGE gaps to test if changes are working
+            # Row 1: 0-1, Row 2: 4-5, Row 3: 8-9 (massive gaps)
+            plot_positions = [0, 4, 8]
             plot_height = 2
+        elif rows_of_plots == 4:
+            # Four rows - PROPER spacing with 20-row grid
+            # Now we have 20 rows to work with, so much more space!
+            plot_positions = [0, 5, 10, 15]
+            plot_height = 4
         else:
             # Many rows - tight but even
             plot_positions = [i * 2 for i in range(rows_of_plots)]
@@ -2845,7 +2847,10 @@ class InteractiveUnitQualityGUI:
                 start_row = plot_positions[row_id]
                 start_col = col_start_positions[col_id]
                 
-                ax = plt.subplot2grid((10, 30), (start_row, start_col), rowspan=plot_height, colspan=col_width)
+                # ALL plots same height - no extending last row
+                actual_height = plot_height
+                
+                ax = plt.subplot2grid((20, 30), (start_row, start_col), rowspan=actual_height, colspan=col_width)
             else:
                 continue
             
