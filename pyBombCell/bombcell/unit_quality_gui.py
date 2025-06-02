@@ -761,7 +761,7 @@ class InteractiveUnitQualityGUI:
         unit_type_str = "Unknown"
         if self.unit_types is not None and self.current_unit_idx < len(self.unit_types):
             unit_type = self.unit_types[self.current_unit_idx]
-            type_map = {0: "Noise", 1: "Good", 2: "MUA", 3: "Non-soma good", 4: "Non-soma MUA"}
+            type_map = {0: "Noise", 1: "Good", 2: "MUA", 3: "Non-somatic good", 4: "Non-somatic MUA"}
             unit_type_str = type_map.get(unit_type, "Unknown")
             
         # Get title color based on unit type
@@ -769,8 +769,8 @@ class InteractiveUnitQualityGUI:
             "Noise": "red",
             "Good": "green", 
             "MUA": "orange",
-            "Non-soma good": "blue",
-            "Non-soma MUA": "blue",
+            "Non-somatic good": "blue",
+            "Non-somatic MUA": "blue",
             "Unknown": "black"
         }
         title_color = title_colors.get(unit_type_str, "black")
@@ -3134,7 +3134,7 @@ class UnitQualityGUI:
         """Get unit type string"""
         if self.unit_types is not None and unit_idx < len(self.unit_types):
             unit_type = self.unit_types[unit_idx]
-            type_map = {0: 'NOISE', 1: 'GOOD', 2: 'MUA', 3: 'NON-SOMA'}
+            type_map = {0: 'NOISE', 1: 'GOOD', 2: 'MUA', 3: 'NON-SOMATIC'}
             return type_map.get(unit_type, 'UNKNOWN')
         return 'UNKNOWN'
         
