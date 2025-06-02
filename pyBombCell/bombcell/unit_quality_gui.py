@@ -2890,11 +2890,13 @@ class InteractiveUnitQualityGUI:
                             patches[bin_idx].set_edgecolor('darkred')
                             patches[bin_idx].set_linewidth(2)
                         
-                        # Add large BLACK triangle arrow head pointing DOWN - overlapping histogram
+                        # Add LARGE BLACK triangle arrow head pointing DOWN - HIGHER above histogram with contour
                         bin_height = patches[bin_idx].get_height() if 0 <= bin_idx < len(patches) else 0.5
-                        triangle_y = bin_height + 0.02  # Slight overlap with histogram
-                        ax.scatter(current_value, triangle_y, marker='v', s=200, color='black', 
-                                  alpha=1.0, zorder=15, edgecolors='white', linewidths=1)
+                        triangle_y = bin_height + 0.15  # Much higher above histogram
+                        
+                        # Large black triangle with white contour for visibility
+                        ax.scatter(current_value, triangle_y, marker='v', s=500, color='black', 
+                                  alpha=1.0, zorder=15, edgecolors='white', linewidths=4)
                 
                 # Add threshold lines above histogram at 0.9 - MUCH MORE EXTENDED x-limits for text
                 x_lim = ax.get_xlim()
@@ -3013,6 +3015,21 @@ class InteractiveUnitQualityGUI:
             ax.set_yticks([0, 1])
             ax.set_yticklabels(['0', '1'])
             ax.tick_params(labelsize=14)
+            
+            # Add legend ONLY to the rightmost histogram in top row - positioned OUTSIDE plots
+            if col_id == cols - 1 and row_id == 0:  # Rightmost plot in first row
+                from matplotlib.lines import Line2D
+                
+                # Create legend elements to match the actual markers
+                triangle_marker = Line2D([0], [0], marker='v', color='w', markerfacecolor='black', 
+                                       markersize=15, markeredgecolor='white', markeredgewidth=3)
+                black_line = Line2D([0], [0], color='black', linewidth=4)
+                
+                # Position legend OUTSIDE the rightmost plot
+                ax.legend([triangle_marker, black_line], 
+                         ['Current unit location', 'Classification parameter'], 
+                         bbox_to_anchor=(1.05, 1.0), loc='upper left', fontsize=12, 
+                         frameon=True, fancybox=True, shadow=True)
 
     def update_display(self):
         """Update the entire display"""
