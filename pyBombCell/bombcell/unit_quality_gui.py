@@ -2915,29 +2915,32 @@ class InteractiveUnitQualityGUI:
                 thresh2 = valid_thresh2[i]
                 line_colors = valid_line_cols[i].reshape(3, 3)
                 
+                # Calculate binsize offset for accurate threshold positioning - FROM ORIGINAL
                 if metric_name in ['nPeaks', 'nTroughs']:
                     binsize_offset = 0.5
                 else:
                     binsize_offset = (bins_out[1] - bins_out[0]) / 2 if len(bins_out) > 1 else 0
                 
-                # Threshold logic - exact copy from plot_functions.py
+                # Threshold logic - APPLY OFFSET for accurate positioning
                 if thresh1 is not None or thresh2 is not None:
                     if thresh1 is not None and thresh2 is not None:
-                        # Add vertical lines for thresholds
-                        ax.axvline(thresh1, color='k', linewidth=2)
-                        ax.axvline(thresh2, color='k', linewidth=2)
-                        # Add horizontal colored lines
-                        ax.plot([x_lim[0], thresh1], 
+                        # Add vertical lines for thresholds WITH OFFSET
+                        ax.axvline(thresh1 + binsize_offset, color='k', linewidth=2)
+                        ax.axvline(thresh2 + binsize_offset, color='k', linewidth=2)
+                        # Add horizontal colored lines WITH OFFSET
+                        thresh1_offset = thresh1 + binsize_offset
+                        thresh2_offset = thresh2 + binsize_offset
+                        ax.plot([x_lim[0], thresh1_offset], 
                                [line_y, line_y], color=line_colors[0], linewidth=6)
-                        ax.plot([thresh1, thresh2], 
+                        ax.plot([thresh1_offset, thresh2_offset], 
                                [line_y, line_y], color=line_colors[1], linewidth=6)
-                        ax.plot([thresh2, x_lim[1]], 
+                        ax.plot([thresh2_offset, x_lim[1]], 
                                [line_y, line_y], color=line_colors[2], linewidth=6)
                         
-                        # Add classification labels with arrows
-                        midpoint1 = (x_lim[0] + thresh1) / 2
-                        midpoint2 = (thresh1 + thresh2) / 2
-                        midpoint3 = (thresh2 + x_lim[1]) / 2
+                        # Add classification labels with arrows - using OFFSET thresholds
+                        midpoint1 = (x_lim[0] + thresh1_offset) / 2
+                        midpoint2 = (thresh1_offset + thresh2_offset) / 2
+                        midpoint3 = (thresh2_offset + x_lim[1]) / 2
                         text_y = 0.95  # Position text at 0.95
                         
                         # Determine metric type based on metric name
@@ -2970,16 +2973,17 @@ class InteractiveUnitQualityGUI:
                                    color=line_colors[2], weight='bold')
                         
                     elif thresh1 is not None or thresh2 is not None:
-                        # Single threshold logic - handle BOTH thresh1 and thresh2 cases
+                        # Single threshold logic - handle BOTH thresh1 and thresh2 cases WITH OFFSET
                         thresh = thresh1 if thresh1 is not None else thresh2
-                        ax.axvline(thresh, color='k', linewidth=2)
-                        ax.plot([x_lim[0], thresh], 
+                        thresh_offset = thresh + binsize_offset
+                        ax.axvline(thresh_offset, color='k', linewidth=2)
+                        ax.plot([x_lim[0], thresh_offset], 
                                [line_y, line_y], color=line_colors[0], linewidth=6)
-                        ax.plot([thresh, x_lim[1]], 
+                        ax.plot([thresh_offset, x_lim[1]], 
                                [line_y, line_y], color=line_colors[1], linewidth=6)
                         
-                        midpoint1 = (x_lim[0] + thresh) / 2
-                        midpoint2 = (thresh + x_lim[1]) / 2
+                        midpoint1 = (x_lim[0] + thresh_offset) / 2
+                        midpoint2 = (thresh_offset + x_lim[1]) / 2
                         text_y = 0.95
                         
                         noise_metrics = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope']
