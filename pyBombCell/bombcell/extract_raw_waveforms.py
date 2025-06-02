@@ -96,6 +96,7 @@ def process_a_unit(
     n_spikes_sampled = spike_idx.size
 
     # create empty array for the spike map
+    # Extract only neural channels (nChannels - nSyncChannels)
     spike_map = np.full(
         (n_channels - n_sync_channels, spike_width, n_spikes_sampled), np.nan
     )
@@ -295,7 +296,7 @@ def extract_raw_waveforms(
 
     # Get necessary info from param
     raw_data_file = param["raw_data_file"]
-    meta_path = Path(param["ephys_meta_file"])
+    meta_path = Path(param["ephys_meta_file"]) if param["ephys_meta_file"] is not None else None
     n_channels = param["nChannels"]
     n_sync_channels = param["nSyncChannels"]
     n_spikes_to_extract = param["nRawSpikesToExtract"]
@@ -341,10 +342,23 @@ def extract_raw_waveforms(
         elif spike_width == 61: # kilosort = 4, baseline 0:20
             half_width = 20
 
-        meta_dict = read_meta(meta_path)
-        n_elements = (int(meta_dict["fileSizeBytes"]) / 2)  # int16 so 2 bytes per data point
-        n_channels_rec = int(meta_dict["nSavedChans"])
-        param["n_channels_rec"] = n_channels_rec
+        if meta_path is not None and meta_path.exists():
+            meta_dict = read_meta(meta_path)
+            n_elements = (int(meta_dict["fileSizeBytes"]) / 2)  # int16 so 2 bytes per data point
+            n_channels_rec = int(meta_dict["nSavedChans"])  # Total channels including sync
+            param["n_channels_rec"] = n_channels_rec
+        else:
+            # Use default values when no metafile is available
+            print("Warning: No meta file found. Using default parameters...")
+            # Get file size directly from the raw data file
+            import os
+            file_size_bytes = os.path.getsize(raw_data_file)
+            n_elements = file_size_bytes / 2  # int16 so 2 bytes per data point
+            
+            # When no metafile, nChannels already includes sync channels
+            n_channels_rec = n_channels  # Should be 385 (384 neural + 1 sync)
+            print(f"Using {n_channels_rec} total channels in recording")
+            param["n_channels_rec"] = n_channels_rec
 
         raw_data = np.memmap(
             raw_data_file,
@@ -612,9 +626,9 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
         n_clusters = unique_id_new.size
         # Get necessary info from param
         raw_data_file = param["raw_data_file"]
-        meta_path = Path(param["ephys_meta_file"])
-        n_channels = param["n_channels"]
-        n_sync_channels = param["n_sync_channels"]
+        meta_path = Path(param["ephys_meta_file"]) if param["ephys_meta_file"] is not None else None
+        n_channels = param["nChannels"]
+        n_sync_channels = param["nSyncChannels"]
         n_spikes_to_extract = param["nRawSpikesToExtract"]
         detrendWaveform = param["detrendWaveform"]
         waveform_baseline_noise = param.get("waveform_baseline_noise", 20)
@@ -627,10 +641,23 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
         elif spike_width == 61: # kilosort = 4, baseline 0:20
             half_width = 20
 
-        meta_dict = read_meta(meta_path)
-        n_elements = (int(meta_dict["fileSizeBytes"]) / 2)  # int16 so 2 bytes per data point
-        n_channels_rec = int(meta_dict["nSavedChans"])
-        param["n_channels_rec"] = n_channels_rec
+        if meta_path is not None and meta_path.exists():
+            meta_dict = read_meta(meta_path)
+            n_elements = (int(meta_dict["fileSizeBytes"]) / 2)  # int16 so 2 bytes per data point
+            n_channels_rec = int(meta_dict["nSavedChans"])  # Total channels including sync
+            param["n_channels_rec"] = n_channels_rec
+        else:
+            # Use default values when no metafile is available
+            print("Warning: No meta file found. Using inputed parameters...")
+            # Get file size directly from the raw data file
+            import os
+            file_size_bytes = os.path.getsize(raw_data_file)
+            n_elements = file_size_bytes / 2  # int16 so 2 bytes per data point
+            
+            # When no metafile, nChannels already includes sync channels
+            n_channels_rec = n_channels  # Should be 385 (384 neural + 1 sync)
+            print(f"Using {n_channels_rec} total channels in recording")
+            param["n_channels_rec"] = n_channels_rec
 
         raw_data = np.memmap(
             raw_data_file,

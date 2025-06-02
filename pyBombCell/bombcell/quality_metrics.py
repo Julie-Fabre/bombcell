@@ -1604,8 +1604,8 @@ def waveform_shape(
 
         trough = np.max(troughs)
     # Ensure GUI variables are always defined
-    peak_locs_for_gui = locals().get('peakLocs', locals().get('PKS', np.array([])))
-    trough_locs_for_gui = locals().get('trough_locs', np.array([]))
+    peak_locs_for_gui = locals().get('peakLocs', np.array([]))
+    trough_locs_for_gui = locals().get('trough_locs', np.array([]))  # ALL trough locations for GUI
     peak_loc_for_duration_gui = locals().get('peak_loc_for_duration', np.nan)
     trough_loc_for_duration_gui = locals().get('trough_loc_for_duration', np.nan)
     

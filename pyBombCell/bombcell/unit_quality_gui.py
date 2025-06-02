@@ -11,7 +11,10 @@ try:
     import ipywidgets as widgets
     from IPython.display import display, clear_output
     IPYWIDGETS_AVAILABLE = True
-    print("ipywidgets available - using interactive GUI")
+    # Only print once when running in main process
+    import multiprocessing
+    if multiprocessing.current_process().name == 'MainProcess':
+        print("ipywidgets available - using interactive GUI")
 except ImportError:
     IPYWIDGETS_AVAILABLE = False
 
@@ -45,6 +48,8 @@ def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
     gui_data = {
         'peak_locations': {},
         'trough_locations': {},
+        'peak_loc_for_duration': {},
+        'trough_loc_for_duration': {},
         'peak_trough_labels': {},
         'duration_lines': {},
         'spatial_decay_fits': {},
@@ -84,38 +89,72 @@ def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
         else:
             max_ch = 0
             
-        # Pre-compute peak/trough detection
+        # Pre-compute peak/trough detection using quality metrics function
+        max_ch_waveform = None
         if template.size > 0 and len(template.shape) > 1 and max_ch < template.shape[1]:
-            max_ch_waveform = template[:, max_ch]
+            max_ch_waveform = template[:, max_ch]  # Define here for use later
             
-            if SCIPY_AVAILABLE:
-                # Peak detection parameters (same as GUI)
-                waveform_range = np.max(max_ch_waveform) - np.min(max_ch_waveform)
-                peak_height_threshold = np.max(max_ch_waveform) * 0.5
-                peak_prominence = waveform_range * 0.1
+            # Use the same waveform_shape function as quality metrics to get consistent results
+            try:
+                from .quality_metrics import waveform_shape
                 
-                # Find peaks and troughs
-                peaks, _ = find_peaks(max_ch_waveform, 
-                                    height=peak_height_threshold, 
-                                    distance=10,
-                                    prominence=peak_prominence)
-                                    
-                troughs, _ = find_peaks(-max_ch_waveform, 
-                                      height=-np.min(max_ch_waveform) * 0.5, 
-                                      distance=10,
-                                      prominence=waveform_range * 0.1)
+                # Get max channels for all units (quality metrics has this)
+                if 'maxChannels' in quality_metrics and len(quality_metrics['maxChannels']) > unit_idx:
+                    all_max_channels = quality_metrics['maxChannels']
+                else:
+                    # Fallback: compute max channels  
+                    all_max_channels = np.argmax(np.max(np.abs(ephys_data['template_waveforms']), axis=1), axis=1)
                 
-                gui_data['peak_locations'][unit_idx] = peaks
-                gui_data['trough_locations'][unit_idx] = troughs
+                # Get waveform baseline window from param
+                baseline_window = [param.get('waveform_baseline_window_start', 21), 
+                                 param.get('waveform_baseline_window_stop', 31)]
                 
-                # Pre-compute duration lines
-                if len(peaks) > 0 and len(troughs) > 0:
-                    main_peak_idx = peaks[np.argmax(max_ch_waveform[peaks])]
-                    main_trough_idx = troughs[np.argmin(max_ch_waveform[troughs])]
-                    gui_data['duration_lines'][unit_idx] = {
-                        'main_peak': main_peak_idx,
-                        'main_trough': main_trough_idx
-                    }
+                # Run waveform_shape to get the actual peak/trough locations
+                result = waveform_shape(
+                    template_waveforms=ephys_data['template_waveforms'],
+                    this_unit=unit_idx,
+                    maxChannels=all_max_channels,
+                    channel_positions=ephys_data.get('channel_positions', np.array([[0, 0]])),
+                    waveform_baseline_window=baseline_window,
+                    param=param
+                )
+                
+                # Extract peak/trough locations from quality metrics result
+                peak_locs_for_gui = result[11]  # Index 11 in return tuple  
+                trough_locs_for_gui = result[12]  # Index 12 in return tuple
+                peak_loc_for_duration_gui = result[13]  # Index 13
+                trough_loc_for_duration_gui = result[14]  # Index 14
+                
+                gui_data['peak_locations'][unit_idx] = peak_locs_for_gui
+                gui_data['trough_locations'][unit_idx] = trough_locs_for_gui
+                
+                # Store duration indices from quality metrics
+                if not np.isnan(peak_loc_for_duration_gui) and not np.isnan(trough_loc_for_duration_gui):
+                    gui_data['peak_loc_for_duration'][unit_idx] = int(peak_loc_for_duration_gui)
+                    gui_data['trough_loc_for_duration'][unit_idx] = int(trough_loc_for_duration_gui)
+                
+            except Exception as e:
+                if param.get("verbose", False):
+                    print(f"Warning: Could not compute quality metrics peaks/troughs for unit {unit_idx}, falling back to simple detection: {e}")
+                
+                # Fallback to simple detection if quality metrics fail
+                if SCIPY_AVAILABLE:
+                    max_ch_waveform = template[:, max_ch]
+                    waveform_range = np.max(max_ch_waveform) - np.min(max_ch_waveform)
+                    
+                    peaks, _ = find_peaks(max_ch_waveform, height=np.max(max_ch_waveform) * 0.5, distance=10, prominence=waveform_range * 0.1)
+                    troughs, _ = find_peaks(-max_ch_waveform, height=-np.min(max_ch_waveform) * 0.5, distance=10, prominence=waveform_range * 0.1)
+                    
+                    gui_data['peak_locations'][unit_idx] = peaks
+                    gui_data['trough_locations'][unit_idx] = troughs
+                    
+                    # Pre-compute duration lines for fallback
+                    if len(peaks) > 0 and len(troughs) > 0:
+                        max_ch_waveform = template[:, max_ch]
+                        main_peak_idx = peaks[np.argmax(max_ch_waveform[peaks])]
+                        main_trough_idx = troughs[np.argmin(max_ch_waveform[troughs])]
+                        gui_data['peak_loc_for_duration'][unit_idx] = int(main_peak_idx)
+                        gui_data['trough_loc_for_duration'][unit_idx] = int(main_trough_idx)
             
         # Pre-compute spatial decay information
         if ('channel_positions' in ephys_data and 
@@ -240,7 +279,7 @@ def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
             gui_data['channel_arrangements'][unit_idx] = {
                 'channels': channels_to_plot,
                 'max_channel': max_ch,
-                'scaling_factor': np.ptp(max_ch_waveform) * 2.5 if template.size > 0 else 1.0
+                'scaling_factor': np.ptp(max_ch_waveform) * 2.5 if max_ch_waveform is not None else 1.0
             }
         
         # Skip ACG pre-computation - will be computed lazily in GUI to avoid slowdown
@@ -896,7 +935,7 @@ class InteractiveUnitQualityGUI:
         # Check if raw extraction is enabled
         extract_raw = self.param.get('extractRaw', 0)
         if extract_raw != 1:
-            ax.text(0.5, 0.5, 'Raw waveforms\n(extractRaw disabled)', 
+            ax.text(0.5, 0.5, 'Mean raw waveforms\n(extractRaw disabled)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
             ax.set_title('Raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
             return
@@ -909,15 +948,20 @@ class InteractiveUnitQualityGUI:
                         waveforms = raw_wf[self.current_unit_idx]
                         
                         if hasattr(waveforms, 'shape') and len(waveforms.shape) > 1:
+                            # waveforms shape is (channels, time), need to transpose for plotting
+                            waveforms = waveforms.T  # Now (time, channels)
                             # Multi-channel raw waveforms - use MATLAB spatial arrangement
-                            if 'maxChannels' in self.quality_metrics and self.current_unit_idx < len(self.quality_metrics['maxChannels']):
+                            # Try to use the peak channel from raw waveforms first
+                            if 'peak_channels' in self.raw_waveforms and self.current_unit_idx < len(self.raw_waveforms['peak_channels']):
+                                max_ch = int(self.raw_waveforms['peak_channels'][self.current_unit_idx])
+                            elif 'maxChannels' in self.quality_metrics and self.current_unit_idx < len(self.quality_metrics['maxChannels']):
                                 max_ch = int(self.quality_metrics['maxChannels'][self.current_unit_idx])
                             else:
                                 max_ch = int(metrics.get('maxChannels', 0))
-                            n_channels = waveforms.shape[1]
+                            n_channels = waveforms.shape[1]  # Number of channels (after ensuring time x channels)
                             
                             # Find channels within 100μm of max channel (like MATLAB BombCell)
-                            if 'channel_positions' in self.ephys_data and max_ch < len(self.ephys_data['channel_positions']):
+                            if 'channel_positions' in self.ephys_data and len(self.ephys_data['channel_positions']) > 0 and max_ch < len(self.ephys_data['channel_positions']):
                                 positions = self.ephys_data['channel_positions']
                                 max_pos = positions[max_ch]
                                 
@@ -938,11 +982,16 @@ class InteractiveUnitQualityGUI:
                                 
                                 if len(channels_to_plot) > 0:
                                     # Calculate scaling factor like MATLAB
-                                    max_ch_waveform = waveforms[:, max_ch]
+                                    max_ch_waveform = waveforms[:, max_ch] if max_ch < waveforms.shape[1] else waveforms[:, 0]
                                     scaling_factor = np.ptp(max_ch_waveform) * 2.5
                                     
                                     # Create time axis
                                     time_axis = np.arange(waveforms.shape[0])
+                                    # Adjust time axis to center spike at 0 (assuming spike is at sample 20 for KS4)
+                                    if waveforms.shape[0] == 61:  # Kilosort 4
+                                        time_axis = time_axis - 20
+                                    elif waveforms.shape[0] == 82:  # Kilosort < 4
+                                        time_axis = time_axis - 41
                                     
                                     # Plot each channel at its spatial position
                                     for ch in channels_to_plot:
@@ -966,25 +1015,31 @@ class InteractiveUnitQualityGUI:
                                             else:
                                                 ax.plot(x_vals, y_vals, 'gray', linewidth=1, alpha=0.7)
                                             
-                                            # Add channel number closer to waveform
-                                            ax.text(x_offset - waveform_width * 0.02, y_offset, f'{ch}', fontsize=13, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
+                                            # Add channel number to the left of waveform
+                                            # Position based on the leftmost point of the waveform (time_axis[0])
+                                            ax.text(time_axis[0] + x_offset - 5, y_offset, f'{ch}', fontsize=13, ha='right', va='center', fontfamily="DejaVu Sans", zorder=20)
                                     
-                                    # Mark peaks and troughs on max channel
-                                    max_ch_waveform = waveforms[:, max_ch]
-                                    # Max channel is at center (0,0) since all offsets are relative to it
-                                    max_ch_x_offset = 0
-                                    max_ch_y_offset = 0
-                                    
-                                    # Detect and mark peaks/troughs (account for inverted waveform)
-                                    self.mark_peaks_and_troughs(ax, -max_ch_waveform, max_ch_x_offset, max_ch_y_offset, metrics, scaling_factor)
+                                    # Don't mark peaks and troughs on this spatial plot
                                     
                                     # Set axis properties like MATLAB
                                     ax.invert_yaxis()  # Reverse Y direction like MATLAB
+                                    ax.axis('tight')
+                                    ax.set_aspect('auto')
                             else:
-                                # Fallback: simple single channel display
-                                ax.plot(waveforms[:, max_ch], 'b-', linewidth=2)
-                                ax.text(0.5, 0.5, f'Raw waveforms\n(channel {max_ch})', 
-                                       ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
+                                # Fallback: plot multiple channels overlaid
+                                time_axis = np.arange(waveforms.shape[0])
+                                
+                                # Plot nearby channels
+                                channels_to_show = min(10, waveforms.shape[1])  # Show up to 10 channels
+                                for i in range(channels_to_show):
+                                    if i == max_ch and max_ch < waveforms.shape[1]:
+                                        ax.plot(time_axis, waveforms[:, i], 'k-', linewidth=2, alpha=1.0, label=f'Ch {i} (max)')
+                                    else:
+                                        ax.plot(time_axis, waveforms[:, i], 'gray', linewidth=1, alpha=0.5)
+                                
+                                ax.legend(loc='best', fontsize=8)
+                                ax.set_xlabel('Time (samples)')
+                                ax.set_ylabel('Amplitude')
                         else:
                             # Single channel
                             ax.plot(waveforms, 'b-', alpha=0.7)
