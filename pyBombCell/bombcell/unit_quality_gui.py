@@ -1988,7 +1988,7 @@ class InteractiveUnitQualityGUI:
                 ylim = ax.get_ylim()
                 xlim = ax.get_xlim()
                 x_range = xlim[1] - xlim[0]
-                arrow_x = xlim[0] - x_range * 1.0  # Much more to the left
+                arrow_x = xlim[0] - x_range * 1.2  # Much more to the left
                 
                 # Draw arrow spanning most of the plot height (slightly shorter)
                 y_range = ylim[1] - ylim[0]
@@ -2802,36 +2802,30 @@ class InteractiveUnitQualityGUI:
                 valid_thresh2.append(metric_thresh2[i])
                 valid_line_cols.append(metric_line_cols[i])
 
-        # Calculate grid layout for right half - FEWER columns for MORE SPACE
+        # BACK TO BASICS: Just make plots that use the space properly
         num_subplots = len(valid_metrics)
-        if num_subplots <= 2:
-            num_cols = 1  # Single column for maximum space
-            num_rows = num_subplots
-        elif num_subplots <= 6:
-            num_cols = 2  # Two columns max for better visibility
-            num_rows = int(np.ceil(num_subplots / num_cols))
-        else:
-            num_cols = 3  # Three columns max, never 4
-            num_rows = int(np.ceil(num_subplots / num_cols))
-
-        # Create histogram subplots on right half using subplot2grid
+        cols = 3
+        
+        # Calculate how to distribute the 10 rows among plot rows  
+        rows_of_plots = (num_subplots + cols - 1) // cols
+        
+        # Give each row of plots equal space in the 10 available rows
+        space_per_row = 10.0 / rows_of_plots
+        plot_height = max(2, int(space_per_row * 0.8))  # Use 80% for plot, 20% for spacing
+        
+        # Columns: use most of the 14 available columns
+        col_width = 4
+        col_start_positions = [16, 20, 25]  # Manual positioning with gaps
+        
+        # Create histogram subplots
         for i, metric_name in enumerate(valid_metrics):
-            row_id = i // num_cols
-            col_id = i % num_cols
+            row_id = i // cols
+            col_id = i % cols
             
-            # Create subplot on the right half - SIMPLE and RELIABLE positioning
-            # Use simple fixed layout that always works
-            if num_cols == 1:
-                # Single column - use full width
-                ax = plt.subplot2grid((10, 30), (row_id*3, 16), rowspan=3, colspan=12)
-            elif num_cols == 2:
-                # Two columns - split width
-                col_width = 6
-                ax = plt.subplot2grid((10, 30), (row_id*3, 16 + col_id*7), rowspan=3, colspan=col_width)
-            else:  # num_cols == 3
-                # Three columns - smaller width
-                col_width = 4
-                ax = plt.subplot2grid((10, 30), (row_id*3, 16 + col_id*5), rowspan=2, colspan=col_width)
+            start_row = int(row_id * space_per_row)
+            start_col = col_start_positions[col_id]
+            
+            ax = plt.subplot2grid((10, 30), (start_row, start_col), rowspan=plot_height, colspan=col_width)
             
             metric_data = self.quality_metrics[metric_name]
             metric_data = metric_data[~np.isnan(metric_data)]
@@ -2875,15 +2869,16 @@ class InteractiveUnitQualityGUI:
                                    arrowprops=dict(arrowstyle='->', lw=4, color='red', alpha=0.9),
                                    zorder=15)
                 
-                # Add threshold lines above histogram at 0.9 - EXTENDED x-limits for text
+                # Add threshold lines above histogram at 0.9 - MUCH MORE EXTENDED x-limits for text
                 x_lim = ax.get_xlim()
-                # Extend x-axis MORE for text labels, especially for waveform duration and spatial decay
+                # Extend x-axis MUCH MORE for text labels
                 x_range = x_lim[1] - x_lim[0]
                 if metric_name in ['waveformDuration_peakTrough', 'spatialDecaySlope']:
-                    # Extra space for these metrics that need more room for "Noise" text
-                    ax.set_xlim([x_lim[0] - 0.25*x_range, x_lim[1] + 0.25*x_range])
+                    # MASSIVE extra space for these metrics that need room for "Noise" text
+                    ax.set_xlim([x_lim[0] - 0.6*x_range, x_lim[1] + 0.6*x_range])
                 else:
-                    ax.set_xlim([x_lim[0] - 0.15*x_range, x_lim[1] + 0.15*x_range])
+                    # More space for all other metrics
+                    ax.set_xlim([x_lim[0] - 0.3*x_range, x_lim[1] + 0.3*x_range])
                 x_lim = ax.get_xlim()
                 line_y = 0.9  # Position lines at 0.9
                 
@@ -2945,16 +2940,17 @@ class InteractiveUnitQualityGUI:
                             ax.text(midpoint3, text_y, '↓ MUA', ha='center', fontsize=14, 
                                    color=line_colors[2], weight='bold')
                         
-                    elif thresh1 is not None:
-                        # Single threshold logic - exact copy but smaller fonts
-                        ax.axvline(thresh1, color='k', linewidth=2)
-                        ax.plot([x_lim[0], thresh1], 
+                    elif thresh1 is not None or thresh2 is not None:
+                        # Single threshold logic - handle BOTH thresh1 and thresh2 cases
+                        thresh = thresh1 if thresh1 is not None else thresh2
+                        ax.axvline(thresh, color='k', linewidth=2)
+                        ax.plot([x_lim[0], thresh], 
                                [line_y, line_y], color=line_colors[0], linewidth=6)
-                        ax.plot([thresh1, x_lim[1]], 
+                        ax.plot([thresh, x_lim[1]], 
                                [line_y, line_y], color=line_colors[1], linewidth=6)
                         
-                        midpoint1 = (x_lim[0] + thresh1) / 2
-                        midpoint2 = (thresh1 + x_lim[1]) / 2
+                        midpoint1 = (x_lim[0] + thresh) / 2
+                        midpoint2 = (thresh + x_lim[1]) / 2
                         text_y = 0.95
                         
                         noise_metrics = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope']
