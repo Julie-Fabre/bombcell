@@ -2802,30 +2802,52 @@ class InteractiveUnitQualityGUI:
                 valid_thresh2.append(metric_thresh2[i])
                 valid_line_cols.append(metric_line_cols[i])
 
-        # BACK TO BASICS: Just make plots that use the space properly
+        # EVEN DISTRIBUTION across FULL Y SPACE
         num_subplots = len(valid_metrics)
         cols = 3
         
-        # Calculate how to distribute the 10 rows among plot rows  
+        # Calculate how many rows of plots we need
         rows_of_plots = (num_subplots + cols - 1) // cols
         
-        # Give each row of plots equal space in the 10 available rows
-        space_per_row = 10.0 / rows_of_plots
-        plot_height = max(2, int(space_per_row * 0.8))  # Use 80% for plot, 20% for spacing
+        # Distribute plots evenly across ALL 10 rows with uniform spacing
+        if rows_of_plots == 1:
+            # Single row - use most of the space
+            plot_positions = [1]
+            plot_height = 8
+        elif rows_of_plots == 2:
+            # Two rows - even distribution
+            plot_positions = [0, 5]
+            plot_height = 4
+        elif rows_of_plots == 3:
+            # Three rows - even distribution
+            plot_positions = [0, 3, 6]
+            plot_height = 3
+        elif rows_of_plots == 4:
+            # Four rows - even distribution
+            plot_positions = [0, 2, 5, 8]
+            plot_height = 2
+        else:
+            # Many rows - tight but even
+            plot_positions = [i * 2 for i in range(rows_of_plots)]
+            plot_height = 2
         
-        # Columns: use most of the 14 available columns
+        # Columns with good spacing
         col_width = 4
-        col_start_positions = [16, 20, 25]  # Manual positioning with gaps
+        col_start_positions = [16, 21, 26]  # Even spacing across 14 columns
         
         # Create histogram subplots
         for i, metric_name in enumerate(valid_metrics):
             row_id = i // cols
             col_id = i % cols
             
-            start_row = int(row_id * space_per_row)
-            start_col = col_start_positions[col_id]
-            
-            ax = plt.subplot2grid((10, 30), (start_row, start_col), rowspan=plot_height, colspan=col_width)
+            # Use the pre-calculated positions for even distribution
+            if row_id < len(plot_positions):
+                start_row = plot_positions[row_id]
+                start_col = col_start_positions[col_id]
+                
+                ax = plt.subplot2grid((10, 30), (start_row, start_col), rowspan=plot_height, colspan=col_width)
+            else:
+                continue
             
             metric_data = self.quality_metrics[metric_name]
             metric_data = metric_data[~np.isnan(metric_data)]
