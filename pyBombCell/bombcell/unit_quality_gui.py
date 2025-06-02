@@ -921,17 +921,17 @@ class InteractiveUnitQualityGUI:
         ax_acg = plt.subplot2grid((40, 20), (5, 11), rowspan=4, colspan=8)
         self.plot_autocorrelogram(ax_acg, unit_data)
         
-        # 6. Amplitudes over time
-        ax_amplitude = plt.subplot2grid((40, 20), (10, 2), rowspan=4, colspan=16)
+        # 6. Amplitudes over time (narrower to make room for amplitude fit)
+        ax_amplitude = plt.subplot2grid((40, 20), (10, 2), rowspan=4, colspan=12)
         self.plot_amplitudes_over_time(ax_amplitude, unit_data)
         
-        # 6b. Time bin metrics
-        ax_bin_metrics = plt.subplot2grid((40, 20), (15, 2), rowspan=2, colspan=16, sharex=ax_amplitude)
-        self.plot_time_bin_metrics(ax_bin_metrics, unit_data)
-        
-        # 7. Amplitude fit
-        ax_amp_fit = plt.subplot2grid((40, 20), (18, 2), rowspan=2, colspan=4)
+        # 7. Amplitude fit histogram (next to amplitudes)
+        ax_amp_fit = plt.subplot2grid((40, 20), (10, 15), rowspan=4, colspan=4)
         self.plot_amplitude_fit(ax_amp_fit, unit_data)
+        
+        # 6b. Time bin metrics (below amplitudes, same width as amplitudes)
+        ax_bin_metrics = plt.subplot2grid((40, 20), (15, 2), rowspan=2, colspan=12, sharex=ax_amplitude)
+        self.plot_time_bin_metrics(ax_bin_metrics, unit_data)
         
         # BOTTOM SECTION - Histogram panel (rows 22-39, full width)
         self.plot_histograms_panel_portrait(fig, unit_data)
