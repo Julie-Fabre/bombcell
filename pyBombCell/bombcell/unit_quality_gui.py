@@ -566,7 +566,7 @@ class InteractiveUnitQualityGUI:
         # Slider and unit input controls combined
         slider_and_input = widgets.HBox([
             self.unit_slider,
-            widgets.Label('  Go to:  '),
+            widgets.Label('    '),
             self.unit_input, 
             self.goto_unit_btn
         ])
@@ -883,12 +883,13 @@ class InteractiveUnitQualityGUI:
                             waveform_width = template.shape[0]  # Usually 82 samples
                             x_offset = (ch_pos[0] - max_pos[0]) * waveform_width * 0.04  # Slightly increased from original 0.025
                             
-                            # Calculate Y offset based on channel Y position (like MATLAB)
-                            y_offset = (ch_pos[1] - max_pos[1]) / 100 * scaling_factor
+                            # Calculate Y offset based on channel Y position 
+                            # We want channel 0 at bottom, so higher Y values go up
+                            y_offset = ch_pos[1] / 100 * scaling_factor  # Use absolute position
                             
-                            # Plot waveform
+                            # Plot waveform (not flipped)
                             x_vals = time_axis + x_offset
-                            y_vals = -waveform + y_offset  # Negative like MATLAB
+                            y_vals = waveform + y_offset
                             
                             if ch == max_ch:
                                 ax.plot(x_vals, y_vals, 'k-', linewidth=3)  # Max channel thicker black
@@ -900,15 +901,14 @@ class InteractiveUnitQualityGUI:
                     
                     # Mark peaks and troughs on max channel
                     max_ch_waveform = template[:, max_ch]
-                    # Max channel is at center (0,0) since all offsets are relative to it
+                    # Max channel position matches its actual plotted position
                     max_ch_x_offset = 0  
-                    max_ch_y_offset = 0
+                    max_ch_y_offset = max_pos[1] / 100 * scaling_factor  # Same as max channel waveform
                     
-                    # Detect and mark peaks/troughs (account for inverted waveform)
-                    self.mark_peaks_and_troughs(ax, -max_ch_waveform, max_ch_x_offset, max_ch_y_offset, metrics, scaling_factor)
+                    # Detect and mark peaks/troughs (waveform not inverted now)
+                    self.mark_peaks_and_troughs(ax, max_ch_waveform, max_ch_x_offset, max_ch_y_offset, metrics, scaling_factor)
                     
-                    # Set axis properties like MATLAB
-                    ax.invert_yaxis()  # Reverse Y direction like MATLAB
+                    # Don't invert - channel 0 (Y=0) naturally at bottom
                     
             else:
                 # Fallback: simple single channel display
@@ -937,7 +937,7 @@ class InteractiveUnitQualityGUI:
         if extract_raw != 1:
             ax.text(0.5, 0.5, 'Mean raw waveforms\n(extractRaw disabled)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
-            ax.set_title('Raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+            ax.set_title('Mean raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
             return
         
         if self.raw_waveforms is not None:
@@ -1003,12 +1003,13 @@ class InteractiveUnitQualityGUI:
                                             waveform_width = waveforms.shape[0]  # Usually 82 samples
                                             x_offset = (ch_pos[0] - max_pos[0]) * waveform_width * 0.06  # Slightly increased from original 0.05
                                             
-                                            # Calculate Y offset based on channel Y position (like MATLAB)
-                                            y_offset = (ch_pos[1] - max_pos[1]) / 100 * scaling_factor
+                                            # Calculate Y offset based on channel Y position 
+                                            # We want channel 0 at bottom, so higher Y values go up
+                                            y_offset = ch_pos[1] / 100 * scaling_factor  # Use absolute position
                                             
-                                            # Plot waveform
+                                            # Plot waveform (not flipped)
                                             x_vals = time_axis + x_offset
-                                            y_vals = -waveform + y_offset  # Negative like MATLAB
+                                            y_vals = waveform + y_offset
                                             
                                             if ch == max_ch:
                                                 ax.plot(x_vals, y_vals, 'k-', linewidth=3)  # Max channel thicker black
@@ -1021,8 +1022,7 @@ class InteractiveUnitQualityGUI:
                                     
                                     # Don't mark peaks and troughs on this spatial plot
                                     
-                                    # Set axis properties like MATLAB
-                                    ax.invert_yaxis()  # Reverse Y direction like MATLAB
+                                    # Don't invert - channel 0 (Y=0) naturally at bottom
                                     ax.axis('tight')
                                     ax.set_aspect('auto')
                             else:
@@ -1048,10 +1048,10 @@ class InteractiveUnitQualityGUI:
                     ax.text(0.5, 0.5, 'Raw waveforms\n(data format issue)', 
                             ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
         else:
-            ax.text(0.5, 0.5, 'Raw waveforms\n(not available)', 
+            ax.text(0.5, 0.5, 'Mean raw waveforms\n(not available)', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Mean raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         ax.set_xticks([])
         ax.set_yticks([])
         # Remove aspect ratio constraint to prevent squishing
@@ -3035,7 +3035,7 @@ class UnitQualityGUI:
     def plot_raw_waveform(self, unit_data):
         """Plot raw waveform if available"""
         # Placeholder for raw waveforms
-        self.ax_raw.text(0.5, 0.5, 'Raw waveforms\n(Not available)', 
+        self.ax_raw.text(0.5, 0.5, 'Mean raw waveforms\n(Not available)', 
                         ha='center', va='center', transform=self.ax_raw.transAxes,
                         fontsize=12, alpha=0.6)
         
