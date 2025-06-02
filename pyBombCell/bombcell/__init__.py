@@ -24,7 +24,7 @@ from .plot_functions import *
 # Explicitly expose key functions
 from .ephys_properties import get_ephys_parameters
 from .classification import classify_and_plot_brain_region
-from .unit_quality_gui import unit_quality_gui, UnitQualityGUI, InteractiveUnitQualityGUI, precompute_gui_data, load_gui_data
+from .unit_quality_gui import unit_quality_gui, InteractiveUnitQualityGUI, precompute_gui_data, load_gui_data
 from .ccg_fast import ccg_bz, build_ccg_extension
 
 # __version__ attribute exposition

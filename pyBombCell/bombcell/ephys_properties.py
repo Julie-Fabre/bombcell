@@ -58,7 +58,7 @@ def run_all_ephys_properties(ephys_path, param=None, save_path=None):
         Ephys properties parameters (separate from quality metrics)
     """
     if save_path is None:
-        save_path = ephys_path
+        save_path = Path(ephys_path) / "bombcell"
     
     # Get SEPARATE ephys properties parameters (like MATLAB ephysPropValues)
     raw_file = param.get('raw_data_file', None) if param else None
