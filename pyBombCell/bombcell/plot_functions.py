@@ -345,15 +345,15 @@ def plot_histograms(quality_metrics, param):
             
             if thresh1 is not None or thresh2 is not None:
                 if thresh1 is not None and thresh2 is not None:
-                    # Add vertical lines for thresholds
-                    ax.axvline(thresh1, color='k', linewidth=2)
-                    ax.axvline(thresh2, color='k', linewidth=2)
-                    # Add horizontal colored lines
-                    ax.plot([x_lim[0], thresh1], 
+                    # Add vertical lines for thresholds at value + 0.5*bin_width
+                    ax.axvline(thresh1 + binsize_offset, color='k', linewidth=2)
+                    ax.axvline(thresh2 + binsize_offset, color='k', linewidth=2)
+                    # Add horizontal colored lines at value + 0.5*bin_width
+                    ax.plot([x_lim[0], thresh1 + binsize_offset], 
                            [line_y, line_y], color=line_colors[0], linewidth=6)
-                    ax.plot([thresh1, thresh2], 
+                    ax.plot([thresh1 + binsize_offset, thresh2 + binsize_offset], 
                            [line_y, line_y], color=line_colors[1], linewidth=6)
-                    ax.plot([thresh2, x_lim[1]], 
+                    ax.plot([thresh2 + binsize_offset, x_lim[1]], 
                            [line_y, line_y], color=line_colors[2], linewidth=6)
                     
                     # Add classification labels with arrows
@@ -392,12 +392,12 @@ def plot_histograms(quality_metrics, param):
                                color=line_colors[2], weight='bold')
                     
                 elif thresh1 is not None:
-                    # Add vertical line for threshold
-                    ax.axvline(thresh1, color='k', linewidth=2)
-                    # Add horizontal colored lines
-                    ax.plot([x_lim[0], thresh1], 
+                    # Add vertical line for threshold at value + 0.5*bin_width
+                    ax.axvline(thresh1 + binsize_offset, color='k', linewidth=2)
+                    # Add horizontal colored lines at value + 0.5*bin_width
+                    ax.plot([x_lim[0], thresh1 + binsize_offset], 
                            [line_y, line_y], color=line_colors[0], linewidth=6)
-                    ax.plot([thresh1, x_lim[1]], 
+                    ax.plot([thresh1 + binsize_offset, x_lim[1]], 
                            [line_y, line_y], color=line_colors[1], linewidth=6)
                     
                     # Add classification labels for single threshold
@@ -429,12 +429,12 @@ def plot_histograms(quality_metrics, param):
                                color=line_colors[1], weight='bold')
                     
                 elif thresh2 is not None:
-                    # Add vertical line for threshold
-                    ax.axvline(thresh2, color='k', linewidth=2)
-                    # Add horizontal colored lines
-                    ax.plot([x_lim[0], thresh2], 
+                    # Add vertical line for threshold at value + 0.5*bin_width
+                    ax.axvline(thresh2 + binsize_offset, color='k', linewidth=2)
+                    # Add horizontal colored lines at value + 0.5*bin_width
+                    ax.plot([x_lim[0], thresh2 + binsize_offset], 
                            [line_y, line_y], color=line_colors[0], linewidth=6)
-                    ax.plot([thresh2, x_lim[1]], 
+                    ax.plot([thresh2 + binsize_offset, x_lim[1]], 
                            [line_y, line_y], color=line_colors[1], linewidth=6)
                     
                     # Add classification labels for threshold 2 only
