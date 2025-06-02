@@ -8,7 +8,8 @@ from . import (
     helper_functions,
     plot_functions,
     classification,
-    unit_quality_gui
+    unit_quality_gui,
+    ccg_fast
 )
 
 from .default_parameters import *
@@ -24,6 +25,7 @@ from .plot_functions import *
 from .ephys_properties import get_ephys_parameters
 from .classification import classify_and_plot_brain_region
 from .unit_quality_gui import unit_quality_gui, UnitQualityGUI, InteractiveUnitQualityGUI, precompute_gui_data, load_gui_data
+from .ccg_fast import ccg_bz, build_ccg_extension
 
 # __version__ attribute exposition
 try:

@@ -777,7 +777,7 @@ class InteractiveUnitQualityGUI:
         
         # Simple title with unit number, phy ID, and type, colored by classification (large and centered)
         info_html = f"""
-        <h1 style="color: {title_color}; text-align: center; font-size: 24px; margin: 10px 0;">Unit {unit_data['unit_id']} (phy ID = {self.current_unit_idx}, {self.current_unit_idx+1}/{self.n_units}) - {unit_type_str}</h1>
+        <h1 style="color: {title_color}; text-align: center; font-size: 24px; margin: 10px 0;">Unit {unit_data['unit_id']} (phy ID = {self.current_unit_idx}, unit # {self.current_unit_idx+1}/{self.n_units}) - {unit_type_str}</h1>
         """
         
         self.unit_info.value = info_html
