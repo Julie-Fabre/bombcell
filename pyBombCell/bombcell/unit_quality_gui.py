@@ -933,85 +933,13 @@ class InteractiveUnitQualityGUI:
         ax_bin_metrics = plt.subplot2grid((40, 20), (15, 2), rowspan=2, colspan=12, sharex=ax_amplitude)
         self.plot_time_bin_metrics(ax_bin_metrics, unit_data)
         
-        # BOTTOM SECTION - Histogram panel (rows 22-39, full width)
-        self.plot_histograms_panel_portrait(fig, unit_data)
+        # BOTTOM SECTION - Histogram panel (rows 22-39, full width) - same as landscape!
+        self.plot_histograms_panel(fig, unit_data)
         
         # Adjust spacing for portrait layout
         plt.subplots_adjust(left=0.05, right=0.95, top=0.98, bottom=0.02, hspace=0.3, wspace=0.3)
         plt.show()
     
-    def plot_histograms_panel_portrait(self, fig, unit_data):
-        """Plot histogram panel optimized for portrait layout (bottom section)"""
-        # Use the same histogram logic but with portrait-optimized positioning
-        # Start at row 22 in the 40-row grid, use full width (20 columns)
-        
-        # Determine which metrics to plot (same logic as landscape)
-        if 'peak1ToPeak2Ratio' in self.quality_metrics:
-            self.quality_metrics['peak1ToPeak2Ratio'][self.quality_metrics['peak1ToPeak2Ratio'] == np.inf] = np.nan
-        if 'troughToPeak2Ratio' in self.quality_metrics:
-            self.quality_metrics['troughToPeak2Ratio'][self.quality_metrics['troughToPeak2Ratio'] == np.inf] = np.nan
-
-        # Use same metric filtering logic from main histogram panel
-        metric_names = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 
-                       'scndPeakToTroughRatio', 'spatialDecaySlope', 'peak1ToPeak2Ratio', 'mainPeakToTroughRatio',
-                       'rawAmplitude', 'signalToNoiseRatio', 'fractionRPVs_estimatedTauR', 'nSpikes', 
-                       'presenceRatio', 'percentageSpikesMissing_gaussian', 'maxDriftEstimate', 
-                       'isolationDistance', 'Lratio']
-        
-        # Same filtering logic
-        param = self.param
-        plot_conditions = [True, True, True, True, True,
-                          param.get('computeSpatialDecay', False),
-                          True, True,
-                          param.get('extractRaw', False) and np.all(~np.isnan(self.quality_metrics.get('rawAmplitude', [np.nan]))),
-                          param.get('extractRaw', False) and np.all(~np.isnan(self.quality_metrics.get('signalToNoiseRatio', [np.nan]))),
-                          True, True, True, True,
-                          param.get('computeDrift', False),
-                          param.get('computeDistanceMetrics', False),
-                          param.get('computeDistanceMetrics', False)]
-        
-        valid_metrics = []
-        for i, (metric_name, condition) in enumerate(zip(metric_names, plot_conditions)):
-            if condition and metric_name in self.quality_metrics:
-                valid_metrics.append(metric_name)
-        
-        # Portrait layout: more columns (4-5), fewer rows
-        num_subplots = len(valid_metrics)
-        cols = min(5, num_subplots)  # Up to 5 columns in portrait
-        
-        # Create histogram subplots in bottom section (rows 22-39)
-        available_rows = 18  # Rows 22-39 = 18 rows available
-        col_width = 20 // cols  # Divide 20 columns evenly
-        
-        for i, metric_name in enumerate(valid_metrics):
-            row_id = i // cols
-            col_id = i % cols
-            
-            # Position in bottom section
-            start_row = 22 + row_id * 4  # Each histogram gets 4 rows
-            start_col = col_id * col_width
-            
-            # Skip if we exceed available space
-            if start_row + 4 > 40:
-                continue
-                
-            ax = plt.subplot2grid((40, 20), (start_row, start_col), rowspan=4, colspan=col_width)
-            
-            # Use the same histogram plotting logic from the main panel
-            # (This would be the same histogram code but adapted for the new grid)
-            metric_data = self.quality_metrics[metric_name]
-            metric_data = metric_data[~np.isnan(metric_data)]
-            
-            if len(metric_data) > 0:
-                # Same histogram plotting as main panel...
-                # (For brevity, this would include the full histogram logic)
-                ax.hist(metric_data, bins=20, density=True, alpha=0.7)
-                ax.set_xlabel(metric_name, fontsize=12)
-                ax.set_ylabel('frac. units' if i == 0 else '', fontsize=12)
-                ax.set_ylim([0, 1.1])
-                ax.set_yticks([0, 1])
-                ax.set_yticklabels(['0', '1'])
-            
     def plot_template_waveform(self, ax, unit_data):
         """Plot template waveform using BombCell MATLAB spatial arrangement"""
         template = unit_data['template']
@@ -2865,7 +2793,19 @@ class InteractiveUnitQualityGUI:
         return list(range(start, end))
     
     def plot_histograms_panel(self, fig, unit_data):
-        """Plot histogram distributions showing where current unit sits - exact copy of plot_functions.py"""
+        """Plot histogram distributions showing where current unit sits - adaptive for landscape/portrait"""
+        # Detect layout mode based on figure size
+        figsize = fig.get_size_inches()
+        if figsize[0] > figsize[1]:  # Width > Height = Landscape
+            grid_rows, grid_cols = 20, 30
+            hist_start_row, hist_start_col = 0, 16  # Landscape: right side
+            hist_rows_available = 20
+            hist_cols_available = 14
+        else:  # Height > Width = Portrait  
+            grid_rows, grid_cols = 40, 20
+            hist_start_row, hist_start_col = 22, 0  # Portrait: bottom section
+            hist_rows_available = 18  # Rows 22-39
+            hist_cols_available = 20
         # Preprocessing - handle inf values
         if 'peak1ToPeak2Ratio' in self.quality_metrics:
             self.quality_metrics['peak1ToPeak2Ratio'][self.quality_metrics['peak1ToPeak2Ratio'] == np.inf] = np.nan
@@ -2986,33 +2926,13 @@ class InteractiveUnitQualityGUI:
         # Calculate how many rows of plots we need
         rows_of_plots = (num_subplots + cols - 1) // cols
         
-        # Distribute plots evenly across ALL 10 rows with UNIFORM spacing
-        if rows_of_plots == 1:
-            # Single row - use most of the space
-            plot_positions = [1]
-            plot_height = 8
-        elif rows_of_plots == 2:
-            # Two rows - even distribution
-            plot_positions = [0, 6]
-            plot_height = 4
-        elif rows_of_plots == 3:
-            # Three rows - HUGE gaps to test if changes are working
-            # Row 1: 0-1, Row 2: 4-5, Row 3: 8-9 (massive gaps)
-            plot_positions = [0, 4, 8]
-            plot_height = 2
-        elif rows_of_plots == 4:
-            # Four rows - PROPER spacing with 20-row grid
-            # Now we have 20 rows to work with, so much more space!
-            plot_positions = [0, 5, 10, 15]
-            plot_height = 4
-        else:
-            # Many rows - tight but even
-            plot_positions = [i * 2 for i in range(rows_of_plots)]
-            plot_height = 2
+        # Adaptive positioning based on available space  
+        plot_height = max(2, hist_rows_available // rows_of_plots)
+        plot_positions = [i * (hist_rows_available // rows_of_plots) for i in range(rows_of_plots)]
         
-        # Columns with good spacing
-        col_width = 4
-        col_start_positions = [16, 21, 26]  # Even spacing across 14 columns
+        # Adaptive column positioning
+        col_width = max(3, hist_cols_available // cols - 1)
+        col_start_positions = [hist_start_col + i * (hist_cols_available // cols) for i in range(cols)]
         
         # Create histogram subplots
         for i, metric_name in enumerate(valid_metrics):
@@ -3021,13 +2941,13 @@ class InteractiveUnitQualityGUI:
             
             # Use the pre-calculated positions for even distribution
             if row_id < len(plot_positions):
-                start_row = plot_positions[row_id]
+                start_row = hist_start_row + plot_positions[row_id]
                 start_col = col_start_positions[col_id]
                 
                 # ALL plots same height - no extending last row
                 actual_height = plot_height
                 
-                ax = plt.subplot2grid((20, 30), (start_row, start_col), rowspan=actual_height, colspan=col_width)
+                ax = plt.subplot2grid((grid_rows, grid_cols), (start_row, start_col), rowspan=actual_height, colspan=col_width)
             else:
                 continue
             
