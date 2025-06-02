@@ -1926,8 +1926,8 @@ class InteractiveUnitQualityGUI:
                 if i < len(max_channels):
                     max_ch = int(max_channels[i])
                     if max_ch < len(positions):
-                        # Use Y position as depth (inverted for probe coordinates)
-                        depth = positions[max_ch, 1]
+                        # Use Y position as depth - deeper channels have higher index, should be at bottom
+                        depth = positions[max_ch, 1]  # Keep original - deeper = lower y values
                         
                         # Calculate firing rate for this unit
                         unit_spike_mask = self.ephys_data['spike_clusters'] == unit_id
@@ -1978,7 +1978,33 @@ class InteractiveUnitQualityGUI:
                 ax.set_xlabel('Log₁₀ firing rate (sp/s)', fontsize=13, fontfamily="DejaVu Sans")
                 ax.set_ylabel('Depth from tip of probe (μm)', fontsize=13, fontfamily="DejaVu Sans")
                 ax.tick_params(labelsize=13)
-                ax.invert_yaxis()  # Deeper = higher values, but show at bottom
+                # Y-axis is now flipped via data transformation (no invert_yaxis needed)
+                
+                # Add depth arrow on the left side
+                ylim = ax.get_ylim()
+                xlim = ax.get_xlim()
+                x_range = xlim[1] - xlim[0]
+                arrow_x = xlim[0] - x_range * 0.5  # Much further left to avoid x-axis tick labels
+                
+                # Draw arrow spanning most of the plot height (slightly shorter)
+                y_range = ylim[1] - ylim[0]
+                arrow_start_y = ylim[0] + y_range * 0.05  # Start slightly above bottom
+                arrow_end_y = ylim[1] - y_range * 0.05    # End slightly below top
+                
+                ax.annotate('', xy=(arrow_x, arrow_end_y), xytext=(arrow_x, arrow_start_y),
+                           arrowprops=dict(arrowstyle='<->', color='black', lw=2),
+                           annotation_clip=False)
+                
+                # Add labels below the arrow and to the left
+                label_x = arrow_x - x_range * 0.02  # To the left of arrow
+                
+                ax.text(label_x, arrow_start_y - y_range * 0.02, 'deepest in the brain\ntip of the probe', 
+                       ha='center', va='top', fontsize=9, fontfamily="DejaVu Sans",
+                       rotation=0, clip_on=False)
+                       
+                ax.text(label_x, arrow_end_y + y_range * 0.02, 'most superficial', 
+                       ha='center', va='bottom', fontsize=9, fontfamily="DejaVu Sans",
+                       rotation=0, clip_on=False)
                 
                 # Add legend
                 legend_elements = []
@@ -1986,7 +2012,7 @@ class InteractiveUnitQualityGUI:
                     legend_elements.append(plt.Line2D([0], [0], marker='o', color='w', 
                                                     markerfacecolor=color, markersize=8, 
                                                     label=class_name))
-                ax.legend(handles=legend_elements, loc='upper right', fontsize=8)
+                ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
                 
                 # Add click interactivity to navigate to units
                 def on_location_click(event):
@@ -2752,7 +2778,7 @@ class UnitQualityGUI:
         
     def setup_raw_plot(self):
         """Setup raw waveform plot"""
-        self.ax_raw.set_title('Raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        self.ax_raw.set_title('Mean raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         self.ax_raw.set_xticks([])
         self.ax_raw.set_yticks([])
         self.ax_raw.invert_yaxis()
@@ -2914,11 +2940,11 @@ class UnitQualityGUI:
             spike_mask = self.ephys_data['spike_clusters'] == unit_id
             spike_count = np.sum(spike_mask)
             
-            # Get depth (channel position)
+            # Get depth (channel position) - deeper channels have higher index, should be at bottom
             if 'maxChannels' in self.quality_metrics and i < len(self.quality_metrics['maxChannels']):
                 max_chan = int(self.quality_metrics['maxChannels'][i])
                 if max_chan < len(self.ephys_data['channel_positions']):
-                    depth = self.ephys_data['channel_positions'][max_chan, 1]
+                    depth = self.ephys_data['channel_positions'][max_chan, 1]  # Keep original
                 else:
                     depth = 0
             else:
@@ -2956,6 +2982,32 @@ class UnitQualityGUI:
         self.ax_location.set_xlim([-0.1, 1.1])
         if all_depths:
             self.ax_location.set_ylim([min(all_depths) - 50, max(all_depths) + 50])
+            
+            # Add depth arrow on the left side
+            ylim = self.ax_location.get_ylim()
+            xlim = self.ax_location.get_xlim()
+            x_range = xlim[1] - xlim[0]
+            arrow_x = xlim[0] - x_range * 0.5  # Much further left to avoid x-axis tick labels
+            
+            # Draw arrow spanning most of the plot height (slightly shorter)
+            y_range = ylim[1] - ylim[0]
+            arrow_start_y = ylim[0] + y_range * 0.05  # Start slightly above bottom
+            arrow_end_y = ylim[1] - y_range * 0.05    # End slightly below top
+            
+            self.ax_location.annotate('', xy=(arrow_x, arrow_end_y), xytext=(arrow_x, arrow_start_y),
+                                     arrowprops=dict(arrowstyle='<->', color='black', lw=2),
+                                     annotation_clip=False)
+            
+            # Add labels below the arrow and to the left
+            label_x = arrow_x - x_range * 0.02  # To the left of arrow
+            
+            self.ax_location.text(label_x, arrow_start_y - y_range * 0.02, 'deepest in the brain\ntip of the probe', 
+                                 ha='center', va='top', fontsize=8, fontfamily="DejaVu Sans",
+                                 rotation=0, clip_on=False)
+                                 
+            self.ax_location.text(label_x, arrow_end_y + y_range * 0.02, 'most superficial', 
+                                 ha='center', va='top', fontsize=8, fontfamily="DejaVu Sans",
+                                 rotation=0, clip_on=False)
         
     def plot_template_waveform(self, unit_data):
         """Plot template waveform (exact MATLAB style)"""
