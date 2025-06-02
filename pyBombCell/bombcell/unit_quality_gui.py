@@ -2890,11 +2890,11 @@ class InteractiveUnitQualityGUI:
                             patches[bin_idx].set_edgecolor('darkred')
                             patches[bin_idx].set_linewidth(2)
                         
-                        # Add large arrow pointing down at current unit position
-                        y_max = ax.get_ylim()[1]
-                        ax.annotate('', xy=(current_value, y_max * 0.8), xytext=(current_value, y_max * 0.95),
-                                   arrowprops=dict(arrowstyle='->', lw=4, color='red', alpha=0.9),
-                                   zorder=15)
+                        # Add large BLACK triangle arrow head pointing DOWN - overlapping histogram
+                        bin_height = patches[bin_idx].get_height() if 0 <= bin_idx < len(patches) else 0.5
+                        triangle_y = bin_height + 0.02  # Slight overlap with histogram
+                        ax.scatter(current_value, triangle_y, marker='v', s=200, color='black', 
+                                  alpha=1.0, zorder=15, edgecolors='white', linewidths=1)
                 
                 # Add threshold lines above histogram at 0.9 - MUCH MORE EXTENDED x-limits for text
                 x_lim = ax.get_xlim()
@@ -3008,6 +3008,10 @@ class InteractiveUnitQualityGUI:
             
             ax.spines['right'].set_visible(False)
             ax.spines['top'].set_visible(False)
+            
+            # REFINED Y-AXIS: Only show ticks and labels at 0 and 1
+            ax.set_yticks([0, 1])
+            ax.set_yticklabels(['0', '1'])
             ax.tick_params(labelsize=14)
 
     def update_display(self):
