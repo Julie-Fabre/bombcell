@@ -2156,9 +2156,9 @@ class InteractiveUnitQualityGUI:
                         # Other units: smaller, no outline
                         ax.scatter(log_fr, depth, c=[color], s=30, alpha=0.7, zorder=5)
                 
-                ax.set_xlabel('Log₁₀ firing rate (sp/s)', fontsize=13, fontfamily="DejaVu Sans")
-                ax.set_ylabel('Depth from tip of probe (μm)', fontsize=13, fontfamily="DejaVu Sans")
-                ax.tick_params(labelsize=13)
+                ax.set_xlabel('Log₁₀ firing rate (sp/s)', fontsize=16, fontfamily="DejaVu Sans")
+                ax.set_ylabel('Depth from tip of probe (μm)', fontsize=16, fontfamily="DejaVu Sans")
+                ax.tick_params(labelsize=14)
                 # Y-axis is now flipped via data transformation (no invert_yaxis needed)
                 
                 # Add depth arrow on the left side
@@ -2180,11 +2180,11 @@ class InteractiveUnitQualityGUI:
                 label_x = arrow_x - x_range * 0.02  # To the left of arrow
                 
                 ax.text(label_x, arrow_start_y - y_range * 0.02, 'deepest in the brain\n = tip of the probe', 
-                       ha='center', va='top', fontsize=9, fontfamily="DejaVu Sans",
+                       ha='center', va='top', fontsize=14, fontfamily="DejaVu Sans",
                        rotation=0, clip_on=False)
                        
                 ax.text(label_x, arrow_end_y + y_range * 0.02, 'most superficial', 
-                       ha='center', va='bottom', fontsize=9, fontfamily="DejaVu Sans",
+                       ha='center', va='bottom', fontsize=14, fontfamily="DejaVu Sans",
                        rotation=0, clip_on=False)
                 
                 # Add legend
@@ -2193,7 +2193,7 @@ class InteractiveUnitQualityGUI:
                     legend_elements.append(plt.Line2D([0], [0], marker='o', color='w', 
                                                     markerfacecolor=color, markersize=8, 
                                                     label=class_name))
-                ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+                ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=12)
                 
                 # Add click interactivity to navigate to units
                 def on_location_click(event):
