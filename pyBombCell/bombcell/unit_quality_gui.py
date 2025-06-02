@@ -1984,7 +1984,7 @@ class InteractiveUnitQualityGUI:
                 ylim = ax.get_ylim()
                 xlim = ax.get_xlim()
                 x_range = xlim[1] - xlim[0]
-                arrow_x = xlim[0] - x_range * 0.5  # Much further left to avoid x-axis tick labels
+                arrow_x = xlim[0] - x_range * 1.0  # Much more to the left
                 
                 # Draw arrow spanning most of the plot height (slightly shorter)
                 y_range = ylim[1] - ylim[0]
@@ -1998,7 +1998,7 @@ class InteractiveUnitQualityGUI:
                 # Add labels below the arrow and to the left
                 label_x = arrow_x - x_range * 0.02  # To the left of arrow
                 
-                ax.text(label_x, arrow_start_y - y_range * 0.02, 'deepest in the brain\ntip of the probe', 
+                ax.text(label_x, arrow_start_y - y_range * 0.02, 'deepest in the brain\n = tip of the probe', 
                        ha='center', va='top', fontsize=9, fontfamily="DejaVu Sans",
                        rotation=0, clip_on=False)
                        
@@ -2987,7 +2987,7 @@ class UnitQualityGUI:
             ylim = self.ax_location.get_ylim()
             xlim = self.ax_location.get_xlim()
             x_range = xlim[1] - xlim[0]
-            arrow_x = xlim[0] - x_range * 0.5  # Much further left to avoid x-axis tick labels
+            arrow_x = xlim[0] - x_range * 1.0  # Much more to the left
             
             # Draw arrow spanning most of the plot height (slightly shorter)
             y_range = ylim[1] - ylim[0]
