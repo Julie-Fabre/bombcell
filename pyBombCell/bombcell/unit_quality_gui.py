@@ -791,44 +791,48 @@ class InteractiveUnitQualityGUI:
         with self.plot_output:
             clear_output(wait=True)
             
-            # Create figure with tighter grid spacing 
-            fig = plt.figure(figsize=(20, 14))
+            # Create figure with extended width for histograms
+            fig = plt.figure(figsize=(30, 14))
             fig.patch.set_facecolor('white')
             
-            # 1. Unit location plot (left column) - subplot(10, 15, spans all rows)
-            ax_location = plt.subplot2grid((10, 15), (0, 0), rowspan=10, colspan=1)
+            # LEFT HALF - Original GUI (columns 0-14)
+            # 1. Unit location plot (left column)
+            ax_location = plt.subplot2grid((10, 30), (0, 0), rowspan=10, colspan=1)
             self.plot_unit_location(ax_location, unit_data)
             
             # 2. Template waveforms - rows 0-1
-            ax_template = plt.subplot2grid((10, 15), (0, 2), rowspan=2, colspan=6)
+            ax_template = plt.subplot2grid((10, 30), (0, 2), rowspan=2, colspan=6)
             self.plot_template_waveform(ax_template, unit_data)
             
-            # 3. Raw waveforms - rows 0-1
-            ax_raw = plt.subplot2grid((10, 15), (0, 9), rowspan=2, colspan=6)
+            # 3. Raw waveforms - rows 0-1  
+            ax_raw = plt.subplot2grid((10, 30), (0, 9), rowspan=2, colspan=6)
             self.plot_raw_waveforms(ax_raw, unit_data)
             
-            # 4. Spatial decay - rows 3-4 (uniform gap after row 2)
-            ax_spatial = plt.subplot2grid((10, 15), (3, 2), rowspan=2, colspan=6)
+            # 4. Spatial decay - rows 3-4
+            ax_spatial = plt.subplot2grid((10, 30), (3, 2), rowspan=2, colspan=6)
             self.plot_spatial_decay(ax_spatial, unit_data)
             
-            # 5. ACG - rows 3-4 (uniform gap after row 2)
-            ax_acg = plt.subplot2grid((10, 15), (3, 9), rowspan=2, colspan=6)
+            # 5. ACG - rows 3-4
+            ax_acg = plt.subplot2grid((10, 30), (3, 9), rowspan=2, colspan=6)
             self.plot_autocorrelogram(ax_acg, unit_data)
             
-            # 6. Amplitudes over time - rows 6-7 (uniform gap after row 5)
-            ax_amplitude = plt.subplot2grid((10, 15), (6, 2), rowspan=2, colspan=10)
+            # 6. Amplitudes over time - rows 6-7
+            ax_amplitude = plt.subplot2grid((10, 30), (6, 2), rowspan=2, colspan=10)
             self.plot_amplitudes_over_time(ax_amplitude, unit_data)
             
-            # 6b. Time bin metrics - row 9 (uniform gap after row 8)
-            ax_bin_metrics = plt.subplot2grid((10, 15), (9, 2), rowspan=1, colspan=10, sharex=ax_amplitude)
+            # 6b. Time bin metrics - row 9
+            ax_bin_metrics = plt.subplot2grid((10, 30), (9, 2), rowspan=1, colspan=10, sharex=ax_amplitude)
             self.plot_time_bin_metrics(ax_bin_metrics, unit_data)
             
-            # 7. Amplitude fit - positioned to match amplitude height (rows 6-7)
-            ax_amp_fit = plt.subplot2grid((10, 15), (6, 13), rowspan=2, colspan=2)
+            # 7. Amplitude fit - rows 6-7
+            ax_amp_fit = plt.subplot2grid((10, 30), (6, 13), rowspan=2, colspan=2)
             self.plot_amplitude_fit(ax_amp_fit, unit_data)
             
-            # Adjust subplot margins manually with tighter spacing
-            plt.subplots_adjust(left=0.06, right=0.83, top=0.95, bottom=0.08, hspace=0.15, wspace=0.15)
+            # RIGHT HALF - Histogram panel (columns 16-29)
+            self.plot_histograms_panel(fig, unit_data)
+            
+            # Adjust subplot margins manually with MORE spacing for histograms
+            plt.subplots_adjust(left=0.03, right=0.98, top=0.95, bottom=0.08, hspace=0.4, wspace=0.4)
             plt.show()
             
     def plot_template_waveform(self, ax, unit_data):
@@ -2683,6 +2687,306 @@ class InteractiveUnitQualityGUI:
         end = min(n_channels, peak_channel + 6)
         return list(range(start, end))
     
+    def plot_histograms_panel(self, fig, unit_data):
+        """Plot histogram distributions showing where current unit sits - exact copy of plot_functions.py"""
+        # Preprocessing - handle inf values
+        if 'peak1ToPeak2Ratio' in self.quality_metrics:
+            self.quality_metrics['peak1ToPeak2Ratio'][self.quality_metrics['peak1ToPeak2Ratio'] == np.inf] = np.nan
+        if 'troughToPeak2Ratio' in self.quality_metrics:
+            self.quality_metrics['troughToPeak2Ratio'][self.quality_metrics['troughToPeak2Ratio'] == np.inf] = np.nan
+
+        # Define MATLAB-style color matrices - exact copy
+        red_colors = np.array([
+            [0.8627, 0.0784, 0.2353],  # Crimson
+            [1.0000, 0.1412, 0.0000],  # Scarlet
+            [0.7255, 0.0000, 0.0000],  # Cherry
+            [0.5020, 0.0000, 0.1255],  # Burgundy
+            [0.5020, 0.0000, 0.0000],  # Maroon
+            [0.8039, 0.3608, 0.3608],  # Indian Red
+        ])
+
+        blue_colors = np.array([
+            [0.2549, 0.4118, 0.8824],  # Royal Blue
+            [0.0000, 0.0000, 0.5020],  # Navy Blue
+        ])
+
+        darker_yellow_orange_colors = np.array([
+            [0.7843, 0.7843, 0.0000],  # Dark Yellow
+            [0.8235, 0.6863, 0.0000],  # Dark Golden Yellow
+            [0.8235, 0.5294, 0.0000],  # Dark Orange
+            [0.8039, 0.4118, 0.3647],  # Dark Coral
+            [0.8235, 0.3176, 0.2275],  # Dark Tangerine
+            [0.8235, 0.6157, 0.6510],  # Dark Salmon
+            [0.7882, 0.7137, 0.5765],  # Dark Goldenrod
+            [0.8235, 0.5137, 0.3922],  # Dark Light Coral
+            [0.7569, 0.6196, 0.0000],  # Darker Goldenrod
+            [0.8235, 0.4510, 0.0000],  # Darker Orange
+        ])
+
+        color_mtx = np.vstack([red_colors, blue_colors, darker_yellow_orange_colors])
+
+        # Define metrics in MATLAB order - exact copy
+        metric_names = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 
+                       'scndPeakToTroughRatio', 'spatialDecaySlope', 'peak1ToPeak2Ratio', 'mainPeakToTroughRatio',
+                       'rawAmplitude', 'signalToNoiseRatio', 'fractionRPVs_estimatedTauR', 'nSpikes', 
+                       'presenceRatio', 'percentageSpikesMissing_gaussian', 'maxDriftEstimate', 
+                       'isolationDistance', 'Lratio']
+
+        metric_names_short = ['# peaks', '# troughs', 'baseline flatness', 'waveform duration',
+                             'peak_2/trough', 'spatial decay', 'peak_1/peak_2', 'peak_{main}/trough',
+                             'amplitude', 'SNR', 'frac. RPVs', '# spikes',
+                             'presence ratio', '% spikes missing', 'maximum drift',
+                             'isolation dist.', 'L-ratio']
+
+        # Define thresholds - exact copy
+        param = self.param
+        metric_thresh1 = [param.get('maxNPeaks'), param.get('maxNTroughs'), param.get('maxWvBaselineFraction'),
+                         param.get('minWvDuration'), param.get('maxScndPeakToTroughRatio_noise'),
+                         param.get('minSpatialDecaySlope') if param.get('spDecayLinFit') else param.get('minSpatialDecaySlopeExp'),
+                         param.get('maxPeak1ToPeak2Ratio_nonSomatic'), param.get('maxMainPeakToTroughRatio_nonSomatic'),
+                         None, None, param.get('maxRPVviolations'), None, None, param.get('maxPercSpikesMissing'),
+                         param.get('maxDrift'), param.get('isoDmin'), None]
+
+        metric_thresh2 = [None, None, None, param.get('maxWvDuration'), None,
+                         None if param.get('spDecayLinFit') else param.get('maxSpatialDecaySlopeExp'),
+                         None, None, param.get('minAmplitude'), param.get('min_SNR'),
+                         None, param.get('minNumSpikes'), param.get('minPresenceRatio'), None, None,
+                         None, param.get('lratioMax')]
+
+        # Define plot conditions - exact copy
+        plot_conditions = [True, True, True, True, True,
+                          param.get('computeSpatialDecay', False),
+                          True, True,
+                          param.get('extractRaw', False) and np.all(~np.isnan(self.quality_metrics.get('rawAmplitude', [np.nan]))),
+                          param.get('extractRaw', False) and np.all(~np.isnan(self.quality_metrics.get('signalToNoiseRatio', [np.nan]))),
+                          True, True, True, True,
+                          param.get('computeDrift', False),
+                          param.get('computeDistanceMetrics', False),
+                          param.get('computeDistanceMetrics', False)]
+
+        # Define line colors for thresholds (MATLAB style) - exact copy
+        metric_line_cols = np.array([
+            [0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0],  # nPeaks
+            [0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0],  # nTroughs
+            [0.2, 0.2, 0.2, 1, 0, 0, 1, 0, 0],  # baseline flatness
+            [1, 0, 0, 0.2, 0.2, 0.2, 1, 0, 0],  # waveform duration
+            [0.2, 0.2, 0.2, 1, 0, 0, 1, 0, 0],  # peak2/trough
+            [1, 0, 0, 0.2, 0.2, 0.2, 1, 0, 0],  # spatial decay
+            [0.2, 0.2, 0.2, 0.25, 0.41, 0.88, 0, 0, 0],  # peak1/peak2
+            [0.2, 0.2, 0.2, 0.25, 0.41, 0.88, 0, 0, 0],  # peak_main/trough
+            [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # amplitude
+            [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # SNR
+            [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # frac RPVs
+            [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # nSpikes
+            [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # presence ratio
+            [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # % spikes missing
+            [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # max drift
+            [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # isolation dist
+            [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # L-ratio
+        ])
+
+        # Filter metrics that should be plotted - exact copy
+        valid_metrics = []
+        valid_colors = []
+        valid_labels = []
+        valid_thresh1 = []
+        valid_thresh2 = []
+        valid_line_cols = []
+        
+        for i, (metric_name, condition) in enumerate(zip(metric_names, plot_conditions)):
+            if condition and metric_name in self.quality_metrics:
+                valid_metrics.append(metric_name)
+                valid_colors.append(color_mtx[i % len(color_mtx)])
+                valid_labels.append(metric_names_short[i])
+                valid_thresh1.append(metric_thresh1[i])
+                valid_thresh2.append(metric_thresh2[i])
+                valid_line_cols.append(metric_line_cols[i])
+
+        # Calculate grid layout for right half - FEWER columns for MORE SPACE
+        num_subplots = len(valid_metrics)
+        if num_subplots <= 2:
+            num_cols = 1  # Single column for maximum space
+            num_rows = num_subplots
+        elif num_subplots <= 6:
+            num_cols = 2  # Two columns max for better visibility
+            num_rows = int(np.ceil(num_subplots / num_cols))
+        else:
+            num_cols = 3  # Three columns max, never 4
+            num_rows = int(np.ceil(num_subplots / num_cols))
+
+        # Create histogram subplots on right half using subplot2grid
+        for i, metric_name in enumerate(valid_metrics):
+            row_id = i // num_cols
+            col_id = i % num_cols
+            
+            # Create subplot on the right half - SIMPLE and RELIABLE positioning
+            # Use simple fixed layout that always works
+            if num_cols == 1:
+                # Single column - use full width
+                ax = plt.subplot2grid((10, 30), (row_id*3, 16), rowspan=3, colspan=12)
+            elif num_cols == 2:
+                # Two columns - split width
+                col_width = 6
+                ax = plt.subplot2grid((10, 30), (row_id*3, 16 + col_id*7), rowspan=3, colspan=col_width)
+            else:  # num_cols == 3
+                # Three columns - smaller width
+                col_width = 4
+                ax = plt.subplot2grid((10, 30), (row_id*3, 16 + col_id*5), rowspan=2, colspan=col_width)
+            
+            metric_data = self.quality_metrics[metric_name]
+            metric_data = metric_data[~np.isnan(metric_data)]
+            
+            if len(metric_data) > 0:
+                # Plot histogram with probability normalization (MATLAB style) - exact copy
+                if metric_name in ['nPeaks', 'nTroughs']:
+                    # Use integer bins for discrete metrics
+                    bins = np.arange(np.min(metric_data), np.max(metric_data) + 2) - 0.5
+                elif metric_name == 'waveformDuration_peakTrough':
+                    # Use fewer bins for waveform duration like MATLAB
+                    bins = 20
+                else:
+                    bins = 40
+                    
+                n, bins_out, patches = ax.hist(metric_data, bins=bins, density=True, 
+                                             color=valid_colors[i], alpha=0.7)
+                
+                # Convert to probability (like MATLAB's 'Normalization', 'probability')
+                if metric_name not in ['nPeaks', 'nTroughs']:
+                    bin_width = bins_out[1] - bins_out[0]
+                    for patch in patches:
+                        patch.set_height(patch.get_height() * bin_width)
+                
+                # Add current unit highlighting with ARROW instead of line
+                current_unit_idx = self.current_unit_idx
+                if current_unit_idx < len(self.quality_metrics[metric_name]):
+                    current_value = self.quality_metrics[metric_name][current_unit_idx]
+                    if not np.isnan(current_value):
+                        # Highlight the bin containing current unit
+                        bin_idx = np.digitize(current_value, bins_out) - 1
+                        if 0 <= bin_idx < len(patches):
+                            patches[bin_idx].set_facecolor('red')
+                            patches[bin_idx].set_alpha(0.9)
+                            patches[bin_idx].set_edgecolor('darkred')
+                            patches[bin_idx].set_linewidth(2)
+                        
+                        # Add large arrow pointing down at current unit position
+                        y_max = ax.get_ylim()[1]
+                        ax.annotate('', xy=(current_value, y_max * 0.8), xytext=(current_value, y_max * 0.95),
+                                   arrowprops=dict(arrowstyle='->', lw=4, color='red', alpha=0.9),
+                                   zorder=15)
+                
+                # Add threshold lines above histogram at 0.9 - EXTENDED x-limits for text
+                x_lim = ax.get_xlim()
+                # Extend x-axis MORE for text labels, especially for waveform duration and spatial decay
+                x_range = x_lim[1] - x_lim[0]
+                if metric_name in ['waveformDuration_peakTrough', 'spatialDecaySlope']:
+                    # Extra space for these metrics that need more room for "Noise" text
+                    ax.set_xlim([x_lim[0] - 0.25*x_range, x_lim[1] + 0.25*x_range])
+                else:
+                    ax.set_xlim([x_lim[0] - 0.15*x_range, x_lim[1] + 0.15*x_range])
+                x_lim = ax.get_xlim()
+                line_y = 0.9  # Position lines at 0.9
+                
+                thresh1 = valid_thresh1[i]
+                thresh2 = valid_thresh2[i]
+                line_colors = valid_line_cols[i].reshape(3, 3)
+                
+                if metric_name in ['nPeaks', 'nTroughs']:
+                    binsize_offset = 0.5
+                else:
+                    binsize_offset = (bins_out[1] - bins_out[0]) / 2 if len(bins_out) > 1 else 0
+                
+                # Threshold logic - exact copy from plot_functions.py
+                if thresh1 is not None or thresh2 is not None:
+                    if thresh1 is not None and thresh2 is not None:
+                        # Add vertical lines for thresholds
+                        ax.axvline(thresh1, color='k', linewidth=2)
+                        ax.axvline(thresh2, color='k', linewidth=2)
+                        # Add horizontal colored lines
+                        ax.plot([x_lim[0], thresh1], 
+                               [line_y, line_y], color=line_colors[0], linewidth=6)
+                        ax.plot([thresh1, thresh2], 
+                               [line_y, line_y], color=line_colors[1], linewidth=6)
+                        ax.plot([thresh2, x_lim[1]], 
+                               [line_y, line_y], color=line_colors[2], linewidth=6)
+                        
+                        # Add classification labels with arrows
+                        midpoint1 = (x_lim[0] + thresh1) / 2
+                        midpoint2 = (thresh1 + thresh2) / 2
+                        midpoint3 = (thresh2 + x_lim[1]) / 2
+                        text_y = 0.95  # Position text at 0.95
+                        
+                        # Determine metric type based on metric name
+                        noise_metrics = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope']
+                        nonsomatic_metrics = ['peak1ToPeak2Ratio', 'mainPeakToTroughRatio']
+                        
+                        if metric_name in noise_metrics:
+                            # Noise metrics: both thresholds -> Noise, Neuronal, Noise
+                            ax.text(midpoint1, text_y, '↓ Noise', ha='center', fontsize=14, 
+                                   color=line_colors[0], weight='bold')
+                            ax.text(midpoint2, text_y, '↓ Neuronal', ha='center', fontsize=14, 
+                                   color=line_colors[1], weight='bold')
+                            ax.text(midpoint3, text_y, '↓ Noise', ha='center', fontsize=14, 
+                                   color=line_colors[2], weight='bold')
+                        elif metric_name in nonsomatic_metrics:
+                            # Non-somatic metrics: both thresholds -> Non-somatic, Somatic, Non-somatic
+                            ax.text(midpoint1, text_y, '↓ Non-somatic', ha='center', fontsize=14, 
+                                   color=line_colors[0], weight='bold')
+                            ax.text(midpoint2, text_y, '↓ Somatic', ha='center', fontsize=14, 
+                                   color=line_colors[1], weight='bold')
+                            ax.text(midpoint3, text_y, '↓ Non-somatic', ha='center', fontsize=14, 
+                                   color=line_colors[2], weight='bold')
+                        else:
+                            # MUA metrics: both thresholds -> MUA, Good, MUA
+                            ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=14, 
+                                   color=line_colors[0], weight='bold')
+                            ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=14, 
+                                   color=line_colors[1], weight='bold')
+                            ax.text(midpoint3, text_y, '↓ MUA', ha='center', fontsize=14, 
+                                   color=line_colors[2], weight='bold')
+                        
+                    elif thresh1 is not None:
+                        # Single threshold logic - exact copy but smaller fonts
+                        ax.axvline(thresh1, color='k', linewidth=2)
+                        ax.plot([x_lim[0], thresh1], 
+                               [line_y, line_y], color=line_colors[0], linewidth=6)
+                        ax.plot([thresh1, x_lim[1]], 
+                               [line_y, line_y], color=line_colors[1], linewidth=6)
+                        
+                        midpoint1 = (x_lim[0] + thresh1) / 2
+                        midpoint2 = (thresh1 + x_lim[1]) / 2
+                        text_y = 0.95
+                        
+                        noise_metrics = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope']
+                        nonsomatic_metrics = ['peak1ToPeak2Ratio', 'mainPeakToTroughRatio']
+                        
+                        if metric_name in noise_metrics:
+                            ax.text(midpoint1, text_y, '↓ Neuronal', ha='center', fontsize=14, 
+                                   color=line_colors[0], weight='bold')
+                            ax.text(midpoint2, text_y, '↓ Noise', ha='center', fontsize=14, 
+                                   color=line_colors[1], weight='bold')
+                        elif metric_name in nonsomatic_metrics:
+                            ax.text(midpoint1, text_y, '↓ Somatic', ha='center', fontsize=14, 
+                                   color=line_colors[0], weight='bold')
+                            ax.text(midpoint2, text_y, '↓ Non-somatic', ha='center', fontsize=14, 
+                                   color=line_colors[1], weight='bold')
+                        else:
+                            ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=14, 
+                                   color=line_colors[0], weight='bold')
+                            ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=14, 
+                                   color=line_colors[1], weight='bold')
+
+                # Set histogram limits from 0 to 1.1 to show classification lines and text
+                ax.set_ylim([0, 1.1])
+                
+            ax.set_xlabel(valid_labels[i], fontsize=16, fontweight='bold')
+            if i == 0:
+                ax.set_ylabel('frac. units', fontsize=16, fontweight='bold')
+            
+            ax.spines['right'].set_visible(False)
+            ax.spines['top'].set_visible(False)
+            ax.tick_params(labelsize=14)
+
     def update_display(self):
         """Update the entire display"""
         self.update_unit_info()
@@ -2731,35 +3035,46 @@ class UnitQualityGUI:
         self.fig.canvas.mpl_connect('key_press_event', self.on_key_press)
         
     def setup_matlab_layout(self):
-        """Setup the exact MATLAB subplot layout (6x13 grid)"""
+        """Setup the MATLAB subplot layout with histogram panel on right (6x24 grid)"""
         
-        # 1. Unit location plot (left column) - subplot(6, 13, [1, 14, 27, 40, 53, 66])
-        self.ax_location = plt.subplot2grid((6, 13), (0, 0), rowspan=6, colspan=1)
+        # LEFT HALF - Original GUI (columns 0-11)
+        # 1. Unit location plot (left column)
+        self.ax_location = plt.subplot2grid((6, 24), (0, 0), rowspan=6, colspan=1)
         self.setup_location_plot()
         
-        # 2. Template waveforms - subplot(6, 13, [2:7, 15:20])
-        self.ax_template = plt.subplot2grid((6, 13), (0, 1), rowspan=2, colspan=6)
+        # 2. Template waveforms
+        self.ax_template = plt.subplot2grid((6, 24), (0, 1), rowspan=2, colspan=5)
         self.setup_template_plot()
         
-        # 3. Raw waveforms - subplot(6, 13, [8:13, 21:26])
-        self.ax_raw = plt.subplot2grid((6, 13), (0, 7), rowspan=2, colspan=6)
+        # 3. Raw waveforms
+        self.ax_raw = plt.subplot2grid((6, 24), (0, 6), rowspan=2, colspan=5)
         self.setup_raw_plot()
         
-        # 4. Spatial decay - subplot(6, 13, 29:33)
-        self.ax_spatial = plt.subplot2grid((6, 13), (2, 1), rowspan=2, colspan=6)
+        # 4. Spatial decay
+        self.ax_spatial = plt.subplot2grid((6, 24), (2, 1), rowspan=2, colspan=5)
         self.setup_spatial_plot()
         
-        # 5. ACG - subplot(6, 13, 35:39)
-        self.ax_acg = plt.subplot2grid((6, 13), (2, 7), rowspan=2, colspan=6)
+        # 5. ACG
+        self.ax_acg = plt.subplot2grid((6, 24), (2, 6), rowspan=2, colspan=5)
         self.setup_acg_plot()
         
-        # 6. Amplitudes over time - subplot(6, 13, [55:57, 68:70, 74:76])
-        self.ax_amplitude = plt.subplot2grid((6, 13), (4, 1), rowspan=2, colspan=9)
+        # 6. Amplitudes over time
+        self.ax_amplitude = plt.subplot2grid((6, 24), (4, 1), rowspan=2, colspan=8)
         self.setup_amplitude_plot()
         
-        # 7. Amplitude fit - subplot(6, 13, [78])
-        self.ax_amp_fit = plt.subplot2grid((6, 13), (4, 11), rowspan=2, colspan=2)
+        # 7. Amplitude fit
+        self.ax_amp_fit = plt.subplot2grid((6, 24), (4, 9), rowspan=2, colspan=2)
         self.setup_amplitude_fit_plot()
+        
+        # RIGHT HALF - Histogram panel (columns 12-23)
+        # Create grid of histogram plots (3 rows x 4 columns = 12 histograms)
+        self.histogram_axes = []
+        for row in range(3):
+            for col in range(4):
+                ax = plt.subplot2grid((6, 24), (row*2, 12 + col*3), rowspan=2, colspan=3)
+                self.histogram_axes.append(ax)
+        
+        self.setup_histogram_plots()
         
     def setup_location_plot(self):
         """Setup unit location on probe plot"""
@@ -2811,6 +3126,35 @@ class UnitQualityGUI:
     def setup_amplitude_fit_plot(self):
         """Setup amplitude fit plot"""
         self.ax_amp_fit.set_title('Scaling factor fit', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        
+    def setup_histogram_plots(self):
+        """Setup histogram distribution plots"""
+        # Define metrics to plot (based on MATLAB bombcell order)
+        self.histogram_metrics = [
+            ('nPeaks', '# Peaks'),
+            ('nTroughs', '# Troughs'), 
+            ('waveformBaselineFlatness', 'Baseline Flatness'),
+            ('waveformDuration_peakTrough', 'Waveform Duration'),
+            ('scndPeakToTroughRatio', 'Peak₂/Trough'),
+            ('spatialDecaySlope', 'Spatial Decay'),
+            ('peak1ToPeak2Ratio', 'Peak₁/Peak₂'),
+            ('mainPeakToTroughRatio', 'Peak_main/Trough'),
+            ('rawAmplitude', 'Amplitude'),
+            ('signalToNoiseRatio', 'SNR'),
+            ('fractionRPVs_estimatedTauR', 'Frac. RPVs'),
+            ('presenceRatio', 'Presence Ratio')
+        ]
+        
+        # Setup each histogram axis
+        for i, ax in enumerate(self.histogram_axes):
+            if i < len(self.histogram_metrics):
+                metric_key, title = self.histogram_metrics[i]
+                ax.set_title(title, fontsize=10, fontweight='bold', fontfamily="DejaVu Sans")
+            else:
+                ax.set_title(f'Histogram {i+1}', fontsize=10, fontweight='bold', fontfamily="DejaVu Sans")
+            
+            ax.tick_params(labelsize=8)
+            ax.grid(True, alpha=0.3)
         
     def setup_navigation(self):
         """Setup navigation buttons at bottom"""
@@ -2890,8 +3234,9 @@ class UnitQualityGUI:
             return
             
         # Clear all axes
-        for ax in [self.ax_location, self.ax_template, self.ax_raw, self.ax_spatial, 
-                  self.ax_acg, self.ax_amplitude, self.ax_amp_fit]:
+        main_axes = [self.ax_location, self.ax_template, self.ax_raw, self.ax_spatial, 
+                    self.ax_acg, self.ax_amplitude, self.ax_amp_fit]
+        for ax in main_axes + self.histogram_axes:
             ax.clear()
             
         # Re-setup axes after clearing
@@ -2902,6 +3247,7 @@ class UnitQualityGUI:
         self.setup_acg_plot()
         self.setup_amplitude_plot()
         self.setup_amplitude_fit_plot()
+        self.setup_histogram_plots()
         
         # Update plots
         self.plot_unit_location(unit_data)
@@ -2911,6 +3257,7 @@ class UnitQualityGUI:
         self.plot_acg(unit_data)
         self.plot_amplitudes(unit_data)
         self.plot_amplitude_fit(unit_data)
+        self.plot_histograms(unit_data)
         
         # Update main title
         unit_type_str = self.get_unit_type_string(self.current_unit_idx)
@@ -3130,6 +3477,103 @@ class UnitQualityGUI:
         fit_x = len(amplitudes) * np.diff(bins)[0] * stats.norm.pdf(fit_y, mu, sigma)
         self.ax_amp_fit.plot(fit_x, fit_y, color='gold', linewidth=2)
         
+    def plot_histograms(self, unit_data):
+        """Plot histogram distributions showing where current unit sits"""
+        current_unit_idx = self.current_unit_idx
+        
+        # Plot histogram for each metric
+        for i, (metric_key, title) in enumerate(self.histogram_metrics):
+            if i >= len(self.histogram_axes):
+                break
+                
+            ax = self.histogram_axes[i]
+            
+            if metric_key in self.quality_metrics:
+                # Get all values for this metric
+                all_values = self.quality_metrics[metric_key]
+                
+                # Remove invalid values
+                valid_mask = ~np.isnan(all_values) & ~np.isinf(all_values)
+                valid_values = all_values[valid_mask]
+                
+                if len(valid_values) > 5:  # Need enough data for histogram
+                    # Plot histogram of all units
+                    n_bins = min(25, max(8, len(valid_values)//4))
+                    counts, bins, patches = ax.hist(valid_values, bins=n_bins, 
+                                                   alpha=0.7, color='lightblue', 
+                                                   edgecolor='black', linewidth=0.3)
+                    
+                    # Highlight current unit if valid
+                    if current_unit_idx < len(all_values) and valid_mask[current_unit_idx]:
+                        current_value = all_values[current_unit_idx]
+                        
+                        # Add vertical line for current unit
+                        ax.axvline(current_value, color='red', linewidth=2, 
+                                  label=f'{current_value:.3f}')
+                        
+                        # Color the bin containing current unit
+                        bin_idx = np.digitize(current_value, bins) - 1
+                        if 0 <= bin_idx < len(patches):
+                            patches[bin_idx].set_facecolor('red')
+                            patches[bin_idx].set_alpha(0.8)
+                    
+                    # Add threshold lines based on parameters
+                    param = self.param
+                    threshold_info = {
+                        'nPeaks': (param.get('maxNPeaks'), 'max'),
+                        'nTroughs': (param.get('maxNTroughs'), 'max'),
+                        'waveformBaselineFlatness': (param.get('maxWvBaselineFraction'), 'max'),
+                        'waveformDuration_peakTrough': [(param.get('minWvDuration'), 'min'), (param.get('maxWvDuration'), 'max')],
+                        'scndPeakToTroughRatio': (param.get('maxScndPeakToTroughRatio_noise'), 'max'),
+                        'spatialDecaySlope': (param.get('minSpatialDecaySlope'), 'min'),
+                        'peak1ToPeak2Ratio': (param.get('maxPeak1ToPeak2Ratio_nonSomatic'), 'max'),
+                        'mainPeakToTroughRatio': (param.get('maxMainPeakToTroughRatio_nonSomatic'), 'max'),
+                        'rawAmplitude': (param.get('minAmplitude'), 'min'),
+                        'signalToNoiseRatio': (param.get('min_SNR'), 'min'),
+                        'fractionRPVs_estimatedTauR': (param.get('maxRPVviolations'), 'max'),
+                        'presenceRatio': (param.get('minPresenceRatio'), 'min')
+                    }
+                    
+                    if metric_key in threshold_info:
+                        thresh_data = threshold_info[metric_key]
+                        if isinstance(thresh_data, list):
+                            # Multiple thresholds
+                            for threshold, thresh_type in thresh_data:
+                                if threshold is not None:
+                                    color = 'green' if thresh_type == 'min' else 'orange'
+                                    ax.axvline(threshold, color=color, linewidth=1.5, 
+                                             linestyle='--', alpha=0.7)
+                        else:
+                            threshold, thresh_type = thresh_data
+                            if threshold is not None:
+                                color = 'green' if thresh_type == 'min' else 'orange'
+                                ax.axvline(threshold, color=color, linewidth=1.5, 
+                                         linestyle='--', alpha=0.7)
+                    
+                    # Set labels and formatting (compact for small plots)
+                    ax.set_xlabel(title, fontsize=8, fontfamily="DejaVu Sans")
+                    ax.set_ylabel('Count', fontsize=7, fontfamily="DejaVu Sans")
+                    ax.tick_params(labelsize=6)
+                    
+                    # Add current unit value as text
+                    if current_unit_idx < len(all_values) and valid_mask[current_unit_idx]:
+                        current_value = all_values[current_unit_idx]
+                        ax.text(0.98, 0.95, f'{current_value:.3f}', 
+                               transform=ax.transAxes, fontsize=7, 
+                               verticalalignment='top', horizontalalignment='right',
+                               fontfamily="DejaVu Sans", color='red', fontweight='bold',
+                               bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+                else:
+                    # Not enough data
+                    ax.text(0.5, 0.5, f'{title}\n(insufficient data)', 
+                           ha='center', va='center', transform=ax.transAxes,
+                           fontsize=8, fontfamily="DejaVu Sans")
+            else:
+                # Metric not available
+                ax.text(0.5, 0.5, f'{title}\n(not computed)', 
+                       ha='center', va='center', transform=ax.transAxes,
+                       fontsize=8, fontfamily="DejaVu Sans")
+    
     def get_unit_type_string(self, unit_idx):
         """Get unit type string"""
         if self.unit_types is not None and unit_idx < len(self.unit_types):
