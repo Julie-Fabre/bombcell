@@ -1072,30 +1072,46 @@ class InteractiveUnitQualityGUI:
         # Calculate how many rows of plots we need
         rows_of_plots = (num_subplots + cols - 1) // cols
         
-        # Portrait-specific positioning: start at row 24 in 40-row grid, use 16 rows available - more spacing
-        available_rows = 16  # Rows 24-39 = 16 rows available
+        # Portrait-specific positioning: start HIGHER at row 21, closer to main GUI
+        available_rows = 19  # Rows 21-39 = 19 rows available
         
-        # Distribute plots evenly across available portrait space with MUCH MORE spacing
+        # Distribute plots higher up with good spacing
         if rows_of_plots == 1:
-            plot_positions = [24]
+            plot_positions = [21]
             plot_height = 8
         elif rows_of_plots == 2:
-            plot_positions = [24, 33]
-            plot_height = 5
+            plot_positions = [21, 31]  # Good spacing
+            plot_height = 6
         elif rows_of_plots == 3:
-            plot_positions = [24, 30, 36]
-            plot_height = 4
+            plot_positions = [21, 27, 33]  # Even spacing
+            plot_height = 5
         elif rows_of_plots == 4:
-            plot_positions = [24, 28, 32, 36]
-            plot_height = 3
+            plot_positions = [21, 26, 31, 36]  # Even spacing
+            plot_height = 4
         else:
-            # Many rows - MUCH more spacing between rows (minimum 4 row gap)
-            plot_positions = [24 + i * 4 for i in range(rows_of_plots)]
-            plot_height = 2
+            # Many rows - even spacing
+            plot_positions = [21 + i * 4 for i in range(rows_of_plots)]
+            plot_height = 3
         
-        # Column positioning for portrait (20 columns total)
-        col_width = 20 // cols
-        col_start_positions = [i * col_width for i in range(cols)]
+        # Column positioning for portrait (20 columns total) - EVEN spacing between ALL histograms
+        if cols == 1:
+            col_width = 20
+            col_start_positions = [0]
+        elif cols == 2:
+            col_width = 9
+            col_start_positions = [0, 11]  # Even 2-column gap
+        elif cols == 3:
+            col_width = 6
+            col_start_positions = [0, 7, 14]  # Even 1-column gaps
+        elif cols == 4:
+            col_width = 4
+            col_start_positions = [0, 5, 10, 15]  # Even 1-column gaps
+        elif cols == 5:
+            col_width = 3
+            col_start_positions = [0, 4, 8, 12, 16]  # Even 1-column gaps
+        else:
+            col_width = 20 // cols
+            col_start_positions = [i * col_width for i in range(cols)]
         
         # Create histogram subplots
         for i, metric_name in enumerate(valid_metrics):
