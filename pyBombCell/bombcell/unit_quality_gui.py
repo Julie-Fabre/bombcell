@@ -924,23 +924,16 @@ class InteractiveUnitQualityGUI:
         self.plot_autocorrelogram(ax_acg, unit_data)
         
         # 6. Amplitudes over time
-        ax_amplitude = plt.subplot2grid((40, 20), (10, 2), rowspan=4, colspan=16)
+        ax_amplitude = plt.subplot2grid((40, 20), (10, 2), rowspan=4, colspan=14)
         self.plot_amplitudes_over_time(ax_amplitude, unit_data)
         
-        # 6b. Time bin metrics
-        ax_bin_metrics = plt.subplot2grid((40, 20), (15, 2), rowspan=2, colspan=16, sharex=ax_amplitude)
-        self.plot_time_bin_metrics(ax_bin_metrics, unit_data)
-        
-        # 7. Amplitude fit
-        ax_amp_fit = plt.subplot2grid((40, 20), (18, 2), rowspan=2, colspan=4)
+        # 7. Amplitude fit (NEXT TO amplitude over time plot)
+        ax_amp_fit = plt.subplot2grid((40, 20), (10, 16), rowspan=4, colspan=4)
         self.plot_amplitude_fit(ax_amp_fit, unit_data)
         
-        # 8. Amplitude histogram (place next to amplitude over time plot)
-        if (self.param.get('extractRaw', False) and 
-            'rawAmplitude' in self.quality_metrics and 
-            np.all(~np.isnan(self.quality_metrics.get('rawAmplitude', [np.nan])))):
-            ax_amp_hist = plt.subplot2grid((40, 20), (10, 18), rowspan=4, colspan=2)
-            self.plot_amplitude_histogram(ax_amp_hist, unit_data, 'rawAmplitude')
+        # 6b. Time bin metrics (SAME WIDTH as amplitude plot, but shorter height)
+        ax_bin_metrics = plt.subplot2grid((40, 20), (15, 2), rowspan=2, colspan=14, sharex=ax_amplitude)
+        self.plot_time_bin_metrics(ax_bin_metrics, unit_data)
         
         # BOTTOM SECTION - Histogram panel (rows 24-39, full width) - increased spacing
         self.plot_histograms_panel_portrait(fig, unit_data)
@@ -1056,8 +1049,7 @@ class InteractiveUnitQualityGUI:
         valid_line_cols = []
         
         for i, (metric_name, condition) in enumerate(zip(metric_names, plot_conditions)):
-            # Skip rawAmplitude since it's now positioned next to amplitude fit in portrait mode
-            if condition and metric_name in self.quality_metrics and metric_name != 'rawAmplitude':
+            if condition and metric_name in self.quality_metrics:
                 valid_metrics.append(metric_name)
                 valid_colors.append(color_mtx[i % len(color_mtx)])
                 valid_labels.append(metric_names_short[i])
@@ -2751,7 +2743,7 @@ class InteractiveUnitQualityGUI:
                     return 'blue' if val > max_ratio else 'black'
             
             # MUA metrics: orange if MUA, green if good
-            elif metric_name in ['rawAmplitude', 'signalToNoiseRatio', 'fractionRPVs_estimatedTauR', 'presenceRatio', 'maxDriftEstimate', 'percentageSpikesMissing_gaussian']:
+            elif metric_name in ['rawAmplitude', 'signalToNoiseRatio', 'fractionRPVs_eQtimatedTauR', 'presenceRatio', 'maxDriftEstimate', 'percentageSpikesMissing_gaussian']:
                 if metric_name == 'rawAmplitude':
                     min_amp = param.get('minAmplitude', 50)
                     return 'orange' if val < min_amp else 'green'
