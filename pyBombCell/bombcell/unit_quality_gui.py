@@ -900,8 +900,8 @@ class InteractiveUnitQualityGUI:
         # RIGHT HALF - Histogram panel (columns 16-29)
         self.plot_histograms_panel(fig, unit_data)
         
-        # Adjust subplot margins manually with MORE spacing for histograms
-        plt.subplots_adjust(left=0.03, right=0.98, top=0.95, bottom=0.08, hspace=0.4, wspace=0.4)
+        # Adjust subplot margins to eliminate gap with title/buttons - seamless layout
+        plt.subplots_adjust(left=0.03, right=0.98, top=0.99, bottom=0.08, hspace=0.4, wspace=0.4)
         
         # FORCE CONSISTENT FONTS ACROSS ALL PLOTS - OVERRIDE EVERYTHING (LANDSCAPE)
         for i, ax in enumerate(fig.get_axes()):
@@ -1020,8 +1020,8 @@ class InteractiveUnitQualityGUI:
         # BOTTOM SECTION - Histogram panel (rows 24-39, full width) - increased spacing
         self.plot_histograms_panel_portrait(fig, unit_data, AXIS_LABEL_FONTSIZE, TICK_LABEL_FONTSIZE, QUALITY_METRIC_TEXT_FONTSIZE)
         
-        # Adjust spacing for portrait layout with more space between plots
-        plt.subplots_adjust(left=0.05, right=0.95, top=0.98, bottom=0.02, hspace=0.5, wspace=0.4)
+        # Adjust spacing for portrait layout - seamless with title/buttons
+        plt.subplots_adjust(left=0.05, right=0.95, top=0.99, bottom=0.02, hspace=0.5, wspace=0.4)
         
         # FORCE CONSISTENT FONTS ACROSS ALL PLOTS - OVERRIDE EVERYTHING
         for i, ax in enumerate(fig.get_axes()):
