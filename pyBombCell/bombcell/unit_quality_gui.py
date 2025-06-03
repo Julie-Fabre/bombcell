@@ -852,6 +852,14 @@ class InteractiveUnitQualityGUI:
     
     def _plot_unit_landscape(self, unit_data):
         """Plot unit data in landscape mode (side-by-side layout)"""
+        # CENTRALIZED FONT SIZE CONFIGURATION FOR LANDSCAPE MODE
+        AXIS_LABEL_FONTSIZE = 20
+        TICK_LABEL_FONTSIZE = 14
+        LEGEND_FONTSIZE = 16
+        TEXT_FONTSIZE = 16
+        PLOT_TITLE_FONTSIZE = 22
+        QUALITY_METRIC_TEXT_FONTSIZE = 16
+        
         # Create figure with extended width for histograms (current layout)
         fig = plt.figure(figsize=(30, 18))
         fig.patch.set_facecolor('white')
@@ -894,6 +902,72 @@ class InteractiveUnitQualityGUI:
         
         # Adjust subplot margins manually with MORE spacing for histograms
         plt.subplots_adjust(left=0.03, right=0.98, top=0.95, bottom=0.08, hspace=0.4, wspace=0.4)
+        
+        # FORCE CONSISTENT FONTS ACROSS ALL PLOTS - OVERRIDE EVERYTHING (LANDSCAPE)
+        for i, ax in enumerate(fig.get_axes()):
+            # Skip axes that might be unit title or toggle buttons
+            if hasattr(ax, 'get_position') and ax.get_position().height < 0.05:
+                continue  # Skip very small axes (likely buttons)
+            
+            # Check which plots should have no ticks/labels (same as portrait)
+            is_template_waveform = (i == 1)  # Template waveforms
+            is_raw_waveform = (i == 2)      # Raw waveforms
+            is_spatial_decay = (i == 3)     # Spatial decay
+            is_amplitude_plot = (i == 5)    # Scaling factor over time (amplitude over time)
+            is_amplitude_fit = (i == 6)     # Scaling factor distribution (amplitude fit)
+            
+            # FIRST: FORCE ALL TITLES TO CONSISTENT SIZE (override any previous settings)
+            if ax.get_title():
+                ax.set_title(ax.get_title(), fontsize=PLOT_TITLE_FONTSIZE, fontweight='bold')
+            
+            # SECOND: FORCE ALL AXIS LABELS TO CONSISTENT SIZE
+            if ax.get_xlabel():
+                ax.set_xlabel(ax.get_xlabel(), fontsize=AXIS_LABEL_FONTSIZE, labelpad=1)
+            if ax.get_ylabel():
+                ax.set_ylabel(ax.get_ylabel(), fontsize=AXIS_LABEL_FONTSIZE, labelpad=1)
+            
+            # THIRD: FORCE ALL TICK LABELS TO CONSISTENT SIZE
+            ax.tick_params(labelsize=TICK_LABEL_FONTSIZE)
+            
+            # NOW apply plot-specific rules for ticks/labels
+            if (is_template_waveform or is_raw_waveform or is_spatial_decay or 
+                is_amplitude_plot or is_amplitude_fit):
+                # NO ticks or labels for these specific plots
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.set_xlabel('')
+                ax.set_ylabel('')
+                # But keep the title if it exists
+            else:
+                # For plots that keep ticks, set min/max only with consistent formatting
+                if len(ax.get_xlim()) == 2:
+                    xlim = ax.get_xlim()
+                    ax.set_xticks([xlim[0], xlim[1]])
+                    xlabels = []
+                    for x in xlim:
+                        if abs(x) < 1000 and abs(x) > 0.01:
+                            xlabels.append(f'{x:.2f}')
+                        else:
+                            xlabels.append(f'{x:.0f}')
+                    ax.set_xticklabels(xlabels, fontsize=TICK_LABEL_FONTSIZE)
+                
+                if len(ax.get_ylim()) == 2:
+                    ylim = ax.get_ylim()
+                    ax.set_yticks([ylim[0], ylim[1]])
+                    ylabels = []
+                    for y in ylim:
+                        if abs(y) < 1000 and abs(y) > 0.01:
+                            ylabels.append(f'{y:.2f}')
+                        else:
+                            ylabels.append(f'{y:.0f}')
+                    ax.set_yticklabels(ylabels, fontsize=TICK_LABEL_FONTSIZE)
+            
+            # FORCE ALL LEGENDS TO CONSISTENT SIZE
+            legend = ax.get_legend()
+            if legend:
+                for text in legend.get_texts():
+                    text.set_fontsize(LEGEND_FONTSIZE)
+        
         plt.show()
     
     def _plot_unit_portrait(self, unit_data):
