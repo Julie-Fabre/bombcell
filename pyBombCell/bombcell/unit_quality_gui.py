@@ -903,8 +903,8 @@ class InteractiveUnitQualityGUI:
         fig.patch.set_facecolor('white')
         
         # TOP SECTION - Main GUI (full width, first 20 rows)
-        # 1. Unit location plot (left column)
-        ax_location = plt.subplot2grid((40, 20), (0, 0), rowspan=20, colspan=1)
+        # 1. Unit location plot (FLUSH with presence ratio plot)
+        ax_location = plt.subplot2grid((40, 20), (0, 0), rowspan=17, colspan=1)
         self.plot_unit_location(ax_location, unit_data)
         
         # 2. Template waveforms
