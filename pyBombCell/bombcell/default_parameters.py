@@ -90,10 +90,11 @@ def get_default_parameters(
         "spDecayLinFit": False, # if True, use a linear fit for spatial decay. If false, use exponential (preferred)
         "computeSpatialDecay": True,
 
-        ## Recording parameters
+        ## Recording parameters - !WARNING! if you modify any of these after having already run bombcell, you 
+        # will need to set 'reextractRaw' to true to update the raw waveforms
         "ephys_sample_rate": 30000,  # samples per second
-        "nChannels": 385,  # Number of recorded channels (including any sync channels) recorded in raw data
-        "nSyncChannels": 1,
+        "nChannels": 385,  # Number of recorded channels (including any sync channels) in raw data
+        "nSyncChannels": 1, # Number of recorded SYNC channels in raw data
 
         ## Distance metric parameters
         "computeDistanceMetrics": False,  # If True computes distance metics NOTE is slow in ML
