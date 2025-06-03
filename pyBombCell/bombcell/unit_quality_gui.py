@@ -858,7 +858,7 @@ class InteractiveUnitQualityGUI:
         LEGEND_FONTSIZE = 16
         TEXT_FONTSIZE = 16
         PLOT_TITLE_FONTSIZE = 22
-        QUALITY_METRIC_TEXT_FONTSIZE = 16
+        QUALITY_METRIC_TEXT_FONTSIZE = 13
         
         # Create figure with extended width for histograms (current layout)
         fig = plt.figure(figsize=(30, 18))
@@ -978,7 +978,7 @@ class InteractiveUnitQualityGUI:
         LEGEND_FONTSIZE = 15
         TEXT_FONTSIZE = 15
         PLOT_TITLE_FONTSIZE = 16
-        QUALITY_METRIC_TEXT_FONTSIZE = 15
+        QUALITY_METRIC_TEXT_FONTSIZE = 13
         
         # Create figure optimized for portrait screens (taller, narrower)
         fig = plt.figure(figsize=(20, 30))
@@ -1300,19 +1300,14 @@ class InteractiveUnitQualityGUI:
                 if current_unit_idx < len(self.quality_metrics[metric_name]):
                     current_value = self.quality_metrics[metric_name][current_unit_idx]
                     if not np.isnan(current_value):
-                        # Highlight the bin containing current unit
+                        # NO red bin highlighting - removed for cleaner look
+                        
+                        # Add triangle above histogram (revert to original position)
                         bin_idx = np.digitize(current_value, bins_out) - 1
-                        if 0 <= bin_idx < len(patches):
-                            patches[bin_idx].set_facecolor('red')
-                            patches[bin_idx].set_alpha(0.9)
-                            patches[bin_idx].set_edgecolor('darkred')
-                            patches[bin_idx].set_linewidth(2)
-                        
-                        # Add LARGE BLACK triangle arrow head pointing DOWN - HIGHER above histogram with contour
                         bin_height = patches[bin_idx].get_height() if 0 <= bin_idx < len(patches) else 0.5
-                        triangle_y = bin_height + 0.15  # Much higher above histogram
+                        triangle_y = bin_height + 0.15  # Above the histogram bars
                         
-                        # Large black triangle with white contour for visibility
+                        # Large black triangle pointing down with white contour for visibility
                         ax.scatter(current_value, triangle_y, marker='v', s=500, color='black', 
                                   alpha=1.0, zorder=15, edgecolors='white', linewidths=4)
                 
@@ -1461,18 +1456,14 @@ class InteractiveUnitQualityGUI:
             if current_unit_idx < len(self.quality_metrics[metric_name]):
                 current_value = self.quality_metrics[metric_name][current_unit_idx]
                 if not np.isnan(current_value):
-                    # Highlight the bin containing current unit
+                    # NO red bin highlighting - removed for cleaner look
+                    
+                    # Add triangle above histogram (revert to original position)
                     bin_idx = np.digitize(current_value, bins_out) - 1
-                    if 0 <= bin_idx < len(patches):
-                        patches[bin_idx].set_facecolor('red')
-                        patches[bin_idx].set_alpha(0.9)
-                        patches[bin_idx].set_edgecolor('darkred')
-                        patches[bin_idx].set_linewidth(2)
-                    
-                    # Add triangle arrow pointing down
                     bin_height = patches[bin_idx].get_height() if 0 <= bin_idx < len(patches) else 0.5
-                    triangle_y = bin_height + 0.15
+                    triangle_y = bin_height + 0.15  # Above the histogram bars
                     
+                    # Large black triangle pointing down with white contour for visibility
                     ax.scatter(current_value, triangle_y, marker='v', s=500, color='black', 
                               alpha=1.0, zorder=15, edgecolors='white', linewidths=4)
             
@@ -3530,19 +3521,14 @@ class InteractiveUnitQualityGUI:
                 if current_unit_idx < len(self.quality_metrics[metric_name]):
                     current_value = self.quality_metrics[metric_name][current_unit_idx]
                     if not np.isnan(current_value):
-                        # Highlight the bin containing current unit
+                        # NO red bin highlighting - removed for cleaner look
+                        
+                        # Add triangle above histogram (revert to original position)
                         bin_idx = np.digitize(current_value, bins_out) - 1
-                        if 0 <= bin_idx < len(patches):
-                            patches[bin_idx].set_facecolor('red')
-                            patches[bin_idx].set_alpha(0.9)
-                            patches[bin_idx].set_edgecolor('darkred')
-                            patches[bin_idx].set_linewidth(2)
-                        
-                        # Add LARGE BLACK triangle arrow head pointing DOWN - HIGHER above histogram with contour
                         bin_height = patches[bin_idx].get_height() if 0 <= bin_idx < len(patches) else 0.5
-                        triangle_y = bin_height + 0.15  # Much higher above histogram
+                        triangle_y = bin_height + 0.15  # Above the histogram bars
                         
-                        # Large black triangle with white contour for visibility
+                        # Large black triangle pointing down with white contour for visibility
                         ax.scatter(current_value, triangle_y, marker='v', s=500, color='black', 
                                   alpha=1.0, zorder=15, edgecolors='white', linewidths=4)
                 
