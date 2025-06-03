@@ -935,18 +935,18 @@ class InteractiveUnitQualityGUI:
         ax_amp_fit = plt.subplot2grid((40, 20), (18, 2), rowspan=2, colspan=4)
         self.plot_amplitude_fit(ax_amp_fit, unit_data)
         
-        # 8. Amplitude histogram (place next to amplitude fit)
+        # 8. Amplitude histogram (place next to amplitude over time plot)
         if (self.param.get('extractRaw', False) and 
             'rawAmplitude' in self.quality_metrics and 
             np.all(~np.isnan(self.quality_metrics.get('rawAmplitude', [np.nan])))):
-            ax_amp_hist = plt.subplot2grid((40, 20), (18, 7), rowspan=2, colspan=6)
+            ax_amp_hist = plt.subplot2grid((40, 20), (10, 18), rowspan=4, colspan=2)
             self.plot_amplitude_histogram(ax_amp_hist, unit_data, 'rawAmplitude')
         
-        # BOTTOM SECTION - Histogram panel (rows 22-39, full width)
+        # BOTTOM SECTION - Histogram panel (rows 24-39, full width) - increased spacing
         self.plot_histograms_panel_portrait(fig, unit_data)
         
-        # Adjust spacing for portrait layout
-        plt.subplots_adjust(left=0.05, right=0.95, top=0.98, bottom=0.02, hspace=0.3, wspace=0.3)
+        # Adjust spacing for portrait layout with more space between plots
+        plt.subplots_adjust(left=0.05, right=0.95, top=0.98, bottom=0.02, hspace=0.5, wspace=0.4)
         # plt.show()  # Remove to test double figure issue
     
     def plot_histograms_panel_portrait(self, fig, unit_data):
@@ -1072,26 +1072,26 @@ class InteractiveUnitQualityGUI:
         # Calculate how many rows of plots we need
         rows_of_plots = (num_subplots + cols - 1) // cols
         
-        # Portrait-specific positioning: start at row 22 in 40-row grid, use 18 rows available
-        available_rows = 18  # Rows 22-39 = 18 rows available
+        # Portrait-specific positioning: start at row 24 in 40-row grid, use 16 rows available - more spacing
+        available_rows = 16  # Rows 24-39 = 16 rows available
         
-        # Distribute plots evenly across available portrait space
+        # Distribute plots evenly across available portrait space with MUCH MORE spacing
         if rows_of_plots == 1:
-            plot_positions = [22]
-            plot_height = 12
-        elif rows_of_plots == 2:
-            plot_positions = [22, 31]
+            plot_positions = [24]
             plot_height = 8
-        elif rows_of_plots == 3:
-            plot_positions = [22, 28, 34]
+        elif rows_of_plots == 2:
+            plot_positions = [24, 33]
             plot_height = 5
-        elif rows_of_plots == 4:
-            plot_positions = [22, 26, 30, 34]
+        elif rows_of_plots == 3:
+            plot_positions = [24, 30, 36]
             plot_height = 4
-        else:
-            # Many rows - tight but even
-            plot_positions = [22 + i * 3 for i in range(rows_of_plots)]
+        elif rows_of_plots == 4:
+            plot_positions = [24, 28, 32, 36]
             plot_height = 3
+        else:
+            # Many rows - MUCH more spacing between rows (minimum 4 row gap)
+            plot_positions = [24 + i * 4 for i in range(rows_of_plots)]
+            plot_height = 2
         
         # Column positioning for portrait (20 columns total)
         col_width = 20 // cols
@@ -1210,27 +1210,27 @@ class InteractiveUnitQualityGUI:
                         
                         if metric_name in noise_metrics:
                             # Noise metrics: both thresholds -> Noise, Neuronal, Noise
-                            ax.text(midpoint1, text_y, '↓ Noise', ha='center', fontsize=12, 
+                            ax.text(midpoint1, text_y, '↓ Noise', ha='center', fontsize=16, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Neuronal', ha='center', fontsize=12, 
+                            ax.text(midpoint2, text_y, '↓ Neuronal', ha='center', fontsize=16, 
                                    color=line_colors[1], weight='bold')
-                            ax.text(midpoint3, text_y, '↓ Noise', ha='center', fontsize=12, 
+                            ax.text(midpoint3, text_y, '↓ Noise', ha='center', fontsize=16, 
                                    color=line_colors[2], weight='bold')
                         elif metric_name in nonsomatic_metrics:
                             # Non-somatic metrics: both thresholds -> Non-somatic, Somatic, Non-somatic
-                            ax.text(midpoint1, text_y, '↓ Non-somatic', ha='center', fontsize=12, 
+                            ax.text(midpoint1, text_y, '↓ Non-somatic', ha='center', fontsize=16, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Somatic', ha='center', fontsize=12, 
+                            ax.text(midpoint2, text_y, '↓ Somatic', ha='center', fontsize=16, 
                                    color=line_colors[1], weight='bold')
-                            ax.text(midpoint3, text_y, '↓ Non-somatic', ha='center', fontsize=12, 
+                            ax.text(midpoint3, text_y, '↓ Non-somatic', ha='center', fontsize=16, 
                                    color=line_colors[2], weight='bold')
                         else:
                             # MUA metrics: both thresholds -> MUA, Good, MUA
-                            ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=12, 
+                            ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=16, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=12, 
+                            ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=16, 
                                    color=line_colors[1], weight='bold')
-                            ax.text(midpoint3, text_y, '↓ MUA', ha='center', fontsize=12, 
+                            ax.text(midpoint3, text_y, '↓ MUA', ha='center', fontsize=16, 
                                    color=line_colors[2], weight='bold')
                         
                     elif thresh1 is not None or thresh2 is not None:
@@ -1251,27 +1251,27 @@ class InteractiveUnitQualityGUI:
                         nonsomatic_metrics = ['peak1ToPeak2Ratio', 'mainPeakToTroughRatio']
                         
                         if metric_name in noise_metrics:
-                            ax.text(midpoint1, text_y, '↓ Neuronal', ha='center', fontsize=12, 
+                            ax.text(midpoint1, text_y, '↓ Neuronal', ha='center', fontsize=16, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Noise', ha='center', fontsize=12, 
+                            ax.text(midpoint2, text_y, '↓ Noise', ha='center', fontsize=16, 
                                    color=line_colors[1], weight='bold')
                         elif metric_name in nonsomatic_metrics:
-                            ax.text(midpoint1, text_y, '↓ Somatic', ha='center', fontsize=12, 
+                            ax.text(midpoint1, text_y, '↓ Somatic', ha='center', fontsize=16, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Non-somatic', ha='center', fontsize=12, 
+                            ax.text(midpoint2, text_y, '↓ Non-somatic', ha='center', fontsize=16, 
                                    color=line_colors[1], weight='bold')
                         else:
-                            ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=12, 
+                            ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=16, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=12, 
+                            ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=16, 
                                    color=line_colors[1], weight='bold')
 
                 # Set histogram limits from 0 to 1.1 to show classification lines and text
                 ax.set_ylim([0, 1.1])
                 
-            ax.set_xlabel(valid_labels[i], fontsize=14, fontweight='bold')
+            ax.set_xlabel(valid_labels[i], fontsize=18, fontweight='bold')
             if i == 0:
-                ax.set_ylabel('frac. units', fontsize=14, fontweight='bold')
+                ax.set_ylabel('frac. units', fontsize=18, fontweight='bold')
             
             ax.spines['right'].set_visible(False)
             ax.spines['top'].set_visible(False)
@@ -1279,7 +1279,7 @@ class InteractiveUnitQualityGUI:
             # REFINED Y-AXIS: Only show ticks and labels at 0 and 1
             ax.set_yticks([0, 1])
             ax.set_yticklabels(['0', '1'])
-            ax.tick_params(labelsize=12)
+            ax.tick_params(labelsize=16)
             
     def plot_amplitude_histogram(self, ax, unit_data, metric_name):
         """Plot amplitude histogram with current unit highlighted"""
