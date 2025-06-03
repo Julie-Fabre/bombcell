@@ -898,6 +898,14 @@ class InteractiveUnitQualityGUI:
     
     def _plot_unit_portrait(self, unit_data):
         """Plot unit data in portrait mode (stacked layout)"""
+        # CENTRALIZED FONT SIZE CONFIGURATION FOR PORTRAIT MODE
+        AXIS_LABEL_FONTSIZE = 16
+        TICK_LABEL_FONTSIZE = 13
+        LEGEND_FONTSIZE = 15
+        TEXT_FONTSIZE = 15
+        PLOT_TITLE_FONTSIZE = 16
+        QUALITY_METRIC_TEXT_FONTSIZE = 15
+        
         # Create figure optimized for portrait screens (taller, narrower)
         fig = plt.figure(figsize=(20, 30))
         fig.patch.set_facecolor('white')
@@ -936,13 +944,80 @@ class InteractiveUnitQualityGUI:
         self.plot_time_bin_metrics(ax_bin_metrics, unit_data)
         
         # BOTTOM SECTION - Histogram panel (rows 24-39, full width) - increased spacing
-        self.plot_histograms_panel_portrait(fig, unit_data)
+        self.plot_histograms_panel_portrait(fig, unit_data, AXIS_LABEL_FONTSIZE, TICK_LABEL_FONTSIZE, QUALITY_METRIC_TEXT_FONTSIZE)
         
         # Adjust spacing for portrait layout with more space between plots
         plt.subplots_adjust(left=0.05, right=0.95, top=0.98, bottom=0.02, hspace=0.5, wspace=0.4)
+        
+        # FORCE CONSISTENT FONTS ACROSS ALL PLOTS - OVERRIDE EVERYTHING
+        for i, ax in enumerate(fig.get_axes()):
+            # Skip axes that might be unit title or toggle buttons
+            if hasattr(ax, 'get_position') and ax.get_position().height < 0.05:
+                continue  # Skip very small axes (likely buttons)
+            
+            # Check which plots should have no ticks/labels
+            is_template_waveform = (i == 1)  # Template waveforms
+            is_raw_waveform = (i == 2)      # Raw waveforms
+            is_spatial_decay = (i == 3)     # Spatial decay
+            is_amplitude_plot = (i == 5)    # Scaling factor over time (amplitude over time)
+            is_amplitude_fit = (i == 6)     # Scaling factor distribution (amplitude fit)
+            is_metrics_plot = (i == 7)      # Metrics over time plot
+            
+            # FIRST: FORCE ALL TITLES TO CONSISTENT SIZE (override any previous settings)
+            if ax.get_title():
+                ax.set_title(ax.get_title(), fontsize=PLOT_TITLE_FONTSIZE, fontweight='bold')
+            
+            # SECOND: FORCE ALL AXIS LABELS TO CONSISTENT SIZE
+            if ax.get_xlabel():
+                ax.set_xlabel(ax.get_xlabel(), fontsize=AXIS_LABEL_FONTSIZE, labelpad=1)
+            if ax.get_ylabel():
+                ax.set_ylabel(ax.get_ylabel(), fontsize=AXIS_LABEL_FONTSIZE, labelpad=1)
+            
+            # THIRD: FORCE ALL TICK LABELS TO CONSISTENT SIZE
+            ax.tick_params(labelsize=TICK_LABEL_FONTSIZE)
+            
+            # NOW apply plot-specific rules for ticks/labels
+            if (is_template_waveform or is_raw_waveform or is_spatial_decay or 
+                is_amplitude_plot or is_amplitude_fit):
+                # NO ticks or labels for these specific plots
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.set_xlabel('')
+                ax.set_ylabel('')
+                # But keep the title if it exists
+            else:
+                # For plots that keep ticks, set min/max only with consistent formatting
+                if len(ax.get_xlim()) == 2:
+                    xlim = ax.get_xlim()
+                    ax.set_xticks([xlim[0], xlim[1]])
+                    xlabels = []
+                    for x in xlim:
+                        if abs(x) < 1000 and abs(x) > 0.01:
+                            xlabels.append(f'{x:.2f}')
+                        else:
+                            xlabels.append(f'{x:.0f}')
+                    ax.set_xticklabels(xlabels, fontsize=TICK_LABEL_FONTSIZE)
+                
+                if len(ax.get_ylim()) == 2:
+                    ylim = ax.get_ylim()
+                    ax.set_yticks([ylim[0], ylim[1]])
+                    ylabels = []
+                    for y in ylim:
+                        if abs(y) < 1000 and abs(y) > 0.01:
+                            ylabels.append(f'{y:.2f}')
+                        else:
+                            ylabels.append(f'{y:.0f}')
+                    ax.set_yticklabels(ylabels, fontsize=TICK_LABEL_FONTSIZE)
+            
+            # FORCE ALL LEGENDS TO CONSISTENT SIZE
+            legend = ax.get_legend()
+            if legend:
+                for text in legend.get_texts():
+                    text.set_fontsize(LEGEND_FONTSIZE)
+        
         # plt.show()  # Remove to test double figure issue
     
-    def plot_histograms_panel_portrait(self, fig, unit_data):
+    def plot_histograms_panel_portrait(self, fig, unit_data, AXIS_LABEL_FONTSIZE, TICK_LABEL_FONTSIZE, QUALITY_METRIC_TEXT_FONTSIZE):
         """Plot histogram panel optimized for portrait layout (bottom section) - exact copy of landscape logic"""
         # Preprocessing - handle inf values (exact copy from landscape)
         if 'peak1ToPeak2Ratio' in self.quality_metrics:
@@ -1218,27 +1293,27 @@ class InteractiveUnitQualityGUI:
                         
                         if metric_name in noise_metrics:
                             # Noise metrics: both thresholds -> Noise, Neuronal, Noise
-                            ax.text(midpoint1, text_y, '↓ Noise', ha='center', fontsize=16, 
+                            ax.text(midpoint1, text_y, '↓ Noise', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Neuronal', ha='center', fontsize=16, 
+                            ax.text(midpoint2, text_y, '↓ Neuronal', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[1], weight='bold')
-                            ax.text(midpoint3, text_y, '↓ Noise', ha='center', fontsize=16, 
+                            ax.text(midpoint3, text_y, '↓ Noise', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[2], weight='bold')
                         elif metric_name in nonsomatic_metrics:
                             # Non-somatic metrics: both thresholds -> Non-somatic, Somatic, Non-somatic
-                            ax.text(midpoint1, text_y, '↓ Non-somatic', ha='center', fontsize=16, 
+                            ax.text(midpoint1, text_y, '↓ Non-somatic', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Somatic', ha='center', fontsize=16, 
+                            ax.text(midpoint2, text_y, '↓ Somatic', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[1], weight='bold')
-                            ax.text(midpoint3, text_y, '↓ Non-somatic', ha='center', fontsize=16, 
+                            ax.text(midpoint3, text_y, '↓ Non-somatic', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[2], weight='bold')
                         else:
                             # MUA metrics: both thresholds -> MUA, Good, MUA
-                            ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=16, 
+                            ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=16, 
+                            ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[1], weight='bold')
-                            ax.text(midpoint3, text_y, '↓ MUA', ha='center', fontsize=16, 
+                            ax.text(midpoint3, text_y, '↓ MUA', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[2], weight='bold')
                         
                     elif thresh1 is not None or thresh2 is not None:
@@ -1259,27 +1334,27 @@ class InteractiveUnitQualityGUI:
                         nonsomatic_metrics = ['peak1ToPeak2Ratio', 'mainPeakToTroughRatio']
                         
                         if metric_name in noise_metrics:
-                            ax.text(midpoint1, text_y, '↓ Neuronal', ha='center', fontsize=16, 
+                            ax.text(midpoint1, text_y, '↓ Neuronal', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Noise', ha='center', fontsize=16, 
+                            ax.text(midpoint2, text_y, '↓ Noise', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[1], weight='bold')
                         elif metric_name in nonsomatic_metrics:
-                            ax.text(midpoint1, text_y, '↓ Somatic', ha='center', fontsize=16, 
+                            ax.text(midpoint1, text_y, '↓ Somatic', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Non-somatic', ha='center', fontsize=16, 
+                            ax.text(midpoint2, text_y, '↓ Non-somatic', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[1], weight='bold')
                         else:
-                            ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=16, 
+                            ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=16, 
+                            ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[1], weight='bold')
 
                 # Set histogram limits from 0 to 1.1 to show classification lines and text
                 ax.set_ylim([0, 1.1])
                 
-            ax.set_xlabel(valid_labels[i], fontsize=18, fontweight='bold')
+            ax.set_xlabel(valid_labels[i], fontsize=AXIS_LABEL_FONTSIZE, fontweight='bold')
             if i == 0:
-                ax.set_ylabel('frac. units', fontsize=18, fontweight='bold')
+                ax.set_ylabel('frac. units', fontsize=AXIS_LABEL_FONTSIZE, fontweight='bold')
             
             ax.spines['right'].set_visible(False)
             ax.spines['top'].set_visible(False)
@@ -1287,7 +1362,7 @@ class InteractiveUnitQualityGUI:
             # REFINED Y-AXIS: Only show ticks and labels at 0 and 1
             ax.set_yticks([0, 1])
             ax.set_yticklabels(['0', '1'])
-            ax.tick_params(labelsize=16)
+            ax.tick_params(labelsize=TICK_LABEL_FONTSIZE)
             
     def plot_amplitude_histogram(self, ax, unit_data, metric_name):
         """Plot amplitude histogram with current unit highlighted"""
@@ -2096,7 +2171,7 @@ class InteractiveUnitQualityGUI:
                 for bin_edge in time_bins:
                     ax.axvline(bin_edge, color='gray', alpha=0.2, linewidth=0.3, linestyle='--', zorder=0)
                 
-        ax.set_title('Scaling factor over time', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Amplitude scaling factor over time', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         # Remove x-axis labels since time bin plot below will show them
         ax.set_xlabel('')
         ax.tick_params(labelsize=13, labelbottom=False)  # Hide x-axis labels
@@ -2146,7 +2221,7 @@ class InteractiveUnitQualityGUI:
         if legend_elements:
             ncols = min(len(legend_elements), 4)  # Max 4 columns
             legend = ax.legend(handles=legend_elements, bbox_to_anchor=(0.5, -0.05), 
-                             loc='upper center', ncol=ncols, fontsize=10,
+                             loc='upper center', ncol=ncols, fontsize=13,
                              framealpha=0.8, facecolor='white', edgecolor='black', 
                              prop={'family': 'DejaVu Sans'})
             legend.set_zorder(15)  # Ensure legend appears above plot elements
@@ -2327,7 +2402,7 @@ class InteractiveUnitQualityGUI:
                             mid_time = (g_start + g_stop) / 2
                             ax.text(mid_time, arrow_y + y_max * 0.05, 'Good', 
                                    ha='center', va='bottom', color='darkgreen', fontweight='bold',
-                                   fontsize=10, alpha=0.9, zorder=5)
+                                   fontsize=13, alpha=0.9, zorder=5)
                 
             else:
                 # Fallback: compute simplified metrics on the fly
@@ -2391,7 +2466,7 @@ class InteractiveUnitQualityGUI:
             ax.set_ylim(0, 1.1)  # Standard scale for all metrics
             
             # Add legend at the top of the plot
-            ax.legend(bbox_to_anchor=(0.5, 1.02), loc='lower center', ncol=3, fontsize=11,
+            ax.legend(bbox_to_anchor=(0.5, 1.02), loc='lower center', ncol=3, fontsize=13,
                      framealpha=0.9, prop={'family': 'DejaVu Sans'})
             
             # Make plot as compact as possible
@@ -2501,13 +2576,13 @@ class InteractiveUnitQualityGUI:
                 # Add labels below the arrow and to the left
                 label_x = arrow_x - x_range * 0.02  # To the left of arrow
                 
-                ax.text(label_x, arrow_start_y - y_range * 0.02, 'deepest in the brain\n = tip of the probe', 
-                       ha='center', va='top', fontsize=9, fontfamily="DejaVu Sans",
-                       rotation=0, clip_on=False)
+                ax.text(label_x, arrow_start_y - y_range * 0.01, 'deepest = tip \n of the probe', 
+                       ha='center', va='top', fontsize=16, fontfamily="DejaVu Sans",
+                       rotation=0, clip_on=False, fontweight='bold')
                        
                 ax.text(label_x, arrow_end_y + y_range * 0.02, 'most superficial', 
-                       ha='center', va='bottom', fontsize=9, fontfamily="DejaVu Sans",
-                       rotation=0, clip_on=False)
+                       ha='center', va='bottom', fontsize=16, fontfamily="DejaVu Sans",
+                       rotation=0, clip_on=False, fontweight='bold')
                 
                 # Add legend
                 legend_elements = []
@@ -2515,7 +2590,7 @@ class InteractiveUnitQualityGUI:
                     legend_elements.append(plt.Line2D([0], [0], marker='o', color='w', 
                                                     markerfacecolor=color, markersize=8, 
                                                     label=class_name))
-                ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+                ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=13)
                 
                 # Add click interactivity to navigate to units
                 def on_location_click(event):
