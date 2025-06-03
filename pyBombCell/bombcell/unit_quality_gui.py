@@ -1021,7 +1021,7 @@ class InteractiveUnitQualityGUI:
         self.plot_histograms_panel_portrait(fig, unit_data, AXIS_LABEL_FONTSIZE, TICK_LABEL_FONTSIZE, QUALITY_METRIC_TEXT_FONTSIZE)
         
         # Adjust spacing for portrait layout - seamless with title/buttons
-        plt.subplots_adjust(left=0.05, right=0.95, top=0.99, bottom=0.02, hspace=0.5, wspace=0.4)
+        plt.subplots_adjust(left=0.05, right=0.95, top=0.995, bottom=0.01, hspace=0.4, wspace=0.4)
         
         # FORCE CONSISTENT FONTS ACROSS ALL PLOTS - OVERRIDE EVERYTHING
         for i, ax in enumerate(fig.get_axes()):
@@ -1035,8 +1035,7 @@ class InteractiveUnitQualityGUI:
             is_spatial_decay = (i == 3)     # Spatial decay
             is_amplitude_plot = (i == 5)    # Scaling factor over time (amplitude over time)
             is_amplitude_fit = (i == 6)     # Scaling factor distribution (amplitude fit)
-            is_metrics_plot = (i == 7)      # Metrics over time plot
-            
+                        
             # FIRST: FORCE ALL TITLES TO CONSISTENT SIZE (override any previous settings)
             if ax.get_title():
                 ax.set_title(ax.get_title(), fontsize=PLOT_TITLE_FONTSIZE, fontweight='bold')
