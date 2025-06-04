@@ -1,7 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from upsetplot import UpSet, from_indicators
+try:
+    from upsetplot import UpSet, from_indicators
+    UPSETPLOT_AVAILABLE = True
+except ImportError:
+    UPSETPLOT_AVAILABLE = False
+    print("Warning: upsetplot not available. Some plotting functions may not work.")
 
 from bombcell import helper_functions as hf
 

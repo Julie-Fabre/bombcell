@@ -4,7 +4,12 @@ from joblib import Parallel, delayed
 
 import numpy as np
 
-from mtscomp import Reader
+try:
+    from mtscomp import Reader
+    MTSCOMP_AVAILABLE = True
+except ImportError:
+    MTSCOMP_AVAILABLE = False
+    print("Warning: mtscomp not available. Some raw data formats may not be supported.")
 from scipy.signal import detrend
 from scipy.ndimage import gaussian_filter
 from tqdm.auto import tqdm
