@@ -513,6 +513,9 @@ def manage_data_compression(ephys_raw_dir):
             if pre_ext != ".lf":
                 decompressed_data = file
 
+        if ext == ".dat":
+            decompressed_data = file
+
         if ext == ".cbin":
             compressed_data = file
 
