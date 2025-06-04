@@ -737,31 +737,31 @@ class InteractiveUnitQualityGUI:
         # Unit info display
         self.unit_info = widgets.HTML(value="")
         
-        # Classification toggle buttons with consistent width and height - compact for single line
+        # Classification toggle buttons - match widths with navigation buttons above
         self.classify_good_btn = widgets.Button(
-            description='Mark as Good', 
+            description='mark as Ggood', 
             button_style='success',
-            layout=widgets.Layout(width='110px', height='35px')
+            layout=widgets.Layout(width='160px', height='35px')  # Match ◀good + good▶ = 80+80
         )
         self.classify_mua_btn = widgets.Button(
-            description='Mark as MUA', 
+            description='mark as MUA', 
             button_style='warning',
-            layout=widgets.Layout(width='110px', height='35px')
+            layout=widgets.Layout(width='150px', height='35px')  # Match ◀mua + mua▶ = 75+75
         )
         self.classify_nonsomatic_btn = widgets.Button(
-            description='Mark as Non-somatic', 
+            description='mark as non-somatic', 
             button_style='primary',
-            layout=widgets.Layout(width='130px', height='35px')
+            layout=widgets.Layout(width='300px', height='35px')  # Match ◀non-somatic + non-somatic▶ = 150+150
         )
         self.classify_noise_btn = widgets.Button(
-            description='Mark as Noise', 
+            description='mark as noise', 
             button_style='danger',
-            layout=widgets.Layout(width='110px', height='35px')
+            layout=widgets.Layout(width='170px', height='35px')  # Match ◀noise + noise▶ = 85+85
         )
         
         # Navigation helper button
         self.goto_next_unclassified_btn = widgets.Button(
-            description='→ Next Unclassified', 
+            description='▶ next unclassified', 
             button_style='info',
             layout=widgets.Layout(width='180px', height='32px')
         )
@@ -824,18 +824,28 @@ class InteractiveUnitQualityGUI:
             self.goto_unit_btn
         ])
         
-        # Classification controls - manual unit labeling with navigation
-        classify_text = widgets.HTML("<b>Manual Classification:</b>", layout=widgets.Layout(text_align='center'))
+        # Classification section - match the structure of nav_controls above
+        classify_left_section = widgets.VBox([
+            widgets.HTML("<b> _ </b>", layout=widgets.Layout(text_align='center')),  # Text above navigation button
+            widgets.HBox([self.goto_next_unclassified_btn], layout=widgets.Layout(justify_content='center'))
+        ])
         
-        # All buttons on same line: classification buttons + navigation
+        classify_right_section = widgets.VBox([
+            widgets.HTML("<b>manual classification (optional):</b>", layout=widgets.Layout(text_align='center')),  # Text above buttons
+            widgets.HBox([
+                self.classify_good_btn, self.classify_mua_btn, 
+                self.classify_nonsomatic_btn, self.classify_noise_btn
+            ], layout=widgets.Layout(justify_content='center'))
+        ])
+        
+        # Combined classification controls - match nav_controls structure exactly
         classify_controls = widgets.HBox([
-            self.classify_good_btn, self.classify_mua_btn, 
-            self.classify_nonsomatic_btn, self.classify_noise_btn,
-            widgets.Label('  |  '),  # Separator
-            self.goto_next_unclassified_btn
-        ], layout=widgets.Layout(justify_content='center', align_items='center'))
+            classify_left_section,
+            widgets.Label('  |  '),
+            classify_right_section
+        ], layout=widgets.Layout(justify_content='center'))
         
-        classify_section = widgets.VBox([classify_text, classify_controls])
+        classify_section = classify_controls
         
         # Full interface
         interface = widgets.VBox([
