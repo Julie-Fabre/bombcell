@@ -1220,7 +1220,7 @@ class InteractiveUnitQualityGUI:
         # Use manual classification for display color if available, otherwise bombcell
         display_type_str = manual_type_str if manual_type != -1 else bombcell_type_str
         
-        # Get title color based on displayed type
+        # Get title color based on BOMBCELL classification (not user classification)
         title_colors = {
             "Unclassified": "gray",
             "Noise": "red",
@@ -1230,7 +1230,7 @@ class InteractiveUnitQualityGUI:
             "Non-somatic MUA": "blue",
             "Unknown": "black"
         }
-        title_color = title_colors.get(display_type_str, "black")
+        title_color = title_colors.get(bombcell_type_str, "black")
         
         # Create title showing BombCell classification first, then user classification
         if manual_type != -1:

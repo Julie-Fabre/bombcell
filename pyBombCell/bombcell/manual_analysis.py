@@ -38,7 +38,7 @@ def load_manual_classifications(save_path):
         return None
 
 
-def analyze_classification_concordance(manual_df, quality_metrics_table):
+def analyze_classification_concordance(manual_df, quality_metrics_table, save_path=None):
     """
     Analyze concordance between manual and BombCell classifications
     
@@ -47,7 +47,9 @@ def analyze_classification_concordance(manual_df, quality_metrics_table):
     manual_df : pd.DataFrame
         Manual classifications with columns ['unit_id', 'manual_classification']
     quality_metrics_table : pd.DataFrame
-        BombCell quality metrics table with 'phy_clusterID' and 'Bombcell_unit_type' columns
+        BombCell quality metrics table with 'phy_clusterID' column
+    save_path : str or Path, optional
+        Path to BombCell output directory containing unit type file
         
     Returns
     -------
@@ -66,9 +68,30 @@ def analyze_classification_concordance(manual_df, quality_metrics_table):
     class_mapping = {'Noise': 0, 'Good': 1, 'MUA': 2, 'Non-somatic': 3}
     reverse_mapping = {v: k for k, v in class_mapping.items()}
     
+    # Load BombCell unit types from separate file
+    bombcell_types = None
+    if save_path is not None:
+        save_path = Path(save_path)
+        unit_type_file = save_path / "cluster_bc_unitType.tsv"
+        if unit_type_file.exists():
+            unit_types_df = pd.read_csv(unit_type_file, sep='\t')
+            # Rename columns to match expected format
+            unit_types_df = unit_types_df.rename(columns={'cluster_id': 'phy_clusterID', 'bc_unitType': 'Bombcell_unit_type'})
+            bombcell_types = unit_types_df
+        else:
+            print(f"❌ BombCell unit types file not found: {unit_type_file}")
+    
+    # Try to get BombCell types from quality metrics table if not loaded separately
+    if bombcell_types is None:
+        if 'Bombcell_unit_type' in quality_metrics_table.columns:
+            bombcell_types = quality_metrics_table[['phy_clusterID', 'Bombcell_unit_type']]
+        else:
+            print("❌ No BombCell unit types found in quality metrics table or separate file")
+            return None, None, None
+    
     # Merge manual and BombCell classifications
     merged_df = manual_df.merge(
-        quality_metrics_table[['phy_clusterID', 'Bombcell_unit_type']], 
+        bombcell_types[['phy_clusterID', 'Bombcell_unit_type']], 
         left_on='unit_id', 
         right_on='phy_clusterID', 
         how='inner'
@@ -84,9 +107,19 @@ def analyze_classification_concordance(manual_df, quality_metrics_table):
     # Handle any unmapped classifications
     merged_df['manual_type_name'] = merged_df['manual_type_name'].fillna('Unknown')
     
+    # Normalize case for comparison - convert BombCell types to match manual format
+    bc_case_mapping = {
+        'NOISE': 'Noise',
+        'GOOD': 'Good', 
+        'MUA': 'MUA',
+        'NON-SOMA': 'Non-somatic'
+    }
+    merged_df['Bombcell_unit_type_normalized'] = merged_df['Bombcell_unit_type'].map(bc_case_mapping)
+    merged_df['Bombcell_unit_type_normalized'] = merged_df['Bombcell_unit_type_normalized'].fillna(merged_df['Bombcell_unit_type'])
+    
     # Calculate overall concordance (correct classifications)
     total_units = len(merged_df)
-    concordant_units = (merged_df['manual_type_name'] == merged_df['Bombcell_unit_type']).sum()
+    concordant_units = (merged_df['manual_type_name'] == merged_df['Bombcell_unit_type_normalized']).sum()
     overall_concordance = concordant_units / total_units * 100
     
     print(f"📊 Classification Concordance Analysis")
@@ -98,7 +131,7 @@ def analyze_classification_concordance(manual_df, quality_metrics_table):
     
     # Create confusion matrix (BombCell as rows, Manual as columns)
     confusion_df = pd.crosstab(
-        merged_df['Bombcell_unit_type'], 
+        merged_df['Bombcell_unit_type_normalized'], 
         merged_df['manual_type_name'], 
         margins=True
     )
@@ -171,8 +204,8 @@ def suggest_parameter_adjustments(merged_df, quality_metrics_table, param):
     print(f"\n🔧 Parameter Threshold Suggestions")
     print(f"{'='*60}")
     
-    # Find disagreements
-    disagreements = merged_df[merged_df['manual_type_name'] != merged_df['Bombcell_unit_type']].copy()
+    # Find disagreements (using normalized comparison)
+    disagreements = merged_df[merged_df['manual_type_name'] != merged_df['Bombcell_unit_type_normalized']].copy()
     
     if len(disagreements) == 0:
         print("✅ Perfect concordance! No parameter adjustments needed.")
@@ -181,18 +214,13 @@ def suggest_parameter_adjustments(merged_df, quality_metrics_table, param):
     print(f"Analyzing {len(disagreements)} disagreements out of {len(merged_df)} units...")
     
     # Get full quality metrics for disagreement units
-    # Check if disagreements already has quality metrics columns
-    if 'nSpikes' in disagreements.columns:
-        # Disagreements already has quality metrics from merged_df
-        disagreement_metrics = disagreements.copy()
-    else:
-        # Need to merge with quality metrics table
-        disagreement_metrics = disagreements.merge(
-            quality_metrics_table, 
-            left_on='unit_id', 
-            right_on='phy_clusterID',
-            how='left'
-        )
+    # Always merge with quality metrics table to ensure we have all columns
+    disagreement_metrics = disagreements.merge(
+        quality_metrics_table, 
+        left_on='unit_id', 
+        right_on='phy_clusterID',
+        how='left'
+    )
     
     suggestions = []
     
@@ -200,11 +228,18 @@ def suggest_parameter_adjustments(merged_df, quality_metrics_table, param):
     for _, row in disagreement_metrics.iterrows():
         unit_id = row['unit_id']
         
-        # Get BombCell classification (should be in disagreements from merged_df)
+        # Get BombCell classification (use original uppercase format for parameter logic)
         bc_type = row.get('Bombcell_unit_type', 'Unknown')
         manual_type = row.get('manual_type_name', 'Unknown')
         
         print(f"\n📋 Unit {unit_id}: BombCell={bc_type} → Manual={manual_type}")
+        
+        # Show relevant metrics for this unit
+        npeaks = row.get('nPeaks', 'N/A')
+        ntroughs = row.get('nTroughs', 'N/A')
+        rpv = row.get('fractionRPVs_estimatedTauR', 'N/A')
+        spikes_missing = row.get('percentageSpikesMissing_gaussian', 'N/A')
+        print(f"   📊 Metrics: nPeaks={npeaks}, nTroughs={ntroughs}, RPV={rpv:.3f}, SpikesMissing={spikes_missing:.1f}%")
         
         # Generate suggestions based on disagreement type
         if bc_type == 'NOISE' and manual_type in ['Good', 'MUA']:
@@ -212,22 +247,22 @@ def suggest_parameter_adjustments(merged_df, quality_metrics_table, param):
             print("   💡 BombCell is too conservative - good unit classified as noise")
             
             # Check which metrics failed and suggest relaxing thresholds
-            if row['nSpikes'] < param['minNumSpikes']:
+            if 'nSpikes' in row and row['nSpikes'] < param.get('minNumSpikes', 0):
                 new_val = int(row['nSpikes'])
                 print(f"      • minNumSpikes: {row['nSpikes']:.0f} < {param['minNumSpikes']} → Consider lowering to {new_val}")
                 suggestions.append(f"minNumSpikes: {param['minNumSpikes']} → {new_val}")
             
-            if row['presenceRatio'] < param['minPresenceRatio']:
+            if 'presenceRatio' in row and row['presenceRatio'] < param.get('minPresenceRatio', 0):
                 new_val = round(row['presenceRatio'], 3)
                 print(f"      • minPresenceRatio: {row['presenceRatio']:.3f} < {param['minPresenceRatio']} → Consider lowering to {new_val}")
                 suggestions.append(f"minPresenceRatio: {param['minPresenceRatio']} → {new_val}")
             
-            if row['fractionRPVs_estimatedTauR'] > param['maxRPVviolations']:
+            if 'fractionRPVs_estimatedTauR' in row and row['fractionRPVs_estimatedTauR'] > param.get('maxRPVviolations', 1):
                 new_val = round(row['fractionRPVs_estimatedTauR'], 3)
                 print(f"      • maxRPVviolations: {row['fractionRPVs_estimatedTauR']:.3f} > {param['maxRPVviolations']} → Consider raising to {new_val}")
                 suggestions.append(f"maxRPVviolations: {param['maxRPVviolations']} → {new_val}")
             
-            if row['percentageSpikesMissing_gaussian'] > param['maxPercSpikesMissing']:
+            if 'percentageSpikesMissing_gaussian' in row and row['percentageSpikesMissing_gaussian'] > param.get('maxPercSpikesMissing', 100):
                 new_val = round(row['percentageSpikesMissing_gaussian'], 1)
                 print(f"      • maxPercSpikesMissing: {row['percentageSpikesMissing_gaussian']:.1f}% > {param['maxPercSpikesMissing']}% → Consider raising to {new_val}%")
                 suggestions.append(f"maxPercSpikesMissing: {param['maxPercSpikesMissing']} → {new_val}")
@@ -236,32 +271,48 @@ def suggest_parameter_adjustments(merged_df, quality_metrics_table, param):
             # BombCell too permissive (keeping bad units)
             print("   ⚠️  BombCell is too permissive - noise unit classified as good/MUA")
             
-            # Suggest tightening thresholds
-            if row['fractionRPVs_estimatedTauR'] > 0.05:
-                new_val = round(min(param['maxRPVviolations'], row['fractionRPVs_estimatedTauR'] * 0.8), 3)
-                print(f"      • maxRPVviolations: {param['maxRPVviolations']} → {new_val} (tighten)")
-                suggestions.append(f"maxRPVviolations: {param['maxRPVviolations']} → {new_val}")
+            # Check waveform shape metrics
+            if 'nPeaks' in row and row['nPeaks'] > 1:
+                current_max = param.get('maxNPeaks', 999)
+                if current_max > 1:
+                    print(f"      • maxNPeaks: current={current_max} → Consider setting to 1 (unit has {row['nPeaks']} peaks)")
+                    suggestions.append(f"maxNPeaks: {current_max} → 1")
             
-            if row['percentageSpikesMissing_gaussian'] > 30:
-                new_val = round(max(param['maxPercSpikesMissing'], row['percentageSpikesMissing_gaussian'] * 0.8), 1)
-                print(f"      • maxPercSpikesMissing: {param['maxPercSpikesMissing']} → {new_val}% (tighten)")
-                suggestions.append(f"maxPercSpikesMissing: {param['maxPercSpikesMissing']} → {new_val}")
+            # Suggest tightening thresholds
+            if 'fractionRPVs_estimatedTauR' in row and row['fractionRPVs_estimatedTauR'] > 0.05:
+                new_val = round(min(param.get('maxRPVviolations', 1), row['fractionRPVs_estimatedTauR'] * 0.8), 3)
+                print(f"      • maxRPVviolations: {param.get('maxRPVviolations', 1)} → {new_val} (tighten)")
+                suggestions.append(f"maxRPVviolations: {param.get('maxRPVviolations', 1)} → {new_val}")
+            
+            if 'percentageSpikesMissing_gaussian' in row and row['percentageSpikesMissing_gaussian'] > 30:
+                new_val = round(max(param.get('maxPercSpikesMissing', 0), row['percentageSpikesMissing_gaussian'] * 0.8), 1)
+                print(f"      • maxPercSpikesMissing: {param.get('maxPercSpikesMissing', 100)} → {new_val}% (tighten)")
+                suggestions.append(f"maxPercSpikesMissing: {param.get('maxPercSpikesMissing', 100)} → {new_val}")
         
         elif bc_type == 'MUA' and manual_type == 'Good':
             # MUA→Good: could relax thresholds slightly
             print("   📈 Unit could be upgraded from MUA to Good")
             
-            if row['fractionRPVs_estimatedTauR'] < param['maxRPVviolations'] * 1.2:
+            # Check if waveform shape is good (single peak)
+            if 'nPeaks' in row and row['nPeaks'] == 1:
+                current_max = param.get('maxNPeaks', 999)
+                if current_max < 1:
+                    print(f"      • maxNPeaks: current={current_max} → Consider setting to 1 (unit has {row['nPeaks']} peak)")
+                    suggestions.append(f"maxNPeaks: {current_max} → 1")
+                else:
+                    print(f"      • Waveform shape looks good (nPeaks={row['nPeaks']}), check other metrics")
+            
+            if 'fractionRPVs_estimatedTauR' in row and row['fractionRPVs_estimatedTauR'] < param.get('maxRPVviolations', 1) * 1.2:
                 print(f"      • RPV rate acceptable ({row['fractionRPVs_estimatedTauR']:.3f}), other metrics may need adjustment")
         
         elif bc_type == 'GOOD' and manual_type == 'MUA':
             # Good→MUA: tighten thresholds
             print("   📉 Unit should be downgraded from Good to MUA")
             
-            if row['fractionRPVs_estimatedTauR'] > param['maxRPVviolations'] * 0.7:
+            if 'fractionRPVs_estimatedTauR' in row and row['fractionRPVs_estimatedTauR'] > param.get('maxRPVviolations', 1) * 0.7:
                 new_val = round(row['fractionRPVs_estimatedTauR'] * 0.9, 3)
-                print(f"      • maxRPVviolations: {param['maxRPVviolations']} → {new_val} (tighten)")
-                suggestions.append(f"maxRPVviolations: {param['maxRPVviolations']} → {new_val}")
+                print(f"      • maxRPVviolations: {param.get('maxRPVviolations', 1)} → {new_val} (tighten)")
+                suggestions.append(f"maxRPVviolations: {param.get('maxRPVviolations', 1)} → {new_val}")
     
     # Summarize suggestions
     if suggestions:
@@ -319,13 +370,16 @@ def plot_classification_comparison(merged_df, quality_metrics_table):
     
     colors = {'Good': 'green', 'MUA': 'orange', 'NOISE': 'red', 'NON-SOMA': 'blue'}
     
+    # Determine which BombCell column to use
+    bc_col = 'Bombcell_unit_type_normalized' if 'Bombcell_unit_type_normalized' in plot_data.columns else 'Bombcell_unit_type'
+    
     for i, (metric, title) in enumerate(metrics):
         ax = axes[i//3, i%3]
         
         # Plot BombCell classifications
-        for bc_type in plot_data['Bombcell_unit_type'].unique():
+        for bc_type in plot_data[bc_col].unique():
             if bc_type in colors:
-                mask = plot_data['Bombcell_unit_type'] == bc_type
+                mask = plot_data[bc_col] == bc_type
                 data_subset = plot_data[mask]
                 if len(data_subset) > 0:
                     ax.scatter(data_subset[metric], [0.1]*len(data_subset), 
@@ -343,7 +397,7 @@ def plot_classification_comparison(merged_df, quality_metrics_table):
                               label=f'Manual: {manual_type}', marker='^')
         
         # Highlight disagreements
-        disagreements = plot_data[plot_data['manual_type_name'] != plot_data['Bombcell_unit_type']]
+        disagreements = plot_data[plot_data['manual_type_name'] != plot_data[bc_col]]
         if len(disagreements) > 0:
             ax.scatter(disagreements[metric], [0.15]*len(disagreements), 
                       c='black', s=100, marker='x', alpha=0.8, 
@@ -368,11 +422,11 @@ def plot_classification_comparison(merged_df, quality_metrics_table):
     agreement_counts = {}
     disagreement_counts = {}
     
-    for bc_type in plot_data['Bombcell_unit_type'].unique():
-        bc_mask = plot_data['Bombcell_unit_type'] == bc_type
+    for bc_type in plot_data[bc_col].unique():
+        bc_mask = plot_data[bc_col] == bc_type
         bc_subset = plot_data[bc_mask]
         
-        agreements = (bc_subset['manual_type_name'] == bc_subset['Bombcell_unit_type']).sum()
+        agreements = (bc_subset['manual_type_name'] == bc_subset[bc_col]).sum()
         total = len(bc_subset)
         disagreements = total - agreements
         
@@ -403,7 +457,7 @@ def plot_classification_comparison(merged_df, quality_metrics_table):
     plt.show()
 
 
-def analyze_manual_vs_bombcell(save_path, quality_metrics_table, param, make_plots=True):
+def analyze_manual_vs_bombcell(save_path, quality_metrics_table, param, make_plots=False):
     """
     Complete analysis of manual vs BombCell classifications with suggestions
     
@@ -416,7 +470,7 @@ def analyze_manual_vs_bombcell(save_path, quality_metrics_table, param, make_plo
     param : dict
         BombCell parameters
     make_plots : bool, optional
-        Whether to generate comparison plots, by default True
+        Whether to generate comparison plots, by default False (plots removed due to poor quality)
         
     Returns
     -------
@@ -429,16 +483,12 @@ def analyze_manual_vs_bombcell(save_path, quality_metrics_table, param, make_plo
         return None
     
     # Analyze concordance
-    merged_df, confusion_df, stats = analyze_classification_concordance(manual_df, quality_metrics_table)
+    merged_df, confusion_df, stats = analyze_classification_concordance(manual_df, quality_metrics_table, save_path)
     if merged_df is None:
         return None
     
     # Get parameter suggestions
     suggestions = suggest_parameter_adjustments(merged_df, quality_metrics_table, param)
-    
-    # Create plots if requested
-    if make_plots:
-        plot_classification_comparison(merged_df, quality_metrics_table)
     
     results = {
         'manual_df': manual_df,
