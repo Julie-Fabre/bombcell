@@ -1,0 +1,10 @@
+include README.md
+include LICENSE
+include requirements.txt
+recursive-include bombcell *.py
+recursive-include bombcell *.mat
+recursive-include bombcell *.npy
+recursive-include bombcell *.pkl
+recursive-exclude bombcell __pycache__
+recursive-exclude bombcell *.pyc
+recursive-exclude bombcell *.pyo

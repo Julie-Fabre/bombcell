@@ -181,19 +181,28 @@ def suggest_parameter_adjustments(merged_df, quality_metrics_table, param):
     print(f"Analyzing {len(disagreements)} disagreements out of {len(merged_df)} units...")
     
     # Get full quality metrics for disagreement units
-    disagreement_metrics = disagreements.merge(
-        quality_metrics_table, 
-        left_on='unit_id', 
-        right_on='phy_clusterID'
-    )
+    # Check if disagreements already has quality metrics columns
+    if 'nSpikes' in disagreements.columns:
+        # Disagreements already has quality metrics from merged_df
+        disagreement_metrics = disagreements.copy()
+    else:
+        # Need to merge with quality metrics table
+        disagreement_metrics = disagreements.merge(
+            quality_metrics_table, 
+            left_on='unit_id', 
+            right_on='phy_clusterID',
+            how='left'
+        )
     
     suggestions = []
     
     # Analyze specific disagreement patterns
     for _, row in disagreement_metrics.iterrows():
         unit_id = row['unit_id']
-        bc_type = row['Bombcell_unit_type']
-        manual_type = row['manual_type_name']
+        
+        # Get BombCell classification (should be in disagreements from merged_df)
+        bc_type = row.get('Bombcell_unit_type', 'Unknown')
+        manual_type = row.get('manual_type_name', 'Unknown')
         
         print(f"\n📋 Unit {unit_id}: BombCell={bc_type} → Manual={manual_type}")
         
