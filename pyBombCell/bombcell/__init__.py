@@ -9,7 +9,7 @@ from . import (
     plot_functions,
     classification,
     unit_quality_gui,
-    ccg_fast
+    manual_analysis
 )
 
 from .default_parameters import *
@@ -25,7 +25,14 @@ from .plot_functions import *
 from .ephys_properties import get_ephys_parameters
 from .classification import classify_and_plot_brain_region
 from .unit_quality_gui import unit_quality_gui, InteractiveUnitQualityGUI, precompute_gui_data, load_gui_data
-from .ccg_fast import ccg_bz, build_ccg_extension
+# CCG functions are in ephys_properties.py (fast_acg, compute_acg)
+from .manual_analysis import (
+    load_manual_classifications, 
+    analyze_classification_concordance, 
+    suggest_parameter_adjustments, 
+    plot_classification_comparison,
+    analyze_manual_vs_bombcell
+)
 
 # __version__ attribute exposition
 try:
