@@ -1,21 +1,9 @@
 """
-Fast cross-correlogram computation using C extension
+Fast cross-correlogram computation using pure Python
 Python version of MATLAB CCGBz function
 """
 
 import numpy as np
-try:
-    # Try relative import first
-    from . import ccg_heart
-    CCG_HEART_AVAILABLE = True
-except ImportError:
-    try:
-        # Try direct import
-        import ccg_heart
-        CCG_HEART_AVAILABLE = True
-    except ImportError:
-        CCG_HEART_AVAILABLE = False
-        print("Warning: CCG C extension not available. Use 'python ccg_setup.py build_ext --inplace' to build it.")
 
 def ccg_bz(times, groups=None, bin_size=0.001, duration=2.0, fs=1/20000, norm='counts'):
     """
@@ -54,7 +42,7 @@ def ccg_bz(times, groups=None, bin_size=0.001, duration=2.0, fs=1/20000, norm='c
         
     Notes:
     ------
-    - Requires ccg_heart C extension for speed (falls back to slow Python if not available)
+    - Pure Python implementation 
     - Groups must be positive integers (no zeros allowed)
     - Spikes will be automatically sorted by time
     """
@@ -100,22 +88,12 @@ def ccg_bz(times, groups=None, bin_size=0.001, duration=2.0, fs=1/20000, norm='c
     n_bins = 2 * half_bins + 1
     t = np.arange(-half_bins, half_bins + 1) * bin_size
     
-    # Convert times to integer units for C computation
+    # Convert times to integer units for computation
     times_int = np.round(times / fs).astype(np.float64)
     bin_size_int = round(bin_size / fs)
     
-    if CCG_HEART_AVAILABLE:
-        # Use fast C implementation
-        try:
-            result = ccg_heart.ccg_heart(times_int, groups, bin_size_int, half_bins, False)
-            counts_flat = result[0] if isinstance(result, tuple) else result
-            counts = counts_flat.astype(np.double).reshape((n_bins, n_groups, n_groups))
-        except Exception as e:
-            print(f"Warning: C extension failed ({e}), falling back to Python implementation")
-            counts = _ccg_python(times_int, groups, bin_size_int, half_bins, n_groups, n_bins)
-    else:
-        # Fall back to Python implementation
-        counts = _ccg_python(times_int, groups, bin_size_int, half_bins, n_groups, n_bins)
+    # Use Python implementation
+    counts = _ccg_python(times_int, groups, bin_size_int, half_bins, n_groups, n_bins)
     
     # Handle normalization
     if norm == 'rate':
@@ -170,68 +148,6 @@ def _ccg_python(times, groups, bin_size, half_bins, n_groups, n_bins):
     
     return counts
 
-def build_ccg_extension():
-    """
-    Build the CCG C extension if not already available
-    
-    Call this function in a notebook cell to build the fast C extension:
-    
-    ```python
-    import bombcell as bc
-    bc.build_ccg_extension()
-    ```
-    
-    Then restart your kernel to use the fast implementation.
-    """
-    if CCG_HEART_AVAILABLE:
-        print("✅ CCG C extension already available and working!")
-        return True
-        
-    try:
-        import subprocess
-        import os
-        import sys
-        
-        # Get the package directory
-        package_dir = os.path.dirname(__file__)
-        
-        # Try building with the standalone setup first
-        setup_file = os.path.join(package_dir, 'ccg_setup.py')
-        if os.path.exists(setup_file):
-            print("🔨 Building CCG C extension...")
-            result = subprocess.run([
-                sys.executable, setup_file, 'build_ext', '--inplace'
-            ], cwd=package_dir, capture_output=True, text=True)
-            
-            if result.returncode == 0:
-                print("✅ CCG C extension built successfully!")
-                print("🔄 Please restart your Python kernel to use the fast C implementation")
-                print("   In Jupyter: Kernel -> Restart")
-                return True
-            else:
-                print(f"❌ Build failed: {result.stderr}")
-        
-        # Fallback: try building with main setup.py
-        main_setup = os.path.join(package_dir, '..', 'setup.py')
-        if os.path.exists(main_setup):
-            print("🔨 Trying alternative build method...")
-            result = subprocess.run([
-                sys.executable, main_setup, 'build_ext', '--inplace'
-            ], cwd=os.path.dirname(main_setup), capture_output=True, text=True)
-            
-            if result.returncode == 0:
-                print("✅ CCG C extension built successfully!")
-                print("🔄 Please restart your Python kernel to use the fast C implementation")
-                return True
-                
-        print("❌ Failed to build CCG extension")
-        print("ℹ️  The CCG function will use a slower Python fallback")
-        return False
-            
-    except Exception as e:
-        print(f"❌ Error building CCG extension: {e}")
-        print("ℹ️  The CCG function will use a slower Python fallback")
-        return False
 
 # Test function
 def test_ccg():

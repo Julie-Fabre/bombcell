@@ -739,7 +739,7 @@ class InteractiveUnitQualityGUI:
         
         # Classification toggle buttons - match widths with navigation buttons above
         self.classify_good_btn = widgets.Button(
-            description='mark as Ggood', 
+            description='mark as good', 
             button_style='success',
             layout=widgets.Layout(width='160px', height='35px')  # Match ◀good + good▶ = 80+80
         )

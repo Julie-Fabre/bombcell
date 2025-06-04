@@ -1,22 +1,5 @@
-from setuptools import setup, Extension, find_packages
+from setuptools import setup, find_packages
 import os
-
-# Try to import numpy, but handle gracefully if not available during build
-try:
-    import numpy
-    numpy_include = numpy.get_include()
-except ImportError:
-    # Fallback for when numpy is not yet installed
-    numpy_include = ''
-
-# Define the CCG C extension
-ccg_extension = Extension(
-    'bombcell.ccg_heart',
-    sources=['bombcell/ccg_heart.c'],
-    include_dirs=[numpy_include] if numpy_include else [],
-    extra_compile_args=['-O3', '-ffast-math'],
-    language='c'
-)
 
 # Read requirements
 def read_requirements():
@@ -68,7 +51,6 @@ setup(
     author='BombCell Team',
     packages=find_packages(),
     install_requires=read_requirements(),
-    ext_modules=[ccg_extension] if numpy_include else [],
     python_requires='>=3.8',
     classifiers=[
         'Development Status :: 4 - Beta',
