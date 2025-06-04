@@ -10,6 +10,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 
+# Import BombCell modules needed for the wrapper function  
+from .loading_utils import load_bc_results
+from .quality_metrics import get_quality_unit_type
+
 
 def load_manual_classifications(save_path):
     """
@@ -181,7 +185,11 @@ def analyze_classification_concordance(manual_df, quality_metrics_table, save_pa
 
 def suggest_parameter_adjustments(merged_df, quality_metrics_table, param):
     """
-    Suggest parameter threshold adjustments based on disagreements between manual and BombCell classifications
+    Suggest parameter threshold adjustments based on analysis of all quality metrics
+    
+    This function analyzes each unit's quality metrics to determine what parameter 
+    thresholds would best match the user's manual classifications, then compares
+    these optimal thresholds to current parameters to suggest improvements.
     
     Parameters
     ----------
@@ -204,115 +212,125 @@ def suggest_parameter_adjustments(merged_df, quality_metrics_table, param):
     print(f"\n🔧 Parameter Threshold Suggestions")
     print(f"{'='*60}")
     
-    # Find disagreements (using normalized comparison)
-    disagreements = merged_df[merged_df['manual_type_name'] != merged_df['Bombcell_unit_type_normalized']].copy()
-    
-    if len(disagreements) == 0:
-        print("✅ Perfect concordance! No parameter adjustments needed.")
-        return []
-    
-    print(f"Analyzing {len(disagreements)} disagreements out of {len(merged_df)} units...")
-    
-    # Get full quality metrics for disagreement units
-    # Always merge with quality metrics table to ensure we have all columns
-    disagreement_metrics = disagreements.merge(
+    # Merge with full quality metrics
+    full_data = merged_df.merge(
         quality_metrics_table, 
         left_on='unit_id', 
         right_on='phy_clusterID',
         how='left'
     )
     
+    print(f"Analyzing {len(full_data)} units with manual classifications...")
+    
+    # Define key quality metrics and their parameter mappings
+    quality_metrics = {
+        'nSpikes': {'param': 'minNumSpikes', 'direction': 'min'},
+        'presenceRatio': {'param': 'minPresenceRatio', 'direction': 'min'}, 
+        'fractionRPVs_estimatedTauR': {'param': 'maxRPVviolations', 'direction': 'max'},
+        'percentageSpikesMissing_gaussian': {'param': 'maxPercSpikesMissing', 'direction': 'max'},
+        'nPeaks': {'param': 'maxNPeaks', 'direction': 'max'},
+        'nTroughs': {'param': 'maxNTroughs', 'direction': 'max'},
+        'waveformDuration_peakTrough': {'param': 'maxWvDuration', 'direction': 'max'},
+        'spatialDecaySlope': {'param': 'minSpatialDecaySlope', 'direction': 'min'}
+    }
+    
     suggestions = []
     
-    # Analyze specific disagreement patterns
-    for _, row in disagreement_metrics.iterrows():
-        unit_id = row['unit_id']
+    # Analyze each quality metric
+    for metric, info in quality_metrics.items():
+        if metric not in full_data.columns:
+            continue
+            
+        param_name = info['param']
+        if param_name not in param:
+            continue
+            
+        current_threshold = param[param_name]
+        direction = info['direction']
         
-        # Get BombCell classification (use original uppercase format for parameter logic)
-        bc_type = row.get('Bombcell_unit_type', 'Unknown')
-        manual_type = row.get('manual_type_name', 'Unknown')
+        # Get manually classified units
+        good_units = full_data[full_data['manual_type_name'] == 'Good']
+        noise_units = full_data[full_data['manual_type_name'] == 'Noise']
         
-        print(f"\n📋 Unit {unit_id}: BombCell={bc_type} → Manual={manual_type}")
+        if len(good_units) == 0 and len(noise_units) == 0:
+            continue
+            
+        # Calculate optimal threshold based on manual classifications
+        good_values = good_units[metric].dropna()
+        noise_values = noise_units[metric].dropna()
         
-        # Show relevant metrics for this unit
-        npeaks = row.get('nPeaks', 'N/A')
-        ntroughs = row.get('nTroughs', 'N/A')
-        rpv = row.get('fractionRPVs_estimatedTauR', 'N/A')
-        spikes_missing = row.get('percentageSpikesMissing_gaussian', 'N/A')
-        print(f"   📊 Metrics: nPeaks={npeaks}, nTroughs={ntroughs}, RPV={rpv:.3f}, SpikesMissing={spikes_missing:.1f}%")
+        if len(good_values) == 0 or len(noise_values) == 0:
+            continue
         
-        # Generate suggestions based on disagreement type
-        if bc_type == 'NOISE' and manual_type in ['Good', 'MUA']:
-            # BombCell too conservative (calling good units noise)
-            print("   💡 BombCell is too conservative - good unit classified as noise")
-            
-            # Check which metrics failed and suggest relaxing thresholds
-            if 'nSpikes' in row and row['nSpikes'] < param.get('minNumSpikes', 0):
-                new_val = int(row['nSpikes'])
-                print(f"      • minNumSpikes: {row['nSpikes']:.0f} < {param['minNumSpikes']} → Consider lowering to {new_val}")
-                suggestions.append(f"minNumSpikes: {param['minNumSpikes']} → {new_val}")
-            
-            if 'presenceRatio' in row and row['presenceRatio'] < param.get('minPresenceRatio', 0):
-                new_val = round(row['presenceRatio'], 3)
-                print(f"      • minPresenceRatio: {row['presenceRatio']:.3f} < {param['minPresenceRatio']} → Consider lowering to {new_val}")
-                suggestions.append(f"minPresenceRatio: {param['minPresenceRatio']} → {new_val}")
-            
-            if 'fractionRPVs_estimatedTauR' in row and row['fractionRPVs_estimatedTauR'] > param.get('maxRPVviolations', 1):
-                new_val = round(row['fractionRPVs_estimatedTauR'], 3)
-                print(f"      • maxRPVviolations: {row['fractionRPVs_estimatedTauR']:.3f} > {param['maxRPVviolations']} → Consider raising to {new_val}")
-                suggestions.append(f"maxRPVviolations: {param['maxRPVviolations']} → {new_val}")
-            
-            if 'percentageSpikesMissing_gaussian' in row and row['percentageSpikesMissing_gaussian'] > param.get('maxPercSpikesMissing', 100):
-                new_val = round(row['percentageSpikesMissing_gaussian'], 1)
-                print(f"      • maxPercSpikesMissing: {row['percentageSpikesMissing_gaussian']:.1f}% > {param['maxPercSpikesMissing']}% → Consider raising to {new_val}%")
-                suggestions.append(f"maxPercSpikesMissing: {param['maxPercSpikesMissing']} → {new_val}")
+        # For 'min' parameters: threshold should be below the worst good unit
+        # For 'max' parameters: threshold should be above the worst good unit
+        if direction == 'min':
+            # For minNumSpikes, minPresenceRatio: set to accommodate worst good unit
+            optimal_threshold = good_values.min()
+            needs_adjustment = current_threshold > optimal_threshold
+            suggestion_value = optimal_threshold
+        else:
+            # For maxRPVviolations, maxPercSpikesMissing, maxNPeaks: set to exclude worst noise unit
+            if len(noise_values) > 0:
+                # Set threshold to be stricter than the best noise unit
+                optimal_threshold = noise_values.min()
+                needs_adjustment = current_threshold > optimal_threshold
+                suggestion_value = optimal_threshold
+            else:
+                # No noise units, use good units as reference
+                optimal_threshold = good_values.max()
+                needs_adjustment = current_threshold < optimal_threshold
+                suggestion_value = optimal_threshold
         
-        elif bc_type in ['GOOD', 'MUA'] and manual_type == 'Noise':
-            # BombCell too permissive (keeping bad units)
-            print("   ⚠️  BombCell is too permissive - noise unit classified as good/MUA")
-            
-            # Check waveform shape metrics
-            if 'nPeaks' in row and row['nPeaks'] > 1:
-                current_max = param.get('maxNPeaks', 999)
-                if current_max > 1:
-                    print(f"      • maxNPeaks: current={current_max} → Consider setting to 1 (unit has {row['nPeaks']} peaks)")
-                    suggestions.append(f"maxNPeaks: {current_max} → 1")
-            
-            # Suggest tightening thresholds
-            if 'fractionRPVs_estimatedTauR' in row and row['fractionRPVs_estimatedTauR'] > 0.05:
-                new_val = round(min(param.get('maxRPVviolations', 1), row['fractionRPVs_estimatedTauR'] * 0.8), 3)
-                print(f"      • maxRPVviolations: {param.get('maxRPVviolations', 1)} → {new_val} (tighten)")
-                suggestions.append(f"maxRPVviolations: {param.get('maxRPVviolations', 1)} → {new_val}")
-            
-            if 'percentageSpikesMissing_gaussian' in row and row['percentageSpikesMissing_gaussian'] > 30:
-                new_val = round(max(param.get('maxPercSpikesMissing', 0), row['percentageSpikesMissing_gaussian'] * 0.8), 1)
-                print(f"      • maxPercSpikesMissing: {param.get('maxPercSpikesMissing', 100)} → {new_val}% (tighten)")
-                suggestions.append(f"maxPercSpikesMissing: {param.get('maxPercSpikesMissing', 100)} → {new_val}")
+        # Special handling for nPeaks - if any noise units have >1 peak, suggest maxNPeaks=1
+        if metric == 'nPeaks' and len(noise_values) > 0:
+            if any(noise_values > 1) and current_threshold > 1:
+                suggestions.append(f"maxNPeaks: {current_threshold} → 1")
+                print(f"📊 {metric}: Noise units have >1 peak → suggest maxNPeaks=1")
+                continue
         
-        elif bc_type == 'MUA' and manual_type == 'Good':
-            # MUA→Good: could relax thresholds slightly
-            print("   📈 Unit could be upgraded from MUA to Good")
-            
-            # Check if waveform shape is good (single peak)
-            if 'nPeaks' in row and row['nPeaks'] == 1:
-                current_max = param.get('maxNPeaks', 999)
-                if current_max < 1:
-                    print(f"      • maxNPeaks: current={current_max} → Consider setting to 1 (unit has {row['nPeaks']} peak)")
-                    suggestions.append(f"maxNPeaks: {current_max} → 1")
+        # Check if adjustment is needed and beneficial
+        if needs_adjustment:
+            # Calculate current performance
+            if direction == 'min':
+                good_pass_current = (good_values >= current_threshold).sum()
+                good_pass_optimal = (good_values >= suggestion_value).sum()
+            else:
+                good_pass_current = (good_values <= current_threshold).sum()
+                good_pass_optimal = (good_values <= suggestion_value).sum()
+                
+            # Only suggest if it improves classification of good units
+            if good_pass_optimal > good_pass_current:
+                # Format suggestion value appropriately
+                if metric in ['nPeaks', 'nTroughs', 'nSpikes']:
+                    suggestion_value = int(suggestion_value)
                 else:
-                    print(f"      • Waveform shape looks good (nPeaks={row['nPeaks']}), check other metrics")
-            
-            if 'fractionRPVs_estimatedTauR' in row and row['fractionRPVs_estimatedTauR'] < param.get('maxRPVviolations', 1) * 1.2:
-                print(f"      • RPV rate acceptable ({row['fractionRPVs_estimatedTauR']:.3f}), other metrics may need adjustment")
+                    suggestion_value = round(suggestion_value, 3)
+                    
+                suggestions.append(f"{param_name}: {current_threshold} → {suggestion_value}")
+                
+                print(f"📊 {metric}: Current={current_threshold}, Optimal≈{suggestion_value}")
+                print(f"   Good units passing: {good_pass_current}/{len(good_values)} → {good_pass_optimal}/{len(good_values)}")
+    
+    # Additional analysis for disagreements
+    disagreements = full_data[full_data['manual_type_name'] != full_data['Bombcell_unit_type_normalized']]
+    
+    if len(disagreements) > 0:
+        print(f"\n🔍 Analyzing {len(disagreements)} specific disagreements:")
         
-        elif bc_type == 'GOOD' and manual_type == 'MUA':
-            # Good→MUA: tighten thresholds
-            print("   📉 Unit should be downgraded from Good to MUA")
+        for _, row in disagreements.iterrows():
+            unit_id = row['unit_id']
+            bc_type = row.get('Bombcell_unit_type', 'Unknown')
+            manual_type = row.get('manual_type_name', 'Unknown')
             
-            if 'fractionRPVs_estimatedTauR' in row and row['fractionRPVs_estimatedTauR'] > param.get('maxRPVviolations', 1) * 0.7:
-                new_val = round(row['fractionRPVs_estimatedTauR'] * 0.9, 3)
-                print(f"      • maxRPVviolations: {param.get('maxRPVviolations', 1)} → {new_val} (tighten)")
-                suggestions.append(f"maxRPVviolations: {param.get('maxRPVviolations', 1)} → {new_val}")
+            print(f"\n📋 Unit {unit_id}: BombCell={bc_type} → Manual={manual_type}")
+            
+            # Show key metrics
+            npeaks = row.get('nPeaks', 'N/A')
+            rpv = row.get('fractionRPVs_estimatedTauR', 'N/A')
+            spikes_missing = row.get('percentageSpikesMissing_gaussian', 'N/A')
+            if rpv != 'N/A' and spikes_missing != 'N/A':
+                print(f"   📊 nPeaks={npeaks}, RPV={rpv:.3f}, SpikesMissing={spikes_missing:.1f}%")
     
     # Summarize suggestions
     if suggestions:
@@ -322,10 +340,7 @@ def suggest_parameter_adjustments(merged_df, quality_metrics_table, param):
         for i, suggestion in enumerate(unique_suggestions, 1):
             print(f"{i}. {suggestion}")
         
-        print(f"\n💡 To apply these changes:")
-        print("   1. Update your parameter dictionary with the suggested values")
-        print("   2. Re-run BombCell with the updated parameters")
-        print("   3. Compare the new classifications with your manual labels")
+        print(f"\n💡 To apply these changes, see the section below")
     else:
         print("\n✅ No specific parameter adjustments recommended based on current disagreements.")
     
@@ -499,3 +514,86 @@ def analyze_manual_vs_bombcell(save_path, quality_metrics_table, param, make_plo
     }
     
     return results
+
+
+def compare_manual_vs_bombcell(save_path):
+    """
+    Simple function to compare manual vs BombCell classifications
+    
+    Parameters
+    ----------
+    save_path : str or Path
+        Path to BombCell output directory
+        
+    Returns
+    -------
+    None
+        Prints analysis results and parameter suggestions
+    """
+    save_path = Path(save_path)
+    print(f"📊 Comparing manual vs BombCell classifications from: {save_path}")
+    
+    try:
+        # Load BombCell results automatically
+        param, quality_metrics, _ = load_bc_results(save_path)
+        unit_type, unit_type_string = get_quality_unit_type(param, quality_metrics)
+        quality_metrics_df = pd.DataFrame(quality_metrics)
+        quality_metrics_df.insert(0, 'Bombcell_unit_type', unit_type_string)
+        
+        print(f"✅ Loaded BombCell results: {len(quality_metrics)} units")
+        
+        # Run concordance analysis
+        analysis_results = analyze_manual_vs_bombcell(
+            save_path=save_path,
+            quality_metrics_table=quality_metrics_df, 
+            param=param,
+            make_plots=False
+        )
+        
+        if analysis_results is not None:
+            stats = analysis_results['concordance_stats']
+            suggestions = analysis_results['parameter_suggestions']
+            
+            print(f"\n📈 Analysis Summary:")
+            print(f"  Overall concordance: {stats['overall_concordance']:.1f}%")
+            print(f"  Concordant units: {stats['concordant_units']}/{stats['total_units']}")
+            
+            print(f"\nConfusion Matrix (rows=BombCell, columns=Manual):")
+            print(analysis_results['confusion_matrix'])
+            
+            # Parameter suggestions
+            if len(suggestions) > 0:
+                print(f"\n🔧 Suggested parameter adjustments:")
+                for i, suggestion in enumerate(suggestions, 1):
+                    print(f"  {i}. {suggestion}")
+                    
+                print(f"\n💡 To apply suggestions:")
+                print(f"  1. Load your parameters: param, _, _ = bc.load_bc_results(save_path)")
+                print(f"  2. Update param with suggested values (e.g., param['maxNPeaks'] = 1)")
+                print(f"  3. Re-run bc.run_bombcell(ks_dir, save_path, param)")
+                
+                # Show example for first suggestion
+                if len(suggestions) > 0:
+                    first_suggestion = suggestions[0]
+                    if '→' in first_suggestion and ':' in first_suggestion:
+                        param_name = first_suggestion.split(':')[0].strip()
+                        new_value_str = first_suggestion.split('→')[1].strip()
+                        try:
+                            if '.' in new_value_str:
+                                new_value = float(new_value_str)
+                            else:
+                                new_value = int(new_value_str)
+                            print(f"\n📋 Example: param['{param_name}'] = {new_value}")
+                        except ValueError:
+                            pass
+            else:
+                print(f"\n✅ No parameter adjustments recommended - parameters look good!")
+                
+        else:
+            print("❌ No manual classifications found.")
+            print("   Use the GUI to manually classify some units first:")
+            print("   bc.unit_quality_gui(ks_dir, quality_metrics, unit_types, param, save_path)")
+            
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        print("   Make sure you have run BombCell analysis first and saved results.")

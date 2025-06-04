@@ -31,7 +31,8 @@ from .manual_analysis import (
     analyze_classification_concordance, 
     suggest_parameter_adjustments, 
     plot_classification_comparison,
-    analyze_manual_vs_bombcell
+    analyze_manual_vs_bombcell,
+    compare_manual_vs_bombcell
 )
 
 # __version__ attribute exposition
