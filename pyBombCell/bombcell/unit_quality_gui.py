@@ -385,7 +385,7 @@ class InteractiveUnitQualityGUI:
     """
     
     def __init__(self, ephys_data, quality_metrics, ephys_properties=None, 
-                 raw_waveforms=None, param=None, unit_types=None, gui_data=None, save_path=None, layout='auto'):
+                 raw_waveforms=None, param=None, unit_types=None, gui_data=None, save_path=None, layout='auto', auto_advance=True):
         """
         Initialize the interactive GUI
         
@@ -397,6 +397,9 @@ class InteractiveUnitQualityGUI:
         layout : str, optional
             Layout mode: 'auto' (detect screen), 'landscape' (side-by-side), 'portrait' (stacked)
             Default: 'auto'
+        auto_advance : bool, optional
+            Whether to automatically advance to next unit after manual classification
+            Default: True
         """
         self.ephys_data = ephys_data
         self.quality_metrics = quality_metrics
@@ -405,6 +408,7 @@ class InteractiveUnitQualityGUI:
         self.param = param or {}
         self.unit_types = unit_types
         self.save_path = save_path
+        self.auto_advance = auto_advance
         
         # Determine layout mode
         self.layout_mode = self._determine_layout(layout)
@@ -472,9 +476,180 @@ class InteractiveUnitQualityGUI:
         print(f"Total units: {self.n_units}")
         self.current_unit_idx = 0
         
+        # Initialize manual classifications (separate from bombcell unit_types)
+        self._initialize_manual_classifications()
+        
         # Setup widgets and display
         self.setup_widgets()
         self.display_gui()
+        
+    def _initialize_manual_classifications(self):
+        """Initialize manual classification system - separate from bombcell classifications"""
+        # Store original bombcell unit_types separately
+        self.bombcell_unit_types = self.unit_types.copy() if self.unit_types is not None else None
+        
+        # Initialize manual classifications as a separate array
+        self.manual_unit_types = self._load_manual_classifications()
+        
+        if self.manual_unit_types is not None:
+            print("📂 Loaded existing manual classifications")
+        else:
+            # Initialize all as unclassified
+            self.manual_unit_types = np.full(self.n_units, -1, dtype=int)  # -1 = unclassified
+            print("📝 Initialized manual classification system (no previous classifications found)")
+        
+        # For display purposes, prioritize manual classifications over bombcell ones
+        self.unit_types = self.manual_unit_types.copy()
+        
+        # Show auto-advance status
+        if self.auto_advance:
+            print("🚀 Auto-advance enabled: will automatically go to next unit after classification")
+        else:
+            print("👆 Auto-advance disabled: use navigation buttons to move between units")
+    
+    def export_manual_classifications(self, export_path=None):
+        """
+        Export manual classifications for parameter optimization
+        
+        Parameters:
+        -----------
+        export_path : str, optional
+            Path to save exported classifications. If None, uses self.save_path
+        
+        Returns:
+        --------
+        dict : Dictionary with classification statistics and file paths
+        """
+        if export_path is None:
+            export_path = self.save_path
+            
+        if export_path is None:
+            print("⚠️  No save path provided for export")
+            return None
+            
+        try:
+            import os
+            import pandas as pd
+            
+            os.makedirs(export_path, exist_ok=True)
+            
+            # Get classification counts for manual classifications
+            class_names = {-1: "Unclassified", 0: "Noise", 1: "Good", 2: "MUA", 3: "Non-somatic"}
+            manual_counts = {}
+            for class_id, class_name in class_names.items():
+                manual_counts[class_name] = np.sum(self.manual_unit_types == class_id)
+            
+            # Create detailed export with both manual and bombcell data
+            bombcell_types = self.bombcell_unit_types if self.bombcell_unit_types is not None else np.full(self.n_units, -1)
+            
+            df = pd.DataFrame({
+                'unit_id': self.unique_units,
+                'unit_index': range(self.n_units),
+                'manual_classification': self.manual_unit_types,
+                'bombcell_classification': bombcell_types,
+                'manual_classification_name': [class_names.get(t, 'Unknown') for t in self.manual_unit_types],
+                'bombcell_classification_name': [class_names.get(t, 'Unknown') for t in bombcell_types]
+            })
+            
+            # Save files
+            csv_file = os.path.join(export_path, 'manual_classifications_for_optimization.csv')
+            tsv_file = os.path.join(export_path, 'manual_classifications_for_optimization.tsv')
+            
+            df.to_csv(csv_file, index=False)
+            df.to_csv(tsv_file, sep='\t', index=False)
+            
+            # Create summary
+            summary = {
+                'total_units': self.n_units,
+                'manual_classification_counts': manual_counts,
+                'files_saved': [csv_file, tsv_file],
+                'manually_classified_units': np.sum(self.manual_unit_types != -1),
+                'unclassified_units': np.sum(self.manual_unit_types == -1)
+            }
+            
+            print("🎯 Manual Classification Export Summary:")
+            print(f"   Total units: {summary['total_units']}")
+            print(f"   Manually classified: {summary['manually_classified_units']}")
+            print(f"   Unclassified: {summary['unclassified_units']}")
+            print("   Manual classification breakdown:")
+            for class_name, count in manual_counts.items():
+                if count > 0:
+                    print(f"     {class_name}: {count}")
+            print(f"   Exported to: {csv_file}")
+            print(f"   Note: File includes both manual and BombCell classifications for comparison")
+            
+            return summary
+            
+        except Exception as e:
+            print(f"⚠️  Error exporting classifications: {str(e)}")
+            return None
+    
+    def get_classification_comparison(self):
+        """
+        Get statistics comparing manual vs bombcell classifications
+        
+        Returns:
+        --------
+        dict : Dictionary with comparison statistics
+        """
+        if self.bombcell_unit_types is None:
+            print("⚠️  No BombCell classifications available for comparison")
+            return None
+        
+        class_names = {-1: "Unclassified", 0: "Noise", 1: "Good", 2: "MUA", 3: "Non-somatic"}
+        
+        # Count agreements and disagreements
+        manual_classified = self.manual_unit_types != -1
+        n_manual = np.sum(manual_classified)
+        
+        if n_manual == 0:
+            print("⚠️  No manual classifications available for comparison")
+            return None
+        
+        # For units that have manual classifications, compare with bombcell
+        agreements = 0
+        disagreements = 0
+        comparison_details = {}
+        
+        for i in range(self.n_units):
+            if self.manual_unit_types[i] != -1:  # Has manual classification
+                manual_class = self.manual_unit_types[i]
+                bombcell_class = self.bombcell_unit_types[i]
+                
+                if manual_class == bombcell_class:
+                    agreements += 1
+                else:
+                    disagreements += 1
+                    
+                # Track specific disagreements
+                manual_name = class_names.get(manual_class, 'Unknown')
+                bombcell_name = class_names.get(bombcell_class, 'Unknown')
+                key = f"{bombcell_name} -> {manual_name}"
+                comparison_details[key] = comparison_details.get(key, 0) + 1
+        
+        agreement_rate = agreements / n_manual if n_manual > 0 else 0
+        
+        stats = {
+            'total_units': self.n_units,
+            'manually_classified': n_manual,
+            'agreements': agreements,
+            'disagreements': disagreements,
+            'agreement_rate': agreement_rate,
+            'disagreement_details': comparison_details
+        }
+        
+        print("📊 Manual vs BombCell Classification Comparison:")
+        print(f"   Units with manual classification: {n_manual}/{self.n_units}")
+        print(f"   Agreements: {agreements}")
+        print(f"   Disagreements: {disagreements}")
+        print(f"   Agreement rate: {agreement_rate:.1%}")
+        
+        if comparison_details:
+            print("   Disagreement patterns:")
+            for pattern, count in comparison_details.items():
+                print(f"     {pattern}: {count}")
+        
+        return stats
     
     def _determine_layout(self, layout):
         """Determine layout mode based on user input or screen detection"""
@@ -562,10 +737,34 @@ class InteractiveUnitQualityGUI:
         # Unit info display
         self.unit_info = widgets.HTML(value="")
         
-        # Classification toggle buttons
-        self.classify_good_btn = widgets.Button(description='Mark as Good', button_style='success')
-        self.classify_mua_btn = widgets.Button(description='Mark as MUA', button_style='warning')
-        self.classify_noise_btn = widgets.Button(description='Mark as Noise', button_style='danger')
+        # Classification toggle buttons with consistent width
+        self.classify_good_btn = widgets.Button(
+            description='Mark as Good', 
+            button_style='success',
+            layout=widgets.Layout(width='120px', height='32px')
+        )
+        self.classify_mua_btn = widgets.Button(
+            description='Mark as MUA', 
+            button_style='warning',
+            layout=widgets.Layout(width='120px', height='32px')
+        )
+        self.classify_nonsomatic_btn = widgets.Button(
+            description='Mark as Non-somatic', 
+            button_style='primary',
+            layout=widgets.Layout(width='140px', height='32px')
+        )
+        self.classify_noise_btn = widgets.Button(
+            description='Mark as Noise', 
+            button_style='danger',
+            layout=widgets.Layout(width='120px', height='32px')
+        )
+        
+        # Navigation helper button
+        self.goto_next_unclassified_btn = widgets.Button(
+            description='→ Next Unclassified', 
+            button_style='info',
+            layout=widgets.Layout(width='180px', height='32px')
+        )
         
         # Output widget for plots
         self.plot_output = widgets.Output()
@@ -587,7 +786,9 @@ class InteractiveUnitQualityGUI:
         self.goto_nonsomatic_btn.on_click(self.goto_next_nonsomatic)
         self.classify_good_btn.on_click(lambda b: self.classify_unit(1))
         self.classify_mua_btn.on_click(lambda b: self.classify_unit(2))
+        self.classify_nonsomatic_btn.on_click(lambda b: self.classify_unit(3))
         self.classify_noise_btn.on_click(lambda b: self.classify_unit(0))
+        self.goto_next_unclassified_btn.on_click(self.goto_next_unclassified)
         
     def display_gui(self):
         """Display the GUI"""
@@ -603,8 +804,8 @@ class InteractiveUnitQualityGUI:
         type_nav_buttons = widgets.HBox([
             self.goto_prev_good_btn, self.goto_good_btn,
             self.goto_prev_mua_btn, self.goto_mua_btn,
-            self.goto_prev_noise_btn, self.goto_noise_btn,
-            self.goto_prev_nonsomatic_btn, self.goto_nonsomatic_btn
+            self.goto_prev_nonsomatic_btn, self.goto_nonsomatic_btn,
+            self.goto_prev_noise_btn, self.goto_noise_btn
         ], layout=widgets.Layout(justify_content='center'))
         type_nav_section = widgets.VBox([type_nav_text, type_nav_buttons])
         
@@ -623,17 +824,28 @@ class InteractiveUnitQualityGUI:
             self.goto_unit_btn
         ])
         
-        # Classification controls (hidden for now)
-        # classify_controls = widgets.HBox([
-        #     self.classify_good_btn, self.classify_mua_btn, self.classify_noise_btn
-        # ])
+        # Classification controls - manual unit labeling with navigation
+        classify_text = widgets.HTML("<b>Manual Classification:</b>", layout=widgets.Layout(text_align='center'))
+        
+        # First row: navigation to next unclassified
+        classify_nav = widgets.HBox([
+            self.goto_next_unclassified_btn
+        ], layout=widgets.Layout(justify_content='center'))
+        
+        # Second row: classification buttons aligned
+        classify_controls = widgets.HBox([
+            self.classify_good_btn, self.classify_mua_btn, 
+            self.classify_nonsomatic_btn, self.classify_noise_btn
+        ], layout=widgets.Layout(justify_content='center'))
+        
+        classify_section = widgets.VBox([classify_text, classify_nav, classify_controls])
         
         # Full interface
         interface = widgets.VBox([
             slider_and_input,
             self.unit_info,
             nav_controls,
-            # classify_controls,  # Hidden for now
+            classify_section,  # Manual classification buttons
             self.plot_output
         ])
         
@@ -668,82 +880,261 @@ class InteractiveUnitQualityGUI:
             self.update_display()
             
     def goto_next_good(self, b=None):
-        """Go to next good unit"""
-        if self.unit_types is not None:
+        """Go to next BombCell-classified good unit"""
+        if self.bombcell_unit_types is not None:
             for i in range(self.current_unit_idx + 1, self.n_units):
-                if self.unit_types[i] == 1:  # Good unit
+                if self.bombcell_unit_types[i] == 1:  # Good unit
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
                     
     def goto_prev_good(self, b=None):
-        """Go to previous good unit"""
-        if self.unit_types is not None:
+        """Go to previous BombCell-classified good unit"""
+        if self.bombcell_unit_types is not None:
             for i in range(self.current_unit_idx - 1, -1, -1):
-                if self.unit_types[i] == 1:  # Good unit
+                if self.bombcell_unit_types[i] == 1:  # Good unit
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
                     
     def goto_next_mua(self, b=None):
-        """Go to next MUA unit"""
-        if self.unit_types is not None:
+        """Go to next BombCell-classified MUA unit"""
+        if self.bombcell_unit_types is not None:
             for i in range(self.current_unit_idx + 1, self.n_units):
-                if self.unit_types[i] == 2:  # MUA unit
+                if self.bombcell_unit_types[i] == 2:  # MUA unit
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
                     
     def goto_prev_mua(self, b=None):
-        """Go to previous MUA unit"""
-        if self.unit_types is not None:
+        """Go to previous BombCell-classified MUA unit"""
+        if self.bombcell_unit_types is not None:
             for i in range(self.current_unit_idx - 1, -1, -1):
-                if self.unit_types[i] == 2:  # MUA unit
+                if self.bombcell_unit_types[i] == 2:  # MUA unit
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
                     
     def goto_next_noise(self, b=None):
-        """Go to next noise unit"""
-        if self.unit_types is not None:
+        """Go to next BombCell-classified noise unit"""
+        if self.bombcell_unit_types is not None:
             for i in range(self.current_unit_idx + 1, self.n_units):
-                if self.unit_types[i] == 0:  # Noise unit
+                if self.bombcell_unit_types[i] == 0:  # Noise unit
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
                     
     def goto_prev_noise(self, b=None):
-        """Go to previous noise unit"""
-        if self.unit_types is not None:
+        """Go to previous BombCell-classified noise unit"""
+        if self.bombcell_unit_types is not None:
             for i in range(self.current_unit_idx - 1, -1, -1):
-                if self.unit_types[i] == 0:  # Noise unit
+                if self.bombcell_unit_types[i] == 0:  # Noise unit
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
                     
     def goto_next_nonsomatic(self, b=None):
-        """Go to next non-somatic unit"""
-        if self.unit_types is not None:
+        """Go to next BombCell-classified non-somatic unit"""
+        if self.bombcell_unit_types is not None:
             for i in range(self.current_unit_idx + 1, self.n_units):
-                if self.unit_types[i] in [3, 4]:  # Non-somatic good or non-somatic MUA
+                if self.bombcell_unit_types[i] in [3, 4]:  # Non-somatic good or non-somatic MUA
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
                     
     def goto_prev_nonsomatic(self, b=None):
-        """Go to previous non-somatic unit"""
-        if self.unit_types is not None:
+        """Go to previous BombCell-classified non-somatic unit"""
+        if self.bombcell_unit_types is not None:
             for i in range(self.current_unit_idx - 1, -1, -1):
-                if self.unit_types[i] in [3, 4]:  # Non-somatic good or non-somatic MUA
+                if self.bombcell_unit_types[i] in [3, 4]:  # Non-somatic good or non-somatic MUA
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
                     
     def classify_unit(self, classification):
-        """Classify current unit"""
-        if self.unit_types is not None:
-            self.unit_types[self.current_unit_idx] = classification
-            self.update_unit_info()
+        """
+        Classify current unit manually (separate from bombcell classification)
+        
+        Parameters:
+        -----------
+        classification : int
+            0 = Noise, 1 = Good, 2 = MUA, 3 = Non-somatic
+        """
+        # Update manual classification
+        old_manual_class = self.manual_unit_types[self.current_unit_idx]
+        self.manual_unit_types[self.current_unit_idx] = classification
+        
+        # Update display unit_types (prioritize manual over bombcell)
+        self.unit_types[self.current_unit_idx] = classification
+        
+        # Map classification numbers to names for user feedback
+        class_names = {-1: 'Unclassified', 0: 'Noise', 1: 'Good', 2: 'MUA', 3: 'Non-somatic'}
+        unit_id = self.unique_units[self.current_unit_idx]
+        
+        # Show both manual and bombcell classifications for comparison
+        bombcell_class = self.bombcell_unit_types[self.current_unit_idx] if self.bombcell_unit_types is not None else -1
+        bombcell_name = class_names.get(bombcell_class, 'Unknown')
+        
+        print(f"✓ Unit {unit_id} manually classified as: {class_names.get(classification, 'Unknown')}")
+        print(f"  (BombCell auto-classification: {bombcell_name})")
+        
+        # Show progress
+        n_classified = np.sum(self.manual_unit_types != -1)
+        progress = n_classified / self.n_units * 100
+        print(f"  Progress: {n_classified}/{self.n_units} units manually classified ({progress:.1f}%)")
+        
+        # Save classifications if save_path is provided
+        if self.save_path:
+            self._save_manual_classifications()
+        
+        self.update_unit_info()
+        
+        # Automatically advance to next unit
+        self._auto_advance_to_next_unit()
+    
+    def _auto_advance_to_next_unit(self):
+        """Automatically advance to the next unit after manual classification"""
+        if not self.auto_advance:
+            return
+            
+        if self.current_unit_idx < self.n_units - 1:
+            self.current_unit_idx += 1
+            self.unit_slider.value = self.current_unit_idx
+            print(f"   → Advanced to Unit {self.unique_units[self.current_unit_idx]} (#{self.current_unit_idx+1}/{self.n_units})")
+        else:
+            print(f"   → Reached last unit ({self.n_units}/{self.n_units})")
+    
+    def goto_next_unclassified(self, b=None):
+        """Navigate to the next unclassified unit"""
+        start_idx = self.current_unit_idx
+        
+        # Look for next unclassified unit (manual_classification == -1)
+        for i in range(self.current_unit_idx + 1, self.n_units):
+            if self.manual_unit_types[i] == -1:
+                self.current_unit_idx = i
+                self.unit_slider.value = self.current_unit_idx
+                unit_id = self.unique_units[self.current_unit_idx]
+                print(f"→ Next unclassified unit: {unit_id} (#{self.current_unit_idx+1}/{self.n_units})")
+                return
+        
+        # If no unclassified units found after current position, wrap around
+        for i in range(0, start_idx):
+            if self.manual_unit_types[i] == -1:
+                self.current_unit_idx = i
+                self.unit_slider.value = self.current_unit_idx
+                unit_id = self.unique_units[self.current_unit_idx]
+                print(f"→ Next unclassified unit (wrapped): {unit_id} (#{self.current_unit_idx+1}/{self.n_units})")
+                return
+        
+        print("→ All units have been manually classified!")
+    
+    def get_classification_progress(self):
+        """Get summary of manual classification progress"""
+        n_classified = np.sum(self.manual_unit_types != -1)
+        progress = n_classified / self.n_units * 100
+        
+        # Count by category
+        class_names = {0: "Noise", 1: "Good", 2: "MUA", 3: "Non-somatic"}
+        counts = {}
+        for class_id, class_name in class_names.items():
+            counts[class_name] = np.sum(self.manual_unit_types == class_id)
+        
+        unclassified = np.sum(self.manual_unit_types == -1)
+        
+        print("📊 Manual Classification Progress:")
+        print(f"   Classified: {n_classified}/{self.n_units} ({progress:.1f}%)")
+        print(f"   Unclassified: {unclassified}")
+        print("   Breakdown:")
+        for class_name, count in counts.items():
+            if count > 0:
+                print(f"     {class_name}: {count}")
+        
+        return {
+            'total': self.n_units,
+            'classified': n_classified,
+            'unclassified': unclassified,
+            'progress_percent': progress,
+            'counts': counts
+        }
+    
+    def _save_manual_classifications(self):
+        """Save manual classifications to file (separate from bombcell classifications)"""
+        try:
+            import os
+            import pandas as pd
+            
+            # Create save directory if it doesn't exist
+            os.makedirs(self.save_path, exist_ok=True)
+            
+            # Create DataFrame with detailed comparison data
+            bombcell_types = self.bombcell_unit_types if self.bombcell_unit_types is not None else np.full(self.n_units, -1)
+            
+            df = pd.DataFrame({
+                'unit_id': self.unique_units,
+                'manual_classification': self.manual_unit_types,
+                'bombcell_classification': bombcell_types,
+                'classification_source': ['manual' if self.manual_unit_types[i] != -1 else 'bombcell' for i in range(self.n_units)]
+            })
+            
+            # Save manual classifications only (no bombcell data mixed in)
+            manual_only_df = pd.DataFrame({
+                'unit_id': self.unique_units,
+                'manual_classification': self.manual_unit_types
+            })
+            
+            # Save files with clear naming
+            manual_csv = os.path.join(self.save_path, 'manual_unit_classifications.csv')
+            manual_tsv = os.path.join(self.save_path, 'manual_unit_classifications.tsv')
+            comparison_csv = os.path.join(self.save_path, 'manual_vs_bombcell_classifications.csv')
+            
+            manual_only_df.to_csv(manual_csv, index=False)
+            manual_only_df.to_csv(manual_tsv, sep='\t', index=False)
+            df.to_csv(comparison_csv, index=False)
+            
+            print(f"💾 Manual classifications saved to: {manual_csv}")
+            print(f"💾 Manual vs BombCell comparison saved to: {comparison_csv}")
+            
+        except Exception as e:
+            print(f"⚠️  Warning: Could not save manual classifications: {str(e)}")
+    
+    def _load_manual_classifications(self):
+        """Load previously saved manual classifications if they exist"""
+        if not self.save_path:
+            return None
+            
+        try:
+            import os
+            import pandas as pd
+            
+            # Try to load manual classifications specifically
+            possible_files = [
+                os.path.join(self.save_path, 'manual_unit_classifications.csv'),
+                os.path.join(self.save_path, 'manual_unit_classifications.tsv')
+            ]
+            
+            for file_path in possible_files:
+                if os.path.exists(file_path):
+                    if file_path.endswith('.csv'):
+                        df = pd.read_csv(file_path)
+                    else:
+                        df = pd.read_csv(file_path, sep='\t')
+                    
+                    # Create mapping from unit_id to classification
+                    classification_map = dict(zip(df['unit_id'], df['manual_classification']))
+                    
+                    # Apply to manual types array
+                    manual_types = np.full(self.n_units, -1, dtype=int)  # -1 = unclassified
+                    for i, unit_id in enumerate(self.unique_units):
+                        if unit_id in classification_map:
+                            manual_types[i] = classification_map[unit_id]
+                    
+                    print(f"📂 Loaded manual classifications from: {file_path}")
+                    return manual_types
+                    
+        except Exception as e:
+            print(f"⚠️  Warning: Could not load manual classifications: {str(e)}")
+            
+        return None
             
     def get_unit_data(self, unit_idx):
         """Get data for a specific unit"""
@@ -810,26 +1201,40 @@ class InteractiveUnitQualityGUI:
         if unit_data is None:
             return
             
-        unit_type_str = "Unknown"
-        if self.unit_types is not None and self.current_unit_idx < len(self.unit_types):
-            unit_type = self.unit_types[self.current_unit_idx]
-            type_map = {0: "Noise", 1: "Good", 2: "MUA", 3: "Non-somatic good", 4: "Non-somatic MUA"}
-            unit_type_str = type_map.get(unit_type, "Unknown")
-            
-        # Get title color based on unit type
+        # Get manual and bombcell classifications
+        type_map = {-1: "Unclassified", 0: "Noise", 1: "Good", 2: "MUA", 3: "Non-somatic", 4: "Non-somatic MUA"}
+        
+        manual_type = self.manual_unit_types[self.current_unit_idx] if self.current_unit_idx < len(self.manual_unit_types) else -1
+        manual_type_str = type_map.get(manual_type, "Unknown")
+        
+        bombcell_type = self.bombcell_unit_types[self.current_unit_idx] if (self.bombcell_unit_types is not None and self.current_unit_idx < len(self.bombcell_unit_types)) else -1
+        bombcell_type_str = type_map.get(bombcell_type, "Unknown")
+        
+        # Use manual classification for display color if available, otherwise bombcell
+        display_type_str = manual_type_str if manual_type != -1 else bombcell_type_str
+        
+        # Get title color based on displayed type
         title_colors = {
+            "Unclassified": "gray",
             "Noise": "red",
             "Good": "green", 
             "MUA": "orange",
-            "Non-somatic good": "blue",
+            "Non-somatic": "blue",
             "Non-somatic MUA": "blue",
             "Unknown": "black"
         }
-        title_color = title_colors.get(unit_type_str, "black")
+        title_color = title_colors.get(display_type_str, "black")
         
-        # Simple title with unit number, phy ID, and type, colored by classification (large and centered)
+        # Create title showing BombCell classification first, then user classification
+        if manual_type != -1:
+            # Show BombCell classification | User classification
+            classification_text = f"{bombcell_type_str} | User classification: {manual_type_str}"
+        else:
+            # Show only BombCell classification
+            classification_text = f"{bombcell_type_str}"
+        
         info_html = f"""
-        <h1 style="color: {title_color}; text-align: center; font-size: 24px; margin: 10px 0;">Unit {unit_data['unit_id']} (phy ID = {self.current_unit_idx}, unit # {self.current_unit_idx+1}/{self.n_units}) - {unit_type_str}</h1>
+        <h1 style="color: {title_color}; text-align: center; font-size: 24px; margin: 10px 0;">Unit {unit_data['unit_id']} (phy ID = {self.current_unit_idx}, unit # {self.current_unit_idx+1}/{self.n_units}) - {classification_text}</h1>
         """
         
         self.unit_info.value = info_html
@@ -1376,13 +1781,24 @@ class InteractiveUnitQualityGUI:
                             ax.text(midpoint3, text_y, '↓ Non-somatic', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[2], weight='bold')
                         else:
-                            # MUA metrics: both thresholds -> MUA, Good, MUA
-                            ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
-                                   color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
-                                   color=line_colors[1], weight='bold')
-                            ax.text(midpoint3, text_y, '↓ MUA', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
-                                   color=line_colors[2], weight='bold')
+                            # For metrics where higher values = better quality (like nSpikes, presenceRatio)
+                            good_higher_metrics = ['nSpikes', 'presenceRatio', 'signalToNoiseRatio', 'rawAmplitude', 'isolationDistance']
+                            if metric_name in good_higher_metrics:
+                                # Higher values = Good, so Good should be on the right
+                                ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
+                                       color=line_colors[0], weight='bold')
+                                ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
+                                       color=line_colors[1], weight='bold')
+                                ax.text(midpoint3, text_y, '↓ MUA', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
+                                       color=line_colors[2], weight='bold')
+                            else:
+                                # Lower values = Good, so Good should be on the left
+                                ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
+                                       color=line_colors[0], weight='bold')
+                                ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
+                                       color=line_colors[1], weight='bold')
+                                ax.text(midpoint3, text_y, '↓ Good', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
+                                       color=line_colors[2], weight='bold')
                         
                     elif thresh1 is not None or thresh2 is not None:
                         # Single threshold logic - handle BOTH thresh1 and thresh2 cases
@@ -1412,10 +1828,20 @@ class InteractiveUnitQualityGUI:
                             ax.text(midpoint2, text_y, '↓ Non-somatic', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
                                    color=line_colors[1], weight='bold')
                         else:
-                            ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
-                                   color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
-                                   color=line_colors[1], weight='bold')
+                            # For single threshold metrics, check if higher values = better quality
+                            good_higher_metrics = ['nSpikes', 'presenceRatio', 'signalToNoiseRatio', 'rawAmplitude', 'isolationDistance']
+                            if metric_name in good_higher_metrics:
+                                # Higher values = Good, so Good should be on the right
+                                ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
+                                       color=line_colors[0], weight='bold')
+                                ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
+                                       color=line_colors[1], weight='bold')
+                            else:
+                                # Lower values = Good, so Good should be on the left
+                                ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
+                                       color=line_colors[0], weight='bold')
+                                ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=QUALITY_METRIC_TEXT_FONTSIZE, 
+                                       color=line_colors[1], weight='bold')
 
                 # Set histogram limits from 0 to 1.1 to show classification lines and text
                 ax.set_ylim([0, 1.1])
@@ -2244,6 +2670,9 @@ class InteractiveUnitQualityGUI:
         # Store y-limits for amplitude fit plot consistency
         self._amplitude_ylim = ax.get_ylim()
         
+        # Add spike count quality metric test
+        self._add_spike_count_quality_test(ax, unit_data, time_bins, bin_counts)
+        
         # Add legend for time chunk coloring and drift if enabled
         import matplotlib.lines as mlines
         legend_elements = []
@@ -2292,6 +2721,35 @@ class InteractiveUnitQualityGUI:
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'amplitude')
+    
+    def _add_spike_count_quality_test(self, ax, unit_data, time_bins, bin_counts):
+        """Add spike count quality metric test overlay to amplitude scaling plot"""
+        metrics = unit_data['metrics']
+        
+        # Get spike count threshold from parameters
+        min_spikes = self.param.get('minNumSpikes', 300) if self.param else 300
+        total_spikes = len(unit_data['spike_times'])
+        
+        # Determine if unit passes spike count test
+        passes_spike_test = total_spikes >= min_spikes
+        
+        # Choose color based on classification
+        if passes_spike_test:
+            test_color = 'green'
+        else:
+            test_color = 'orange'  # MUA color for failing test
+        
+        # Simple text format without threshold comparison
+        test_text = f"# spikes = {total_spikes}"
+        
+        # Add quality test text below presence ratio text (0.95 - 2*0.12 = 0.71)
+        ax.text(0.98, 0.71, test_text, 
+                transform=ax.transAxes, 
+                fontsize=12, 
+                fontweight='bold',
+                color=test_color,
+                ha='right', va='top',
+                zorder=10)
     
     def plot_time_bin_metrics(self, ax, unit_data):
         """Plot time bin metrics: presence ratio, RPV rate, and percentage spikes missing"""
@@ -2580,9 +3038,9 @@ class InteractiveUnitQualityGUI:
                             if duration > 0:
                                 firing_rate = len(unit_spike_times) / duration
                                 
-                                # Get classification
-                                if self.unit_types is not None and i < len(self.unit_types):
-                                    unit_type = self.unit_types[i]
+                                # Get BombCell classification for dot colors
+                                if self.bombcell_unit_types is not None and i < len(self.bombcell_unit_types):
+                                    unit_type = self.bombcell_unit_types[i]
                                     # Map numeric codes to classification names
                                     type_map = {
                                         0: 'noise',
@@ -2882,7 +3340,7 @@ class InteractiveUnitQualityGUI:
                     return 'blue' if val > max_ratio else 'black'
             
             # MUA metrics: orange if MUA, green if good
-            elif metric_name in ['rawAmplitude', 'signalToNoiseRatio', 'fractionRPVs_eQtimatedTauR', 'presenceRatio', 'maxDriftEstimate', 'percentageSpikesMissing_gaussian']:
+            elif metric_name in ['rawAmplitude', 'signalToNoiseRatio', 'fractionRPVs_estimatedTauR', 'presenceRatio', 'maxDriftEstimate', 'percentageSpikesMissing_gaussian']:
                 if metric_name == 'rawAmplitude':
                     min_amp = param.get('minAmplitude', 50)
                     return 'orange' if val < min_amp else 'green'
@@ -2893,7 +3351,7 @@ class InteractiveUnitQualityGUI:
                     max_rpv = param.get('maxRPVviolations', 0.1)
                     return 'orange' if val > max_rpv else 'green'
                 elif metric_name == 'presenceRatio':
-                    min_presence = param.get('minPresenceRatio', 0.9)
+                    min_presence = param.get('minPresenceRatio', 0.7)
                     return 'orange' if val < min_presence else 'green'
                 elif metric_name == 'maxDriftEstimate':
                     max_drift = param.get('maxDrift', 100)
@@ -3597,13 +4055,25 @@ class InteractiveUnitQualityGUI:
                             ax.text(midpoint3, text_y, '↓ Non-somatic', ha='center', fontsize=14, 
                                    color=line_colors[2], weight='bold')
                         else:
-                            # MUA metrics: both thresholds -> MUA, Good, MUA
-                            ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=14, 
-                                   color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=14, 
-                                   color=line_colors[1], weight='bold')
-                            ax.text(midpoint3, text_y, '↓ MUA', ha='center', fontsize=14, 
-                                   color=line_colors[2], weight='bold')
+                            # For metrics where higher values = better quality (like nSpikes, presenceRatio)
+                            # Left should be MUA, middle Good, right MUA, but we need to check the metric
+                            good_higher_metrics = ['nSpikes', 'presenceRatio', 'signalToNoiseRatio', 'rawAmplitude', 'isolationDistance']
+                            if metric_name in good_higher_metrics:
+                                # Higher values = Good, so Good should be on the right
+                                ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=14, 
+                                       color=line_colors[0], weight='bold')
+                                ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=14, 
+                                       color=line_colors[1], weight='bold')
+                                ax.text(midpoint3, text_y, '↓ MUA', ha='center', fontsize=14, 
+                                       color=line_colors[2], weight='bold')
+                            else:
+                                # Lower values = Good, so Good should be on the left  
+                                ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=14, 
+                                       color=line_colors[0], weight='bold')
+                                ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=14, 
+                                       color=line_colors[1], weight='bold')
+                                ax.text(midpoint3, text_y, '↓ Good', ha='center', fontsize=14, 
+                                       color=line_colors[2], weight='bold')
                         
                     elif thresh1 is not None or thresh2 is not None:
                         # Single threshold logic - handle BOTH thresh1 and thresh2 cases
@@ -3633,10 +4103,20 @@ class InteractiveUnitQualityGUI:
                             ax.text(midpoint2, text_y, '↓ Non-somatic', ha='center', fontsize=14, 
                                    color=line_colors[1], weight='bold')
                         else:
-                            ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=14, 
-                                   color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=14, 
-                                   color=line_colors[1], weight='bold')
+                            # For single threshold metrics, check if higher values = better quality
+                            good_higher_metrics = ['nSpikes', 'presenceRatio', 'signalToNoiseRatio', 'rawAmplitude', 'isolationDistance']
+                            if metric_name in good_higher_metrics:
+                                # Higher values = Good, so Good should be on the right
+                                ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=14, 
+                                       color=line_colors[0], weight='bold')
+                                ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=14, 
+                                       color=line_colors[1], weight='bold')
+                            else:
+                                # Lower values = Good, so Good should be on the left
+                                ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=14, 
+                                       color=line_colors[0], weight='bold')
+                                ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=14, 
+                                       color=line_colors[1], weight='bold')
 
                 # Set histogram limits from 0 to 1.1 to show classification lines and text
                 ax.set_ylim([0, 1.1])
@@ -3748,7 +4228,7 @@ def load_metrics_for_gui(ks_dir, quality_metrics, ephys_properties=None, param=N
 
 
 def unit_quality_gui(ephys_data_or_path=None, quality_metrics=None, ephys_properties=None, 
-                     unit_types=None, param=None, ks_dir=None, save_path=None, layout='landscape'):
+                     unit_types=None, param=None, ks_dir=None, save_path=None, layout='landscape', auto_advance=True):
     """
     Launch the Unit Quality GUI - Python equivalent of unitQualityGUI_synced
     
@@ -3768,6 +4248,9 @@ def unit_quality_gui(ephys_data_or_path=None, quality_metrics=None, ephys_proper
         Alternative parameter name for kilosort directory path (for backward compatibility)
     save_path : str, optional
         Path where precomputed gui data could have been saved
+    auto_advance : bool, optional
+        Whether to automatically advance to next unit after manual classification
+        Default: True
         
     Returns
     -------
@@ -3815,5 +4298,6 @@ def unit_quality_gui(ephys_data_or_path=None, quality_metrics=None, ephys_proper
         unit_types=unit_types,
         save_path=save_path,
         layout=layout,
+        auto_advance=auto_advance,
     )
     return gui
