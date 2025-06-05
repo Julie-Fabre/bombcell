@@ -918,11 +918,10 @@ if plotRaw
 end
 
 %% 9. update hg plot
-
+try
 guiData2 = guidata(unitQualityGuiHandle.histogramFigure);
 % Update histogram figure
 figure(unitQualityGuiHandle.histogramFigure);
-
 metricNames = fieldnames(guiData2.histogramAxes);
 for i = 1:length(metricNames)
     metricName = metricNames{i};
@@ -962,6 +961,10 @@ for i = 1:length(metricNames)
     % Adjust y-axis limits to accommodate taller quiver and text
     %newYLim = [yLim(1) - 0.15 * (yLim(2) - yLim(1)), yLim(2)];
     %ylim(ax, newYLim);
+end
+
+catch % figure was closed by user
+    
 end
 end
 
@@ -1136,49 +1139,6 @@ else
         NaN, NaN, NaN, NaN, param.minNumSpikes, param.minAmplitude, param.maxSpatialDecaySlopeExp, ...
         param.maxWvDuration, NaN, param.minPresenceRatio, param.minSNR, ...
         NaN, NaN, NaN, param.lratioMax];
-
-end
-plotConditions = [true, true, true, true, true, true, ...
-    param.tauR_valuesMin ~= param.tauR_valuesMax, ...
-    true, false, true, param.extractRaw, ...
-    param.computeSpatialDecay == 1, ...
-    true, true, true, param.extractRaw, ...
-    param.computeDrift, param.computeDrift, ...
-    param.computeDistanceMetrics && ~isnan(param.isoDmin), ...
-    param.computeDistanceMetrics && ~isnan(param.isoDmin)];
-
-
-metricLineCols = [0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0; ... % 1 'nPeaks'
-    0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0; ... % 2 'nTroughs'
-    0.2, 0.2, 0.2, 1, 0, 0, 1, 0, 0; ... % 3 'scndPeakToTroughRatio'
-    0.2, 0.2, 0.2, 0.25, 0.41, 0.88, 0, 0, 0; ... % 4 'peak1ToPeak2Ratio'
-    0.2, 0.2, 0.2, 0.25, 0.41, 0.88, 0, 0, 0; ... % 5 'mainPeakToTroughRatio'
-    0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 6 'fractionRPVs_estimatedTauR'
-    0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 7 'RPV_tauR_estimate',
-    0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 8 'percentageSpikesMissing_gaussian'
-    0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 9 'percentageSpikesMissing_symmetric'
-    1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 10  '# spikes'
-    1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 11 'amplitude'
-    1, 0, 0, 0.2, 0.2, 0.2, 1, 0, 0; ... % 12 'spatial decay'
-    1, 0, 0, 0.2, 0.2, 0.2, 1, 0, 0; ... % 13 'waveform duration'
-    0.2, 0.2, 0.2, 1, 0, 0, 1, 0, 0; ... % 14 'baseline flatness'
-    1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 15 'presence ratio'
-    1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 16 'SNR'
-    0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 17 'maximum drift'
-    0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 18 'cum. drift'
-    1.0000, 0.5469, 0, 0, 0.5, 0, 0, 0, 0; ... % 19 'isolation dist.'
-    0, 0.5, 0, 1.0000, 0.5469, 0, 0, 0, 0; ... % 20 'L-ratio'
-    ];
-
-indices_ordered = [1, 2, 14, 13, 3, 12, 4, 5, 11, 16, 6, 10, 15, 8, 17, 18, 19, 20];
-metricNames = metricNames(indices_ordered);
-metricNames_SHORT = metricNames_SHORT(indices_ordered);
-metricThresh1 = metricThresh1(indices_ordered);
-metricThresh2 = metricThresh2(indices_ordered);
-plotConditions = plotConditions(indices_ordered);
-metricLineCols = metricLineCols(indices_ordered, :);
-=======
->>>>>>> origin/main:+bc/+viz/unitQualityGUI_synced.m
 end
 plotConditions = [true, true, true, true, true, true, ...
     param.tauR_valuesMin ~= param.tauR_valuesMax, ...
@@ -1220,3 +1180,4 @@ metricThresh2 = metricThresh2(indices_ordered);
 plotConditions = plotConditions(indices_ordered);
 metricLineCols = metricLineCols(indices_ordered, :);
 end
+

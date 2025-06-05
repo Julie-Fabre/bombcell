@@ -11,7 +11,7 @@
 
 Manual curation of electrophysiology spike sorted units is slow, laborious, and hard to standardize and reproduce. Bombcell is a powerful toolbox that addresses this problem, evaluating the quality of recorded units and extracting essential electrophysiological properties. Bombcell can replace manual curation or can be used as a tool to aid manual curation. See [this talk](https://youtu.be/CvXUtGzkXIY?si=lHkLN885OCb4WJEv) at the annual Neuropixels course about quality control.
 
-📢 We now have a Python version in beta! See the installation instructions below 📢
+📢 We are working on a Python version - it's expected to be ready for release in May 📢
 
 Please star the project to support us, using the top-right "⭐ Star" button.
 
@@ -34,7 +34,6 @@ Take a look at:
 - the MATLAB live script [`gettingStarted`](https://github.com/Julie-Fabre/bombcell/blob/main/gettingStarted.mlx) to see an example workflow and play around with our small toy dataset.
 - the Python Jupyter notebook [`BC_demo`](https://github.com/Julie-Fabre/bombcell/blob/bleeding_edge/pyBombCell/Demos/BC_demo.ipynb)
 - You can also take a look at the exercise we prepared for the 2024 Neuropixels course [here](https://github.com/BombCell/Neuropixels_course_2024). 
-
 
 #### Installation
 ##### Matlab
@@ -61,7 +60,6 @@ In addition we would like to acknowledge:
 - to compute fast ACGs, we use a function (`CCGHeart.c`) part of the [FMAToolbox](https://fmatoolbox.sourceforge.net/), and it is already included in bombcell.
 - to read in spikeGLX meta data, we use a function from Jennifer Colonell's [SpikeGLX_Datafile_Tools](https://github.com/jenniferColonell/SpikeGLX_Datafile_Tools) repository. 
 
-
 #### Python 
 
 ##### Latest stable version
@@ -86,8 +84,6 @@ cd bombcell/pyBombCell
 pip install uv
 uv pip install -e .
 ```
-
-
 
 ### 🤗 Support and citing
 
