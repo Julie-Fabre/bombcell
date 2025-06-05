@@ -265,8 +265,8 @@ def plot_histograms(quality_metrics, param):
         [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # amplitude
         [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # SNR
         [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # frac RPVs
-        [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # nSpikes
-        [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # presence ratio
+        [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # nSpikes
+        [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # presence ratio
         [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # % spikes missing
         [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # max drift
         [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # isolation dist
@@ -309,7 +309,10 @@ def plot_histograms(quality_metrics, param):
         ax = axs[row_id, col_id]
         
         metric_data = quality_metrics[metric_name]
+        # Remove NaN and inf values
         metric_data = metric_data[~np.isnan(metric_data)]
+        if metric_name == 'isolationDistance':
+            metric_data = metric_data[~np.isinf(metric_data)]
         
         if len(metric_data) > 0:
             # Plot histogram with probability normalization (MATLAB style)
@@ -464,10 +467,10 @@ def plot_histograms(quality_metrics, param):
                         ax.text(midpoint2, text_y, '↓ Somatic', ha='center', fontsize=10, 
                                color=line_colors[1], weight='bold')
                     else:
-                        # MUA metrics: thresh2 only -> MUA, Good
-                        ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=10, 
+                        # MUA metrics: thresh2 only -> Good, MUA
+                        ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=10, 
                                color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=10, 
+                        ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=10, 
                                color=line_colors[1], weight='bold')
 
             # Set histogram limits from 0 to 1

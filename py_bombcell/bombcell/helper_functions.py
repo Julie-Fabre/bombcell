@@ -1314,7 +1314,7 @@ def make_qm_table(quality_metrics, param, unit_type_string):
 
 
     if param["computeDistanceMetrics"]:
-        too_low_iso_dist = quality_metrics['isolationDistance'] < param["isoDmin "]
+        too_low_iso_dist = quality_metrics['isolationDistance'] < param["isoDmin"]
         too_high_lratio = quality_metrics["Lratio"] > param["lratioMax"]
 
         qm_table_list.extend([too_low_iso_dist, too_high_lratio])

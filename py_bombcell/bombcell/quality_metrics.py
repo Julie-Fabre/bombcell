@@ -1914,7 +1914,7 @@ def get_quality_unit_type(param, quality_metrics):
     
     if param["computeDistanceMetrics"]:
         mua_mask |= np.isnan(unit_type) & (
-            (quality_metrics["isolationDistance"] < param["isoDmin "]) |
+            (quality_metrics["isolationDistance"] < param["isoDmin"]) |
             (quality_metrics["Lratio"] > param["lratioMax"])
         )
     

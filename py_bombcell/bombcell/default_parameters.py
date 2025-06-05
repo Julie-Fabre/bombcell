@@ -121,9 +121,10 @@ def get_default_parameters(
         "maxMainPeakToTroughRatio_nonSomatic": 0.8,
 
         ## Distance metrics
-        "isoDmin ": 20,  # minimum isolation distance value
+        "isoDmin": 20,  # minimum isolation distance value
         "lratioMax": 0.3,  # maximum l-ratio value
         "ss_min": np.nan,  # minimum silhouette score, not currently implemented
+        
         ## Other classification parameters
         "minAmplitude": 40,  # in uV
         "maxRPVviolations": 0.1,  # max fraction of refractory period violations
