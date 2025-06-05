@@ -62,21 +62,27 @@ In addition we would like to acknowledge:
 
 #### Python 
 
-1. Create a conda environment
+##### Latest stable version
+
 ```bash
+# Create a conda environment
 conda create -n bombcell python=3.11
 conda activate bombcell
-```
-2. Clone latest bombcell repository from github
-```bash
-git clone -b bleeding_edge https://github.com/Julie-Fabre/bombcell.git
-```
-3. Install bombcell from local repository
-```bash
-cd bombcell/pyBombCell
-# you could do `pip install .`, but uv is much quicker!
+# Install bombcell
 pip install uv
-uv pip install . # or uv pip install -e . (-e for editable mode)
+uv pip install bombcell # you could do `pip install .`, but uv is much quicker!
+```
+##### Dev version (with the latest updates): 
+```bash
+# Create a conda environment
+conda create -n bombcell python=3.11
+conda activate bombcell
+# Clone latest bombcell repository from github
+git clone https://github.com/Julie-Fabre/bombcell.git
+cd bombcell/pyBombCell
+# Install bombcell
+pip install uv
+uv pip install -e .
 ```
 
 ### 🤗 Support and citing
