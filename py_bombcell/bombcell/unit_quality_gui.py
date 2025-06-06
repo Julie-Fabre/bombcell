@@ -3327,7 +3327,7 @@ class InteractiveUnitQualityGUI:
                          param.get('minWvDuration'), param.get('maxScndPeakToTroughRatio_noise'),
                          param.get('minSpatialDecaySlope') if param.get('spDecayLinFit') else param.get('minSpatialDecaySlopeExp'),
                          param.get('maxPeak1ToPeak2Ratio_nonSomatic'), param.get('maxMainPeakToTroughRatio_nonSomatic'),
-                         None, None, param.get('maxRPVviolations'), None, None, param.get('maxPercSpikesMissing'),
+                         None, param.get('minNumSpikes'), param.get('maxRPVviolations'), None, None, param.get('maxPercSpikesMissing'),
                          param.get('maxDrift'), param.get('isoDmin'), None]
 
         metric_thresh2 = [None, None, None, param.get('maxWvDuration'), None,
@@ -3590,16 +3590,16 @@ class InteractiveUnitQualityGUI:
                             ax.text(midpoint2, text_y, '↓ Non-somatic', ha='center', fontsize=14, 
                                    color=line_colors[1], weight='bold')
                         else:
-                            # For single threshold metrics, check if higher values = better quality
-                            good_higher_metrics = ['nSpikes', 'presenceRatio', 'signalToNoiseRatio', 'rawAmplitude', 'isolationDistance']
-                            if metric_name in good_higher_metrics:
-                                # Higher values = Good, so Good should be on the right
+                            # MUA metrics: determine labels based on colors
+                            # Orange colors (1.0, 0.5469, 0) = MUA, Green colors (0, 0.5, 0) = Good
+                            if np.allclose(line_colors[0], [1.0, 0.5469, 0]):
+                                # First color is orange (MUA), second should be green (Good)
                                 ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=14, 
                                        color=line_colors[0], weight='bold')
                                 ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=14, 
                                        color=line_colors[1], weight='bold')
                             else:
-                                # Lower values = Good, so Good should be on the left
+                                # First color is green (Good), second should be orange (MUA)
                                 ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=14, 
                                        color=line_colors[0], weight='bold')
                                 ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=14, 
