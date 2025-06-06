@@ -1235,41 +1235,41 @@ class InteractiveUnitQualityGUI:
         PLOT_TITLE_FONTSIZE = 22
         QUALITY_METRIC_TEXT_FONTSIZE = 13
         
-        # Create figure with extended width for histograms (current layout)
-        fig = plt.figure(figsize=(30, 18))
+        # Create figure with extended width and height for histograms
+        fig = plt.figure(figsize=(30, 25))  # Taller figure
         fig.patch.set_facecolor('white')
         
-        # LEFT HALF - Original GUI (columns 0-14) - DOUBLED GRID ROWS
+        # LEFT HALF - Original GUI (columns 0-14) - MUCH LARGER GRID
         # 1. Unit location plot (left column)
-        ax_location = plt.subplot2grid((20, 30), (0, 0), rowspan=20, colspan=1)
+        ax_location = plt.subplot2grid((100, 30), (0, 0), rowspan=100, colspan=1)
         self.plot_unit_location(ax_location, unit_data)
         
-        # 2. Template waveforms - rows 0-3 (doubled)
-        ax_template = plt.subplot2grid((20, 30), (0, 2), rowspan=4, colspan=6)
+        # 2. Template waveforms - scale to 100-row grid
+        ax_template = plt.subplot2grid((100, 30), (0, 2), rowspan=20, colspan=6)
         self.plot_template_waveform(ax_template, unit_data)
         
-        # 3. Raw waveforms - rows 0-3 (doubled)
-        ax_raw = plt.subplot2grid((20, 30), (0, 9), rowspan=4, colspan=6)
+        # 3. Raw waveforms - scale to 100-row grid
+        ax_raw = plt.subplot2grid((100, 30), (0, 9), rowspan=20, colspan=6)
         self.plot_raw_waveforms(ax_raw, unit_data)
         
-        # 4. Spatial decay - rows 6-9 (doubled)
-        ax_spatial = plt.subplot2grid((20, 30), (6, 2), rowspan=4, colspan=6)
+        # 4. Spatial decay - scale to 100-row grid
+        ax_spatial = plt.subplot2grid((100, 30), (30, 2), rowspan=20, colspan=6)
         self.plot_spatial_decay(ax_spatial, unit_data)
         
-        # 5. ACG - rows 6-9 (doubled)
-        ax_acg = plt.subplot2grid((20, 30), (6, 9), rowspan=4, colspan=6)
+        # 5. ACG - scale to 100-row grid
+        ax_acg = plt.subplot2grid((100, 30), (30, 9), rowspan=20, colspan=6)
         self.plot_autocorrelogram(ax_acg, unit_data)
         
-        # 6. Amplitudes over time - rows 12-15 (doubled)
-        ax_amplitude = plt.subplot2grid((20, 30), (12, 2), rowspan=4, colspan=10)
+        # 6. Amplitudes over time - scale to 100-row grid
+        ax_amplitude = plt.subplot2grid((100, 30), (60, 2), rowspan=20, colspan=10)
         self.plot_amplitudes_over_time(ax_amplitude, unit_data)
         
-        # 6b. Time bin metrics - rows 18-19 (doubled)
-        ax_bin_metrics = plt.subplot2grid((20, 30), (18, 2), rowspan=2, colspan=10, sharex=ax_amplitude)
+        # 6b. Time bin metrics - scale to 100-row grid
+        ax_bin_metrics = plt.subplot2grid((100, 30), (85, 2), rowspan=10, colspan=10, sharex=ax_amplitude)
         self.plot_time_bin_metrics(ax_bin_metrics, unit_data)
         
-        # 7. Amplitude fit - rows 12-15 (doubled)
-        ax_amp_fit = plt.subplot2grid((20, 30), (12, 13), rowspan=4, colspan=2)
+        # 7. Amplitude fit - scale to 100-row grid
+        ax_amp_fit = plt.subplot2grid((100, 30), (60, 13), rowspan=20, colspan=2)
         self.plot_amplitude_fit(ax_amp_fit, unit_data)
         
         # RIGHT HALF - Histogram panel (columns 16-29)
@@ -3385,40 +3385,48 @@ class InteractiveUnitQualityGUI:
                 valid_thresh2.append(metric_thresh2[i])
                 valid_line_cols.append(metric_line_cols[i])
 
-        # EVEN DISTRIBUTION across FULL Y SPACE
+        # ADAPTIVE LAYOUT based on number of histograms
         num_subplots = len(valid_metrics)
-        cols = 3
+        
+        # Use fewer columns, more rows for better readability
+        # Fixed large grid size for all cases
+        grid_rows = 100  # Very large grid to accommodate tall histograms
+        
+        if num_subplots <= 4:
+            cols = 2  # 2 columns for small number of histograms
+            col_width = 6
+            col_start_positions = [16, 24]  # 2 wide columns
+        else:
+            cols = 3  # Maximum 3 columns, even for many histograms
+            col_width = 4
+            col_start_positions = [16, 21, 26]  # 3 columns with good spacing
         
         # Calculate how many rows of plots we need
         rows_of_plots = (num_subplots + cols - 1) // cols
         
-        # Distribute plots evenly across ALL 10 rows with UNIFORM spacing
-        if rows_of_plots == 1:
-            # Single row - use most of the space
-            plot_positions = [1]
-            plot_height = 8
-        elif rows_of_plots == 2:
-            # Two rows - even distribution
-            plot_positions = [0, 6]
-            plot_height = 4
-        elif rows_of_plots == 3:
-            # Three rows - HUGE gaps to test if changes are working
-            # Row 1: 0-1, Row 2: 4-5, Row 3: 8-9 (massive gaps)
-            plot_positions = [0, 4, 8]
-            plot_height = 2
-        elif rows_of_plots == 4:
-            # Four rows - PROPER spacing with 20-row grid
-            # Now we have 20 rows to work with, so much more space!
-            plot_positions = [0, 5, 10, 15]
-            plot_height = 4
-        else:
-            # Many rows - tight but even
-            plot_positions = [i * 2 for i in range(rows_of_plots)]
-            plot_height = 2
+        # Simple fixed heights - use most of the 100-row grid
+        spacing_gap = 5  # Fixed gap between histograms
         
-        # Columns with good spacing
-        col_width = 4
-        col_start_positions = [16, 21, 26]  # Even spacing across 14 columns
+        if rows_of_plots == 1:
+            plot_height = 85  # Even taller
+            plot_positions = [8]
+        elif rows_of_plots == 2:
+            plot_height = 40  # Taller histograms
+            plot_positions = [3, 50]
+        elif rows_of_plots == 3:
+            plot_height = 28  # Taller
+            plot_positions = [3, 35, 67]
+        elif rows_of_plots == 4:
+            plot_height = 20  # Taller
+            plot_positions = [3, 26, 49, 72]
+        else:
+            # Many rows - distribute evenly
+            plot_height = max(12, (grid_rows - 10) // (rows_of_plots + 1))  # Taller minimum
+            plot_positions = []
+            current_pos = 3
+            for i in range(rows_of_plots):
+                plot_positions.append(current_pos)
+                current_pos += plot_height + spacing_gap
         
         # Create histogram subplots
         for i, metric_name in enumerate(valid_metrics):
@@ -3433,7 +3441,7 @@ class InteractiveUnitQualityGUI:
                 # ALL plots same height - no extending last row
                 actual_height = plot_height
                 
-                ax = plt.subplot2grid((20, 30), (start_row, start_col), rowspan=actual_height, colspan=col_width)
+                ax = plt.subplot2grid((grid_rows, 30), (start_row, start_col), rowspan=actual_height, colspan=col_width)
             else:
                 continue
             
