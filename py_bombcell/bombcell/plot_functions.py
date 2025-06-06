@@ -232,7 +232,7 @@ def plot_histograms(quality_metrics, param):
                      param.get('minWvDuration'), param.get('maxScndPeakToTroughRatio_noise'),
                      param.get('minSpatialDecaySlope') if param.get('spDecayLinFit') else param.get('minSpatialDecaySlopeExp'),
                      param.get('maxPeak1ToPeak2Ratio_nonSomatic'), param.get('maxMainPeakToTroughRatio_nonSomatic'),
-                     None, None, param.get('maxRPVviolations'), None, None, param.get('maxPercSpikesMissing'),
+                     None, param.get('minNumSpikes'), param.get('maxRPVviolations'), None, None, param.get('maxPercSpikesMissing'),
                      param.get('maxDrift'), param.get('isoDmin'), None]
 
     metric_thresh2 = [None, None, None, param.get('maxWvDuration'), None,
@@ -265,8 +265,8 @@ def plot_histograms(quality_metrics, param):
         [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # amplitude
         [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # SNR
         [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # frac RPVs
-        [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # nSpikes
-        [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # presence ratio
+        [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # nSpikes
+        [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # presence ratio
         [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # % spikes missing
         [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # max drift
         [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # isolation dist
@@ -430,11 +430,19 @@ def plot_histograms(quality_metrics, param):
                         ax.text(midpoint2, text_y, '↓ Non-somatic', ha='center', fontsize=10, 
                                color=line_colors[1], weight='bold')
                     else:
-                        # MUA metrics: thresh1 only -> Good, MUA
-                        ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=10, 
-                               color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=10, 
-                               color=line_colors[1], weight='bold')
+                        # MUA metrics: thresh1 only
+                        if metric_name == 'isolationDistance':
+                            # For isolation distance: MUA on left, Good on right
+                            ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=10, 
+                                   color=line_colors[0], weight='bold')
+                            ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=10, 
+                                   color=line_colors[1], weight='bold')
+                        else:
+                            # For other MUA metrics: Good on left, MUA on right
+                            ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=10, 
+                                   color=line_colors[0], weight='bold')
+                            ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=10, 
+                                   color=line_colors[1], weight='bold')
                     
                 elif thresh2 is not None:
                     # Add vertical line for threshold at value + 0.5*bin_width
@@ -467,11 +475,19 @@ def plot_histograms(quality_metrics, param):
                         ax.text(midpoint2, text_y, '↓ Somatic', ha='center', fontsize=10, 
                                color=line_colors[1], weight='bold')
                     else:
-                        # MUA metrics: thresh2 only -> Good, MUA
-                        ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=10, 
-                               color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=10, 
-                               color=line_colors[1], weight='bold')
+                        # MUA metrics: thresh2 only
+                        if metric_name in ['nSpikes', 'presenceRatio']:
+                            # For nSpikes and presenceRatio: MUA on left, Good on right
+                            ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=10, 
+                                   color=line_colors[0], weight='bold')
+                            ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=10, 
+                                   color=line_colors[1], weight='bold')
+                        else:
+                            # For L-ratio: Good on left, MUA on right
+                            ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=10, 
+                                   color=line_colors[0], weight='bold')
+                            ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=10, 
+                                   color=line_colors[1], weight='bold')
 
             # Set histogram limits from 0 to 1
             ax.set_ylim([0, 1])
