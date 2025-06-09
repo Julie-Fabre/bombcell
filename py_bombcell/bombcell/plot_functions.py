@@ -67,14 +67,18 @@ def upset_plots(quality_metrics, unit_type_string, param):
     non_somatic_metrics = [m for m in non_somatic_metrics if m in qm_table.columns]
     mua_metrics = [m for m in mua_metrics if m in qm_table.columns]
 
+    # Get total number of units
+    total_units = len(qm_table)
+    
     # Plot upset plots with error handling for library compatibility
     try:
         # plot noise metrics upset plot
         noise_data = qm_table[noise_metrics].astype(bool)
+        n_noise = (qm_table['unit_type'] == 'NOISE').sum()
         if len(noise_metrics) > 1:
             upset = UpSet(from_indicators(noise_metrics, data=noise_data), min_degree=1)
             upset.plot()
-            plt.suptitle("Units classified as noise")
+            plt.suptitle(f"Units classified as noise (n = {n_noise}/{total_units})")
             plt.show()
     except (AttributeError, ValueError) as e:
         print(f"Warning: Could not create noise upset plot due to library compatibility: {e}")
@@ -82,10 +86,12 @@ def upset_plots(quality_metrics, unit_type_string, param):
     try:
         # plot non-somatic metrics upset plot  
         non_somatic_data = qm_table[non_somatic_metrics].astype(bool)
+        # Count all non-somatic units (includes "NON-SOMA", "NON-SOMA GOOD", "NON-SOMA MUA")
+        n_non_somatic = qm_table['unit_type'].str.startswith('NON-SOMA').sum()
         if len(non_somatic_metrics) > 1:
             upset = UpSet(from_indicators(non_somatic_metrics, data=non_somatic_data), min_degree=1)
             upset.plot()
-            plt.suptitle("Units classified as non-somatic")
+            plt.suptitle(f"Units classified as non-somatic (n = {n_non_somatic}/{total_units})")
             plt.show()
     except (AttributeError, ValueError) as e:
         print(f"Warning: Could not create non-somatic upset plot due to library compatibility: {e}")
@@ -93,10 +99,12 @@ def upset_plots(quality_metrics, unit_type_string, param):
     try:
         # plot MUA metrics upset plot
         mua_data = qm_table[mua_metrics].astype(bool)
+        # Count both "MUA" and "NON-SOMA MUA" units
+        n_mua = ((qm_table['unit_type'] == 'MUA') | (qm_table['unit_type'] == 'NON-SOMA MUA')).sum()
         if len(mua_metrics) > 1:
             upset = UpSet(from_indicators(mua_metrics, data=mua_data), min_degree=1)
             upset.plot()
-            plt.suptitle("Units classified as MUA")
+            plt.suptitle(f"Units classified as MUA (n = {n_mua}/{total_units})")
             plt.show()
     except (AttributeError, ValueError) as e:
         print(f"Warning: Could not create MUA upset plot due to library compatibility: {e}")
@@ -123,9 +131,9 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
     unique_templates = param['unique_templates']
 
     n_categories = np.unique(unit_type).size
-    labels = {0: "NOISE", 1: "GOOD", 2: "MUA", 
-                3: "NON-SOMA GOOD" if param["splitGoodAndMua_NonSomatic"] else "NON-SOMA",
-                4: "NON-SOMA MUA", 5: ""}
+    labels = {0: "noise", 1: "somatic, good", 2: "somatic, MUA", 
+                3: "non-somatic, good" if param["splitGoodAndMua_NonSomatic"] else "non-somatic",
+                4: "non-somatic, MUA", 5: ""}
     #TODO change alpha to be inversly proprotional to n units
     if n_categories < 5:
         fig, axs = plt.subplots(nrows = 2, ncols=2)
@@ -139,12 +147,12 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
                     axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
                     axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
                     axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_title(f"{labels[i]} Units")
+                    axs[img_pos[i][0]][img_pos[i][1]].set_title(f"{labels[i]} units (n = {n_units_in_cat})")
             else:
                 axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
                 axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
                 axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
-                axs[img_pos[i][0]][img_pos[i][1]].set_title(f"No {labels[i]} Units")
+                axs[img_pos[i][0]][img_pos[i][1]].set_title(f"No {labels[i]} units (n = 0)")
 
     elif n_categories == 5:
         fig, axs = plt.subplots(nrows = 3, ncols=2)
@@ -158,7 +166,7 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
                     axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
                     axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
                     axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_title(f"{labels[i]} Units")
+                    axs[img_pos[i][0]][img_pos[i][1]].set_title(f"{labels[i]} units (n = {n_units_in_cat})")
             else:
                 if i == 5:
                     axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
@@ -168,7 +176,7 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
                     axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
                     axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
                     axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_title(f"No {labels[i]} Units")
+                    axs[img_pos[i][0]][img_pos[i][1]].set_title(f"No {labels[i]} units (n = 0)")
 
 def plot_histograms(quality_metrics, param):
     """
@@ -181,8 +189,19 @@ def plot_histograms(quality_metrics, param):
     param : dict
         The dictionary of all bomcell parameters
     """
-    quality_metrics['peak1ToPeak2Ratio'][quality_metrics['peak1ToPeak2Ratio'] == np.inf] = np.nan
-    quality_metrics['troughToPeak2Ratio'][quality_metrics['troughToPeak2Ratio'] == np.inf] = np.nan
+    # Create copies to avoid SettingWithCopyWarning
+    if 'peak1ToPeak2Ratio' in quality_metrics:
+        quality_metrics['peak1ToPeak2Ratio'] = np.where(
+            quality_metrics['peak1ToPeak2Ratio'] == np.inf, 
+            np.nan, 
+            quality_metrics['peak1ToPeak2Ratio']
+        )
+    if 'troughToPeak2Ratio' in quality_metrics:
+        quality_metrics['troughToPeak2Ratio'] = np.where(
+            quality_metrics['troughToPeak2Ratio'] == np.inf, 
+            np.nan, 
+            quality_metrics['troughToPeak2Ratio']
+        )
 
     # Define MATLAB-style color matrices
     red_colors = np.array([
@@ -223,7 +242,7 @@ def plot_histograms(quality_metrics, param):
 
     metric_names_short = ['# peaks', '# troughs', 'baseline flatness', 'waveform duration',
                          'peak_2/trough', 'spatial decay', 'peak_1/peak_2', 'peak_{main}/trough',
-                         'amplitude', 'SNR', 'frac. RPVs', '# spikes',
+                         'amplitude', 'signal/noise (SNR)', 'refractory period viol. (RPV)', '# spikes',
                          'presence ratio', '% spikes missing', 'maximum drift',
                          'isolation dist.', 'L-ratio']
 
@@ -376,27 +395,27 @@ def plot_histograms(quality_metrics, param):
                     
                     if metric_name in noise_metrics:
                         # Noise metrics: both thresholds -> Noise, Neuronal, Noise
-                        ax.text(midpoint1, text_y, '↓ Noise', ha='center', fontsize=10, 
+                        ax.text(midpoint1, text_y, '  Noise  ', ha='center', fontsize=10, 
                                color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '↓ Neuronal', ha='center', fontsize=10, 
+                        ax.text(midpoint2, text_y, '  Neuronal  ', ha='center', fontsize=10, 
                                color=line_colors[1], weight='bold')
-                        ax.text(midpoint3, text_y, '↓ Noise', ha='center', fontsize=10, 
+                        ax.text(midpoint3, text_y, '  Noise  ', ha='center', fontsize=10, 
                                color=line_colors[2], weight='bold')
                     elif metric_name in nonsomatic_metrics:
                         # Non-somatic metrics: both thresholds -> Non-somatic, Somatic, Non-somatic
-                        ax.text(midpoint1, text_y, '↓ Non-somatic', ha='center', fontsize=10, 
+                        ax.text(midpoint1, text_y, '  Non-somatic  ', ha='center', fontsize=10, 
                                color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '↓ Somatic', ha='center', fontsize=10, 
+                        ax.text(midpoint2, text_y, '  Somatic  ', ha='center', fontsize=10, 
                                color=line_colors[1], weight='bold')
-                        ax.text(midpoint3, text_y, '↓ Non-somatic', ha='center', fontsize=10, 
+                        ax.text(midpoint3, text_y, '  Non-somatic  ', ha='center', fontsize=10, 
                                color=line_colors[2], weight='bold')
                     else:
                         # MUA metrics: both thresholds -> MUA, Good, MUA
-                        ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=10, 
+                        ax.text(midpoint1, text_y, '  MUA  ', ha='center', fontsize=10, 
                                color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=10, 
+                        ax.text(midpoint2, text_y, '  Good  ', ha='center', fontsize=10, 
                                color=line_colors[1], weight='bold')
-                        ax.text(midpoint3, text_y, '↓ MUA', ha='center', fontsize=10, 
+                        ax.text(midpoint3, text_y, '  MUA  ', ha='center', fontsize=10, 
                                color=line_colors[2], weight='bold')
                     
                 elif thresh1 is not None:
@@ -419,29 +438,29 @@ def plot_histograms(quality_metrics, param):
                     
                     if metric_name in noise_metrics:
                         # Noise metrics: thresh1 only -> Neuronal, Noise
-                        ax.text(midpoint1, text_y, '↓ Neuronal', ha='center', fontsize=10, 
+                        ax.text(midpoint1, text_y, '  Neuronal  ', ha='center', fontsize=10, 
                                color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '↓ Noise', ha='center', fontsize=10, 
+                        ax.text(midpoint2, text_y, '  Noise  ', ha='center', fontsize=10, 
                                color=line_colors[1], weight='bold')
                     elif metric_name in nonsomatic_metrics:
                         # Non-somatic metrics: thresh1 only -> Somatic, Non-somatic
-                        ax.text(midpoint1, text_y, '↓ Somatic', ha='center', fontsize=10, 
+                        ax.text(midpoint1, text_y, '  Somatic  ', ha='center', fontsize=10, 
                                color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '↓ Non-somatic', ha='center', fontsize=10, 
+                        ax.text(midpoint2, text_y, '  Non-somatic  ', ha='center', fontsize=10, 
                                color=line_colors[1], weight='bold')
                     else:
                         # MUA metrics: thresh1 only
                         if metric_name == 'isolationDistance':
                             # For isolation distance: MUA on left, Good on right
-                            ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=10, 
+                            ax.text(midpoint1, text_y, '  MUA  ', ha='center', fontsize=10, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=10, 
+                            ax.text(midpoint2, text_y, '  Good  ', ha='center', fontsize=10, 
                                    color=line_colors[1], weight='bold')
                         else:
                             # For other MUA metrics: Good on left, MUA on right
-                            ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=10, 
+                            ax.text(midpoint1, text_y, '  Good  ', ha='center', fontsize=10, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=10, 
+                            ax.text(midpoint2, text_y, '  MUA  ', ha='center', fontsize=10, 
                                    color=line_colors[1], weight='bold')
                     
                 elif thresh2 is not None:
@@ -464,29 +483,29 @@ def plot_histograms(quality_metrics, param):
                     
                     if metric_name in noise_metrics:
                         # Noise metrics: thresh2 only -> Noise, Neuronal
-                        ax.text(midpoint1, text_y, '↓ Noise', ha='center', fontsize=10, 
+                        ax.text(midpoint1, text_y, '  Noise  ', ha='center', fontsize=10, 
                                color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '↓ Neuronal', ha='center', fontsize=10, 
+                        ax.text(midpoint2, text_y, '  Neuronal  ', ha='center', fontsize=10, 
                                color=line_colors[1], weight='bold')
                     elif metric_name in nonsomatic_metrics:
                         # Non-somatic metrics: thresh2 only -> Non-somatic, Somatic
-                        ax.text(midpoint1, text_y, '↓ Non-somatic', ha='center', fontsize=10, 
+                        ax.text(midpoint1, text_y, '  Non-somatic  ', ha='center', fontsize=10, 
                                color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '↓ Somatic', ha='center', fontsize=10, 
+                        ax.text(midpoint2, text_y, '  Somatic  ', ha='center', fontsize=10, 
                                color=line_colors[1], weight='bold')
                     else:
                         # MUA metrics: thresh2 only
                         if metric_name in ['nSpikes', 'presenceRatio']:
                             # For nSpikes and presenceRatio: MUA on left, Good on right
-                            ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=10, 
+                            ax.text(midpoint1, text_y, '  MUA  ', ha='center', fontsize=10, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=10, 
+                            ax.text(midpoint2, text_y, '  Good  ', ha='center', fontsize=10, 
                                    color=line_colors[1], weight='bold')
                         else:
                             # For L-ratio: Good on left, MUA on right
-                            ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=10, 
+                            ax.text(midpoint1, text_y, '  Good  ', ha='center', fontsize=10, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=10, 
+                            ax.text(midpoint2, text_y, '  MUA  ', ha='center', fontsize=10, 
                                    color=line_colors[1], weight='bold')
 
             # Set histogram limits from 0 to 1

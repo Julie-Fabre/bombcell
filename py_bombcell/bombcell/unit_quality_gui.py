@@ -1233,7 +1233,7 @@ class InteractiveUnitQualityGUI:
         LEGEND_FONTSIZE = 16
         TEXT_FONTSIZE = 16
         PLOT_TITLE_FONTSIZE = 22
-        QUALITY_METRIC_TEXT_FONTSIZE = 13
+        QUALITY_METRIC_TEXT_FONTSIZE = 15
         
         # Create figure with extended width and height for histograms
         fig = plt.figure(figsize=(30, 25))  # Taller figure
@@ -1491,7 +1491,7 @@ class InteractiveUnitQualityGUI:
         extract_raw = self.param.get('extractRaw', 0)
         if extract_raw != 1:
             ax.text(0.5, 0.5, 'Mean raw waveforms\n(extractRaw disabled)', 
-                    ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
+                    ha='center', va='center', transform=ax.transAxes, fontsize = 15, fontfamily="DejaVu Sans")
             ax.set_title('Mean raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
             return
         
@@ -2224,7 +2224,7 @@ class InteractiveUnitQualityGUI:
         if passes_spike_test:
             test_color = 'green'
         else:
-            test_color = 'orange'  # MUA color for failing test
+            test_color = 'darkorange'  # MUA color for failing test
         
         # Simple text format without threshold comparison
         test_text = f"# spikes = {total_spikes}"
@@ -2348,7 +2348,7 @@ class InteractiveUnitQualityGUI:
                 # Add background coloring: orange by default, green for good time chunks
                 for i, (start_time, end_time) in enumerate(zip(time_bins[:-1], time_bins[1:])):
                     # Default: orange background for bad chunks
-                    chunk_color = 'orange'
+                    chunk_color = 'darkorange'
                     
                     # Check if this time bin overlaps with any good time chunk
                     if good_start_times is not None and good_stop_times is not None:
@@ -2493,7 +2493,7 @@ class InteractiveUnitQualityGUI:
         # Define classification colors
         classification_colors = {
             'good': [0, 0.7, 0],        # Green
-            'mua': [1, 0.5, 0],         # Orange  
+            'mua': [1, 0.7, 0.2],         # dark Orange  
             'noise': [1, 0, 0],         # Red
             'non-somatic': [0, 0, 1]    # Blue
         }
@@ -2766,7 +2766,7 @@ class InteractiveUnitQualityGUI:
             ax.text(0.5, 0.5, 'No spike data\navailable', 
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
                     
-        ax.set_title('Scaling factor distribution', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
+        ax.set_title('Scaling factor \n distribution', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'amplitude_fit')
@@ -2830,22 +2830,22 @@ class InteractiveUnitQualityGUI:
             elif metric_name in ['rawAmplitude', 'signalToNoiseRatio', 'fractionRPVs_estimatedTauR', 'presenceRatio', 'maxDriftEstimate', 'percentageSpikesMissing_gaussian']:
                 if metric_name == 'rawAmplitude':
                     min_amp = param.get('minAmplitude', 50)
-                    return 'orange' if val < min_amp else 'green'
+                    return  'darkorange' if val < min_amp else 'green'
                 elif metric_name == 'signalToNoiseRatio':
                     min_snr = param.get('min_SNR', 3)
-                    return 'orange' if val < min_snr else 'green'
+                    return  'darkorange' if val < min_snr else 'green'
                 elif metric_name == 'fractionRPVs_estimatedTauR':
                     max_rpv = param.get('maxRPVviolations', 0.1)
-                    return 'orange' if val > max_rpv else 'green'
+                    return  'darkorange' if val > max_rpv else 'green'
                 elif metric_name == 'presenceRatio':
                     min_presence = param.get('minPresenceRatio', 0.7)
-                    return 'orange' if val < min_presence else 'green'
+                    return  'darkorange' if val < min_presence else 'green'
                 elif metric_name == 'maxDriftEstimate':
                     max_drift = param.get('maxDrift', 100)
-                    return 'orange' if val > max_drift else 'green'
+                    return  'darkorange' if val > max_drift else 'green'
                 elif metric_name == 'percentageSpikesMissing_gaussian':
                     max_missing = param.get('maxPercSpikesMissing', 20)
-                    return 'orange' if val > max_missing else 'green'
+                    return  'darkorange' if val > max_missing else 'green'
             
             # Default for informational metrics
             else:
@@ -2900,7 +2900,7 @@ class InteractiveUnitQualityGUI:
                     break
                     
                 ax.text(0.98, y_pos, text, transform=ax.transAxes, 
-                       verticalalignment='top', horizontalalignment='right', fontsize=13, 
+                       verticalalignment='top', horizontalalignment='right', fontsize=15, 
                        color=color, weight='bold', fontfamily="DejaVu Sans",
                        bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.9, 
                                 edgecolor='lightgray', linewidth=1), zorder=20)
@@ -3535,19 +3535,19 @@ class InteractiveUnitQualityGUI:
                         
                         if metric_name in noise_metrics:
                             # Noise metrics: both thresholds -> Noise, Neuronal, Noise
-                            ax.text(midpoint1, text_y, '↓ Noise', ha='center', fontsize=14, 
+                            ax.text(midpoint1, text_y, '  Noise', ha='center', fontsize=16, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Neuronal', ha='center', fontsize=14, 
+                            ax.text(midpoint2, text_y, '  Neuronal', ha='center', fontsize=16, 
                                    color=line_colors[1], weight='bold')
-                            ax.text(midpoint3, text_y, '↓ Noise', ha='center', fontsize=14, 
+                            ax.text(midpoint3, text_y, '  Noise', ha='center', fontsize=16, 
                                    color=line_colors[2], weight='bold')
                         elif metric_name in nonsomatic_metrics:
                             # Non-somatic metrics: both thresholds -> Non-somatic, Somatic, Non-somatic
-                            ax.text(midpoint1, text_y, '↓ Non-somatic', ha='center', fontsize=14, 
+                            ax.text(midpoint1, text_y, '  Non-somatic', ha='center', fontsize=16, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Somatic', ha='center', fontsize=14, 
+                            ax.text(midpoint2, text_y, '  Somatic', ha='center', fontsize=16, 
                                    color=line_colors[1], weight='bold')
-                            ax.text(midpoint3, text_y, '↓ Non-somatic', ha='center', fontsize=14, 
+                            ax.text(midpoint3, text_y, '  Non-somatic', ha='center', fontsize=16, 
                                    color=line_colors[2], weight='bold')
                         else:
                             # For metrics where higher values = better quality (like nSpikes, presenceRatio)
@@ -3555,19 +3555,19 @@ class InteractiveUnitQualityGUI:
                             good_higher_metrics = ['nSpikes', 'presenceRatio', 'signalToNoiseRatio', 'rawAmplitude', 'isolationDistance']
                             if metric_name in good_higher_metrics:
                                 # Higher values = Good, so Good should be on the right
-                                ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=14, 
+                                ax.text(midpoint1, text_y, '  MUA', ha='center', fontsize=16, 
                                        color=line_colors[0], weight='bold')
-                                ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=14, 
+                                ax.text(midpoint2, text_y, '  Good', ha='center', fontsize=16, 
                                        color=line_colors[1], weight='bold')
-                                ax.text(midpoint3, text_y, '↓ MUA', ha='center', fontsize=14, 
+                                ax.text(midpoint3, text_y, '  MUA', ha='center', fontsize=16, 
                                        color=line_colors[2], weight='bold')
                             else:
                                 # Lower values = Good, so Good should be on the left  
-                                ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=14, 
+                                ax.text(midpoint1, text_y, '  Good', ha='center', fontsize=16, 
                                        color=line_colors[0], weight='bold')
-                                ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=14, 
+                                ax.text(midpoint2, text_y, '  MUA', ha='center', fontsize=16, 
                                        color=line_colors[1], weight='bold')
-                                ax.text(midpoint3, text_y, '↓ Good', ha='center', fontsize=14, 
+                                ax.text(midpoint3, text_y, '  Good', ha='center', fontsize=16, 
                                        color=line_colors[2], weight='bold')
                         
                     elif thresh1 is not None or thresh2 is not None:
@@ -3588,29 +3588,29 @@ class InteractiveUnitQualityGUI:
                         nonsomatic_metrics = ['peak1ToPeak2Ratio', 'mainPeakToTroughRatio']
                         
                         if metric_name in noise_metrics:
-                            ax.text(midpoint1, text_y, '↓ Neuronal', ha='center', fontsize=14, 
+                            ax.text(midpoint1, text_y, '  Neuronal', ha='center', fontsize=16, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Noise', ha='center', fontsize=14, 
+                            ax.text(midpoint2, text_y, '  Noise', ha='center', fontsize=16, 
                                    color=line_colors[1], weight='bold')
                         elif metric_name in nonsomatic_metrics:
-                            ax.text(midpoint1, text_y, '↓ Somatic', ha='center', fontsize=14, 
+                            ax.text(midpoint1, text_y, '  Somatic', ha='center', fontsize=16, 
                                    color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '↓ Non-somatic', ha='center', fontsize=14, 
+                            ax.text(midpoint2, text_y, '  Non-somatic', ha='center', fontsize=16, 
                                    color=line_colors[1], weight='bold')
                         else:
                             # MUA metrics: determine labels based on colors
                             # Orange colors (1.0, 0.5469, 0) = MUA, Green colors (0, 0.5, 0) = Good
                             if np.allclose(line_colors[0], [1.0, 0.5469, 0]):
                                 # First color is orange (MUA), second should be green (Good)
-                                ax.text(midpoint1, text_y, '↓ MUA', ha='center', fontsize=14, 
+                                ax.text(midpoint1, text_y, '  MUA', ha='center', fontsize=16, 
                                        color=line_colors[0], weight='bold')
-                                ax.text(midpoint2, text_y, '↓ Good', ha='center', fontsize=14, 
+                                ax.text(midpoint2, text_y, '  Good', ha='center', fontsize=16, 
                                        color=line_colors[1], weight='bold')
                             else:
                                 # First color is green (Good), second should be orange (MUA)
-                                ax.text(midpoint1, text_y, '↓ Good', ha='center', fontsize=14, 
+                                ax.text(midpoint1, text_y, '  Good', ha='center', fontsize=16, 
                                        color=line_colors[0], weight='bold')
-                                ax.text(midpoint2, text_y, '↓ MUA', ha='center', fontsize=14, 
+                                ax.text(midpoint2, text_y, '  MUA', ha='center', fontsize=16, 
                                        color=line_colors[1], weight='bold')
 
                 # Set histogram limits from 0 to 1.1 to show classification lines and text
