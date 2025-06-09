@@ -2832,7 +2832,7 @@ class InteractiveUnitQualityGUI:
                     min_amp = param.get('minAmplitude', 50)
                     return  'darkorange' if val < min_amp else 'green'
                 elif metric_name == 'signalToNoiseRatio':
-                    min_snr = param.get('min_SNR', 3)
+                    min_snr = param.get('minSNR', 3)
                     return  'darkorange' if val < min_snr else 'green'
                 elif metric_name == 'fractionRPVs_estimatedTauR':
                     max_rpv = param.get('maxRPVviolations', 0.1)
@@ -3340,7 +3340,7 @@ class InteractiveUnitQualityGUI:
 
         metric_thresh2 = [None, None, None, param.get('maxWvDuration'), None,
                          None if param.get('spDecayLinFit') else param.get('maxSpatialDecaySlopeExp'),
-                         None, None, None, param.get('min_SNR'),
+                         None, None, None, param.get('minSNR'),
                          None, param.get('minNumSpikes'), param.get('minPresenceRatio'), None, None,
                          None, param.get('lratioMax')]
 
