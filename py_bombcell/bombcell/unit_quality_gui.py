@@ -2832,8 +2832,8 @@ class InteractiveUnitQualityGUI:
                     min_amp = param.get('minAmplitude', 50)
                     return  'darkorange' if val < min_amp else 'green'
                 elif metric_name == 'signalToNoiseRatio':
-                    min_snr = param.get('minSNR', 3)
-                    return  'darkorange' if val < min_snr else 'green'
+                    minSNR = param.get('minSNR', 3)
+                    return  'darkorange' if val < minSNR else 'green'
                 elif metric_name == 'fractionRPVs_estimatedTauR':
                     max_rpv = param.get('maxRPVviolations', 0.1)
                     return  'darkorange' if val > max_rpv else 'green'
