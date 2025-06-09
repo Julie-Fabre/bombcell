@@ -60,12 +60,13 @@ def upset_plots(quality_metrics, unit_type_string, param):
 
     noise_metrics = ["# peaks", "# troughs", "waveform duration", "spatial decay", "baseline flatness", "peak2 / trough"] #Duration is peak to trough duration
     non_somatic_metrics = ["peak(main) / trough", "peak1 / peak2"]
-    mua_metrics = ["SNR", "amplitude", "# spikes", "presence ratio", "% spikes missing", "fraction RPVs", "max. drift", "isolation dist.", "L-Ratio"]
+    mua_metrics = ["SNR", "amplitude", "# spikes", "presence ratio", "% spikes missing", "fraction RPVs", "max. drift", "isolation dist.", "L-ratio"]
     
     # Create display names mapping for better plot labels
     display_names = {
         "SNR": "signal/noise (SNR)",
-        "fraction RPVs": "refractory period viol. (RPV)"
+        "fraction RPVs": "refractory period viol. (RPV)",
+        "amplitude": "amplitude"
     }
 
     # Eventually filter out uncomputed metrics
@@ -243,7 +244,7 @@ def plot_histograms(quality_metrics, param):
 
     color_mtx = np.vstack([red_colors, blue_colors, darker_yellow_orange_colors])
 
-    # Define metrics in MATLAB order
+    # Define metrics in MATLAB order (using quality_metrics keys, not qm_table column names)
     metric_names = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 
                    'scndPeakToTroughRatio', 'spatialDecaySlope', 'peak1ToPeak2Ratio', 'mainPeakToTroughRatio',
                    'rawAmplitude', 'signalToNoiseRatio', 'fractionRPVs_estimatedTauR', 'nSpikes', 
@@ -261,12 +262,12 @@ def plot_histograms(quality_metrics, param):
                      param.get('minWvDuration'), param.get('maxScndPeakToTroughRatio_noise'),
                      param.get('minSpatialDecaySlope') if param.get('spDecayLinFit') else param.get('minSpatialDecaySlopeExp'),
                      param.get('maxPeak1ToPeak2Ratio_nonSomatic'), param.get('maxMainPeakToTroughRatio_nonSomatic'),
-                     None, param.get('minNumSpikes'), param.get('maxRPVviolations'), None, None, param.get('maxPercSpikesMissing'),
+                     param.get('minAmplitude'), None, param.get('maxRPVviolations'), None, None, param.get('maxPercSpikesMissing'),
                      param.get('maxDrift'), param.get('isoDmin'), None]
 
     metric_thresh2 = [None, None, None, param.get('maxWvDuration'), None,
                      None if param.get('spDecayLinFit') else param.get('maxSpatialDecaySlopeExp'),
-                     None, None, param.get('minAmplitude'), param.get('min_SNR'),
+                     None, None, None, param.get('minSNR'),
                      None, param.get('minNumSpikes'), param.get('minPresenceRatio'), None, None,
                      None, param.get('lratioMax')]
 
@@ -274,8 +275,8 @@ def plot_histograms(quality_metrics, param):
     plot_conditions = [True, True, True, True, True,
                       param.get('computeSpatialDecay', False),
                       True, True,
-                      param.get('extractRaw', False) and np.all(~np.isnan(quality_metrics.get('rawAmplitude', [np.nan]))),
-                      param.get('extractRaw', False) and np.all(~np.isnan(quality_metrics.get('signalToNoiseRatio', [np.nan]))),
+                      param.get('extractRaw', False) and 'rawAmplitude' in quality_metrics and np.any(~np.isnan(quality_metrics.get('rawAmplitude', [np.nan]))),
+                      param.get('extractRaw', False) and 'signalToNoiseRatio' in quality_metrics and np.any(~np.isnan(quality_metrics.get('signalToNoiseRatio', [np.nan]))),
                       True, True, True, True,
                       param.get('computeDrift', False),
                       param.get('computeDistanceMetrics', False),
@@ -460,8 +461,8 @@ def plot_histograms(quality_metrics, param):
                                color=line_colors[1], weight='bold')
                     else:
                         # MUA metrics: thresh1 only
-                        if metric_name == 'isolationDistance':
-                            # For isolation distance: MUA on left, Good on right
+                        if metric_name in ['isolationDistance', 'rawAmplitude']:
+                            # For isolation distance and rawAmplitude: MUA on left, Good on right
                             ax.text(midpoint1, text_y, '  MUA  ', ha='center', fontsize=10, 
                                    color=line_colors[0], weight='bold')
                             ax.text(midpoint2, text_y, '  Good  ', ha='center', fontsize=10, 
@@ -505,8 +506,8 @@ def plot_histograms(quality_metrics, param):
                                color=line_colors[1], weight='bold')
                     else:
                         # MUA metrics: thresh2 only
-                        if metric_name in ['nSpikes', 'presenceRatio']:
-                            # For nSpikes and presenceRatio: MUA on left, Good on right
+                        if metric_name in ['nSpikes', 'presenceRatio', 'signalToNoiseRatio']:
+                            # For nSpikes, presenceRatio, and signalToNoiseRatio: MUA on left, Good on right
                             ax.text(midpoint1, text_y, '  MUA  ', ha='center', fontsize=10, 
                                    color=line_colors[0], weight='bold')
                             ax.text(midpoint2, text_y, '  Good  ', ha='center', fontsize=10, 

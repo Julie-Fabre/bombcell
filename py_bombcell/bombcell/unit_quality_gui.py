@@ -3274,9 +3274,17 @@ class InteractiveUnitQualityGUI:
         """Plot histogram distributions showing where current unit sits - exact copy of plot_functions.py"""
         # Preprocessing - handle inf values
         if 'peak1ToPeak2Ratio' in self.quality_metrics:
-            self.quality_metrics['peak1ToPeak2Ratio'][self.quality_metrics['peak1ToPeak2Ratio'] == np.inf] = np.nan
+            self.quality_metrics['peak1ToPeak2Ratio'] = np.where(
+                self.quality_metrics['peak1ToPeak2Ratio'] == np.inf, 
+                np.nan, 
+                self.quality_metrics['peak1ToPeak2Ratio']
+            )
         if 'troughToPeak2Ratio' in self.quality_metrics:
-            self.quality_metrics['troughToPeak2Ratio'][self.quality_metrics['troughToPeak2Ratio'] == np.inf] = np.nan
+            self.quality_metrics['troughToPeak2Ratio'] = np.where(
+                self.quality_metrics['troughToPeak2Ratio'] == np.inf, 
+                np.nan, 
+                self.quality_metrics['troughToPeak2Ratio']
+            )
 
         # Define MATLAB-style color matrices - exact copy
         red_colors = np.array([
@@ -3317,7 +3325,7 @@ class InteractiveUnitQualityGUI:
 
         metric_names_short = ['# peaks', '# troughs', 'baseline flatness', 'waveform duration',
                              'peak_2/trough', 'spatial decay', 'peak_1/peak_2', 'peak_{main}/trough',
-                             'amplitude', 'SNR', 'frac. RPVs', '# spikes',
+                             'amplitude', 'signal/noise (SNR)', 'refractory period viol. (RPV)', '# spikes',
                              'presence ratio', '% spikes missing', 'maximum drift',
                              'isolation dist.', 'L-ratio']
 
@@ -3327,21 +3335,21 @@ class InteractiveUnitQualityGUI:
                          param.get('minWvDuration'), param.get('maxScndPeakToTroughRatio_noise'),
                          param.get('minSpatialDecaySlope') if param.get('spDecayLinFit') else param.get('minSpatialDecaySlopeExp'),
                          param.get('maxPeak1ToPeak2Ratio_nonSomatic'), param.get('maxMainPeakToTroughRatio_nonSomatic'),
-                         None, param.get('minNumSpikes'), param.get('maxRPVviolations'), None, None, param.get('maxPercSpikesMissing'),
+                         param.get('minAmplitude'), None, param.get('maxRPVviolations'), None, None, param.get('maxPercSpikesMissing'),
                          param.get('maxDrift'), param.get('isoDmin'), None]
 
         metric_thresh2 = [None, None, None, param.get('maxWvDuration'), None,
                          None if param.get('spDecayLinFit') else param.get('maxSpatialDecaySlopeExp'),
-                         None, None, param.get('minAmplitude'), param.get('min_SNR'),
+                         None, None, None, param.get('min_SNR'),
                          None, param.get('minNumSpikes'), param.get('minPresenceRatio'), None, None,
                          None, param.get('lratioMax')]
 
-        # Define plot conditions - exact copy
+        # Define plot conditions
         plot_conditions = [True, True, True, True, True,
                           param.get('computeSpatialDecay', False),
                           True, True,
-                          param.get('extractRaw', False) and np.all(~np.isnan(self.quality_metrics.get('rawAmplitude', [np.nan]))),
-                          param.get('extractRaw', False) and np.all(~np.isnan(self.quality_metrics.get('signalToNoiseRatio', [np.nan]))),
+                          param.get('extractRaw', False) and 'rawAmplitude' in self.quality_metrics and np.any(~np.isnan(self.quality_metrics.get('rawAmplitude', [np.nan]))),
+                          param.get('extractRaw', False) and 'signalToNoiseRatio' in self.quality_metrics and np.any(~np.isnan(self.quality_metrics.get('signalToNoiseRatio', [np.nan]))),
                           True, True, True, True,
                           param.get('computeDrift', False),
                           param.get('computeDistanceMetrics', False),
@@ -3552,7 +3560,7 @@ class InteractiveUnitQualityGUI:
                         else:
                             # For metrics where higher values = better quality (like nSpikes, presenceRatio)
                             # Left should be MUA, middle Good, right MUA, but we need to check the metric
-                            good_higher_metrics = ['nSpikes', 'presenceRatio', 'signalToNoiseRatio', 'rawAmplitude', 'isolationDistance']
+                            good_higher_metrics = ['nSpikes', 'presenceRatio', 'rawAmplitude', 'isolationDistance']
                             if metric_name in good_higher_metrics:
                                 # Higher values = Good, so Good should be on the right
                                 ax.text(midpoint1, text_y, '  MUA', ha='center', fontsize=16, 
