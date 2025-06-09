@@ -61,6 +61,12 @@ def upset_plots(quality_metrics, unit_type_string, param):
     noise_metrics = ["# peaks", "# troughs", "waveform duration", "spatial decay", "baseline flatness", "peak2 / trough"] #Duration is peak to trough duration
     non_somatic_metrics = ["peak(main) / trough", "peak1 / peak2"]
     mua_metrics = ["SNR", "amplitude", "# spikes", "presence ratio", "% spikes missing", "fraction RPVs", "max. drift", "isolation dist.", "L-Ratio"]
+    
+    # Create display names mapping for better plot labels
+    display_names = {
+        "SNR": "signal/noise (SNR)",
+        "fraction RPVs": "refractory period viol. (RPV)"
+    }
 
     # Eventually filter out uncomputed metrics
     noise_metrics = [m for m in noise_metrics if m in qm_table.columns]
@@ -98,11 +104,15 @@ def upset_plots(quality_metrics, unit_type_string, param):
 
     try:
         # plot MUA metrics upset plot
-        mua_data = qm_table[mua_metrics].astype(bool)
+        mua_data = qm_table[mua_metrics].astype(bool).copy()
+        # Rename columns for better display
+        mua_display_names = [display_names.get(m, m) for m in mua_metrics]
+        mua_data.columns = mua_display_names
+        
         # Count both "MUA" and "NON-SOMA MUA" units
         n_mua = ((qm_table['unit_type'] == 'MUA') | (qm_table['unit_type'] == 'NON-SOMA MUA')).sum()
         if len(mua_metrics) > 1:
-            upset = UpSet(from_indicators(mua_metrics, data=mua_data), min_degree=1)
+            upset = UpSet(from_indicators(mua_display_names, data=mua_data), min_degree=1)
             upset.plot()
             plt.suptitle(f"Units classified as MUA (n = {n_mua}/{total_units})")
             plt.show()
