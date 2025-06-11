@@ -520,6 +520,9 @@ def manage_data_compression(ephys_raw_dir):
             pre_ext = os.path.splitext(os.path.splitext(file)[0])[1]
             if pre_ext != ".lf":
                 compressed_ch = file
+        
+        if ext == ".dat":
+            decompressed_data = file
 
     # Assign raw data path after eventual decompression
     ephys_raw_data = None
