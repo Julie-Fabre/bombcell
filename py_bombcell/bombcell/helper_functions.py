@@ -336,8 +336,8 @@ def plot_raw_waveforms(
     main_ax.spines.right.set_visible(False)
     main_ax.spines.top.set_visible(False)
     main_ax.set_xticks([min_x, max_x])
-    main_ax.set_xlabel("Xpos ($\mu$m)", size=14)
-    main_ax.set_ylabel("Ypos ($\mu$m)", size=14)
+    main_ax.set_xlabel(r"Xpos ($\mu$m)", size=14)
+    main_ax.set_ylabel(r"Ypos ($\mu$m)", size=14)
 
     return fig
 
@@ -1208,6 +1208,51 @@ def run_bombcell(ks_dir, save_path, param):
         unit_type,
         unit_type_string,
     )
+
+
+def run_bombcell_unit_match(ks_dir, save_path, raw_file=None, meta_file=None, kilosort_version=4, gain_to_uV=None):
+    """
+    This function runs bombcell pipeline with parameters optimized for UnitMatch
+    
+    Parameters
+    ----------
+    ks_dir : string
+        The path to the KiloSort (or equivalent) save directory
+    save_path : string
+        The path to the directory to save the bombcell results
+    raw_file : string, optional
+        The path to the raw data file
+    meta_file : string, optional
+        The path to the meta file
+    kilosort_version : int, optional
+        The kilosort version used (default: 4)
+    gain_to_uV : float, optional
+        The gain to microvolts conversion factor
+        
+    Returns
+    -------
+    quality_metrics : dict
+        The quality metrics for each unit
+    param : dict
+        The parameters 
+    unit_type : ndarray
+        The unit classifications as numbers 
+    unit_type_string: ndarray
+        The unit classifications as names
+    """
+    from bombcell.default_parameters import get_unit_match_parameters
+    
+    # Get unit match specific parameters
+    param = get_unit_match_parameters(ks_dir, raw_file, kilosort_version, meta_file, gain_to_uV)
+    
+    if param.get("verbose", False):
+        print("🚀 Running BombCell with UnitMatch parameters...")
+        print(f"   - Extracting {param['nRawSpikesToExtract']} raw spikes per unit")
+        print(f"   - Saving multiple raw waveforms: {param['saveMultipleRaw']}")
+        print(f"   - Detrending waveforms: {param['detrendWaveform']}")
+    
+    # Run bombcell with unit match parameters
+    return run_bombcell(ks_dir, save_path, param)
 
 
 def make_qm_table(quality_metrics, param, unit_type_string):

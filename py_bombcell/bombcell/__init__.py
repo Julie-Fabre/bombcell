@@ -15,6 +15,7 @@ from . import (
 from .default_parameters import *
 from .extract_raw_waveforms import *
 from .helper_functions import *
+from .helper_functions import run_bombcell_unit_match
 from .quality_metrics import *
 from .ephys_properties import *
 from .save_utils import *
@@ -24,6 +25,7 @@ from .plot_functions import *
 # Explicitly expose key functions
 from .ephys_properties import get_ephys_parameters
 from .classification import classify_and_plot_brain_region
+from .default_parameters import get_unit_match_parameters
 from .unit_quality_gui import unit_quality_gui, InteractiveUnitQualityGUI, precompute_gui_data, load_gui_data
 # CCG functions are in ephys_properties.py (fast_acg, compute_acg)
 from .manual_analysis import (

@@ -61,6 +61,7 @@ def process_a_unit(
     detrendWaveform,
     waveform_baseline_noise,
     save_directory,
+    save_multiple_raw=False,
 ):
     """
     Reads in data from a unit, and processes the data.
@@ -89,6 +90,8 @@ def process_a_unit(
         The number of samples before the waveform which are noise
     save_directory : pathlib.Path
         The path to the directory to save the UnitMatch data
+    save_multiple_raw : bool, optional
+        If True, save multiple raw waveform sets for UnitMatch, by default False
 
     Returns
     -------
@@ -115,7 +118,7 @@ def process_a_unit(
             # if hit, spike overlaps with the beginning or the end of the binary file.
             continue
         # -1, to better fit with ML, adn python indexing!
-        tmp.astype(np.float64)
+        tmp = tmp.astype(np.float64)
 
         # option to remove a linear in time trends
         if detrendWaveform:
@@ -126,28 +129,51 @@ def process_a_unit(
         else:
             spike_map[:, :, i] = tmp[:, :-n_sync_channels].swapaxes(0, 1)
 
-    # Save average waveforms for unitmatch
-    # create the waveforms now, save later
-    # if save_multiple_raw:
-    #     tmp_spike_map = spike_map.swapaxes(0, 1)  # allign with UnitMatch
+    # Save average waveforms for UnitMatch
+    if save_multiple_raw and save_directory is not None:
+        tmp_spike_map = spike_map.swapaxes(0, 1)  # align with UnitMatch
 
-    #     # smooth over axis at once
-    #     tmp_spike_map = gaussian_filter(tmp_spike_map, axes=0, sigma=1, radius=2)
-    #     # matches matlab smoothdata, EXCEPT at boundaries!
-    #     tmp_spike_map -= np.mean(tmp_spike_map[:waveform_baseline_noise, :, :], axis=0)[
-    #         np.newaxis, :, :
-    #     ]
+        # Validate data before processing
+        if not np.all(np.isfinite(tmp_spike_map)):
+            # Clean any non-finite values before processing
+            tmp_spike_map = np.where(np.isfinite(tmp_spike_map), tmp_spike_map, 0.0)
 
-    #     # split into 2 CV for unitmatch!
-    #     UM_CV_limit = np.floor(n_spikes_sampled / 2).astype(int)
-    #     avg_waveforms = np.full((spike_width, n_channels - n_sync_channels, 2), np.nan)
-    #     avg_waveforms[:, :, 0] = np.median(tmp_spike_map[:, :, :UM_CV_limit], axis=-1)
-    #     avg_waveforms[:, :, 1] = np.median(tmp_spike_map[:, :, UM_CV_limit:], axis=-1)
+        # smooth over time axis (axis 0)
+        # gaussian_filter applies smoothing to all axes by default, so we need to specify sigma per axis
+        # sigma = [1, 0, 0] means smooth only along axis 0 (time) with sigma=1
+        tmp_spike_map = gaussian_filter(tmp_spike_map, sigma=[1, 0, 0])
+        
+        # Validate after smoothing
+        if not np.all(np.isfinite(tmp_spike_map)):
+            tmp_spike_map = np.where(np.isfinite(tmp_spike_map), tmp_spike_map, 0.0)
+        
+        # matches matlab smoothdata, EXCEPT at boundaries!
+        baseline_mean = np.mean(tmp_spike_map[:waveform_baseline_noise, :, :], axis=0)
+        if not np.all(np.isfinite(baseline_mean)):
+            baseline_mean = np.where(np.isfinite(baseline_mean), baseline_mean, 0.0)
+        
+        tmp_spike_map -= baseline_mean[np.newaxis, :, :]
 
-    #     np.save(
-    #         save_directory / f"Unit{cid}_RawSpikes.npy",
-    #         avg_waveforms[:, :, :],
-    #     )
+        # Final validation before saving
+        if not np.all(np.isfinite(tmp_spike_map)):
+            tmp_spike_map = np.where(np.isfinite(tmp_spike_map), tmp_spike_map, 0.0)
+
+        # split into 2 CV for unitmatch!
+        UM_CV_limit = np.floor(n_spikes_sampled / 2).astype(int)
+        avg_waveforms = np.full((spike_width, n_channels - n_sync_channels, 2), np.nan)
+        
+        if UM_CV_limit > 0:
+            avg_waveforms[:, :, 0] = np.median(tmp_spike_map[:, :, :UM_CV_limit], axis=-1)
+        if UM_CV_limit < n_spikes_sampled:
+            avg_waveforms[:, :, 1] = np.median(tmp_spike_map[:, :, UM_CV_limit:], axis=-1)
+        
+        # Clean final waveforms
+        avg_waveforms = np.where(np.isfinite(avg_waveforms), avg_waveforms, 0.0)
+
+        np.save(
+            save_directory / f"Unit{cid}_RawSpikes.npy",
+            avg_waveforms[:, :, :],
+        )
 
     # get average, baseline-subtracted waveforms, Not smoothing as a mandatory processing step!
     spike_map_mean = np.nanmean(spike_map, axis=2)
@@ -306,7 +332,7 @@ def extract_raw_waveforms(
     n_sync_channels = param["nSyncChannels"]
     n_spikes_to_extract = param["nRawSpikesToExtract"]
     detrendWaveform = param["detrendWaveform"]
-    #save_multiple_raw = param.get("save_multiple_raw", False)  # get and save data for UnitMatch
+    save_multiple_raw = param.get("saveMultipleRaw", False)  # get and save data for UnitMatch
     waveform_baseline_noise = param.get("waveformBaselineNoiseWindow", 20)
     spike_width = param["spike_width"]
 
@@ -415,6 +441,7 @@ def extract_raw_waveforms(
                 detrendWaveform,
                 waveform_baseline_noise,
                 raw_waveforms_dir,
+                save_multiple_raw,
             )
             for i, cid in tqdm(enumerate(unique_clusters))
         )
@@ -719,8 +746,9 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
                 False,
                 waveform_baseline_noise,
                 None,
+                False,
             )
-            new_raw_waveforms_matching_ids[id] = tmp_raw_waveform_info['raw_waveform_full']
+            new_raw_waveforms_matching_ids[id] = tmp_raw_waveform_info['raw_waveforms_full']
             new_peak_channels_matching_ids[id] = tmp_raw_waveform_info['raw_waveforms_peak_channel']
 
         #remove all empty rows

@@ -173,3 +173,46 @@ def get_default_parameters(
     return param
 
 
+def get_unit_match_parameters(
+    kilosort_path,
+    raw_file=None,
+    kilosort_version=4,
+    meta_file=None,
+    gain_to_uV=None,
+):
+    """
+    Creates the parameters dictionary optimized for UnitMatch
+    
+    Parameters
+    ----------
+    kilosort_path : str
+        The path to the KiloSort directory
+    raw_file : str, optional
+        The path to the raw data, by default None
+    kilosort_version : int, optional
+        Changes parameters based on if KS4 or earlier version were used, by default None
+    meta_file : str, optional
+        The path to the meta file of the raw recording, by default None
+    gain_to_uV : float, optional
+        The gain to micro volts if needed to give manually, by default None
+
+    Returns
+    -------
+    param : dictionary
+        The full param dictionary optimized for UnitMatch
+    """
+    # Get defaults first
+    param = get_default_parameters(kilosort_path, raw_file, kilosort_version, meta_file, gain_to_uV)
+    
+    # Unit match specific parameters
+    param["detrendWaveform"] = False  # If this is set to True, each raw extracted spike is
+                                      # detrended (we remove the best straight-fit line from the spike)
+    param["nRawSpikesToExtract"] = 1000  # inf if you don't encounter memory issues and want to load all spikes
+    param["saveMultipleRaw"] = True  # If you wish to save the nRawSpikesToExtract as well,
+                                     # currently needed if you want to run unit match https://github.com/EnnyvanBeest/UnitMatch
+                                     # to track chronic cells over days after this
+    param["decompress_data"] = True  # whether to decompress .cbin ephys data
+    
+    return param
+
+
