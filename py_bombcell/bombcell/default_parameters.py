@@ -50,7 +50,8 @@ def get_default_parameters(
         "recomputeDuplicateSpikes": False,
 
         ## Amplitude / raw waveform parameters
-        "detrendWaveform": True,  # If True will linearly de-trend over time
+        "detrendWaveform": True,  # If True will linearly de-trend the average waveforms for BombCell
+        "detrendForUnitMatch": False,  # If True will linearly de-trend raw waveforms saved for UnitMatch
         "nRawSpikesToExtract": 100,  # Number of raw spikes per unit
         "decompress_data": False,  # whether to decompress .cbin data
         "extractRaw": True,
@@ -205,8 +206,8 @@ def get_unit_match_parameters(
     param = get_default_parameters(kilosort_path, raw_file, kilosort_version, meta_file, gain_to_uV)
     
     # Unit match specific parameters
-    param["detrendWaveform"] = False  # If this is set to True, each raw extracted spike is
-                                      # detrended (we remove the best straight-fit line from the spike)
+    param["detrendWaveform"] = True  # BombCell average waveforms should be detrended for quality metrics
+    param["detrendForUnitMatch"] = False  # UnitMatch raw waveforms should not be detrended (it is done in-house)
     param["nRawSpikesToExtract"] = 1000  # inf if you don't encounter memory issues and want to load all spikes
     param["saveMultipleRaw"] = True  # If you wish to save the nRawSpikesToExtract as well,
                                      # currently needed if you want to run unit match https://github.com/EnnyvanBeest/UnitMatch

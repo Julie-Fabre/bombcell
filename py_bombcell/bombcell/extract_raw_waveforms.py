@@ -59,6 +59,7 @@ def process_a_unit(
     n_sync_channels,
     cid,
     detrendWaveform,
+    detrendForUnitMatch,
     waveform_baseline_noise,
     save_directory,
     save_multiple_raw
@@ -85,7 +86,9 @@ def process_a_unit(
     cid : int
         The id of the cluster
     detrendWaveform : bool
-        If True will linearly de-trend the waveforms over time
+        If True will linearly de-trend the average waveforms for BombCell
+    detrendForUnitMatch : bool
+        If True will linearly de-trend raw waveforms saved for UnitMatch
     waveform_baseline_noise : int
         The number of samples before the waveform which are noise
     save_directory : pathlib.Path
@@ -130,7 +133,32 @@ def process_a_unit(
     # Save average waveforms for unitmatch
     # create the waveforms now, save later
     if save_multiple_raw:
-        tmp_spike_map = spike_map.swapaxes(0, 1)  # allign with UnitMatch
+        # Create separate spike map for UnitMatch with its own detrending control
+        unitmatch_spike_map = np.full(
+            (n_channels - n_sync_channels, spike_width, n_spikes_sampled), np.nan
+        )
+        
+        for i, sid in enumerate(spike_idx[~np.isnan(spike_idx)]):
+            # get the raw data for each spike chosen
+            tmp = raw_data[
+                int(sid - half_width - 1) : int(sid + spike_width - half_width - 1),
+                np.arange(n_channels_rec),
+            ]
+            if tmp.shape[0] != spike_width:
+                # if hit, spike overlaps with the beginning or the end of the binary file.
+                continue
+            tmp.astype(np.float64)
+
+            # option to remove a linear in time trends for UnitMatch (separate from BombCell)
+            if detrendForUnitMatch:
+                detrended = detrend(tmp[:, :-n_sync_channels], axis=0).swapaxes(
+                    0, 1
+                )
+                unitmatch_spike_map[:, :, i] = detrended
+            else:
+                unitmatch_spike_map[:, :, i] = tmp[:, :-n_sync_channels].swapaxes(0, 1)
+        
+        tmp_spike_map = unitmatch_spike_map.swapaxes(0, 1)  # align with UnitMatch
 
         # smooth over axis at once
         tmp_spike_map = gaussian_filter(tmp_spike_map, axes=0, sigma=1, radius=2)
@@ -306,7 +334,8 @@ def extract_raw_waveforms(
     n_channels = param["nChannels"]
     n_sync_channels = param["nSyncChannels"]
     n_spikes_to_extract = param["nRawSpikesToExtract"]
-    detrendWaveform = param["detrendWaveform"]
+    detrendWaveform = param["detrendWaveform"]  # For BombCell average waveforms
+    detrendForUnitMatch = param.get("detrendForUnitMatch", False)  # For UnitMatch raw waveforms
     save_multiple_raw = param.get("saveMultipleRaw", False)  # get and save data for UnitMatch
     waveform_baseline_noise = param.get("waveformBaselineNoiseWindow", 20)
     spike_width = param["spike_width"]
@@ -415,6 +444,7 @@ def extract_raw_waveforms(
                 n_sync_channels,
                 cid,
                 detrendWaveform,
+                detrendForUnitMatch,
                 waveform_baseline_noise,
                 raw_waveforms_dir,
                 save_multiple_raw,
