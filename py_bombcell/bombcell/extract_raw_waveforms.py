@@ -61,7 +61,7 @@ def process_a_unit(
     detrendWaveform,
     waveform_baseline_noise,
     save_directory,
-    save_multiple_raw=False,
+    save_multiple_raw
 ):
     """
     Reads in data from a unit, and processes the data.
@@ -90,8 +90,6 @@ def process_a_unit(
         The number of samples before the waveform which are noise
     save_directory : pathlib.Path
         The path to the directory to save the UnitMatch data
-    save_multiple_raw : bool, optional
-        If True, save multiple raw waveform sets for UnitMatch, by default False
 
     Returns
     -------
@@ -118,7 +116,7 @@ def process_a_unit(
             # if hit, spike overlaps with the beginning or the end of the binary file.
             continue
         # -1, to better fit with ML, adn python indexing!
-        tmp = tmp.astype(np.float64)
+        tmp.astype(np.float64)
 
         # option to remove a linear in time trends
         if detrendWaveform:
@@ -129,73 +127,24 @@ def process_a_unit(
         else:
             spike_map[:, :, i] = tmp[:, :-n_sync_channels].swapaxes(0, 1)
 
-    # Save average waveforms for UnitMatch
-    if save_multiple_raw and save_directory is not None:
-        tmp_spike_map = spike_map.swapaxes(0, 1)  # align with UnitMatch
+    # Save average waveforms for unitmatch
+    # create the waveforms now, save later
+    if save_multiple_raw:
+        tmp_spike_map = spike_map.swapaxes(0, 1)  # allign with UnitMatch
 
-        # # DEBUG: Check for NaNs/infs in initial data
-        # nan_count = np.sum(~np.isfinite(tmp_spike_map))
-        # if nan_count > 0:
-        #     print(f"WARNING: Unit {cid} has {nan_count} non-finite values in raw spike data")
-        #     print(f"  Shape: {tmp_spike_map.shape}, NaN locations: {np.where(~np.isfinite(tmp_spike_map))}")
-        #     raise ValueError(f"Unit {cid}: Found {nan_count} non-finite values in raw spike data. "
-        #                    f"This indicates a data quality issue that needs investigation.")
-
-        # smooth over time axis (axis 0)
-        # gaussian_filter applies smoothing to all axes by default, so we need to specify sigma per axis
-        # sigma = [1, 0, 0] means smooth only along axis 0 (time) with sigma=1
-        tmp_spike_map = gaussian_filter(tmp_spike_map, sigma=[1, 0, 0])
-
-
+        # smooth over axis at once
+        tmp_spike_map = gaussian_filter(tmp_spike_map, axes=0, sigma=1, radius=2)
         # matches matlab smoothdata, EXCEPT at boundaries!
-        baseline_mean = np.mean(tmp_spike_map[:waveform_baseline_noise, :, :], axis=0)
-        
-        tmp_spike_map -= baseline_mean[np.newaxis, :, :]
-
+        tmp_spike_map -= np.mean(tmp_spike_map[:waveform_baseline_noise, :, :], axis=0)[
+            np.newaxis, :, :
+        ]
 
         # split into 2 CV for unitmatch!
         UM_CV_limit = np.floor(n_spikes_sampled / 2).astype(int)
         avg_waveforms = np.full((spike_width, n_channels - n_sync_channels, 2), np.nan)
-        
-        # Check if we have enough spikes for reliable CV splits
-        min_spikes_per_split = 2
-        cv0_spikes = UM_CV_limit
-        cv1_spikes = n_spikes_sampled - UM_CV_limit
-        
-        # print(f"DEBUG: Unit {cid} - Total spikes: {n_spikes_sampled}, CV splits: {cv0_spikes}/{cv1_spikes}")
-        
-        # Count actual valid (non-NaN) spikes in each split
-        cv0_valid_spikes = np.sum(np.isfinite(tmp_spike_map[0, 0, :UM_CV_limit])) if UM_CV_limit > 0 else 0
-        cv1_valid_spikes = np.sum(np.isfinite(tmp_spike_map[0, 0, UM_CV_limit:])) if UM_CV_limit < n_spikes_sampled else 0
-        
-        # print(f"DEBUG: Unit {cid} - Valid spikes per split: CV0={cv0_valid_spikes}, CV1={cv1_valid_spikes}")
-        
-     #   if cv0_valid_spikes < min_spikes_per_split and cv1_valid_spikes < min_spikes_per_split:
-            # print(f"WARNING: Unit {cid}: Insufficient valid spikes for reliable CV splits. "
-            #       f"Need at least {min_spikes_per_split} valid spikes per split, "
-            #       f"got CV0: {cv0_valid_spikes}, CV1: {cv1_valid_spikes}. "
-            #       f"n = {n_spikes_sampled} total spikes - skipping this unit")
-            # Continue to process the rest of the function but don't save UnitMatch files
-        
-        # Process CV0 if it has enough valid spikes
-        if cv0_valid_spikes >= min_spikes_per_split:
-            cv0_data = tmp_spike_map[:, :, :UM_CV_limit]
-            # Only use finite values for median calculation
-            avg_waveforms[:, :, 0] = np.nanmedian(cv0_data, axis=-1)
-            # print(f"DEBUG: Unit {cid} - CV0 processed successfully")
-        # else:
-            # print(f"WARNING: Unit {cid} - CV0 has insufficient valid spikes ({cv0_valid_spikes}), leaving as NaN")
-            
-        # Process CV1 if it has enough valid spikes  
-        if cv1_valid_spikes >= min_spikes_per_split:
-            cv1_data = tmp_spike_map[:, :, UM_CV_limit:]
-            # Only use finite values for median calculation
-            avg_waveforms[:, :, 1] = np.nanmedian(cv1_data, axis=-1)
-            # print(f"DEBUG: Unit {cid} - CV1 processed successfully")
-        # else:
-            # print(f"WARNING: Unit {cid} - CV1 has insufficient valid spikes ({cv1_valid_spikes}), leaving as NaN")
-            
-        # Always save UnitMatch files (even with NaNs) to maintain unit count consistency
+        avg_waveforms[:, :, 0] = np.nanmedian(tmp_spike_map[:, :, :UM_CV_limit], axis=-1)
+        avg_waveforms[:, :, 1] = np.nanmedian(tmp_spike_map[:, :, UM_CV_limit:], axis=-1)
+
         np.save(
             save_directory / f"Unit{cid}_RawSpikes.npy",
             avg_waveforms[:, :, :],
@@ -361,6 +310,7 @@ def extract_raw_waveforms(
     save_multiple_raw = param.get("saveMultipleRaw", False)  # get and save data for UnitMatch
     waveform_baseline_noise = param.get("waveformBaselineNoiseWindow", 20)
     spike_width = param["spike_width"]
+    
 
     # if data exists and re_extract_waveforms is false, load in data
     recompute = re_extract_waveforms
@@ -376,7 +326,7 @@ def extract_raw_waveforms(
             print(f"\rLoading file {raw_waveforms_file}... Done!") 
 
             check = check_extracted_waveforms(
-                raw_waveforms_id_match, raw_waveforms_peak_channel, spike_clusters, spike_times, baseline_noise_all, param)
+                raw_waveforms_id_match, raw_waveforms_peak_channel, spike_clusters, spike_times, baseline_noise_all, param, save_path)
 
             if check != (None, None, None, None, None):
                 raw_waveforms_id_match, raw_waveforms_peak_channel, raw_waveforms_full, baseline_noise_all, baseline_noise_idx = check
@@ -424,18 +374,18 @@ def extract_raw_waveforms(
         )
 
         # filter so only spikes which have a full width recorded can be sampled
-        # FIXED: Use logical_and to ensure spikes are WITHIN bounds, not outside them
-        valid_spike_mask = np.logical_and(
-            spike_times >= half_width,
-            spike_times < raw_data.shape[0] - spike_width + half_width
-        )
-        
-        spike_clusters_filt = spike_clusters[valid_spike_mask]
-        spike_times_filt = spike_times[valid_spike_mask]
-        
-        print(f"DEBUG: Filtered spikes from {len(spike_times)} to {len(spike_times_filt)} "
-              f"(removed {len(spike_times) - len(spike_times_filt)} out-of-bounds spikes)")
-        print(f"DEBUG: Raw data shape: {raw_data.shape}, valid range: {half_width} to {raw_data.shape[0] - spike_width + half_width}")
+        spike_clusters_filt = spike_clusters[
+            np.logical_and(
+                half_width < spike_times,
+                spike_times < raw_data.shape[0] - spike_width + half_width,
+            )
+        ]
+        spike_times_filt = spike_times[
+            np.logical_and(
+                half_width < spike_times,
+                spike_times < raw_data.shape[0] - spike_width + half_width,
+            )
+        ]
 
         # calculate all the spikes to sample
         all_spikes_idxs = np.zeros((n_clusters, n_spikes_to_extract))
@@ -443,53 +393,17 @@ def extract_raw_waveforms(
         # Process ALL unit
         for i, idx in enumerate(unique_clusters):
             clus_spike_times.append(spike_times_filt[spike_clusters_filt == idx])
-            n_unit_spikes = len(clus_spike_times[i])
-            
-            # Check if unit has enough spikes for reliable processing
-            if n_unit_spikes < 4:  # Need at least 4 spikes (2 per CV split)
-                print(f"WARNING: Unit {idx} has only {n_unit_spikes} valid spikes - skipping")
-                all_spikes_idxs[i, :] = np.nan  # Fill with NaNs to indicate insufficient data
-                continue
-                
             if n_spikes_to_extract < len(clus_spike_times[i]):
                 # -1 so can't index out of region
-                selected_spikes = clus_spike_times[i][
+                all_spikes_idxs[i, :] = clus_spike_times[i][
                     np.linspace(
                         0, len(clus_spike_times[i]) - 1, n_spikes_to_extract, dtype=int
                     )
                 ]
-                all_spikes_idxs[i, :] = selected_spikes
             else:
                 all_spikes_idxs[i, : len(clus_spike_times[i])] = clus_spike_times[i]
-                # FIXED: Don't add NaNs here - instead, pad with the last valid spike time
-                # This prevents NaN propagation into the raw waveform extraction
-                if len(clus_spike_times[i]) > 0:
-                    all_spikes_idxs[i, len(clus_spike_times[i]):] = clus_spike_times[i][-1]
-                else:
-                    all_spikes_idxs[i, :] = np.nan
+                all_spikes_idxs[i, len(clus_spike_times[i]) :] = np.nan
 
-        # # DEBUGGING: Temporarily disable parallel processing for breakpoints
-        # all_waveforms = []
-        # for i, cid in tqdm(enumerate(unique_clusters)):
-        #     print(f"Processing unit {cid} (index {i})...")
-        #     waveform_result = process_a_unit(
-        #         raw_data,
-        #         spike_width,
-        #         half_width,
-        #         all_spikes_idxs[i],
-        #         n_channels_rec,
-        #         n_channels,
-        #         n_sync_channels,
-        #         cid,
-        #         detrendWaveform,
-        #         waveform_baseline_noise,
-        #         raw_waveforms_dir,
-        #         save_multiple_raw,
-        #     )
-        #     all_waveforms.append(waveform_result)
-        #     print(f"Completed unit {cid}")
-        
-       # Original parallel code (commented out for debugging):
         all_waveforms = Parallel(n_jobs=-1, verbose=10, mmap_mode="r", max_nbytes=None)(
             delayed(process_a_unit)(
                 raw_data,
@@ -555,6 +469,12 @@ def extract_raw_waveforms(
     raw_waveforms_id_match = np.full((max_cluster_id + 1, n_channels - n_sync_channels, spike_width), np.nan)
     for i, idx in enumerate(unique_clusters):
         raw_waveforms_id_match[idx] = raw_waveforms_full[i]
+
+    # Save the extracted waveforms if they were recomputed
+    if recompute:
+        np.save(raw_waveforms_file, raw_waveforms_full)
+        np.save(raw_waveforms_peak_channel_file, raw_waveforms_peak_channel)
+        np.save(raw_waveforms_id_match_file, raw_waveforms_id_match)
 
     return raw_waveforms_full, raw_waveforms_peak_channel, SNR, raw_waveforms_id_match
 
@@ -681,7 +601,7 @@ def decompress_data(
 
     return decompressed_data_name
 
-def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel, spike_clusters, spike_times, baseline_noise_all, param):
+def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel, spike_clusters, spike_times, baseline_noise_all, param, save_path):
 
     # get the current and old cluster indexes
     unique_id_new = np.unique(spike_clusters)
@@ -703,18 +623,18 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
         #create baseline 
         baseline_id_match = np.zeros(np.max(unique_id_extracted)+1)
         for i, idx in enumerate(unique_id_extracted):
-            baseline_id_match[idx] = baseline_noise_all[i]
-        new_baseline = np.pad(baseline_id_match, ((0,n_new_clusters),(0,0),(0,0)))
+            baseline_id_match[idx] = baseline_noise_all[i*waveform_baseline_noise:(i+1)*waveform_baseline_noise].mean()
+        new_baseline = np.pad(baseline_id_match, (0,n_new_clusters))
         new_baseline[old_indexes_to_remove] = np.nan
 
         new_baseline_noise_idx = np.hstack([(np.ones(waveform_baseline_noise) * cid) for cid in unique_id_new])
 
-        #create array for peak channels with mathcing row to id 
+        #create array for peak channels with matching row to id 
         peak_channels_id_match = np.zeros(np.max(unique_id_extracted)+1)
         for i, idx in enumerate(unique_id_extracted):
             peak_channels_id_match[idx] = raw_waveforms_peak_channel[i]
 
-        new_peak_channels_matching_ids = np.pad(peak_channels_id_match, ((0,n_new_clusters),(0,0),(0,0)))
+        new_peak_channels_matching_ids = np.pad(peak_channels_id_match, (0,n_new_clusters))
         new_peak_channels_matching_ids[old_indexes_to_remove] = np.nan
 
         print(f'Extracting unit index(s) {new_indexes_to_get}.. from detected splits')
@@ -728,8 +648,10 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
         n_sync_channels = param["nSyncChannels"]
         n_spikes_to_extract = param["nRawSpikesToExtract"]
         detrendWaveform = param["detrendWaveform"]
-        waveform_baseline_noise = param.get("waveform_baseline_noise", 20)
+        waveform_baseline_noise = param.get("waveformBaselineNoiseWindow", 20)
         spike_width = param["spike_width"]
+        save_multiple_raw = param.get("saveMultipleRaw", False)  # get and save data for UnitMatch
+    
 
         # half_width is the number of sample before spike_time which are recorded,
         # then will take spike_width - half_width after
@@ -763,18 +685,18 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
         )
 
         # filter so only spikes which have a full width recorded can be sampled
-        # FIXED: Use logical_and to ensure spikes are WITHIN bounds, not outside them
-        valid_spike_mask = np.logical_and(
-            spike_times >= half_width,
-            spike_times < raw_data.shape[0] - spike_width + half_width
-        )
-        
-        spike_clusters_filt = spike_clusters[valid_spike_mask]
-        spike_times_filt = spike_times[valid_spike_mask]
-        
-        print(f"DEBUG: Filtered spikes from {len(spike_times)} to {len(spike_times_filt)} "
-              f"(removed {len(spike_times) - len(spike_times_filt)} out-of-bounds spikes)")
-        print(f"DEBUG: Raw data shape: {raw_data.shape}, valid range: {half_width} to {raw_data.shape[0] - spike_width + half_width}")
+        spike_clusters_filt = spike_clusters[
+            np.logical_and(
+                half_width < spike_times,
+                spike_times < raw_data.shape[0] - spike_width + half_width,
+            )
+        ]
+        spike_times_filt = spike_times[
+            np.logical_and(
+                half_width < spike_times,
+                spike_times < raw_data.shape[0] - spike_width + half_width,
+            )
+        ]
 
         # calculate all the spikes to sample
         all_spikes_idxs = np.zeros((n_clusters, n_spikes_to_extract))
@@ -794,21 +716,26 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
                 all_spikes_idxs[i, : len(clus_spike_times[i])] = clus_spike_times[i]
                 all_spikes_idxs[i, len(clus_spike_times[i]) :] = np.nan
 
+        # Create the raw waveforms directory for saving multiple raw files
+        raw_waveforms_dir = Path(save_path) / "RawWaveforms"
+        raw_waveforms_dir.mkdir(exist_ok=True)
+        
         for id in new_indexes_to_get:
+            # Get the correct index in all_spikes_idxs array
+            unit_idx = np.where(unique_id_new == id)[0][0]
             tmp_raw_waveform_info = process_a_unit(
                 raw_data,
                 spike_width,
                 half_width,
-                all_spikes_idxs,
+                all_spikes_idxs[unit_idx],
                 n_channels_rec,
                 n_channels,
                 n_sync_channels,
                 id,
                 detrendWaveform,
-                False,
                 waveform_baseline_noise,
-                None,
-                False,
+                raw_waveforms_dir,
+                save_multiple_raw,
             )
             new_raw_waveforms_matching_ids[id] = tmp_raw_waveform_info['raw_waveforms_full']
             new_peak_channels_matching_ids[id] = tmp_raw_waveform_info['raw_waveforms_peak_channel']
