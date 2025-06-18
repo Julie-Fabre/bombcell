@@ -339,10 +339,9 @@ def plot_histograms(quality_metrics, param):
         ax = axs[row_id, col_id]
         
         metric_data = quality_metrics[metric_name]
-        # Remove NaN and inf values
+        # Remove NaN and inf values for all metrics
         metric_data = metric_data[~np.isnan(metric_data)]
-        if metric_name == 'isolationDistance':
-            metric_data = metric_data[~np.isinf(metric_data)]
+        metric_data = metric_data[~np.isinf(metric_data)]
         
         if len(metric_data) > 0:
             # Plot histogram with probability normalization (MATLAB style)
