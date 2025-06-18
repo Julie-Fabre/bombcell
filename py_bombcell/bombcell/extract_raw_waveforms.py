@@ -195,37 +195,11 @@ def process_a_unit(
         # else:
             # print(f"WARNING: Unit {cid} - CV1 has insufficient valid spikes ({cv1_valid_spikes}), leaving as NaN")
             
-        # Final check: at least one CV split should be valid
-        cv0_has_data = not np.all(np.isnan(avg_waveforms[:, :, 0]))
-        cv1_has_data = not np.all(np.isnan(avg_waveforms[:, :, 1]))
-        
-        save_unitmatch_file = True  # Default to saving
-        
-        if not cv0_has_data and not cv1_has_data:
-            # print(f"WARNING: Unit {cid}: Both CV splits failed - no valid waveforms generated. "
-                #   f"Valid spikes: CV0={cv0_valid_spikes}, CV1={cv1_valid_spikes} - not saving UnitMatch file")
-            save_unitmatch_file = False
-        elif not cv0_has_data or not cv1_has_data:
-            # print(f"WARNING: Unit {cid} - Only one CV split is valid (CV0: {cv0_has_data}, CV1: {cv1_has_data}). "
-            #       f"n = {n_spikes_sampled} total spikes, CV0: {cv0_valid_spikes} valid, CV1: {cv1_valid_spikes} valid - not saving UnitMatch file")
-            save_unitmatch_file = False
-
-        # Final NaN check before saving
-        total_nans = np.sum(np.isnan(avg_waveforms))
-        if total_nans > 0:
-            # print(f"WARNING: Unit {cid}: Final waveforms contain {total_nans} NaN values - not saving UnitMatch file. "
-            #       f"n = {n_spikes_sampled} total spikes, CV0: {cv0_valid_spikes} valid, CV1: {cv1_valid_spikes} valid")
-            save_unitmatch_file = False
-
-        # Save UnitMatch file only if validation passed
-        if save_unitmatch_file:
-            # print(f"DEBUG: Unit {cid} - Successfully processed and validated, saving to file")
-            np.save(
-                save_directory / f"Unit{cid}_RawSpikes.npy",
-                avg_waveforms[:, :, :],
-            )
-        # else:
-            # print(f"DEBUG: Unit {cid} - Skipping UnitMatch file save due to validation failures")
+        # Always save UnitMatch files (even with NaNs) to maintain unit count consistency
+        np.save(
+            save_directory / f"Unit{cid}_RawSpikes.npy",
+            avg_waveforms[:, :, :],
+        )
 
     # get average, baseline-subtracted waveforms, Not smoothing as a mandatory processing step!
     spike_map_mean = np.nanmean(spike_map, axis=2)
