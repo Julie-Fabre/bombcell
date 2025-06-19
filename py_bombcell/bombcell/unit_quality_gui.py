@@ -1665,14 +1665,9 @@ class InteractiveUnitQualityGUI:
         spikes_for_fr = filtered_spike_times if 'filtered_spike_times' in locals() else spike_times
         
         if len(spikes_for_fr) > 1:
-            # Use pre-computed firing rate if available (but may need to adjust for filtered data)
-            if 'firing_rate_mean' in metrics and not np.isnan(metrics['firing_rate_mean']) and not (self.param and self.param.get('computeTimeChunks', False)):
-                mean_fr = metrics['firing_rate_mean']
-            else:
-                # Calculate firing rate from filtered spike times
-                recording_duration = np.max(spikes_for_fr) - np.min(spikes_for_fr)
-                if recording_duration > 0:
-                    mean_fr = len(spikes_for_fr) / recording_duration
+            # Calculate firing rate from filtered spike times
+            edge = int(len(autocorr) * 1/5)
+            mean_fr = np.mean(np.append(autocorr[:edge], autocorr[-edge:]))
             # Set limits to accommodate both data and mean firing rate line
             ax.set_xlim(- cwin / 2, cwin / 2)
             if len(autocorr) > 0:
