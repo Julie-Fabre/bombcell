@@ -196,7 +196,7 @@ def remove_duplicate_spikes(
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
-    if param["remove_duplicate_spikes"]:
+    if param["removeDuplicateSpikes"]:
         # check if spikes are already extract or need to recompute
         if param["recomputeDuplicateSpikes"] or ~os.path.isdir(
             os.path.join(save_path, "spikes._bc_duplicateSpikes.npy")
