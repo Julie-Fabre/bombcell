@@ -45,7 +45,7 @@ def get_default_parameters(
 
         ## Duplicate spike parameters
         "removeDuplicateSpikes": False,
-        "duplicateSpikeWindow_s": 0.00001,  # in seconds
+        "duplicateSpikeWindow_s": 0.0001,  # in seconds
         "saveSpikes_withoutDuplicates": True,
         "recomputeDuplicateSpikes": False,
 
