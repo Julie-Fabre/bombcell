@@ -1113,7 +1113,7 @@ class InteractiveUnitQualityGUI:
         
         # Get spike times for this unit
         spike_mask = self.ephys_data['spike_clusters'] == unit_id
-        spike_times = self.ephys_data['spike_times'][spike_mask] * self.param['ephys_sample_rate']
+        spike_times = self.ephys_data['spike_times'][spike_mask]
         
         # Get template waveform
         if unit_idx < len(self.ephys_data['template_waveforms']):
@@ -1616,7 +1616,7 @@ class InteractiveUnitQualityGUI:
         
     def plot_autocorrelogram(self, ax, unit_data, cbin=0.5, cwin=100):
         """Plot autocorrelogram with tauR and firing rate lines"""
-        
+
         spike_times = unit_data['spike_times']
         metrics = unit_data['metrics']
         filtered_spike_times = spike_times.copy()
@@ -1646,19 +1646,18 @@ class InteractiveUnitQualityGUI:
         # Compute autocorrelogram
         bins = np.arange(-cwin / 2, cwin / 2 + cbin, cbin)
         bin_centers = bins[:-1] + cbin/2
-        autocorr = acg(filtered_spike_times, cbin, cwin, normalize='hertz') # built-in caching
+        filtered_spike_times_samples = np.round(filtered_spike_times * self.param['ephys_sample_rate']).astype(np.uint64)
+        autocorr = acg(filtered_spike_times_samples,
+                       cbin,
+                       cwin,
+                       normalize='hertz') # built-in caching
             
         if len(filtered_spike_times) <= 1:
             return
         
-        # Plot only positive lags (like MATLAB)
-        positive_mask = bins >= 0
-        positive_centers = bins[positive_mask]
-        positive_autocorr = autocorr[positive_mask]
         
         # Plot with wider bars like MATLAB
-        ax.bar(positive_centers * 1000, positive_autocorr, 
-               width=cbin * 0.9, color='grey', alpha=0.7, edgecolor='black', linewidth=0.5)
+        ax.plot(bins, autocorr, color='grey', alpha=1, linewidth=2)
         
         # Get mean firing rate from metrics or calculate if not available
         mean_fr = 0
@@ -1675,9 +1674,9 @@ class InteractiveUnitQualityGUI:
                 if recording_duration > 0:
                     mean_fr = len(spikes_for_fr) / recording_duration
             # Set limits to accommodate both data and mean firing rate line
-            ax.set_xlim(0, cwin / 2)
-            if len(positive_autocorr) > 0:
-                data_max = np.max(positive_autocorr)
+            ax.set_xlim(- cwin / 2, cwin / 2)
+            if len(autocorr) > 0:
+                data_max = np.max(autocorr)
                 # More conservative y-limits - just ensure mean firing rate is visible
                 y_max = max(data_max * 1.05, mean_fr * 1.1)
                 ax.set_ylim(0, y_max)
