@@ -4,14 +4,21 @@ Python port of BombCell. Automated quality control, curation and neuron classifi
 
 ## Installation
 
+To install the latest stable version:
 ```bash
-pip install bombcell
+conda create -n bombcell python=3.11
+conda activate bombcell
+pip install uv
+uv pip install bombcell # you could do `pip install .`, but uv is much quicker!
 ```
-
-For full functionality including optional features:
-
+To install the dev version (with the latest updates): 
 ```bash
-pip install bombcell[all]
+conda create -n bombcell python=3.11
+conda activate bombcell
+git clone https://github.com/Julie-Fabre/bombcell.git
+cd bombcell/pyBombCell
+pip install uv
+uv pip install -e .
 ```
 
 ## Quick Start

@@ -7,6 +7,8 @@ import pandas as pd
 import pickle
 import os
 
+from bombcell.ccg_fast import acg, ccg
+
 try:
     import ipywidgets as widgets
     from IPython.display import display, clear_output
@@ -1619,92 +1621,128 @@ class InteractiveUnitQualityGUI:
         # Add quality metrics text
         self.add_metrics_text(ax, unit_data, 'raw')
         
-    def plot_autocorrelogram(self, ax, unit_data):
+    def plot_autocorrelogram(self, ax, unit_data, cbin=0.5, cwin=100):
         """Plot autocorrelogram with tauR and firing rate lines"""
-        spike_times = unit_data['spike_times']
-        metrics = unit_data['metrics']
         
-        # Set default parameters
-        max_lag = 0.05  # 50ms
-        bin_size = 0.001  # 1ms bins
         
-        # Check if we have pre-computed ACG data
-        if (self.gui_data and 
-            'acg_data' in self.gui_data and 
-            self.current_unit_idx in self.gui_data['acg_data'] and
-            self.gui_data['acg_data'][self.current_unit_idx] is not None):
+        # Filter spike times
+        if self.param and self.param.get('computeTimeChunks', False):
+
+            spike_times = unit_data['spike_times']
+            metrics = unit_data['metrics']
+            good_start_times = metrics.get('useTheseTimesStart', None)
+            good_stop_times = metrics.get('useTheseTimesStop', None)
             
-            print(f"🚀 ACG: Using PRE-COMPUTED autocorrelogram for unit {self.current_unit_idx}")
-            acg_data = self.gui_data['acg_data'][self.current_unit_idx]
-            autocorr = acg_data['autocorr']
-            bin_centers = acg_data['bin_centers']
-            bin_size = acg_data['bin_size']
-            
-        elif len(spike_times) > 1:
-            # Filter spike times to good time chunks if computeTimeChunks is enabled
             filtered_spike_times = spike_times.copy()
-            if self.param and self.param.get('computeTimeChunks', False):
-                good_start_times = metrics.get('useTheseTimesStart', None)
-                good_stop_times = metrics.get('useTheseTimesStop', None)
+            if good_start_times is not None and good_stop_times is not None:
+                # Ensure they are arrays
+                if np.isscalar(good_start_times):
+                    good_start_times = [good_start_times]
+                if np.isscalar(good_stop_times):
+                    good_stop_times = [good_stop_times]
                 
-                if good_start_times is not None and good_stop_times is not None:
-                    # Ensure they are arrays
-                    if np.isscalar(good_start_times):
-                        good_start_times = [good_start_times]
-                    if np.isscalar(good_stop_times):
-                        good_stop_times = [good_stop_times]
+                # Create mask for spikes in good time chunks
+                good_spike_mask = np.zeros(len(spike_times), dtype=bool)
+                for g_start, g_stop in zip(good_start_times, good_stop_times):
+                    if not (np.isnan(g_start) or np.isnan(g_stop)):
+                        good_spike_mask |= (spike_times >= g_start) & (spike_times <= g_stop)
+                
+                # Filter spike times to only good time chunks
+                filtered_spike_times = spike_times[good_spike_mask]
+        
+            # Compute autocorrelogram
+            bins = np.arange(-cwin / 2, cwin / 2 + cbin, cbin)
+            bin_centers = bins[:-1] + cbin/2
+            autocorr = acg(filtered_spike_times, cbin, cwin) # built-in caching
+
+            # Cache the computed ACG for use in GUI
+            if self.gui_data and 'acg_data' in self.gui_data:
+                self.gui_data['acg_data'][self.current_unit_idx] = {
+                    'autocorr': autocorr,
+                    'bin_centers': bin_centers / 1000,  # Convert to seconds
+                    'bin_size': cbin / 1000  # Convert to seconds
+                }
+
+        else:
+            return
+
+        # Check if we have pre-computed ACG data
+        # if (self.gui_data and 
+        #     'acg_data' in self.gui_data and 
+        #     self.current_unit_idx in self.gui_data['acg_data'] and
+        #     self.gui_data['acg_data'][self.current_unit_idx] is not None):
+            
+        #     print(f"🚀 ACG: Using PRE-COMPUTED autocorrelogram for unit {self.current_unit_idx}")
+        #     acg_data = self.gui_data['acg_data'][self.current_unit_idx]
+        #     autocorr = acg_data['autocorr']
+        #      = acg_data['bin_centers']
+        #     bin_size = acg_data['bin_size']
+            
+        # elif len(spike_times) > 1:
+        #     # Filter spike times to good time chunks if computeTimeChunks is enabled
+        #     filtered_spike_times = spike_times.copy()
+        #     if self.param and self.param.get('computeTimeChunks', False):
+        #         good_start_times = metrics.get('useTheseTimesStart', None)
+        #         good_stop_times = metrics.get('useTheseTimesStop', None)
+                
+        #         if good_start_times is not None and good_stop_times is not None:
+        #             # Ensure they are arrays
+        #             if np.isscalar(good_start_times):
+        #                 good_start_times = [good_start_times]
+        #             if np.isscalar(good_stop_times):
+        #                 good_stop_times = [good_stop_times]
                     
-                    # Create mask for spikes in good time chunks
-                    good_spike_mask = np.zeros(len(spike_times), dtype=bool)
-                    for g_start, g_stop in zip(good_start_times, good_stop_times):
-                        if not (np.isnan(g_start) or np.isnan(g_stop)):
-                            good_spike_mask |= (spike_times >= g_start) & (spike_times <= g_stop)
+        #             # Create mask for spikes in good time chunks
+        #             good_spike_mask = np.zeros(len(spike_times), dtype=bool)
+        #             for g_start, g_stop in zip(good_start_times, good_stop_times):
+        #                 if not (np.isnan(g_start) or np.isnan(g_stop)):
+        #                     good_spike_mask |= (spike_times >= g_start) & (spike_times <= g_stop)
                     
-                    # Filter spike times to only good time chunks
-                    filtered_spike_times = spike_times[good_spike_mask]
+        #             # Filter spike times to only good time chunks
+        #             filtered_spike_times = spike_times[good_spike_mask]
             
             # ACG calculation will proceed without status messages
             # (max_lag and bin_size already defined above)
             
             # Calculate proper autocorrelogram (not just ISIs)
             # Create bins centered around 0
-            bins = np.arange(-max_lag, max_lag + bin_size, bin_size)
-            bin_centers = bins[:-1] + bin_size/2
+        #     bins = np.arange(-max_lag, max_lag + bin_size, bin_size)
+        #     bin_centers = bins[:-1] + bin_size/2
             
-            # Calculate autocorrelogram
-            autocorr = np.zeros(len(bin_centers))
+        #     # Calculate autocorrelogram
+        #     autocorr = np.zeros(len(bin_centers))
             
-            # For efficiency, subsample spikes if there are too many
-            if len(filtered_spike_times) > 10000:
-                indices = np.random.choice(len(filtered_spike_times), 10000, replace=False)
-                spike_subset = filtered_spike_times[indices]
-            else:
-                spike_subset = filtered_spike_times
+        #     # For efficiency, subsample spikes if there are too many
+        #     if len(filtered_spike_times) > 10000:
+        #         indices = np.random.choice(len(filtered_spike_times), 10000, replace=False)
+        #         spike_subset = filtered_spike_times[indices]
+        #     else:
+        #         spike_subset = filtered_spike_times
             
-            # Calculate cross-correlation with itself  
-            for i, spike_time in enumerate(spike_subset[::10]):  # Subsample further for speed
-                # Find spikes within max_lag of this spike
-                time_diffs = filtered_spike_times - spike_time
-                valid_diffs = time_diffs[(np.abs(time_diffs) <= max_lag) & (time_diffs != 0)]
+        #     # Calculate cross-correlation with itself  
+        #     for i, spike_time in enumerate(spike_subset[::10]):  # Subsample further for speed
+        #         # Find spikes within max_lag of this spike
+        #         time_diffs = filtered_spike_times - spike_time
+        #         valid_diffs = time_diffs[(np.abs(time_diffs) <= max_lag) & (time_diffs != 0)]
                 
-                if len(valid_diffs) > 0:
-                    hist, _ = np.histogram(valid_diffs, bins=bins)
-                    autocorr += hist
+        #         if len(valid_diffs) > 0:
+        #             hist, _ = np.histogram(valid_diffs, bins=bins)
+        #             autocorr += hist
             
-            # Convert to firing rate (spikes/sec)
-            if len(spike_subset) > 0:
-                recording_duration = np.max(filtered_spike_times) - np.min(filtered_spike_times) if len(filtered_spike_times) > 0 else 1
-                autocorr = autocorr / (len(spike_subset) * bin_size) if recording_duration > 0 else autocorr
+        #     # Convert to firing rate (spikes/sec)
+        #     if len(spike_subset) > 0:
+        #         recording_duration = np.max(filtered_spike_times) - np.min(filtered_spike_times) if len(filtered_spike_times) > 0 else 1
+        #         autocorr = autocorr / (len(spike_subset) * bin_size) if recording_duration > 0 else autocorr
                 
-            # Cache the computed ACG for future use
-            if self.gui_data and 'acg_data' in self.gui_data:
-                self.gui_data['acg_data'][self.current_unit_idx] = {
-                    'autocorr': autocorr,
-                    'bin_centers': bin_centers,
-                    'bin_size': bin_size
-                }
-        else:
-            return
+        #     # Cache the computed ACG for future use
+        #     if self.gui_data and 'acg_data' in self.gui_data:
+        #         self.gui_data['acg_data'][self.current_unit_idx] = {
+        #             'autocorr': autocorr,
+        #             'bin_centers': bin_centers,
+        #             'bin_size': bin_size
+        #         }
+        # else:
+        #     return
         
         # Plot only positive lags (like MATLAB)
         positive_mask = bin_centers >= 0
@@ -1713,7 +1751,7 @@ class InteractiveUnitQualityGUI:
         
         # Plot with wider bars like MATLAB
         ax.bar(positive_centers * 1000, positive_autocorr, 
-               width=bin_size*1000*0.9, color='grey', alpha=0.7, edgecolor='black', linewidth=0.5)
+               width=cbin * 0.9, color='grey', alpha=0.7, edgecolor='black', linewidth=0.5)
         
         # Get mean firing rate from metrics or calculate if not available
         mean_fr = 0
@@ -1730,7 +1768,7 @@ class InteractiveUnitQualityGUI:
                 if recording_duration > 0:
                     mean_fr = len(spikes_for_fr) / recording_duration
             # Set limits to accommodate both data and mean firing rate line
-            ax.set_xlim(0, max_lag * 1000)
+            ax.set_xlim(0, cwin / 2)
             if len(positive_autocorr) > 0:
                 data_max = np.max(positive_autocorr)
                 # More conservative y-limits - just ensure mean firing rate is visible

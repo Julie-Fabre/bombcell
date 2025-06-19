@@ -21,6 +21,7 @@ from .ephys_properties import *
 from .save_utils import *
 from .loading_utils import *
 from .plot_functions import *
+from .ccg_fast import acg, ccg
 
 # Explicitly expose key functions
 from .ephys_properties import get_ephys_parameters

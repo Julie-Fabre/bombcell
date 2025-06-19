@@ -6,6 +6,10 @@ import pandas as pd
 from typing import Dict, Tuple, List
 from numpy.typing import NDArray
 
+from cachecache import Cacher, distributed_cacher
+__cachedir__ = "~/.bombcell"
+global_bc_cacher = Cacher(__cachedir__)
+
 
 def path_handler(path: str) -> None:
     path = Path(path).expanduser()
