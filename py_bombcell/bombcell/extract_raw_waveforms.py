@@ -509,7 +509,7 @@ def extract_raw_waveforms(
     return raw_waveforms_full, raw_waveforms_peak_channel, SNR, raw_waveforms_id_match
 
 
-def manage_data_compression(ephys_raw_dir):
+def manage_data_compression(ephys_raw_dir, param):
     """
     Tries to find the raw data in the given directory and handle decompression if necessary.
 
@@ -573,13 +573,16 @@ def manage_data_compression(ephys_raw_dir):
         ephys_raw_data = ephys_raw_dir / decompressed_data
     elif compressed_data is not None:
         assert compressed_ch is not None, f"Found compressed data file {compressed_data} but no matching .ch file!"
-        print(f"Decompressing ephys data file {compressed_data}...")
-        decompressed_data_name = compressed_data.replace(".cbin", ".bin").split('.')
-        decompressed_data_name[0] = decompressed_data_name[0] + '_bc_decompressed'
-        decompressed_data_name = ".".join(decompressed_data_name)
-        ephys_raw_data = decompress_data(
-            ephys_raw_dir, compressed_data, compressed_ch, decompressed_data_name
-        )
+        if param['decompress_data']:
+            print(f"Decompressing ephys data file {compressed_data}...")
+            decompressed_data_name = compressed_data.replace(".cbin", ".bin").split('.')
+            decompressed_data_name[0] = decompressed_data_name[0] + '_bc_decompressed'
+            decompressed_data_name = ".".join(decompressed_data_name)
+            ephys_raw_data = decompress_data(
+                ephys_raw_dir, compressed_data, compressed_ch, decompressed_data_name
+            )
+        else:
+            raise Exception(f"Could not find decompressed data at {ephys_raw_dir}! Set param['decompress_data'] to true to decompress data at {ephys_raw_dir}.")
     else:
         raise Exception(f"Could not find compressed or decompressed data at {ephys_raw_dir}!")
 
