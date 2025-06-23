@@ -81,7 +81,7 @@ def save_quality_metric_tsv(metric_data, template_ids, output_dir, filename, col
     )
     df.to_csv(file_path, sep="\t", index=False)
 
-def save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_dir, param):
+def save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_dir, param, ks_dir):
     """
     Save all quality metrics as separate TSV files.
 
@@ -100,14 +100,15 @@ def save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_d
         # Ensure output directory exists
         os.makedirs(output_dir, exist_ok=True)
 
-        # Save unit types first
-        save_quality_metric_tsv(
-            unit_types,
-            template_ids,
-            output_dir,
-            "cluster_bc_unitType.tsv",
-            ("cluster_id", "bc_unitType")
-        )
+        if param["unit_type_for_phy"]:
+            # Save unit types first
+            save_quality_metric_tsv(
+                unit_types,
+                template_ids,
+                ks_dir,
+                "cluster_bc_unitType.tsv",
+                ("cluster_id", "bc_unitType")
+            )
 
         # Get all metric keys
         metric_keys = get_metric_keys()
@@ -125,14 +126,14 @@ def save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_d
                 save_quality_metric_tsv(
                     quality_metrics[metric_name],
                     template_ids,
-                    output_dir,
+                    ks_dir,
                     filename,
                     column_names
                 )
             else:
                 print(f"Warning: Metric '{metric_name}' not found in quality_metrics dictionary")
 
-def save_quality_metrics_and_verify(quality_metrics, unit_types, template_ids, output_dir, param):
+def save_quality_metrics_and_verify(quality_metrics, unit_types, template_ids, output_dir, param, ks_dir):
     """
     Save all quality metrics and verify that all expected metrics were saved.
 
@@ -148,7 +149,7 @@ def save_quality_metrics_and_verify(quality_metrics, unit_types, template_ids, o
         Directory path for saving the files
     """
     # Save all metrics
-    save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_dir, param)
+    save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_dir, param, ks_dir)
     
     # Verify all metrics were saved
     expected_metrics = set(get_metric_keys())
@@ -253,6 +254,7 @@ def save_results(
     raw_waveforms_peak_channel,
     raw_waveforms_id_match,
     save_path,
+    ks_dir,
 ):
     """
     This function saves all of the BombCell data to the given save directory
@@ -277,7 +279,7 @@ def save_results(
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
-    save_quality_metrics_and_verify(quality_metrics, unit_type_string, unique_templates, save_path, param)
+    save_quality_metrics_and_verify(quality_metrics, unit_type_string, unique_templates, save_path, param, ks_dir)
 
     # Get rid of peak channels of empty rows, which were kept for convenient indexing up to here
     quality_metrics_save = quality_metrics.copy()

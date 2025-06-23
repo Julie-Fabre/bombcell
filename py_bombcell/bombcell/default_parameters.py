@@ -139,7 +139,7 @@ def get_default_parameters(
 
     # Handle cases where raw data is compressed and fetch metadata uV conversion factor
     if raw_file is not None:
-        raw_file = manage_data_compression(Path(raw_file).parent)
+        raw_file = manage_data_compression(Path(raw_file).parent, param)
     if meta_file is not None and gain_to_uV is None:
         gain_to_uV = get_gain_spikeglx(meta_file)
 
