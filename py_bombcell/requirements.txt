@@ -10,3 +10,4 @@
 	numba>=0.58.1
 	upsetplot
 	mtscomp
+	cachecache
