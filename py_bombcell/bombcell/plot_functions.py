@@ -59,8 +59,8 @@ def upset_plots(quality_metrics, unit_type_string, param):
     qm_table = hf.make_qm_table(quality_metrics, param, unit_type_string)
 
     noise_metrics = ["# peaks", "# troughs", "waveform duration", "spatial decay", "baseline flatness", "peak2 / trough"] #Duration is peak to trough duration
-    non_somatic_metrics = ["peak(main) / trough", "peak1 / peak2"]
-    mua_metrics = ["SNR", "amplitude", "# spikes", "presence ratio", "% spikes missing", "fraction RPVs", "max. drift", "isolation dist.", "L-ratio"]
+    non_somatic_metrics = ["trough / peak2", "peak1 / peak2"]
+    mua_metrics = ["SNR", "amplitude", "presence ratio", "# spikes", "% spikes missing", "fraction RPVs", "max. drift", "isolation dist.", "L-ratio"]
     
     # Create display names mapping for better plot labels
     display_names = {

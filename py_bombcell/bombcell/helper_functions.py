@@ -1302,7 +1302,7 @@ def make_qm_table(quality_metrics, param, unit_type_string):
 
     if param["computeSpatialDecay"]:
         if param["computeSpatialDecay"] & param["spDecayLinFit"]:
-            bad_spatial_decay = quality_metrics['spatialDecaySlope'] > param['minSpatialDecaySlope']
+            bad_spatial_decay = quality_metrics['spatialDecaySlope'] < param['minSpatialDecaySlope']
         elif param["computeSpatialDecay"]:
             too_shallow_decay = quality_metrics["spatialDecaySlope"] < param["minSpatialDecaySlopeExp"]
             too_steep_decay = (
@@ -1324,8 +1324,8 @@ def make_qm_table(quality_metrics, param, unit_type_string):
     )
     too_many_RPVs = quality_metrics["fractionRPVs_estimatedTauR"] > param["maxRPVviolations"]
 
-    qm_table_list.extend([too_few_total_spikes, too_many_spikes_missing, too_low_presence_ratio, too_many_RPVs])
-    qm_table_names.extend(["# spikes", "% spikes missing", "presence ratio", "fraction RPVs"])
+    qm_table_list.extend([too_many_spikes_missing, too_low_presence_ratio, too_few_total_spikes, too_many_RPVs])
+    qm_table_names.extend(["% spikes missing", "presence ratio", "# spikes", "fraction RPVs"])
 
     if param["extractRaw"]:
         too_small_amplitude = (
@@ -1352,11 +1352,29 @@ def make_qm_table(quality_metrics, param, unit_type_string):
         (quality_metrics["peak1ToPeak2Ratio"] > param["maxPeak1ToPeak2Ratio_nonSomatic"]) |
         (quality_metrics["mainPeakToTroughRatio"] > param["maxMainPeakToTroughRatio_nonSomatic"])
     )
-    peak_main_to_trough = quality_metrics["mainPeakToTroughRatio"] > param["maxMainPeakToTroughRatio_nonSomatic"]
-    peak1_to_peak2 = quality_metrics["peak1ToPeak2Ratio"] > param["maxPeak1ToPeak2Ratio_nonSomatic"]
+    # Only evaluate non-somatic metrics for units actually classified as non-somatic
+    is_non_somatic_unit = np.char.find(unit_type_string.astype(str), 'NON-SOMA') >= 0
+    
+    trough_to_peak2 = np.full(len(unit_type_string), False, dtype=bool)
+    trough_to_peak2[is_non_somatic_unit] = (
+        quality_metrics["troughToPeak2Ratio"][is_non_somatic_unit] < param["minTroughToPeak2Ratio_nonSomatic"]
+    )
+    
+    peak1_to_peak2 = np.full(len(unit_type_string), False, dtype=bool)
+    # For non-somatic units, check if peak1/peak2 criteria failed (only when first 3 criteria were met)
+    if np.any(is_non_somatic_unit):
+        first_three_criteria = (
+            (quality_metrics["troughToPeak2Ratio"] < param["minTroughToPeak2Ratio_nonSomatic"]) &
+            (quality_metrics["mainPeak_before_width"] < param["minWidthFirstPeak_nonSomatic"]) &
+            (quality_metrics["mainTrough_width"] < param["minWidthMainTrough_nonSomatic"])
+        )
+        non_soma_with_first_three = is_non_somatic_unit & first_three_criteria
+        peak1_to_peak2[non_soma_with_first_three] = (
+            quality_metrics["peak1ToPeak2Ratio"][non_soma_with_first_three] > param["maxPeak1ToPeak2Ratio_nonSomatic"]
+        )
 
-    qm_table_list.extend([is_non_somatic, peak_main_to_trough, peak1_to_peak2])
-    qm_table_names.extend(["non somatic", "peak(main) / trough", "peak1 / peak2"])
+    qm_table_list.extend([trough_to_peak2, peak1_to_peak2])
+    qm_table_names.extend(["trough / peak2", "peak1 / peak2"])
 
 
     if param["computeDistanceMetrics"]:
