@@ -85,13 +85,13 @@ def upset_plots(quality_metrics, unit_type_string, param):
         n_noise = noise_units_mask.sum()
         # Check how many columns have True values
         cols_with_true = (noise_data.sum() > 0).sum()
-        if cols_with_true > 1 and n_noise > 0:
+        if cols_with_true >= 1 and n_noise > 0:
             upset = UpSet(from_indicators(noise_metrics, data=noise_data), min_degree=1)
             upset.plot()
             plt.suptitle(f"Units classified as noise (n = {n_noise}/{total_units})")
             plt.show()
         elif n_noise > 0:
-            print(f"Noise upset plot skipped: only {cols_with_true} metric(s) have failures")
+            print(f"Noise upset plot skipped: no metrics have failures")
     except (AttributeError, ValueError) as e:
         print(f"Warning: Could not create noise upset plot due to library compatibility: {e}")
 
@@ -102,13 +102,13 @@ def upset_plots(quality_metrics, unit_type_string, param):
         n_non_somatic = non_somatic_units_mask.sum()
         # Check how many columns have True values
         cols_with_true = (non_somatic_data.sum() > 0).sum()
-        if cols_with_true > 1 and n_non_somatic > 0:
+        if cols_with_true >= 1 and n_non_somatic > 0:
             upset = UpSet(from_indicators(non_somatic_metrics, data=non_somatic_data), min_degree=1)
             upset.plot()
             plt.suptitle(f"Units classified as non-somatic (n = {n_non_somatic}/{total_units})")
             plt.show()
         elif n_non_somatic > 0:
-            print(f"Non-somatic upset plot skipped: only {cols_with_true} metric(s) have failures")
+            print(f"Non-somatic upset plot skipped: no metrics have failures")
     except (AttributeError, ValueError) as e:
         print(f"Warning: Could not create non-somatic upset plot due to library compatibility: {e}")
 
@@ -123,13 +123,13 @@ def upset_plots(quality_metrics, unit_type_string, param):
         n_mua = mua_units_mask.sum()
         # Check how many columns have True values
         cols_with_true = (mua_data.sum() > 0).sum()
-        if cols_with_true > 1 and n_mua > 0:
+        if cols_with_true >= 1 and n_mua > 0:
             upset = UpSet(from_indicators(mua_display_names, data=mua_data), min_degree=1)
             upset.plot()
             plt.suptitle(f"Units classified as MUA (n = {n_mua}/{total_units})")
             plt.show()
         elif n_mua > 0:
-            print(f"MUA upset plot skipped: only {cols_with_true} metric(s) have failures")
+            print(f"MUA upset plot skipped: no metrics have failures")
     except (AttributeError, ValueError) as e:
         print(f"Warning: Could not create MUA upset plot due to library compatibility: {e}")
 
