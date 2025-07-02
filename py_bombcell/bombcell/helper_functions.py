@@ -1281,34 +1281,45 @@ def make_qm_table(quality_metrics, param, unit_type_string):
     qm_table_list = [unit_type_string, unique_templates]
     qm_table_names = ["unit_type", "Original ID"]
 
-    nan_result = np.isnan(quality_metrics["nPeaks"])
-
-    too_many_peaks = quality_metrics["nPeaks"] > param["maxNPeaks"]
-    too_many_troughs = quality_metrics["nTroughs"] > param["maxNTroughs"]
-    too_short_waveform = (
-        quality_metrics["waveformDuration_peakTrough"] < param["minWvDuration"]
+    # Only evaluate noise metrics for units actually classified as NOISE
+    is_noise_unit = unit_type_string == 'NOISE'
+    
+    too_many_peaks = np.full(len(unit_type_string), False, dtype=bool)
+    too_many_peaks[is_noise_unit] = quality_metrics["nPeaks"][is_noise_unit] > param["maxNPeaks"]
+    
+    too_many_troughs = np.full(len(unit_type_string), False, dtype=bool)
+    too_many_troughs[is_noise_unit] = quality_metrics["nTroughs"][is_noise_unit] > param["maxNTroughs"]
+    
+    duration = np.full(len(unit_type_string), False, dtype=bool)
+    if np.any(is_noise_unit):
+        too_short_waveform = quality_metrics["waveformDuration_peakTrough"] < param["minWvDuration"]
+        too_long_waveform = quality_metrics["waveformDuration_peakTrough"] > param["maxWvDuration"]
+        duration[is_noise_unit] = (too_short_waveform | too_long_waveform)[is_noise_unit]
+    
+    too_noisy_baseline = np.full(len(unit_type_string), False, dtype=bool)
+    too_noisy_baseline[is_noise_unit] = (
+        quality_metrics["waveformBaselineFlatness"][is_noise_unit] > param["maxWvBaselineFraction"]
     )
-    too_long_waveform = (
-        quality_metrics["waveformDuration_peakTrough"] > param["maxWvDuration"]
+    
+    peak2_to_trough = np.full(len(unit_type_string), False, dtype=bool)
+    peak2_to_trough[is_noise_unit] = (
+        quality_metrics["scndPeakToTroughRatio"][is_noise_unit] > param["maxScndPeakToTroughRatio_noise"]
     )
-    duration = np.logical_or(too_short_waveform, too_long_waveform).squeeze()
-    too_noisy_baseline = (
-        quality_metrics["waveformBaselineFlatness"] > param["maxWvBaselineFraction"]
-    )
-    peak2_to_trough = quality_metrics["scndPeakToTroughRatio"] > param["maxScndPeakToTroughRatio_noise"]
 
     qm_table_list.extend([too_many_peaks, too_many_troughs, duration, too_noisy_baseline, peak2_to_trough])
     qm_table_names.extend(["# peaks", "# troughs", "waveform duration", "baseline flatness", "peak2 / trough"])
 
     if param["computeSpatialDecay"]:
-        if param["computeSpatialDecay"] & param["spDecayLinFit"]:
-            bad_spatial_decay = quality_metrics['spatialDecaySlope'] < param['minSpatialDecaySlope']
-        elif param["computeSpatialDecay"]:
-            too_shallow_decay = quality_metrics["spatialDecaySlope"] < param["minSpatialDecaySlopeExp"]
-            too_steep_decay = (
-                quality_metrics["spatialDecaySlope"] > param["maxSpatialDecaySlopeExp"]
-            )  
-            bad_spatial_decay = np.logical_or(too_shallow_decay, too_steep_decay).squeeze()
+        bad_spatial_decay = np.full(len(unit_type_string), False, dtype=bool)
+        if np.any(is_noise_unit):
+            if param["spDecayLinFit"]:
+                bad_spatial_decay[is_noise_unit] = (
+                    quality_metrics['spatialDecaySlope'][is_noise_unit] < param['minSpatialDecaySlope']
+                )
+            else:
+                too_shallow_decay = quality_metrics["spatialDecaySlope"] < param["minSpatialDecaySlopeExp"]
+                too_steep_decay = quality_metrics["spatialDecaySlope"] > param["maxSpatialDecaySlopeExp"]
+                bad_spatial_decay[is_noise_unit] = (too_shallow_decay | too_steep_decay)[is_noise_unit]
         
         qm_table_list.append(bad_spatial_decay)
         qm_table_names.append("spatial decay")
