@@ -106,7 +106,6 @@ def get_default_parameters(
         ## Waveform-based
         "maxNPeaks": 2,  # maximum number of peaks
         "maxNTroughs": 1,  # maximum number of troughs
-        "keep_only_somatic": True,  # keep only somatic units
         "minWvDuration": 100,  # in us
         "maxWvDuration": 1150,  # in us
         "minSpatialDecaySlope": -0.008,

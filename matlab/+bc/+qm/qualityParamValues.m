@@ -15,6 +15,7 @@ function param = qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, ga
 % classification parameters (see bc_qualityParamValues for required fields
 % and suggested starting values)
 % 
+
 if nargin < 5 
     kilosortVersion = 2;
 end
