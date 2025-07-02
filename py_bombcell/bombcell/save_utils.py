@@ -105,7 +105,7 @@ def save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_d
             save_quality_metric_tsv(
                 unit_types,
                 template_ids,
-                ks_dir,
+                output_dir,
                 "cluster_bc_unitType.tsv",
                 ("cluster_id", "bc_unitType")
             )
@@ -126,7 +126,7 @@ def save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_d
                 save_quality_metric_tsv(
                     quality_metrics[metric_name],
                     template_ids,
-                    ks_dir,
+                    output_dir,
                     filename,
                     column_names
                 )
