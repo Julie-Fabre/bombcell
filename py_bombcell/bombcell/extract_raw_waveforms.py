@@ -123,9 +123,11 @@ def process_a_unit(
 
         # option to remove a linear in time trends
         if detrendWaveform:
-            detrended = detrend(tmp[:, :-n_sync_channels], axis=0).swapaxes(
-                0, 1
-            )
+            if n_sync_channels > 0:
+                detrended = detrend(tmp[:, :-n_sync_channels], axis=0).swapaxes(0, 1)
+            else:
+                detrended = detrend(tmp[:, :], axis=0).swapaxes(0, 1)
+            
             spike_map[:, :, i] = detrended
         else:
             spike_map[:, :, i] = tmp[:, :-n_sync_channels].swapaxes(0, 1)
@@ -451,7 +453,6 @@ def extract_raw_waveforms(
             )
             for i, cid in tqdm(enumerate(unique_clusters))
         )
-
 
         (raw_waveforms,
          raw_waveforms_full,
