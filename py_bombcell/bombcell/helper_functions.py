@@ -1326,31 +1326,49 @@ def make_qm_table(quality_metrics, param, unit_type_string):
     # classify as mua
     # ALL or ANY?
 
-    too_few_total_spikes = quality_metrics["nSpikes"] < param["minNumSpikes"]
-    too_many_spikes_missing = (
-        quality_metrics["percentageSpikesMissing_gaussian"] > param["maxPercSpikesMissing"]
+    # Only evaluate MUA metrics for units actually classified as MUA 
+    is_mua_unit = (unit_type_string == 'MUA')
+    
+    too_many_spikes_missing = np.full(len(unit_type_string), False, dtype=bool)
+    too_many_spikes_missing[is_mua_unit] = (
+        quality_metrics["percentageSpikesMissing_gaussian"][is_mua_unit] > param["maxPercSpikesMissing"]
     )
-    too_low_presence_ratio = (
-        quality_metrics["presenceRatio"] < param["minPresenceRatio"]
+    
+    too_low_presence_ratio = np.full(len(unit_type_string), False, dtype=bool)
+    too_low_presence_ratio[is_mua_unit] = (
+        quality_metrics["presenceRatio"][is_mua_unit] < param["minPresenceRatio"]
     )
-    too_many_RPVs = quality_metrics["fractionRPVs_estimatedTauR"] > param["maxRPVviolations"]
+    
+    too_few_total_spikes = np.full(len(unit_type_string), False, dtype=bool)
+    too_few_total_spikes[is_mua_unit] = (
+        quality_metrics["nSpikes"][is_mua_unit] < param["minNumSpikes"]
+    )
+    
+    too_many_RPVs = np.full(len(unit_type_string), False, dtype=bool)
+    too_many_RPVs[is_mua_unit] = (
+        quality_metrics["fractionRPVs_estimatedTauR"][is_mua_unit] > param["maxRPVviolations"]
+    )
 
     qm_table_list.extend([too_many_spikes_missing, too_low_presence_ratio, too_few_total_spikes, too_many_RPVs])
     qm_table_names.extend(["% spikes missing", "presence ratio", "# spikes", "fraction RPVs"])
 
     if param["extractRaw"]:
-        too_small_amplitude = (
-            quality_metrics["rawAmplitude"] < param["minAmplitude"]
-        ) 
-        too_small_SNR = (
-            quality_metrics["signalToNoiseRatio"] < param["minSNR"]
+        too_small_amplitude = np.full(len(unit_type_string), False, dtype=bool)
+        too_small_amplitude[is_mua_unit] = (
+            quality_metrics["rawAmplitude"][is_mua_unit] < param["minAmplitude"]
+        )
+        
+        too_small_SNR = np.full(len(unit_type_string), False, dtype=bool)
+        too_small_SNR[is_mua_unit] = (
+            quality_metrics["signalToNoiseRatio"][is_mua_unit] < param["minSNR"]
         )
         qm_table_list.extend([too_small_amplitude, too_small_SNR])
         qm_table_names.extend(["amplitude", "SNR"])
 
     if param["computeDrift"]:
-        too_large_drift = (
-            quality_metrics["maxDriftEstimate"] > param["maxDrift"]
+        too_large_drift = np.full(len(unit_type_string), False, dtype=bool)
+        too_large_drift[is_mua_unit] = (
+            quality_metrics["maxDriftEstimate"][is_mua_unit] > param["maxDrift"]
         )
         qm_table_list.append(too_large_drift)
         qm_table_names.append("max. drift")
@@ -1389,11 +1407,18 @@ def make_qm_table(quality_metrics, param, unit_type_string):
 
 
     if param["computeDistanceMetrics"]:
-        too_low_iso_dist = quality_metrics['isolationDistance'] < param["isoDmin"]
-        too_high_lratio = quality_metrics["Lratio"] > param["lratioMax"]
+        too_low_iso_dist = np.full(len(unit_type_string), False, dtype=bool)
+        too_low_iso_dist[is_mua_unit] = (
+            quality_metrics['isolationDistance'][is_mua_unit] < param["isoDmin"]
+        )
+        
+        too_high_lratio = np.full(len(unit_type_string), False, dtype=bool)
+        too_high_lratio[is_mua_unit] = (
+            quality_metrics["Lratio"][is_mua_unit] > param["lratioMax"]
+        )
 
         qm_table_list.extend([too_low_iso_dist, too_high_lratio])
-        qm_table_names.extend(["isolation dist.", "L-Ratio"])
+        qm_table_names.extend(["isolation dist.", "L-ratio"])
 
 
     # DO this for the optional params

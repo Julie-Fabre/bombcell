@@ -79,10 +79,11 @@ def upset_plots(quality_metrics, unit_type_string, param):
     
     # Plot upset plots with error handling for library compatibility
     try:
-        # plot noise metrics upset plot
-        noise_data = qm_table[noise_metrics].astype(bool)
-        n_noise = (qm_table['unit_type'] == 'NOISE').sum()
-        if len(noise_metrics) > 1:
+        # plot noise metrics upset plot - only include NOISE units
+        noise_units_mask = qm_table['unit_type'] == 'NOISE'
+        noise_data = qm_table.loc[noise_units_mask, noise_metrics].astype(bool)
+        n_noise = noise_units_mask.sum()
+        if len(noise_metrics) > 1 and n_noise > 0:
             upset = UpSet(from_indicators(noise_metrics, data=noise_data), min_degree=1)
             upset.plot()
             plt.suptitle(f"Units classified as noise (n = {n_noise}/{total_units})")
@@ -91,11 +92,11 @@ def upset_plots(quality_metrics, unit_type_string, param):
         print(f"Warning: Could not create noise upset plot due to library compatibility: {e}")
 
     try:
-        # plot non-somatic metrics upset plot  
-        non_somatic_data = qm_table[non_somatic_metrics].astype(bool)
-        # Count all non-somatic units (includes "NON-SOMA", "NON-SOMA GOOD", "NON-SOMA MUA")
-        n_non_somatic = qm_table['unit_type'].str.startswith('NON-SOMA').sum()
-        if len(non_somatic_metrics) > 1:
+        # plot non-somatic metrics upset plot - only include NON-SOMA units
+        non_somatic_units_mask = qm_table['unit_type'].str.startswith('NON-SOMA')
+        non_somatic_data = qm_table.loc[non_somatic_units_mask, non_somatic_metrics].astype(bool)
+        n_non_somatic = non_somatic_units_mask.sum()
+        if len(non_somatic_metrics) > 1 and n_non_somatic > 0:
             upset = UpSet(from_indicators(non_somatic_metrics, data=non_somatic_data), min_degree=1)
             upset.plot()
             plt.suptitle(f"Units classified as non-somatic (n = {n_non_somatic}/{total_units})")
@@ -104,15 +105,15 @@ def upset_plots(quality_metrics, unit_type_string, param):
         print(f"Warning: Could not create non-somatic upset plot due to library compatibility: {e}")
 
     try:
-        # plot MUA metrics upset plot
-        mua_data = qm_table[mua_metrics].astype(bool).copy()
+        # plot MUA metrics upset plot - only include MUA units
+        mua_units_mask = qm_table['unit_type'] == 'MUA'
+        mua_data = qm_table.loc[mua_units_mask, mua_metrics].astype(bool).copy()
         # Rename columns for better display
         mua_display_names = [display_names.get(m, m) for m in mua_metrics]
         mua_data.columns = mua_display_names
         
-        # Count both "MUA" and "NON-SOMA MUA" units
-        n_mua = ((qm_table['unit_type'] == 'MUA') | (qm_table['unit_type'] == 'NON-SOMA MUA')).sum()
-        if len(mua_metrics) > 1:
+        n_mua = mua_units_mask.sum()
+        if len(mua_metrics) > 1 and n_mua > 0:
             upset = UpSet(from_indicators(mua_display_names, data=mua_data), min_degree=1)
             upset.plot()
             plt.suptitle(f"Units classified as MUA (n = {n_mua}/{total_units})")
