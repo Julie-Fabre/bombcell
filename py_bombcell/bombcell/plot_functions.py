@@ -13,6 +13,7 @@ from bombcell import helper_functions as hf
 #V0.9 of upset plots have pandas future warning so, suppressing them
 import warnings
 
+from collections import namedtuple
 
 
 def plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_string, param):
@@ -257,44 +258,6 @@ def plot_histograms(quality_metrics, param):
 
     color_mtx = np.vstack([red_colors, blue_colors, darker_yellow_orange_colors])
 
-    # Define metrics in MATLAB order (using quality_metrics keys, not qm_table column names)
-    metric_names = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 
-                   'scndPeakToTroughRatio', 'spatialDecaySlope', 'peak1ToPeak2Ratio', 'mainPeakToTroughRatio',
-                   'rawAmplitude', 'signalToNoiseRatio', 'fractionRPVs_estimatedTauR', 'nSpikes', 
-                   'presenceRatio', 'percentageSpikesMissing_gaussian', 'maxDriftEstimate', 
-                   'isolationDistance', 'Lratio']
-
-    metric_names_short = ['# peaks', '# troughs', 'baseline flatness', 'waveform duration',
-                         'peak_2/trough', 'spatial decay', 'peak_1/peak_2', 'peak_{main}/trough',
-                         'amplitude', 'signal/noise (SNR)', 'refractory period viol. (RPV)', '# spikes',
-                         'presence ratio', '% spikes missing', 'maximum drift',
-                         'isolation dist.', 'L-ratio']
-
-    # Define thresholds
-    metric_thresh1 = [param.get('maxNPeaks'), param.get('maxNTroughs'), param.get('maxWvBaselineFraction'),
-                     param.get('minWvDuration'), param.get('maxScndPeakToTroughRatio_noise'),
-                     param.get('minSpatialDecaySlope') if param.get('spDecayLinFit') else param.get('minSpatialDecaySlopeExp'),
-                     param.get('maxPeak1ToPeak2Ratio_nonSomatic'), param.get('maxMainPeakToTroughRatio_nonSomatic'),
-                     param.get('minAmplitude'), None, param.get('maxRPVviolations'), None, None, param.get('maxPercSpikesMissing'),
-                     param.get('maxDrift'), param.get('isoDmin'), None]
-
-    metric_thresh2 = [None, None, None, param.get('maxWvDuration'), None,
-                     None if param.get('spDecayLinFit') else param.get('maxSpatialDecaySlopeExp'),
-                     None, None, None, param.get('minSNR'),
-                     None, param.get('minNumSpikes'), param.get('minPresenceRatio'), None, None,
-                     None, param.get('lratioMax')]
-
-    # Define plot conditions
-    plot_conditions = [True, True, True, True, True,
-                      param.get('computeSpatialDecay', False),
-                      True, True,
-                      param.get('extractRaw', False) and 'rawAmplitude' in quality_metrics and np.any(~np.isnan(quality_metrics.get('rawAmplitude', [np.nan]))),
-                      param.get('extractRaw', False) and 'signalToNoiseRatio' in quality_metrics and np.any(~np.isnan(quality_metrics.get('signalToNoiseRatio', [np.nan]))),
-                      True, True, True, True,
-                      param.get('computeDrift', False),
-                      param.get('computeDistanceMetrics', False),
-                      param.get('computeDistanceMetrics', False)]
-
     # Define line colors for thresholds (MATLAB style)
     metric_line_cols = np.array([
         [0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0],  # nPeaks
@@ -316,25 +279,34 @@ def plot_histograms(quality_metrics, param):
         [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # L-ratio
     ])
 
-    # Filter metrics that should be plotted
-    valid_metrics = []
-    valid_colors = []
-    valid_labels = []
-    valid_thresh1 = []
-    valid_thresh2 = []
-    valid_line_cols = []
-    
-    for i, (metric_name, condition) in enumerate(zip(metric_names, plot_conditions)):
-        if condition and metric_name in quality_metrics:
-            valid_metrics.append(metric_name)
-            valid_colors.append(color_mtx[i % len(color_mtx)])
-            valid_labels.append(metric_names_short[i])
-            valid_thresh1.append(metric_thresh1[i])
-            valid_thresh2.append(metric_thresh2[i])
-            valid_line_cols.append(metric_line_cols[i])
+    # Define metrics in MATLAB order (using quality_metrics keys, not qm_table column names)
+    MetricInfo = namedtuple("MetricInfo", "name, short_name, threshold_1, threshold_2, plot_condition, line_colors")
+    metric_info = [
+        MetricInfo("nPeaks", "# peaks", param.get('maxNPeaks'), None, True, metric_line_cols[0]),
+        MetricInfo("nTroughs", "# troughs", param.get('maxNTroughs'), None, True, metric_line_cols[1]),
+        MetricInfo("waveformBaselineFlatness", "baseline flatness", param.get('maxWvBaselineFraction'), None, True, metric_line_cols[2]),
+        MetricInfo("waveformDuration_peakTrough", "waveform duration", param.get('minWvDuration'), param.get('maxWvDuration'), True, metric_line_cols[3]),
+        MetricInfo("scndPeakToTroughRatio", "peak_2/trough", param.get('maxScndPeakToTroughRatio_noise'), None, True, metric_line_cols[4]),
+        MetricInfo("spatialDecaySlope", "spatial decay", 
+                param.get('minSpatialDecaySlope') if param.get('spDecayLinFit') else param.get('minSpatialDecaySlopeExp'),
+                None if param.get('spDecayLinFit') else param.get('maxSpatialDecaySlopeExp'), param.get("computeSpatialDecay", False), metric_line_cols[5]),
+        MetricInfo("peak1ToPeak2Ratio", "peak_1/peak_2", param.get('maxPeak1ToPeak2Ratio_nonSomatic'), None, True, metric_line_cols[6]),
+        MetricInfo("mainPeakToTroughRatio", "peak_{main}/trough", param.get('maxMainPeakToTroughRatio_nonSomatic'), None, True, metric_line_cols[7]),
+        MetricInfo("rawAmplitude", "amplitude", param.get('minAmplitude'), None, param.get('extractRaw', False) and 'rawAmplitude' in quality_metrics and np.any(~np.isnan(quality_metrics.get('rawAmplitude', [np.nan]))), metric_line_cols[8]),
+        MetricInfo("signalToNoiseRatio", "signal/noise (SNR)", None, param.get('minSNR'), param.get('extractRaw', False) and 'signalToNoiseRatio' in quality_metrics and np.any(~np.isnan(quality_metrics.get('signalToNoiseRatio', [np.nan]))), metric_line_cols[9]),
+        MetricInfo("fractionRPVs_estimatedTauR", "refractory period viol. (RPV)", param.get('maxRPVviolations'), None, True, metric_line_cols[10]),
+        MetricInfo("nSpikes", "# spikes", None, param.get('minNumSpikes'), True, metric_line_cols[11]),
+        MetricInfo("presenceRatio", "presence ratio", None, param.get('minPresenceRatio'), True, metric_line_cols[12]),
+        MetricInfo("percentageSpikesMissing_gaussian", "% spikes missing", param.get('maxPercSpikesMissing'), None, True, metric_line_cols[13]),
+        MetricInfo("maxDriftEstimate", "maximum drift", param.get('maxDrift'), None, param.get("computeDrift", False), metric_line_cols[14]),
+        MetricInfo("isolationDistance", "isolation dist.", param.get('isoDmin'), None, param.get("computeDistanceMetrics", False), metric_line_cols[15]),
+        MetricInfo("Lratio", "L-ratio", None, param.get('lratioMax'), param.get("computeDistanceMetrics", False), metric_line_cols[16]),
+    ]
+
+    valid_metric_info = [mi for mi in metric_info if mi.plot_condition and (mi.name in quality_metrics)]
 
     # Calculate grid layout
-    num_subplots = len(valid_metrics)
+    num_subplots = len(valid_metric_info)
     num_rows = int(np.floor(np.sqrt(num_subplots)))
     num_cols = int(np.ceil(num_subplots / num_rows))
 
@@ -346,32 +318,35 @@ def plot_histograms(quality_metrics, param):
     elif num_cols == 1:
         axs = axs.reshape(-1, 1)
 
-    for i, metric_name in enumerate(valid_metrics):
-        row_id = i // num_cols
-        col_id = i % num_cols
+    for idx, vmi in enumerate(valid_metric_info):
+        row_id = idx // num_cols
+        col_id = idx % num_cols
         ax = axs[row_id, col_id]
+
+        # get color from color matrix (use modulus operator for wraparound)
+        color = color_mtx[idx % len(color_mtx)]
         
-        metric_data = quality_metrics[metric_name]
+        metric_data = quality_metrics[vmi.name]
         # Remove NaN and inf values for all metrics
         metric_data = metric_data[~np.isnan(metric_data)]
         metric_data = metric_data[~np.isinf(metric_data)]
         
         if len(metric_data) > 0:
             # Plot histogram with probability normalization (MATLAB style)
-            if metric_name in ['nPeaks', 'nTroughs']:
+            if vmi.name in ['nPeaks', 'nTroughs']:
                 # Use integer bins for discrete metrics
                 bins = np.arange(np.min(metric_data), np.max(metric_data) + 2) - 0.5
-            elif metric_name == 'waveformDuration_peakTrough':
+            elif vmi.name == 'waveformDuration_peakTrough':
                 # Use fewer bins for waveform duration like MATLAB
                 bins = 20
             else:
                 bins = 40
                 
             n, bins_out, patches = ax.hist(metric_data, bins=bins, density=True, 
-                                         color=valid_colors[i], alpha=0.7)
+                                         color=color, alpha=0.7)
             
             # Convert to probability (like MATLAB's 'Normalization', 'probability')
-            if metric_name not in ['nPeaks', 'nTroughs']:
+            if vmi.name not in ['nPeaks', 'nTroughs']:
                 bin_width = bins_out[1] - bins_out[0]
                 for patch in patches:
                     patch.set_height(patch.get_height() * bin_width)
@@ -384,11 +359,11 @@ def plot_histograms(quality_metrics, param):
             x_lim = ax.get_xlim()
             line_y = 0.9  # Position lines at 0.9
             
-            thresh1 = valid_thresh1[i]
-            thresh2 = valid_thresh2[i]
-            line_colors = valid_line_cols[i].reshape(3, 3)
+            thresh1 = vmi.threshold_1
+            thresh2 = vmi.threshold_2
+            line_colors = vmi.line_colors.reshape(3, 3)
             
-            if metric_name in ['nPeaks', 'nTroughs']:
+            if vmi.name in ['nPeaks', 'nTroughs']:
                 binsize_offset = 0.5
             else:
                 binsize_offset = (bins_out[1] - bins_out[0]) / 2 if len(bins_out) > 1 else 0
@@ -415,8 +390,8 @@ def plot_histograms(quality_metrics, param):
                     # Determine metric type based on metric name
                     noise_metrics = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope']
                     nonsomatic_metrics = ['peak1ToPeak2Ratio', 'mainPeakToTroughRatio']
-                    
-                    if metric_name in noise_metrics:
+
+                    if vmi.name in noise_metrics:
                         # Noise metrics: both thresholds -> Noise, Neuronal, Noise
                         ax.text(midpoint1, text_y, '  Noise  ', ha='center', fontsize=10, 
                                color=line_colors[0], weight='bold')
@@ -424,7 +399,7 @@ def plot_histograms(quality_metrics, param):
                                color=line_colors[1], weight='bold')
                         ax.text(midpoint3, text_y, '  Noise  ', ha='center', fontsize=10, 
                                color=line_colors[2], weight='bold')
-                    elif metric_name in nonsomatic_metrics:
+                    elif vmi.name in nonsomatic_metrics:
                         # Non-somatic metrics: both thresholds -> Non-somatic, Somatic, Non-somatic
                         ax.text(midpoint1, text_y, '  Non-somatic  ', ha='center', fontsize=10, 
                                color=line_colors[0], weight='bold')
@@ -459,13 +434,13 @@ def plot_histograms(quality_metrics, param):
                     noise_metrics = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope']
                     nonsomatic_metrics = ['peak1ToPeak2Ratio', 'mainPeakToTroughRatio']
                     
-                    if metric_name in noise_metrics:
+                    if vmi.name in noise_metrics:
                         # Noise metrics: thresh1 only -> Neuronal, Noise
                         ax.text(midpoint1, text_y, '  Neuronal  ', ha='center', fontsize=10, 
                                color=line_colors[0], weight='bold')
                         ax.text(midpoint2, text_y, '  Noise  ', ha='center', fontsize=10, 
                                color=line_colors[1], weight='bold')
-                    elif metric_name in nonsomatic_metrics:
+                    elif vmi.name in nonsomatic_metrics:
                         # Non-somatic metrics: thresh1 only -> Somatic, Non-somatic
                         ax.text(midpoint1, text_y, '  Somatic  ', ha='center', fontsize=10, 
                                color=line_colors[0], weight='bold')
@@ -473,7 +448,7 @@ def plot_histograms(quality_metrics, param):
                                color=line_colors[1], weight='bold')
                     else:
                         # MUA metrics: thresh1 only
-                        if metric_name in ['isolationDistance', 'rawAmplitude']:
+                        if vmi.name in ['isolationDistance', 'rawAmplitude']:
                             # For isolation distance and rawAmplitude: MUA on left, Good on right
                             ax.text(midpoint1, text_y, '  MUA  ', ha='center', fontsize=10, 
                                    color=line_colors[0], weight='bold')
@@ -504,13 +479,13 @@ def plot_histograms(quality_metrics, param):
                     noise_metrics = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope']
                     nonsomatic_metrics = ['peak1ToPeak2Ratio', 'mainPeakToTroughRatio']
                     
-                    if metric_name in noise_metrics:
+                    if vmi.name in noise_metrics:
                         # Noise metrics: thresh2 only -> Noise, Neuronal
                         ax.text(midpoint1, text_y, '  Noise  ', ha='center', fontsize=10, 
                                color=line_colors[0], weight='bold')
                         ax.text(midpoint2, text_y, '  Neuronal  ', ha='center', fontsize=10, 
                                color=line_colors[1], weight='bold')
-                    elif metric_name in nonsomatic_metrics:
+                    elif vmi.name in nonsomatic_metrics:
                         # Non-somatic metrics: thresh2 only -> Non-somatic, Somatic
                         ax.text(midpoint1, text_y, '  Non-somatic  ', ha='center', fontsize=10, 
                                color=line_colors[0], weight='bold')
@@ -518,7 +493,7 @@ def plot_histograms(quality_metrics, param):
                                color=line_colors[1], weight='bold')
                     else:
                         # MUA metrics: thresh2 only
-                        if metric_name in ['nSpikes', 'presenceRatio', 'signalToNoiseRatio']:
+                        if vmi.name in ['nSpikes', 'presenceRatio', 'signalToNoiseRatio']:
                             # For nSpikes, presenceRatio, and signalToNoiseRatio: MUA on left, Good on right
                             ax.text(midpoint1, text_y, '  MUA  ', ha='center', fontsize=10, 
                                    color=line_colors[0], weight='bold')
@@ -534,8 +509,8 @@ def plot_histograms(quality_metrics, param):
             # Set histogram limits from 0 to 1
             ax.set_ylim([0, 1])
             
-        ax.set_xlabel(valid_labels[i], fontsize=13)
-        if i == 0:
+        ax.set_xlabel(vmi.short_name, fontsize=13)
+        if idx == 0:
             ax.set_ylabel('frac. units', fontsize=13)
         
         ax.spines['right'].set_visible(False)
@@ -543,7 +518,7 @@ def plot_histograms(quality_metrics, param):
         ax.tick_params(labelsize=12)
 
     # Hide unused subplots
-    for i in range(len(valid_metrics), num_rows * num_cols):
+    for i in range(len(valid_metric_info), num_rows * num_cols):
         row_id = i // num_cols
         col_id = i % num_cols
         axs[row_id, col_id].set_visible(False)
