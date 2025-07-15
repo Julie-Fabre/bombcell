@@ -165,18 +165,19 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
         for i in range(4):
             og_id = unique_templates[unit_type == i]
             n_units_in_cat = og_id.size
+            ax = axs[img_pos[i][0]][img_pos[i][1]]
             if n_units_in_cat !=0:
                 for id in og_id:
-                    axs[img_pos[i][0]][img_pos[i][1]].plot(template_waveforms[id, 0:, quality_metrics['maxChannels'][id]], color = 'black', alpha = 0.1)
-                    axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
-                    axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_title(f"{labels[i]} units (n = {n_units_in_cat})")
+                    ax.plot(template_waveforms[id, 0:, quality_metrics['maxChannels'][id]], color = 'black', alpha = 0.1)
+                    ax.spines[['right', 'top', 'bottom', 'left']].set_visible(False)
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                    ax.set_title(f"{labels[i]} units (n = {n_units_in_cat})")
             else:
-                axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
-                axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
-                axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
-                axs[img_pos[i][0]][img_pos[i][1]].set_title(f"No {labels[i]} units (n = 0)")
+                ax.spines[['right', 'top', 'bottom', 'left']].set_visible(False)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.set_title(f"No {labels[i]} units (n = 0)")
 
     elif n_categories == 5:
         fig, axs = plt.subplots(nrows = 3, ncols=2)
@@ -186,21 +187,21 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
             n_units_in_cat = og_id.size
             if n_units_in_cat !=0:
                 for id in og_id:
-                    axs[img_pos[i][0]][img_pos[i][1]].plot(template_waveforms[id, 0:, quality_metrics['maxChannels'][id]], color = 'black', alpha = 0.1)
-                    axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
-                    axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_title(f"{labels[i]} units (n = {n_units_in_cat})")
+                    ax.plot(template_waveforms[id, 0:, quality_metrics['maxChannels'][id]], color = 'black', alpha = 0.1)
+                    ax.spines[['right', 'top', 'bottom', 'left']].set_visible(False)
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                    ax.set_title(f"{labels[i]} units (n = {n_units_in_cat})")
             else:
                 if i == 5:
-                    axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
-                    axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
+                    ax.spines[['right', 'top', 'bottom', 'left']].set_visible(False)
+                    ax.set_xticks([])
+                    ax.set_yticks([])
                 else:
-                    axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
-                    axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_title(f"No {labels[i]} units (n = 0)")
+                    ax.spines[['right', 'top', 'bottom', 'left']].set_visible(False)
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                    ax.set_title(f"No {labels[i]} units (n = 0)")
 
 def plot_histograms(quality_metrics, param):
     """
