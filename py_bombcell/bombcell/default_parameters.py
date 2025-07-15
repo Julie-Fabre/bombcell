@@ -1,7 +1,6 @@
 import numpy as np
 from pathlib import Path
 
-from bombcell.extract_raw_waveforms import manage_data_compression
 from bombcell.loading_utils import get_gain_spikeglx
 
 def get_default_parameters(
@@ -136,9 +135,7 @@ def get_default_parameters(
     }
 
 
-    # Handle cases where raw data is compressed and fetch metadata uV conversion factor
-    if raw_file is not None:
-        raw_file = manage_data_compression(Path(raw_file).parent, param)
+    # Fetch metadata uV conversion factor
     if meta_file is not None and gain_to_uV is None:
         gain_to_uV = get_gain_spikeglx(meta_file)
 
@@ -211,7 +208,7 @@ def get_unit_match_parameters(
     param["saveMultipleRaw"] = True  # If you wish to save the nRawSpikesToExtract as well,
                                      # currently needed if you want to run unit match https://github.com/EnnyvanBeest/UnitMatch
                                      # to track chronic cells over days after this
-    param["decompress_data"] = True  # whether to decompress .cbin ephys data
+    param["decompress_data"] = True  # UnitMatch typically needs decompression enabled
     
     return param
 

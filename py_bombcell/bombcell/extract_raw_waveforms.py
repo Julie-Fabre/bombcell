@@ -510,6 +510,93 @@ def extract_raw_waveforms(
     return raw_waveforms_full, raw_waveforms_peak_channel, SNR, raw_waveforms_id_match
 
 
+def decompress_data_if_needed(raw_file_path, decompress_data=True):
+    """
+    Check if raw data needs decompression and decompress if necessary.
+    
+    Parameters
+    ----------
+    raw_file_path : str or Path
+        Path to the raw data file (can be .bin or .cbin)
+    decompress_data : bool, optional
+        Whether to decompress compressed data, by default True
+        
+    Returns
+    -------
+    str
+        Path to the usable raw data file (decompressed if needed)
+        
+    Raises
+    ------
+    Exception
+        If compressed data is found but decompress_data is False
+    """
+    raw_file_path = Path(raw_file_path)
+    ephys_raw_dir = raw_file_path.parent
+    
+    # If the file is already .bin and exists, just return it
+    if raw_file_path.suffix == '.bin' and raw_file_path.exists():
+        return str(raw_file_path)
+    
+    # Look for data files in the directory
+    files = os.listdir(ephys_raw_dir)
+    bc_decompressed_data = None
+    decompressed_data = None
+    compressed_data = None
+    compressed_ch = None
+    
+    # Find compressed or decompressed binary files
+    for file in files:
+        ext = os.path.splitext(file)[1]
+        
+        if "_bc_decompressed" in file:
+            bc_decompressed_data = file
+        
+        elif ext == ".bin":
+            pre_ext = os.path.splitext(os.path.splitext(file)[0])[1]
+            if pre_ext != ".lf":  # Exclude LFP data
+                decompressed_data = file
+        
+        elif ext == ".cbin":
+            compressed_data = file
+        
+        elif ext == ".ch":
+            pre_ext = os.path.splitext(os.path.splitext(file)[0])[1]
+            if pre_ext != ".lf":  # Exclude LFP data
+                compressed_ch = file
+    
+    # Check for previously decompressed data with bombcell suffix
+    if bc_decompressed_data is not None:
+        print(f"Using previously decompressed ephys data file {bc_decompressed_data}")
+        return str(ephys_raw_dir / bc_decompressed_data)
+    
+    # Check for regular decompressed data
+    elif decompressed_data is not None:
+        print(f"Using raw data {decompressed_data}")
+        return str(ephys_raw_dir / decompressed_data)
+    
+    # Handle compressed data
+    elif compressed_data is not None:
+        if compressed_ch is None:
+            raise Exception(f"Found compressed data file {compressed_data} but no matching .ch file!")
+        
+        if decompress_data:
+            print(f"Decompressing ephys data file {compressed_data}...")
+            decompressed_data_name = compressed_data.replace(".cbin", ".bin").split('.')
+            decompressed_data_name[0] = decompressed_data_name[0] + '_bc_decompressed'
+            decompressed_data_name = ".".join(decompressed_data_name)
+            
+            decompressed_path = decompress_data(
+                ephys_raw_dir, compressed_data, compressed_ch, decompressed_data_name
+            )
+            return str(decompressed_path)
+        else:
+            raise Exception(f"Found compressed data at {ephys_raw_dir} but decompress_data=False. "
+                          f"Set decompress_data=True to decompress {compressed_data}")
+    else:
+        raise Exception(f"Could not find any suitable ephys data (.bin, .cbin) at {ephys_raw_dir}!")
+
+
 def manage_data_compression(ephys_raw_dir, param):
     """
     Tries to find the raw data in the given directory and handle decompression if necessary.

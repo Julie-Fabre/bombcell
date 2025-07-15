@@ -1082,6 +1082,16 @@ def run_bombcell(ks_dir, save_path, param):
 
     # Extract or load in raw waveforms
     if param["raw_data_file"] is not None:
+        # Handle data decompression if needed
+        if param.get("decompress_data", False):
+            if param.get("verbose", False):
+                print("\n📦 Checking for compressed data...")
+            from bombcell.extract_raw_waveforms import decompress_data_if_needed
+            param["raw_data_file"] = decompress_data_if_needed(
+                param["raw_data_file"], 
+                decompress_data=param["decompress_data"]
+            )
+        
         if param.get("verbose", False):
             print("\n🔍 Extracting raw waveforms...")
         (
