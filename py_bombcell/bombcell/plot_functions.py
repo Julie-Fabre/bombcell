@@ -39,6 +39,56 @@ def plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_
         upset_plots(quality_metrics, unit_type_string, param)
         plot_histograms(quality_metrics, param)
 
+def generate_upset_plot(qm_table: pd.DataFrame, unit_type_str: str):
+    try:
+        # ensure upper case
+        unit_type_str = unit_type_str.upper()
+
+        # get metrics relevant to chosen unit type
+        if unit_type_str=="NOISE":
+            unit_type_metrics = ["# peaks", "# troughs", "waveform duration", "spatial decay", "baseline flatness", "peak2 / trough"] #Duration is peak to trough duration
+        elif unit_type_str=="NON-SOMATIC":
+            unit_type_metrics = ["trough / peak2", "peak1 / peak2"]
+        elif unit_type_str=="MUA":
+            unit_type_metrics = ["SNR", "amplitude", "presence ratio", "# spikes", "% spikes missing", "fraction RPVs", "max. drift", "isolation dist.", "L-ratio"]
+        else:
+            raise ValueError(f"Invalid unit type {unit_type_str} - allowed values are 'NOISE', 'NON-SOMATIC', 'MUA'")
+        
+        # filter out uncomputed metrics
+        unit_type_metrics = [m for m in unit_type_metrics if m in qm_table.columns]
+
+        # generate mask for the chosen unit type and filter the data from qm_table        
+        unit_type_mask = qm_table['unit_type'].str.startswith(unit_type_str)
+        unit_type_data = qm_table.loc[unit_type_mask, unit_type_metrics]
+
+        # in the unit_type_data dataframe, some metric names should be replaced with more comprehensible "display names"
+        display_names = {
+            "SNR": "signal/noise (SNR)",
+            "fraction RPVs": "refractory period viol. (RPV)",
+            "amplitude": "amplitude"
+        }
+        metric_display_names = [display_names.get(metric_name, metric_name) for metric_name in unit_type_metrics]
+        unit_type_data.columns = metric_display_names
+
+        # count the number of units of the chosen type
+        n_unit_type = unit_type_mask.sum()
+        
+        # count the total number of units
+        n_total_units = len(qm_table)
+        
+        # check how many columns have True values
+        n_cols_with_true_vals = (unit_type_data.sum() > 0).sum()
+        if n_cols_with_true_vals >= 1 and n_unit_type > 0:
+            upset = UpSet(from_indicators(metric_display_names, data=unit_type_data), min_degree=1)
+            upset.plot()
+            plt.suptitle(f"Units classified as {unit_type_str.lower()} (n = {n_unit_type}/{n_total_units})")
+            plt.show()
+        elif n_unit_type > 0:
+            print(f"{unit_type_str.capitalize()} upset plot skipped: no metrics have failures")
+    except (AttributeError, ValueError) as e:
+        print(f"Warning: Could not create noise upset plot due to library compatibility: {e}")
+
+
 def upset_plots(quality_metrics, unit_type_string, param):
     warnings.simplefilter(action='ignore', category=FutureWarning)
     """
@@ -57,81 +107,10 @@ def upset_plots(quality_metrics, unit_type_string, param):
     """
 
     qm_table = hf.make_qm_table(quality_metrics, param, unit_type_string)
-
-    noise_metrics = ["# peaks", "# troughs", "waveform duration", "spatial decay", "baseline flatness", "peak2 / trough"] #Duration is peak to trough duration
-    non_somatic_metrics = ["trough / peak2", "peak1 / peak2"]
-    mua_metrics = ["SNR", "amplitude", "presence ratio", "# spikes", "% spikes missing", "fraction RPVs", "max. drift", "isolation dist.", "L-ratio"]
     
-    # Create display names mapping for better plot labels
-    display_names = {
-        "SNR": "signal/noise (SNR)",
-        "fraction RPVs": "refractory period viol. (RPV)",
-        "amplitude": "amplitude"
-    }
-
-    # Eventually filter out uncomputed metrics
-    noise_metrics = [m for m in noise_metrics if m in qm_table.columns]
-    non_somatic_metrics = [m for m in non_somatic_metrics if m in qm_table.columns]
-    mua_metrics = [m for m in mua_metrics if m in qm_table.columns]
-
-    # Get total number of units
-    total_units = len(qm_table)
-    
-    # Plot upset plots with error handling for library compatibility
-    try:
-        # plot noise metrics upset plot - only include NOISE units
-        noise_units_mask = qm_table['unit_type'] == 'NOISE'
-        noise_data = qm_table.loc[noise_units_mask, noise_metrics].astype(bool)
-        n_noise = noise_units_mask.sum()
-        # Check how many columns have True values
-        cols_with_true = (noise_data.sum() > 0).sum()
-        if cols_with_true >= 1 and n_noise > 0:
-            upset = UpSet(from_indicators(noise_metrics, data=noise_data), min_degree=1)
-            upset.plot()
-            plt.suptitle(f"Units classified as noise (n = {n_noise}/{total_units})")
-            plt.show()
-        elif n_noise > 0:
-            print(f"Noise upset plot skipped: no metrics have failures")
-    except (AttributeError, ValueError) as e:
-        print(f"Warning: Could not create noise upset plot due to library compatibility: {e}")
-
-    try:
-        # plot non-somatic metrics upset plot - only include NON-SOMA units
-        non_somatic_units_mask = qm_table['unit_type'].str.startswith('NON-SOMA')
-        non_somatic_data = qm_table.loc[non_somatic_units_mask, non_somatic_metrics].astype(bool)
-        n_non_somatic = non_somatic_units_mask.sum()
-        # Check how many columns have True values
-        cols_with_true = (non_somatic_data.sum() > 0).sum()
-        if cols_with_true >= 1 and n_non_somatic > 0:
-            upset = UpSet(from_indicators(non_somatic_metrics, data=non_somatic_data), min_degree=1)
-            upset.plot()
-            plt.suptitle(f"Units classified as non-somatic (n = {n_non_somatic}/{total_units})")
-            plt.show()
-        elif n_non_somatic > 0:
-            print(f"Non-somatic upset plot skipped: no metrics have failures")
-    except (AttributeError, ValueError) as e:
-        print(f"Warning: Could not create non-somatic upset plot due to library compatibility: {e}")
-
-    try:
-        # plot MUA metrics upset plot - only include MUA units
-        mua_units_mask = qm_table['unit_type'] == 'MUA'
-        mua_data = qm_table.loc[mua_units_mask, mua_metrics].astype(bool).copy()
-        # Rename columns for better display
-        mua_display_names = [display_names.get(m, m) for m in mua_metrics]
-        mua_data.columns = mua_display_names
-        
-        n_mua = mua_units_mask.sum()
-        # Check how many columns have True values
-        cols_with_true = (mua_data.sum() > 0).sum()
-        if cols_with_true >= 1 and n_mua > 0:
-            upset = UpSet(from_indicators(mua_display_names, data=mua_data), min_degree=1)
-            upset.plot()
-            plt.suptitle(f"Units classified as MUA (n = {n_mua}/{total_units})")
-            plt.show()
-        elif n_mua > 0:
-            print(f"MUA upset plot skipped: no metrics have failures")
-    except (AttributeError, ValueError) as e:
-        print(f"Warning: Could not create MUA upset plot due to library compatibility: {e}")
+    generate_upset_plot(qm_table, "NOISE")
+    generate_upset_plot(qm_table, "NON-SOMATIC")
+    generate_upset_plot(qm_table, "MUA")
 
 def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param):
     """
