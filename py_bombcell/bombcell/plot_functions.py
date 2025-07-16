@@ -214,6 +214,9 @@ def plot_histograms(quality_metrics, param):
     param : dict
         The dictionary of all bomcell parameters
     """
+
+    from .plotting_utils import get_color_from_matrix, get_metric_info_list
+
     # Create copies to avoid SettingWithCopyWarning
     if 'peak1ToPeak2Ratio' in quality_metrics:
         quality_metrics['peak1ToPeak2Ratio'] = np.where(
@@ -228,81 +231,7 @@ def plot_histograms(quality_metrics, param):
             quality_metrics['troughToPeak2Ratio']
         )
 
-    # Define MATLAB-style color matrices
-    red_colors = np.array([
-        [0.8627, 0.0784, 0.2353],  # Crimson
-        [1.0000, 0.1412, 0.0000],  # Scarlet
-        [0.7255, 0.0000, 0.0000],  # Cherry
-        [0.5020, 0.0000, 0.1255],  # Burgundy
-        [0.5020, 0.0000, 0.0000],  # Maroon
-        [0.8039, 0.3608, 0.3608],  # Indian Red
-    ])
-
-    blue_colors = np.array([
-        [0.2549, 0.4118, 0.8824],  # Royal Blue
-        [0.0000, 0.0000, 0.5020],  # Navy Blue
-    ])
-
-    darker_yellow_orange_colors = np.array([
-        [0.7843, 0.7843, 0.0000],  # Dark Yellow
-        [0.8235, 0.6863, 0.0000],  # Dark Golden Yellow
-        [0.8235, 0.5294, 0.0000],  # Dark Orange
-        [0.8039, 0.4118, 0.3647],  # Dark Coral
-        [0.8235, 0.3176, 0.2275],  # Dark Tangerine
-        [0.8235, 0.6157, 0.6510],  # Dark Salmon
-        [0.7882, 0.7137, 0.5765],  # Dark Goldenrod
-        [0.8235, 0.5137, 0.3922],  # Dark Light Coral
-        [0.7569, 0.6196, 0.0000],  # Darker Goldenrod
-        [0.8235, 0.4510, 0.0000],  # Darker Orange
-    ])
-
-    color_mtx = np.vstack([red_colors, blue_colors, darker_yellow_orange_colors])
-
-    # Define line colors for thresholds (MATLAB style)
-    metric_line_cols = np.array([
-        [0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0],  # nPeaks
-        [0.2, 0.2, 0.2, 1, 0, 0, 0, 0, 0],  # nTroughs
-        [0.2, 0.2, 0.2, 1, 0, 0, 1, 0, 0],  # baseline flatness
-        [1, 0, 0, 0.2, 0.2, 0.2, 1, 0, 0],  # waveform duration
-        [0.2, 0.2, 0.2, 1, 0, 0, 1, 0, 0],  # peak2/trough
-        [1, 0, 0, 0.2, 0.2, 0.2, 1, 0, 0],  # spatial decay
-        [0.2, 0.2, 0.2, 0.25, 0.41, 0.88, 0, 0, 0],  # peak1/peak2
-        [0.2, 0.2, 0.2, 0.25, 0.41, 0.88, 0, 0, 0],  # peak_main/trough
-        [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # amplitude
-        [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # SNR
-        [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # frac RPVs
-        [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # nSpikes
-        [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # presence ratio
-        [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # % spikes missing
-        [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # max drift
-        [1.0, 0.5469, 0, 0, 0.5, 0, 0, 0, 0],  # isolation dist
-        [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # L-ratio
-    ])
-
-    # Define metrics in MATLAB order (using quality_metrics keys, not qm_table column names)
-    MetricInfo = namedtuple("MetricInfo", "name, short_name, threshold_1, threshold_2, plot_condition, line_colors")
-    metric_info = [
-        MetricInfo("nPeaks", "# peaks", param.get('maxNPeaks'), None, True, metric_line_cols[0]),
-        MetricInfo("nTroughs", "# troughs", param.get('maxNTroughs'), None, True, metric_line_cols[1]),
-        MetricInfo("waveformBaselineFlatness", "baseline flatness", param.get('maxWvBaselineFraction'), None, True, metric_line_cols[2]),
-        MetricInfo("waveformDuration_peakTrough", "waveform duration", param.get('minWvDuration'), param.get('maxWvDuration'), True, metric_line_cols[3]),
-        MetricInfo("scndPeakToTroughRatio", "peak_2/trough", param.get('maxScndPeakToTroughRatio_noise'), None, True, metric_line_cols[4]),
-        MetricInfo("spatialDecaySlope", "spatial decay", 
-                param.get('minSpatialDecaySlope') if param.get('spDecayLinFit') else param.get('minSpatialDecaySlopeExp'),
-                None if param.get('spDecayLinFit') else param.get('maxSpatialDecaySlopeExp'), param.get("computeSpatialDecay", False), metric_line_cols[5]),
-        MetricInfo("peak1ToPeak2Ratio", "peak_1/peak_2", param.get('maxPeak1ToPeak2Ratio_nonSomatic'), None, True, metric_line_cols[6]),
-        MetricInfo("mainPeakToTroughRatio", "peak_{main}/trough", param.get('maxMainPeakToTroughRatio_nonSomatic'), None, True, metric_line_cols[7]),
-        MetricInfo("rawAmplitude", "amplitude", param.get('minAmplitude'), None, param.get('extractRaw', False) and 'rawAmplitude' in quality_metrics and np.any(~np.isnan(quality_metrics.get('rawAmplitude', [np.nan]))), metric_line_cols[8]),
-        MetricInfo("signalToNoiseRatio", "signal/noise (SNR)", None, param.get('minSNR'), param.get('extractRaw', False) and 'signalToNoiseRatio' in quality_metrics and np.any(~np.isnan(quality_metrics.get('signalToNoiseRatio', [np.nan]))), metric_line_cols[9]),
-        MetricInfo("fractionRPVs_estimatedTauR", "refractory period viol. (RPV)", param.get('maxRPVviolations'), None, True, metric_line_cols[10]),
-        MetricInfo("nSpikes", "# spikes", None, param.get('minNumSpikes'), True, metric_line_cols[11]),
-        MetricInfo("presenceRatio", "presence ratio", None, param.get('minPresenceRatio'), True, metric_line_cols[12]),
-        MetricInfo("percentageSpikesMissing_gaussian", "% spikes missing", param.get('maxPercSpikesMissing'), None, True, metric_line_cols[13]),
-        MetricInfo("maxDriftEstimate", "maximum drift", param.get('maxDrift'), None, param.get("computeDrift", False), metric_line_cols[14]),
-        MetricInfo("isolationDistance", "isolation dist.", param.get('isoDmin'), None, param.get("computeDistanceMetrics", False), metric_line_cols[15]),
-        MetricInfo("Lratio", "L-ratio", None, param.get('lratioMax'), param.get("computeDistanceMetrics", False), metric_line_cols[16]),
-    ]
-
+    metric_info = get_metric_info_list(param, quality_metrics)
     valid_metric_info = [mi for mi in metric_info if mi.plot_condition and (mi.name in quality_metrics)]
 
     # Calculate grid layout
@@ -324,7 +253,7 @@ def plot_histograms(quality_metrics, param):
         ax = axs[row_id, col_id]
 
         # get color from color matrix (use modulus operator for wraparound)
-        color = color_mtx[idx % len(color_mtx)]
+        color = get_color_from_matrix(idx)
         
         metric_data = quality_metrics[vmi.name]
         # Remove NaN and inf values for all metrics
