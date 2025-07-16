@@ -133,53 +133,62 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
     #if split into 4 unit types
     unique_templates = param['unique_templates']
 
+    # set labels based on param["splitGoodAndMua_NonSomatic"]
+    if param["splitGoodAndMua_NonSomatic"]:
+        labels = {
+            0: "noise", 
+            1: "somatic, good", 
+            2: "somatic, MUA", 
+            3: "non-somatic, good",
+            4: "non-somatic, MUA"
+        }
+    else:
+        labels = {
+            0: "noise",
+            1: "somatic, good",
+            2: "somatic, MUA",
+            3: "non-somatic"
+        }
+    
     n_categories = np.unique(unit_type).size
-    labels = {0: "noise", 1: "somatic, good", 2: "somatic, MUA", 
-                3: "non-somatic, good" if param["splitGoodAndMua_NonSomatic"] else "non-somatic",
-                4: "non-somatic, MUA", 5: ""}
-    #TODO change alpha to be inversly proprotional to n units
     if n_categories < 5:
-        fig, axs = plt.subplots(nrows = 2, ncols=2)
+        nrows = 2
+        ncols = 2
         img_pos = [[0,0], [0,1], [1,0], [1,1]]
-        for i in range(4):
-            og_id = unique_templates[unit_type == i]
-            n_units_in_cat = og_id.size
-            if n_units_in_cat !=0:
-                for id in og_id:
-                    axs[img_pos[i][0]][img_pos[i][1]].plot(template_waveforms[id, 0:, quality_metrics['maxChannels'][id]], color = 'black', alpha = 0.1)
-                    axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
-                    axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_title(f"{labels[i]} units (n = {n_units_in_cat})")
-            else:
-                axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
-                axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
-                axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
-                axs[img_pos[i][0]][img_pos[i][1]].set_title(f"No {labels[i]} units (n = 0)")
-
-    elif n_categories == 5:
-        fig, axs = plt.subplots(nrows = 3, ncols=2)
+        n_plots = 4
+    else:
+        nrows = 3
+        ncols = 2
         img_pos = [[0,0], [0,1], [1,0], [1,1], [2,0], [2,1]]
-        for i in range(6):
-            og_id = unique_templates[np.argwhere(unit_type == i).squeeze()]
-            n_units_in_cat = og_id.size
-            if n_units_in_cat !=0:
-                for id in og_id:
-                    axs[img_pos[i][0]][img_pos[i][1]].plot(template_waveforms[id, 0:, quality_metrics['maxChannels'][id]], color = 'black', alpha = 0.1)
-                    axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
-                    axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_title(f"{labels[i]} units (n = {n_units_in_cat})")
-            else:
-                if i == 5:
-                    axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
-                    axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
-                else:
-                    axs[img_pos[i][0]][img_pos[i][1]].spines[['right', 'top', 'bottom', 'left']].set_visible(False)
-                    axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
-                    axs[img_pos[i][0]][img_pos[i][1]].set_title(f"No {labels[i]} units (n = 0)")
+        n_plots = 5
+    
+    #TODO change alpha to be inversly proprotional to n units
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols)
+    for plot_idx in range(nrows * ncols):
+        unit_type_template_ids = unique_templates[unit_type==plot_idx]
+        n_units_of_type = unit_type_template_ids.size
+        ax = axs[img_pos[plot_idx][0]][img_pos[plot_idx][1]]
+
+        # if the current unit type has more than 0 units, generate a plot
+        if n_units_of_type > 0:
+            for template_id in unit_type_template_ids:
+                max_channel_id = quality_metrics["maxChannels"][template_id]
+                ax.plot(template_waveforms[template_id, 0:, max_channel_id], color="black", alpha=0.1)
+                ax.spines[["right", "top", "bottom", "left"]].set_visible(False)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.set_title(f"{labels[plot_idx]} units (n = {n_units_of_type})")
+
+        # if the current unit type has no units, or if this is an "extra" plot, do this instead
+        elif (n_units_of_type==0) or (plot_idx==n_plots):
+            ax.spines[["right", "top", "bottom", "left"]].set_visible(False)
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+            # if it's not an "extra" plot, add a title signifying 0 units
+            if plot_idx < n_plots:
+                ax.set_title(f"No {labels[plot_idx]} units (n = 0)")
+ 
 
 def plot_histograms(quality_metrics, param):
     """
