@@ -711,11 +711,12 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
                 isi_violations_sum = 0
 
                 # Count all pair-wise violations
-                for i in range(N):
-                    for j in range(i+1, N):
-                        isi = chunk_spike_times[j] - chunk_spike_times[i]
-                        if isi <= tauR and isi >= tauC:
-                            isi_violations_sum += 1
+                if N > 1:
+                    for i in range(N - 1):
+                        isi_vec = chunk_spike_times[i+1:] - chunk_spike_times[i]
+                        isi_violations_sum += np.sum((isi_vec <= tauR) & (isi_vec >= tauC))
+                else:
+                    isi_violations_sum = 0
 
                 # Calculate fraction using Llobet equation
                 if N > 0:  # Avoid division by zero
