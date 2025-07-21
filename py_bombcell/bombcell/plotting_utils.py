@@ -280,3 +280,9 @@ def get_metric_info_list(param, quality_metrics):
             line_colors=metric_line_cols[16]
         ),
     ]
+
+def get_metric_info_dict(param, quality_metrics):
+
+    metric_info_list = get_metric_info_list(param, quality_metrics)
+
+    return { mi.name: mi for mi in metric_info_list }
