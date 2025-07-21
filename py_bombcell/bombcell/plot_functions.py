@@ -38,7 +38,7 @@ def plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_
     if param["plotGlobal"]:
         plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param) 
         upset_plots(quality_metrics, unit_type_string, param)
-        plot_histograms(quality_metrics, param)
+        plot_all_histograms(quality_metrics, param)
 
 def generate_upset_plot(qm_table: pd.DataFrame, unit_type_str: str):
     try:
@@ -191,7 +191,7 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
                 ax.set_title(f"No {labels[plot_idx]} units (n = 0)")
  
 
-def plot_histograms(quality_metrics, param):
+def plot_all_histograms(quality_metrics, param):
     """
     This function find what metrics have been extracted and plots histograms for each metric
 
