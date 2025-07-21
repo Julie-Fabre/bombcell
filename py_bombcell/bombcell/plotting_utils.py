@@ -108,11 +108,12 @@ def get_metric_info_list(param, quality_metrics):
         [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # L-ratio
     ])
 
-    MetricInfo = namedtuple("MetricInfo", "name, short_name, threshold_1, threshold_2, plot_condition, line_colors")
+    MetricInfo = namedtuple("MetricInfo", "name, short_name, metric_type, threshold_1, threshold_2, plot_condition, line_colors")
     return [
         MetricInfo(
             name="nPeaks", 
             short_name="# peaks", 
+            metric_type="noise",
             threshold_1=param.get('maxNPeaks'), 
             threshold_2=None, 
             plot_condition=True, 
@@ -122,6 +123,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="nTroughs", 
             short_name="# troughs", 
+            metric_type="noise",
             threshold_1=param.get('maxNTroughs'), 
             threshold_2=None, 
             plot_condition=True, 
@@ -131,6 +133,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="waveformBaselineFlatness", 
             short_name="baseline flatness", 
+            metric_type="noise",
             threshold_1=param.get('maxWvBaselineFraction'), 
             threshold_2=None, 
             plot_condition=True, 
@@ -140,6 +143,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="waveformDuration_peakTrough", 
             short_name="waveform duration", 
+            metric_type="noise",
             threshold_1=param.get('minWvDuration'), 
             threshold_2=param.get('maxWvDuration'), 
             plot_condition=True, 
@@ -149,6 +153,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="scndPeakToTroughRatio", 
             short_name="peak_2/trough", 
+            metric_type="noise",
             threshold_1=param.get('maxScndPeakToTroughRatio_noise'), 
             threshold_2=None, 
             plot_condition=True, 
@@ -158,6 +163,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="spatialDecaySlope", 
             short_name="spatial decay", 
+            metric_type="noise",
             threshold_1=param.get('minSpatialDecaySlope') if param.get('spDecayLinFit') else param.get('minSpatialDecaySlopeExp'),
             threshold_2=None if param.get('spDecayLinFit') else param.get('maxSpatialDecaySlopeExp'), 
             plot_condition=param.get("computeSpatialDecay", False), 
@@ -167,6 +173,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="peak1ToPeak2Ratio", 
             short_name="peak_1/peak_2", 
+            metric_type="nonsomatic",
             threshold_1=param.get('maxPeak1ToPeak2Ratio_nonSomatic'), 
             threshold_2=None, 
             plot_condition=True, 
@@ -176,6 +183,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="mainPeakToTroughRatio", 
             short_name="peak_{main}/trough", 
+            metric_type="nonsomatic",
             threshold_1=param.get('maxMainPeakToTroughRatio_nonSomatic'), 
             threshold_2=None, 
             plot_condition=True, 
@@ -185,6 +193,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="rawAmplitude", 
             short_name="amplitude", 
+            metric_type="mua",
             threshold_1=param.get('minAmplitude'), 
             threshold_2=None, 
             plot_condition=param.get('extractRaw', False) and 'rawAmplitude' in quality_metrics and np.any(~np.isnan(quality_metrics.get('rawAmplitude', [np.nan]))), 
@@ -194,6 +203,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="signalToNoiseRatio", 
             short_name="signal/noise (SNR)", 
+            metric_type="mua",
             threshold_1=None, 
             threshold_2=param.get('minSNR'), 
             plot_condition=param.get('extractRaw', False) and 'signalToNoiseRatio' in quality_metrics and np.any(~np.isnan(quality_metrics.get('signalToNoiseRatio', [np.nan]))), 
@@ -203,6 +213,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="fractionRPVs_estimatedTauR", 
             short_name="refractory period viol. (RPV)", 
+            metric_type="mua",
             threshold_1=param.get('maxRPVviolations'), 
             threshold_2=None, 
             plot_condition=True, 
@@ -212,6 +223,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="nSpikes", 
             short_name="# spikes", 
+            metric_type="mua",
             threshold_1=None, 
             threshold_2=param.get('minNumSpikes'), 
             plot_condition=True,
@@ -221,6 +233,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="presenceRatio", 
             short_name="presence ratio", 
+            metric_type="mua",
             threshold_1=None, 
             threshold_2=param.get('minPresenceRatio'), 
             plot_condition=True, 
@@ -230,6 +243,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="percentageSpikesMissing_gaussian", 
             short_name="% spikes missing", 
+            metric_type="mua",
             threshold_1=param.get('maxPercSpikesMissing'), 
             threshold_2=None, 
             plot_condition=True, 
@@ -239,6 +253,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="maxDriftEstimate", 
             short_name="maximum drift", 
+            metric_type="mua",
             threshold_1=param.get('maxDrift'), 
             threshold_2=None, 
             plot_condition=param.get("computeDrift", False), 
@@ -248,6 +263,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="isolationDistance", 
             short_name="isolation dist.", 
+            metric_type="mua",
             threshold_1=param.get('isoDmin'), 
             threshold_2=None, 
             plot_condition=param.get("computeDistanceMetrics", False), 
@@ -257,6 +273,7 @@ def get_metric_info_list(param, quality_metrics):
         MetricInfo(
             name="Lratio", 
             short_name="L-ratio", 
+            metric_type="mua",
             threshold_1=None, 
             threshold_2=param.get('lratioMax'), 
             plot_condition=param.get("computeDistanceMetrics", False), 
