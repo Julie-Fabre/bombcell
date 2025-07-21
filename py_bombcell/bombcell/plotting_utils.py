@@ -81,8 +81,8 @@ def get_metric_info_list(param, quality_metrics):
         Each namedtuple (MetricInfo) contains:
         - name (str): full metric name,
         - short_name (str): label for plotting
-        - threshold_1 (float or None): lower or upper threshold,
-        - threshold_2 (float or None): secondary threshold if applicable,
+        - min_threshold (float or None): lower or upper threshold,
+        - max_threshold (float or None): secondary threshold if applicable,
         - plot_condition (bool): flag to determine if the metric should be plotted,
         - line_colors (np.ndarray): RBA(A) line color vectors for visualization.
 
@@ -108,14 +108,14 @@ def get_metric_info_list(param, quality_metrics):
         [0, 0.5, 0, 1.0, 0.5469, 0, 0, 0, 0],  # L-ratio
     ])
 
-    MetricInfo = namedtuple("MetricInfo", "name, short_name, metric_type, threshold_1, threshold_2, plot_condition, line_colors")
+    MetricInfo = namedtuple("MetricInfo", "name, short_name, metric_type, min_threshold, max_threshold, plot_condition, line_colors")
     return [
         MetricInfo(
             name="nPeaks", 
             short_name="# peaks", 
             metric_type="noise",
-            threshold_1=param.get('maxNPeaks'), 
-            threshold_2=None, 
+            min_threshold=None,
+            max_threshold=param.get('maxNPeaks'), 
             plot_condition=True, 
             line_colors=metric_line_cols[0]
         ),
@@ -124,8 +124,8 @@ def get_metric_info_list(param, quality_metrics):
             name="nTroughs", 
             short_name="# troughs", 
             metric_type="noise",
-            threshold_1=param.get('maxNTroughs'), 
-            threshold_2=None, 
+            min_threshold=None,
+            max_threshold=param.get('maxNTroughs'), 
             plot_condition=True, 
             line_colors=metric_line_cols[1]
         ),
@@ -134,8 +134,8 @@ def get_metric_info_list(param, quality_metrics):
             name="waveformBaselineFlatness", 
             short_name="baseline flatness", 
             metric_type="noise",
-            threshold_1=param.get('maxWvBaselineFraction'), 
-            threshold_2=None, 
+            min_threshold=None,
+            max_threshold=param.get('maxWvBaselineFraction'),
             plot_condition=True, 
             line_colors=metric_line_cols[2]
         ),
@@ -144,8 +144,8 @@ def get_metric_info_list(param, quality_metrics):
             name="waveformDuration_peakTrough", 
             short_name="waveform duration", 
             metric_type="noise",
-            threshold_1=param.get('minWvDuration'), 
-            threshold_2=param.get('maxWvDuration'), 
+            min_threshold=param.get('minWvDuration'), 
+            max_threshold=param.get('maxWvDuration'), 
             plot_condition=True, 
             line_colors=metric_line_cols[3]
         ),
@@ -154,8 +154,8 @@ def get_metric_info_list(param, quality_metrics):
             name="scndPeakToTroughRatio", 
             short_name="peak_2/trough", 
             metric_type="noise",
-            threshold_1=param.get('maxScndPeakToTroughRatio_noise'), 
-            threshold_2=None, 
+            min_threshold=None,
+            max_threshold=param.get('maxScndPeakToTroughRatio_noise'),
             plot_condition=True, 
             line_colors=metric_line_cols[4]
         ),
@@ -164,8 +164,8 @@ def get_metric_info_list(param, quality_metrics):
             name="spatialDecaySlope", 
             short_name="spatial decay", 
             metric_type="noise",
-            threshold_1=param.get('minSpatialDecaySlope') if param.get('spDecayLinFit') else param.get('minSpatialDecaySlopeExp'),
-            threshold_2=None if param.get('spDecayLinFit') else param.get('maxSpatialDecaySlopeExp'), 
+            min_threshold=param.get('minSpatialDecaySlope') if param.get('spDecayLinFit') else param.get('minSpatialDecaySlopeExp'),
+            max_threshold=None if param.get('spDecayLinFit') else param.get('maxSpatialDecaySlopeExp'), 
             plot_condition=param.get("computeSpatialDecay", False), 
             line_colors=metric_line_cols[5]
         ),
@@ -174,8 +174,8 @@ def get_metric_info_list(param, quality_metrics):
             name="peak1ToPeak2Ratio", 
             short_name="peak_1/peak_2", 
             metric_type="nonsomatic",
-            threshold_1=param.get('maxPeak1ToPeak2Ratio_nonSomatic'), 
-            threshold_2=None, 
+            min_threshold=None,
+            max_threshold=param.get('maxPeak1ToPeak2Ratio_nonSomatic'), 
             plot_condition=True, 
             line_colors=metric_line_cols[6]
         ),
@@ -184,8 +184,8 @@ def get_metric_info_list(param, quality_metrics):
             name="mainPeakToTroughRatio", 
             short_name="peak_{main}/trough", 
             metric_type="nonsomatic",
-            threshold_1=param.get('maxMainPeakToTroughRatio_nonSomatic'), 
-            threshold_2=None, 
+            min_threshold=None,
+            max_threshold=param.get('maxMainPeakToTroughRatio_nonSomatic'), 
             plot_condition=True, 
             line_colors=metric_line_cols[7]
         ),
@@ -194,8 +194,8 @@ def get_metric_info_list(param, quality_metrics):
             name="rawAmplitude", 
             short_name="amplitude", 
             metric_type="mua",
-            threshold_1=param.get('minAmplitude'), 
-            threshold_2=None, 
+            min_threshold=param.get('minAmplitude'), 
+            max_threshold=None, 
             plot_condition=param.get('extractRaw', False) and 'rawAmplitude' in quality_metrics and np.any(~np.isnan(quality_metrics.get('rawAmplitude', [np.nan]))), 
             line_colors=metric_line_cols[8]
         ),
@@ -204,8 +204,8 @@ def get_metric_info_list(param, quality_metrics):
             name="signalToNoiseRatio", 
             short_name="signal/noise (SNR)", 
             metric_type="mua",
-            threshold_1=None, 
-            threshold_2=param.get('minSNR'), 
+            min_threshold=param.get('minSNR'),
+            max_threshold=None,
             plot_condition=param.get('extractRaw', False) and 'signalToNoiseRatio' in quality_metrics and np.any(~np.isnan(quality_metrics.get('signalToNoiseRatio', [np.nan]))), 
             line_colors=metric_line_cols[9]
         ),
@@ -214,8 +214,8 @@ def get_metric_info_list(param, quality_metrics):
             name="fractionRPVs_estimatedTauR", 
             short_name="refractory period viol. (RPV)", 
             metric_type="mua",
-            threshold_1=param.get('maxRPVviolations'), 
-            threshold_2=None, 
+            min_threshold=None, 
+            max_threshold=param.get('maxRPVviolations'),
             plot_condition=True, 
             line_colors=metric_line_cols[10]
         ),
@@ -224,8 +224,8 @@ def get_metric_info_list(param, quality_metrics):
             name="nSpikes", 
             short_name="# spikes", 
             metric_type="mua",
-            threshold_1=None, 
-            threshold_2=param.get('minNumSpikes'), 
+            min_threshold=param.get('minNumSpikes'), 
+            max_threshold=None,
             plot_condition=True,
             line_colors=metric_line_cols[11]
         ),
@@ -234,8 +234,8 @@ def get_metric_info_list(param, quality_metrics):
             name="presenceRatio", 
             short_name="presence ratio", 
             metric_type="mua",
-            threshold_1=None, 
-            threshold_2=param.get('minPresenceRatio'), 
+            min_threshold=param.get('minPresenceRatio'),
+            max_threshold=None,
             plot_condition=True, 
             line_colors=metric_line_cols[12]
         ),
@@ -244,8 +244,8 @@ def get_metric_info_list(param, quality_metrics):
             name="percentageSpikesMissing_gaussian", 
             short_name="% spikes missing", 
             metric_type="mua",
-            threshold_1=param.get('maxPercSpikesMissing'), 
-            threshold_2=None, 
+            min_threshold=None, 
+            max_threshold=param.get('maxPercSpikesMissing'),
             plot_condition=True, 
             line_colors=metric_line_cols[13]
         ),
@@ -254,8 +254,8 @@ def get_metric_info_list(param, quality_metrics):
             name="maxDriftEstimate", 
             short_name="maximum drift", 
             metric_type="mua",
-            threshold_1=param.get('maxDrift'), 
-            threshold_2=None, 
+            min_threshold=None, 
+            max_threshold=param.get('maxDrift'),
             plot_condition=param.get("computeDrift", False), 
             line_colors=metric_line_cols[14]
         ),
@@ -264,8 +264,8 @@ def get_metric_info_list(param, quality_metrics):
             name="isolationDistance", 
             short_name="isolation dist.", 
             metric_type="mua",
-            threshold_1=param.get('isoDmin'), 
-            threshold_2=None, 
+            min_threshold=param.get('isoDmin'), 
+            max_threshold=None, 
             plot_condition=param.get("computeDistanceMetrics", False), 
             line_colors=metric_line_cols[15]
         ),
@@ -274,8 +274,8 @@ def get_metric_info_list(param, quality_metrics):
             name="Lratio", 
             short_name="L-ratio", 
             metric_type="mua",
-            threshold_1=None, 
-            threshold_2=param.get('lratioMax'), 
+            min_threshold=None, 
+            max_threshold=param.get('lratioMax'), 
             plot_condition=param.get("computeDistanceMetrics", False), 
             line_colors=metric_line_cols[16]
         ),
