@@ -269,7 +269,11 @@ def generate_waveform_overlay(
         return fig, ax
 
 
-def generate_upset_plot(qm_table: pd.DataFrame, unit_type_str: str):
+def generate_upset_plot(
+        qm_table: pd.DataFrame, 
+        unit_type_str: str,
+        fig: matplotlib.figure.Figure = None,
+):
     try:
         # ensure upper case
         unit_type_str = unit_type_str.upper()
@@ -310,7 +314,7 @@ def generate_upset_plot(qm_table: pd.DataFrame, unit_type_str: str):
         n_cols_with_true_vals = (unit_type_data.sum() > 0).sum()
         if n_cols_with_true_vals >= 1 and n_unit_type > 0:
             upset = UpSet(from_indicators(metric_display_names, data=unit_type_data), min_degree=1)
-            upset.plot()
+            upset.plot(fig=fig)
             plt.suptitle(f"Units classified as {unit_type_str.lower()} (n = {n_unit_type}/{n_total_units})")
             plt.show()
         elif n_unit_type > 0:
@@ -319,10 +323,19 @@ def generate_upset_plot(qm_table: pd.DataFrame, unit_type_str: str):
         print(f"Warning: Could not create noise upset plot due to library compatibility: {e}")
 
 
-def generate_histogram(metric_name, quality_metrics, param, bar_color=None, ax=None, include_y_label=False):
+def generate_histogram(
+        metric_name, 
+        quality_metrics, 
+        param, 
+        bar_color=None, 
+        ax=None, 
+        include_y_label=False
+):
 
     if ax is None:
         fig, ax = plt.subplots(1,1)
+    else:
+        fig = plt.gcf() # placeholder?
 
     if bar_color is None:
         bar_color='k'
@@ -435,3 +448,5 @@ def generate_histogram(metric_name, quality_metrics, param, bar_color=None, ax=N
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
         ax.tick_params(labelsize=12)
+
+    return fig, ax
