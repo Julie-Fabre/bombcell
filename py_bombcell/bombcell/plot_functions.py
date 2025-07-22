@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.figure
+import matplotlib.axes
 import pandas as pd
 try:
     from upsetplot import UpSet, from_indicators
@@ -100,29 +102,15 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
     #TODO change alpha to be inversly proprotional to n units
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols)
     for plot_idx in range(nrows * ncols):
-        unit_type_template_ids = unique_templates[unit_type==plot_idx]
-        n_units_of_type = unit_type_template_ids.size
-        ax = axs[img_pos[plot_idx][0]][img_pos[plot_idx][1]]
-
-        # if the current unit type has more than 0 units, generate a plot
-        if n_units_of_type > 0:
-            for template_id in unit_type_template_ids:
-                max_channel_id = quality_metrics["maxChannels"][template_id]
-                ax.plot(template_waveforms[template_id, 0:, max_channel_id], color="black", alpha=0.1)
-                ax.spines[["right", "top", "bottom", "left"]].set_visible(False)
-                ax.set_xticks([])
-                ax.set_yticks([])
-                ax.set_title(f"{labels[plot_idx]} units (n = {n_units_of_type})")
-
-        # if the current unit type has no units, or if this is an "extra" plot, do this instead
-        elif (n_units_of_type==0) or (plot_idx==n_plots):
+        if plot_idx < n_plots:
+            unit_type_ = plot_idx
+            unit_type_str = labels[unit_type_]
+            ax = axs[img_pos[plot_idx][0]][img_pos[plot_idx][1]]
+            generate_waveform_overlay(param, quality_metrics, unit_type_str, template_waveforms, ax)        
+        else:
             ax.spines[["right", "top", "bottom", "left"]].set_visible(False)
             ax.set_xticks([])
             ax.set_yticks([])
-
-            # if it's not an "extra" plot, add a title signifying 0 units
-            if plot_idx < n_plots:
-                ax.set_title(f"No {labels[plot_idx]} units (n = 0)")
 
 
 def upset_plots(quality_metrics, unit_type_string, param):
@@ -209,6 +197,78 @@ def plot_histograms(quality_metrics, param):
 # These functions generate the individual plots that
 # make up the output of the top-level functions
 ######################################################
+def generate_waveform_overlay(
+        param: dict, 
+        quality_metrics: dict, 
+        unit_type_str: str, 
+        template_waveforms: np.ndarray=None,
+        ax: matplotlib.axes.Axes = None,
+    ):
+    if template_waveforms is None:
+        from .loading_utils import load_ephys_data
+        ks_dir = param["ephysKilosortPath"]
+        _, _, template_waveforms, _, _, _, _ = load_ephys_data(ks_dir)
+    
+    from .quality_metrics import get_quality_unit_type
+    unit_types_all, _ = get_quality_unit_type(param, quality_metrics)
+
+    # get unit_type integer
+    if param["splitGoodAndMua_NonSomatic"]:
+        try:
+            unit_type = {
+                "noise": 0,
+                "somatic, good": 1,
+                "somatic, MUA": 2,
+                "non-somatic, good": 3,
+                "non-somatic, MUA": 4,
+            }[unit_type_str]
+        except KeyError:
+            raise(f"Invalid unit type {unit_type_str} - permitted values are 'noise', 'somatic, good', 'somatic, MUA', 'non-somatic, good', 'non-somatic, MUA'")
+    else:
+        try:
+            unit_type = {
+                "noise": 0,
+                "somatic, good": 1,
+                "somatic, MUA": 2,
+                "non-somatic": 3,
+            }[unit_type_str]
+        except KeyError:
+            raise(f"Invalid unit type {unit_type_str} - permitted values are 'noise', 'somatic, good', 'somatic, MUA', 'non-somatic'")
+
+        # get unique templates
+        unique_templates = param["unique_templates"]
+        unit_type_template_ids = unique_templates[unit_types_all==unit_type]
+        n_units_of_type = unit_type_template_ids.size
+
+        # if the current unit type has more than 0 units, generate a plot
+        if n_units_of_type > 0:
+            # initialize figure, axis handles
+
+            if ax is None:
+                fig, ax = plt.subplots(1,1)
+            else:
+                fig = plt.gcf() # placeholder???
+
+            for template_id in unit_type_template_ids:
+                max_channel_id = quality_metrics["maxChannels"][template_id]
+                template_max_waveform = template_waveforms[template_id, 0:, max_channel_id] # template waveforms comes from load_ephys_data
+                ax.plot(template_max_waveform, color="black", alpha=0.1)
+                ax.spines[["right", "top", "bottom", "left"]].set_visible(False)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.set_title(f"{unit_type_str} units (n = {n_units_of_type})")
+        
+        else:
+            ax.spines[["right", "top", "bottom", "left"]].set_visible(False)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.set_title(f"No {unit_type_str} units (n = 0)")
+        
+            return (None, None)
+        
+        return fig, ax
+
+
 def generate_upset_plot(qm_table: pd.DataFrame, unit_type_str: str):
     try:
         # ensure upper case
