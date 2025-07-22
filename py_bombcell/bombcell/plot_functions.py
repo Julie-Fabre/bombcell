@@ -44,7 +44,7 @@ def plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_
     if param["plotGlobal"]:
         plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param) 
         upset_plots(quality_metrics, unit_type_string, param)
-        plot_all_histograms(quality_metrics, param)
+        plot_histograms(quality_metrics, param)
 
 
 def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param):
@@ -149,7 +149,7 @@ def upset_plots(quality_metrics, unit_type_string, param):
     generate_upset_plot(qm_table, "MUA")
 
 
-def plot_all_histograms(quality_metrics, param):
+def plot_histograms(quality_metrics, param):
     """
     This function find what metrics have been extracted and plots histograms for each metric
 
@@ -191,7 +191,7 @@ def plot_all_histograms(quality_metrics, param):
         
         # plotting function goes here
         include_y_label = (idx==0)
-        plot_histogram(vmi.name, quality_metrics, param, bar_color, ax, include_y_label)
+        generate_histogram(vmi.name, quality_metrics, param, bar_color, ax, include_y_label)
 
     # Hide unused subplots
     for i in range(len(valid_metric_info), num_rows * num_cols):
@@ -259,7 +259,7 @@ def generate_upset_plot(qm_table: pd.DataFrame, unit_type_str: str):
         print(f"Warning: Could not create noise upset plot due to library compatibility: {e}")
 
 
-def plot_histogram(metric_name, quality_metrics, param, bar_color=None, ax=None, include_y_label=False):
+def generate_histogram(metric_name, quality_metrics, param, bar_color=None, ax=None, include_y_label=False):
 
     if ax is None:
         fig, ax = plt.subplots(1,1)
