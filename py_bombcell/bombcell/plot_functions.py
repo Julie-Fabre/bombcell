@@ -38,7 +38,7 @@ def plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_
     if param["plotGlobal"]:
         plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param) 
         upset_plots(quality_metrics, unit_type_string, param)
-        plot_histograms(quality_metrics, param)
+        plot_all_histograms(quality_metrics, param)
 
 def generate_upset_plot(qm_table: pd.DataFrame, unit_type_str: str):
     try:
@@ -191,7 +191,7 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
                 ax.set_title(f"No {labels[plot_idx]} units (n = 0)")
  
 
-def plot_histograms(quality_metrics, param):
+def plot_all_histograms(quality_metrics, param):
     """
     This function find what metrics have been extracted and plots histograms for each metric
 
@@ -205,20 +205,7 @@ def plot_histograms(quality_metrics, param):
 
     from .plotting_utils import get_color_from_matrix, get_metric_info_list
 
-    # Create copies to avoid SettingWithCopyWarning
-    if 'peak1ToPeak2Ratio' in quality_metrics:
-        quality_metrics['peak1ToPeak2Ratio'] = np.where(
-            quality_metrics['peak1ToPeak2Ratio'] == np.inf, 
-            np.nan, 
-            quality_metrics['peak1ToPeak2Ratio']
-        )
-    if 'troughToPeak2Ratio' in quality_metrics:
-        quality_metrics['troughToPeak2Ratio'] = np.where(
-            quality_metrics['troughToPeak2Ratio'] == np.inf, 
-            np.nan, 
-            quality_metrics['troughToPeak2Ratio']
-        )
-
+    # get valid metrics, i.e., metrics present in quality_metrics dictionary
     metric_info = get_metric_info_list(param, quality_metrics)
     valid_metric_info = [mi for mi in metric_info if mi.plot_condition and (mi.name in quality_metrics)]
 
@@ -235,204 +222,18 @@ def plot_histograms(quality_metrics, param):
     elif num_cols == 1:
         axs = axs.reshape(-1, 1)
 
+    # loop through valid metrics, plotting histogram for each one
     for idx, vmi in enumerate(valid_metric_info):
         row_id = idx // num_cols
         col_id = idx % num_cols
         ax = axs[row_id, col_id]
 
         # get color from color matrix (use modulus operator for wraparound)
-        color = get_color_from_matrix(idx)
+        bar_color = get_color_from_matrix(idx)
         
-        metric_data = quality_metrics[vmi.name]
-        # Remove NaN and inf values for all metrics
-        metric_data = metric_data[~np.isnan(metric_data)]
-        metric_data = metric_data[~np.isinf(metric_data)]
-        
-        if len(metric_data) > 0:
-            # Plot histogram with probability normalization (MATLAB style)
-            if vmi.name in ['nPeaks', 'nTroughs']:
-                # Use integer bins for discrete metrics
-                bins = np.arange(np.min(metric_data), np.max(metric_data) + 2) - 0.5
-            elif vmi.name == 'waveformDuration_peakTrough':
-                # Use fewer bins for waveform duration like MATLAB
-                bins = 20
-            else:
-                bins = 40
-                
-            n, bins_out, patches = ax.hist(metric_data, bins=bins, density=True, 
-                                         color=color, alpha=0.7)
-            
-            # Convert to probability (like MATLAB's 'Normalization', 'probability')
-            if vmi.name not in ['nPeaks', 'nTroughs']:
-                bin_width = bins_out[1] - bins_out[0]
-                for patch in patches:
-                    patch.set_height(patch.get_height() * bin_width)
-            
-            # Add threshold lines above histogram at 0.9
-            x_lim = ax.get_xlim()
-            # Extend x-axis to make room for text labels
-            x_range = x_lim[1] - x_lim[0]
-            ax.set_xlim([x_lim[0] - 0.1*x_range, x_lim[1] + 0.1*x_range])
-            x_lim = ax.get_xlim()
-            line_y = 0.9  # Position lines at 0.9
-            
-            thresh1 = vmi.threshold_1
-            thresh2 = vmi.threshold_2
-            line_colors = vmi.line_colors.reshape(3, 3)
-            
-            if vmi.name in ['nPeaks', 'nTroughs']:
-                binsize_offset = 0.5
-            else:
-                binsize_offset = (bins_out[1] - bins_out[0]) / 2 if len(bins_out) > 1 else 0
-            
-            if thresh1 is not None or thresh2 is not None:
-                if thresh1 is not None and thresh2 is not None:
-                    # Add vertical lines for thresholds at value + 0.5*bin_width
-                    ax.axvline(thresh1 + binsize_offset, color='k', linewidth=2)
-                    ax.axvline(thresh2 + binsize_offset, color='k', linewidth=2)
-                    # Add horizontal colored lines at value + 0.5*bin_width
-                    ax.plot([x_lim[0], thresh1 + binsize_offset], 
-                           [line_y, line_y], color=line_colors[0], linewidth=6)
-                    ax.plot([thresh1 + binsize_offset, thresh2 + binsize_offset], 
-                           [line_y, line_y], color=line_colors[1], linewidth=6)
-                    ax.plot([thresh2 + binsize_offset, x_lim[1]], 
-                           [line_y, line_y], color=line_colors[2], linewidth=6)
-                    
-                    # Add classification labels with arrows
-                    midpoint1 = (x_lim[0] + thresh1) / 2
-                    midpoint2 = (thresh1 + thresh2) / 2
-                    midpoint3 = (thresh2 + x_lim[1]) / 2
-                    text_y = 0.95  # Position text at 0.95
-                    
-                    # Determine metric type based on metric name
-                    noise_metrics = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope']
-                    nonsomatic_metrics = ['peak1ToPeak2Ratio', 'mainPeakToTroughRatio']
-
-                    if vmi.name in noise_metrics:
-                        # Noise metrics: both thresholds -> Noise, Neuronal, Noise
-                        ax.text(midpoint1, text_y, '  Noise  ', ha='center', fontsize=10, 
-                               color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '  Neuronal  ', ha='center', fontsize=10, 
-                               color=line_colors[1], weight='bold')
-                        ax.text(midpoint3, text_y, '  Noise  ', ha='center', fontsize=10, 
-                               color=line_colors[2], weight='bold')
-                    elif vmi.name in nonsomatic_metrics:
-                        # Non-somatic metrics: both thresholds -> Non-somatic, Somatic, Non-somatic
-                        ax.text(midpoint1, text_y, '  Non-somatic  ', ha='center', fontsize=10, 
-                               color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '  Somatic  ', ha='center', fontsize=10, 
-                               color=line_colors[1], weight='bold')
-                        ax.text(midpoint3, text_y, '  Non-somatic  ', ha='center', fontsize=10, 
-                               color=line_colors[2], weight='bold')
-                    else:
-                        # MUA metrics: both thresholds -> MUA, Good, MUA
-                        ax.text(midpoint1, text_y, '  MUA  ', ha='center', fontsize=10, 
-                               color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '  Good  ', ha='center', fontsize=10, 
-                               color=line_colors[1], weight='bold')
-                        ax.text(midpoint3, text_y, '  MUA  ', ha='center', fontsize=10, 
-                               color=line_colors[2], weight='bold')
-                    
-                elif thresh1 is not None:
-                    # Add vertical line for threshold at value + 0.5*bin_width
-                    ax.axvline(thresh1 + binsize_offset, color='k', linewidth=2)
-                    # Add horizontal colored lines at value + 0.5*bin_width
-                    ax.plot([x_lim[0], thresh1 + binsize_offset], 
-                           [line_y, line_y], color=line_colors[0], linewidth=6)
-                    ax.plot([thresh1 + binsize_offset, x_lim[1]], 
-                           [line_y, line_y], color=line_colors[1], linewidth=6)
-                    
-                    # Add classification labels for single threshold
-                    midpoint1 = (x_lim[0] + thresh1) / 2
-                    midpoint2 = (thresh1 + x_lim[1]) / 2
-                    text_y = 0.95  # Position text at 0.95
-                    
-                    # Determine metric type based on metric name
-                    noise_metrics = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope']
-                    nonsomatic_metrics = ['peak1ToPeak2Ratio', 'mainPeakToTroughRatio']
-                    
-                    if vmi.name in noise_metrics:
-                        # Noise metrics: thresh1 only -> Neuronal, Noise
-                        ax.text(midpoint1, text_y, '  Neuronal  ', ha='center', fontsize=10, 
-                               color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '  Noise  ', ha='center', fontsize=10, 
-                               color=line_colors[1], weight='bold')
-                    elif vmi.name in nonsomatic_metrics:
-                        # Non-somatic metrics: thresh1 only -> Somatic, Non-somatic
-                        ax.text(midpoint1, text_y, '  Somatic  ', ha='center', fontsize=10, 
-                               color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '  Non-somatic  ', ha='center', fontsize=10, 
-                               color=line_colors[1], weight='bold')
-                    else:
-                        # MUA metrics: thresh1 only
-                        if vmi.name in ['isolationDistance', 'rawAmplitude']:
-                            # For isolation distance and rawAmplitude: MUA on left, Good on right
-                            ax.text(midpoint1, text_y, '  MUA  ', ha='center', fontsize=10, 
-                                   color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '  Good  ', ha='center', fontsize=10, 
-                                   color=line_colors[1], weight='bold')
-                        else:
-                            # For other MUA metrics: Good on left, MUA on right
-                            ax.text(midpoint1, text_y, '  Good  ', ha='center', fontsize=10, 
-                                   color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '  MUA  ', ha='center', fontsize=10, 
-                                   color=line_colors[1], weight='bold')
-                    
-                elif thresh2 is not None:
-                    # Add vertical line for threshold at value + 0.5*bin_width
-                    ax.axvline(thresh2 + binsize_offset, color='k', linewidth=2)
-                    # Add horizontal colored lines at value + 0.5*bin_width
-                    ax.plot([x_lim[0], thresh2 + binsize_offset], 
-                           [line_y, line_y], color=line_colors[0], linewidth=6)
-                    ax.plot([thresh2 + binsize_offset, x_lim[1]], 
-                           [line_y, line_y], color=line_colors[1], linewidth=6)
-                    
-                    # Add classification labels for threshold 2 only
-                    midpoint1 = (x_lim[0] + thresh2) / 2
-                    midpoint2 = (thresh2 + x_lim[1]) / 2
-                    text_y = 0.95  # Position text at 0.95
-                    
-                    # Determine metric type based on metric name
-                    noise_metrics = ['nPeaks', 'nTroughs', 'waveformBaselineFlatness', 'waveformDuration_peakTrough', 'scndPeakToTroughRatio', 'spatialDecaySlope']
-                    nonsomatic_metrics = ['peak1ToPeak2Ratio', 'mainPeakToTroughRatio']
-                    
-                    if vmi.name in noise_metrics:
-                        # Noise metrics: thresh2 only -> Noise, Neuronal
-                        ax.text(midpoint1, text_y, '  Noise  ', ha='center', fontsize=10, 
-                               color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '  Neuronal  ', ha='center', fontsize=10, 
-                               color=line_colors[1], weight='bold')
-                    elif vmi.name in nonsomatic_metrics:
-                        # Non-somatic metrics: thresh2 only -> Non-somatic, Somatic
-                        ax.text(midpoint1, text_y, '  Non-somatic  ', ha='center', fontsize=10, 
-                               color=line_colors[0], weight='bold')
-                        ax.text(midpoint2, text_y, '  Somatic  ', ha='center', fontsize=10, 
-                               color=line_colors[1], weight='bold')
-                    else:
-                        # MUA metrics: thresh2 only
-                        if vmi.name in ['nSpikes', 'presenceRatio', 'signalToNoiseRatio']:
-                            # For nSpikes, presenceRatio, and signalToNoiseRatio: MUA on left, Good on right
-                            ax.text(midpoint1, text_y, '  MUA  ', ha='center', fontsize=10, 
-                                   color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '  Good  ', ha='center', fontsize=10, 
-                                   color=line_colors[1], weight='bold')
-                        else:
-                            # For L-ratio: Good on left, MUA on right
-                            ax.text(midpoint1, text_y, '  Good  ', ha='center', fontsize=10, 
-                                   color=line_colors[0], weight='bold')
-                            ax.text(midpoint2, text_y, '  MUA  ', ha='center', fontsize=10, 
-                                   color=line_colors[1], weight='bold')
-
-            # Set histogram limits from 0 to 1
-            ax.set_ylim([0, 1])
-            
-        ax.set_xlabel(vmi.short_name, fontsize=13)
-        if idx == 0:
-            ax.set_ylabel('frac. units', fontsize=13)
-        
-        ax.spines['right'].set_visible(False)
-        ax.spines['top'].set_visible(False)
-        ax.tick_params(labelsize=12)
+        # plotting function goes here
+        include_y_label = (idx==0)
+        plot_histogram(vmi.name, quality_metrics, param, bar_color, ax, include_y_label)
 
     # Hide unused subplots
     for i in range(len(valid_metric_info), num_rows * num_cols):
@@ -442,3 +243,120 @@ def plot_histograms(quality_metrics, param):
 
     plt.tight_layout()
     plt.show()
+
+def plot_histogram(metric_name, quality_metrics, param, bar_color=None, ax=None, include_y_label=False):
+
+    if ax is None:
+        fig, ax = plt.subplots(1,1)
+
+    if bar_color is None:
+        bar_color='k'
+
+    from .plotting_utils import get_metric_info_dict
+
+    vmi = get_metric_info_dict(param, quality_metrics)[metric_name]
+    metric_data = quality_metrics[vmi.name]
+    metric_data = np.where(metric_data==np.inf, np.nan, metric_data) # previously, this was done explicitly for peak1ToPeak2Ratio, troughToPeak2Ratio
+    
+    # Remove NaN and inf values for all metrics
+    metric_data = metric_data[~np.isnan(metric_data)]
+    metric_data = metric_data[~np.isinf(metric_data)]
+    
+    if len(metric_data) > 0:
+        # Plot histogram with probability normalization (MATLAB style)
+        if vmi.name in ['nPeaks', 'nTroughs']:
+            # Use integer bins for discrete metrics
+            bins = np.arange(np.min(metric_data), np.max(metric_data) + 2) - 0.5
+        elif vmi.name == 'waveformDuration_peakTrough':
+            # Use fewer bins for waveform duration like MATLAB
+            bins = 20
+        else:
+            bins = 40
+            
+        n, bins_out, patches = ax.hist(metric_data, bins=bins, density=True, 
+                                        color=bar_color, alpha=0.7)
+    
+        if vmi.name in ['nPeaks', 'nTroughs']:
+            binsize_offset = 0.5
+        else:
+            binsize_offset = (bins_out[1] - bins_out[0]) / 2 if len(bins_out) > 1 else 0
+        
+        # Convert to probability (like MATLAB's 'Normalization', 'probability')
+        if vmi.name not in ['nPeaks', 'nTroughs']:
+            bin_width = bins_out[1] - bins_out[0]
+            for patch in patches:
+                patch.set_height(patch.get_height() * bin_width)
+        
+        # Add threshold lines above histogram at 0.9
+        x_lim = ax.get_xlim()
+        # Extend x-axis to make room for text labels
+        x_range = x_lim[1] - x_lim[0]
+        ax.set_xlim([x_lim[0] - 0.1*x_range, x_lim[1] + 0.1*x_range])
+        x_lim = ax.get_xlim()
+        line_y = 0.9  # Position lines at 0.9
+        
+        line_colors = vmi.line_colors.reshape(3, 3)
+
+        # add vertical lines for thresholds at value 0.5*bin_width
+        if vmi.min_threshold is not None:
+            ax.axvline(vmi.min_threshold + binsize_offset, color='k', linewidth=2)
+        if vmi.max_threshold is not None:
+            ax.axvline(vmi.max_threshold + binsize_offset, color='k', linewidth=2)
+        
+        # add horizontal colored lines at value + 0.5*bin_width
+        if vmi.min_threshold is not None and vmi.max_threshold is not None:
+            ax.plot([x_lim[0], vmi.min_threshold + binsize_offset], [line_y, line_y], color=line_colors[0], linewidth=6,) # left
+            ax.plot([vmi.min_threshold + binsize_offset, vmi.max_threshold + binsize_offset], [line_y, line_y], color=line_colors[1], linewidth=6,) # middle
+            ax.plot([vmi.max_threshold + binsize_offset, x_lim[1]], [line_y, line_y], color=line_colors[2], linewidth=6,) # right
+
+        elif (vmi.min_threshold is not None and vmi.max_threshold is None) \
+            or (vmi.min_threshold is None and vmi.max_threshold is not None):
+
+            threshold = vmi.min_threshold if vmi.min_threshold is not None else vmi.max_threshold
+            ax.plot([x_lim[0], threshold + binsize_offset], [line_y, line_y], color = line_colors[0], linewidth=6,) # left
+            ax.plot([threshold + binsize_offset, x_lim[1]], [line_y, line_y], color = line_colors[1], linewidth=6,) # right
+        
+        # set up labels for histogram's horizontal ranges -- first is "bad" label, then is "good" label
+        labels = {
+            "noise": ("Noise", "Neuronal"),
+            "nonsomatic": ("Non-Somatic", "Somatic"),
+            "mua": ("MUA", "Good"),
+        }[vmi.metric_type]
+
+        bad_label = labels[0]
+        good_label = labels[1]
+        
+        horizontal_markers = []
+        horizontal_markers.append(x_lim[0])
+        if vmi.min_threshold is not None: 
+            horizontal_markers.append(vmi.min_threshold)
+        if vmi.max_threshold is not None: 
+            horizontal_markers.append(vmi.max_threshold)
+        horizontal_markers.append(x_lim[1])
+        
+        text_x = [ (a + b) / 2 for a, b in zip(horizontal_markers[:-1], horizontal_markers[1:])] # calculate midpoints between horizontal markers
+        text_y = 0.95
+
+        if vmi.min_threshold is not None and vmi.max_threshold is not None:
+            ax.text(text_x[0], text_y, f"  {bad_label}  ", ha="center", fontsize=10, color=line_colors[0], weight="bold",) # left -- bad
+            ax.text(text_x[1], text_y, f"  {good_label}  ", ha="center", fontsize=10, color=line_colors[1], weight="bold",) # middle -- good
+            ax.text(text_x[2], text_y, f"  {bad_label}  ", ha="center", fontsize=10, color=line_colors[2], weight="bold",) # right -- bad
+
+        elif vmi.min_threshold is not None and vmi.max_threshold is None:
+            ax.text(text_x[0], text_y, f"  {bad_label}  ", ha="center", fontsize=10, color=line_colors[0], weight="bold",) # left -- bad
+            ax.text(text_x[1], text_y, f"  {good_label}  ", ha="center", fontsize=10, color=line_colors[1], weight="bold",) # right -- good
+
+        elif vmi.min_threshold is None and vmi.max_threshold is not None:
+            ax.text(text_x[0], text_y, f"  {good_label}  ", ha="center", fontsize=10, color=line_colors[0], weight="bold",) # left -- good
+            ax.text(text_x[1], text_y, f"  {bad_label}  ", ha="center", fontsize=10, color=line_colors[1], weight="bold",) # right -- bad
+
+        # Set histogram limits from 0 to 1
+        ax.set_ylim([0, 1])
+
+        ax.set_xlabel(vmi.short_name, fontsize=13)
+        if include_y_label:
+            ax.set_ylabel('frac. units', fontsize=13)
+        
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.tick_params(labelsize=12)
