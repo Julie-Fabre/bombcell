@@ -91,7 +91,7 @@ def upset_plots(quality_metrics, unit_type_string, param, save_path):
             plt.suptitle(f"Units classified as noise (n = {n_noise}/{total_units})")
             fig = plt.gcf()
             fig.savefig(save_path / 'noise.png', dpi=100)    
-            plt.show()
+            #plt.show()
         elif n_noise > 0:
             print(f"Noise upset plot skipped: no metrics have failures")
     except (AttributeError, ValueError) as e:
@@ -110,7 +110,7 @@ def upset_plots(quality_metrics, unit_type_string, param, save_path):
             plt.suptitle(f"Units classified as non-somatic (n = {n_non_somatic}/{total_units})")
             fig = plt.gcf()
             fig.savefig(save_path / 'non_somatic.png', dpi=100)    
-            plt.show()
+            #plt.show()
         elif n_non_somatic > 0:
             print(f"Non-somatic upset plot skipped: no metrics have failures")
     except (AttributeError, ValueError) as e:
@@ -133,7 +133,7 @@ def upset_plots(quality_metrics, unit_type_string, param, save_path):
             plt.suptitle(f"Units classified as MUA (n = {n_mua}/{total_units})")
             fig = plt.gcf()
             fig.savefig(save_path / 'MUA.png', dpi=100)    
-            plt.show()
+            #plt.show()
         elif n_mua > 0:
             print(f"MUA upset plot skipped: no metrics have failures")
     except (AttributeError, ValueError) as e:
@@ -207,7 +207,7 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
                     axs[img_pos[i][0]][img_pos[i][1]].set_xticks([])
                     axs[img_pos[i][0]][img_pos[i][1]].set_yticks([])
                     axs[img_pos[i][0]][img_pos[i][1]].set_title(f"No {labels[i]} units (n = 0)")
-    plt.show()
+    #plt.show()
     fig.savefig(save_path / 'waveforms.png', dpi=100)
 
 def plot_histograms(quality_metrics, param, save_path):
@@ -559,4 +559,4 @@ def plot_histograms(quality_metrics, param, save_path):
     plt.tight_layout()
     fig = plt.gcf()
     fig.savefig(save_path / 'summary_histogram.png', dpi=100)    
-    plt.show()
+    #plt.show()
