@@ -316,7 +316,6 @@ def generate_upset_plot(
             upset = UpSet(from_indicators(metric_display_names, data=unit_type_data), min_degree=1)
             upset.plot(fig=fig)
             plt.suptitle(f"Units classified as {unit_type_str.lower()} (n = {n_unit_type}/{n_total_units})")
-            plt.show()
         elif n_unit_type > 0:
             print(f"{unit_type_str.capitalize()} upset plot skipped: no metrics have failures")
     except (AttributeError, ValueError) as e:
