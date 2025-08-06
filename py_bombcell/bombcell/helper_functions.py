@@ -783,6 +783,11 @@ def get_all_quality_metrics(
     not_enough_spikes = np.zeros(unique_templates.size)
     bad_units = 0
     bar_description = "Computing bombcell quality metrics: {percentage:3.0f}%|{bar:10}| {n}/{total} units"
+
+    # read contamPct metric from kilosort output
+    contam_path = save_path.parent / 'cluster_ContamPct.tsv'
+    contam = pd.read_csv(contam_path, sep="\t")
+    
     for unit_idx in tqdm(range(unique_templates.size), bar_format=bar_description):
         this_unit = unique_templates[unit_idx]
         quality_metrics["phy_clusterID"][unit_idx] = this_unit
@@ -864,10 +869,10 @@ def get_all_quality_metrics(
             param)
         runtimes_RPV_2[unit_idx] = time.time() - time_tmp
         fraction_RPVs = fraction_RPVs[0] # only 'use_these_times', so single time chunk
-
+        fraction_RPVs = np.array([contam.iloc[unit_idx]['ContamPct']]) # use kilosort metric
+                        
         quality_metrics["fractionRPVs_estimatedTauR"][unit_idx] = fraction_RPVs[
-            int(quality_metrics["RPV_window_index"][unit_idx])
-        ]
+            int(quality_metrics["RPV_window_index"][unit_idx])]
         RPV_tauR_estimate_units_NtauR.append([unit_idx, fraction_RPVs])
 
         # get presence ratio
@@ -1196,7 +1201,7 @@ def run_bombcell(ks_dir, save_path, param):
     if param.get("verbose", False):
         print("\nGenerating summary plots...")
     
-    plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_string, param)
+    plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_string, param, save_path)
 
     if param.get("verbose", False):
         print("\nSaving results...")
@@ -1383,14 +1388,6 @@ def make_qm_table(quality_metrics, param, unit_type_string):
         qm_table_list.append(too_large_drift)
         qm_table_names.append("max. drift")
 
-    # determine if ALL unit is somatic or non-somatic
-    is_non_somatic = (
-        (quality_metrics["troughToPeak2Ratio"] < param["minTroughToPeak2Ratio_nonSomatic"]) &
-        (quality_metrics["mainPeak_before_width"] < param["minWidthFirstPeak_nonSomatic"]) &
-        (quality_metrics["mainTrough_width"] < param["minWidthMainTrough_nonSomatic"]) &
-        (quality_metrics["peak1ToPeak2Ratio"] > param["maxPeak1ToPeak2Ratio_nonSomatic"]) |
-        (quality_metrics["mainPeakToTroughRatio"] > param["maxMainPeakToTroughRatio_nonSomatic"])
-    )
     # Only evaluate non-somatic metrics for units actually classified as non-somatic
     is_non_somatic_unit = np.char.find(unit_type_string.astype(str), 'NON-SOMA') >= 0
     
@@ -1399,21 +1396,28 @@ def make_qm_table(quality_metrics, param, unit_type_string):
         quality_metrics["troughToPeak2Ratio"][is_non_somatic_unit] < param["minTroughToPeak2Ratio_nonSomatic"]
     )
     
+    main_Peak_width = np.full(len(unit_type_string), False, dtype=bool)
+    main_Peak_width[is_non_somatic_unit] = (
+        quality_metrics["mainPeak_before_width"][is_non_somatic_unit] < param["minWidthFirstPeak_nonSomatic"]
+    )
+    
+    main_Trough_width = np.full(len(unit_type_string), False, dtype=bool)
+    main_Trough_width[is_non_somatic_unit] = (
+        quality_metrics["mainTrough_width"][is_non_somatic_unit] < param["minWidthMainTrough_nonSomatic"]
+    )
+    
     peak1_to_peak2 = np.full(len(unit_type_string), False, dtype=bool)
-    # For non-somatic units, check if peak1/peak2 criteria failed (only when first 3 criteria were met)
-    if np.any(is_non_somatic_unit):
-        first_three_criteria = (
-            (quality_metrics["troughToPeak2Ratio"] < param["minTroughToPeak2Ratio_nonSomatic"]) &
-            (quality_metrics["mainPeak_before_width"] < param["minWidthFirstPeak_nonSomatic"]) &
-            (quality_metrics["mainTrough_width"] < param["minWidthMainTrough_nonSomatic"])
-        )
-        non_soma_with_first_three = is_non_somatic_unit & first_three_criteria
-        peak1_to_peak2[non_soma_with_first_three] = (
-            quality_metrics["peak1ToPeak2Ratio"][non_soma_with_first_three] > param["maxPeak1ToPeak2Ratio_nonSomatic"]
-        )
+    peak1_to_peak2[is_non_somatic_unit] = (
+        quality_metrics["peak1ToPeak2Ratio"][is_non_somatic_unit] > param["maxPeak1ToPeak2Ratio_nonSomatic"]
+    )
 
-    qm_table_list.extend([trough_to_peak2, peak1_to_peak2])
-    qm_table_names.extend(["trough / peak2", "peak1 / peak2"])
+    main_Peak_to_Trough = np.full(len(unit_type_string), False, dtype=bool)
+    main_Peak_to_Trough[is_non_somatic_unit] = (
+        quality_metrics["mainPeakToTroughRatio"][is_non_somatic_unit] > param["maxMainPeakToTroughRatio_nonSomatic"]
+    )
+    
+    qm_table_list.extend([trough_to_peak2, main_Peak_width, main_Trough_width, peak1_to_peak2, main_Peak_to_Trough])
+    qm_table_names.extend(["trough / peak2", "main peak width", "main trough width", "peak1 / peak2", "main peak / trough"])
 
 
     if param["computeDistanceMetrics"]:
