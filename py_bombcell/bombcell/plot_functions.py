@@ -291,8 +291,12 @@ def generate_upset_plot(
         # filter out uncomputed metrics
         unit_type_metrics = [m for m in unit_type_metrics if m in qm_table.columns]
 
-        # generate mask for the chosen unit type and filter the data from qm_table        
-        unit_type_mask = qm_table['unit_type'].str.startswith(unit_type_str)
+        # generate mask for the chosen unit type and filter the data from qm_table
+        # For NON-SOMATIC, check for NON-SOMA (without TIC) in the data
+        if unit_type_str == "NON-SOMATIC":
+            unit_type_mask = qm_table['unit_type'].str.startswith("NON-SOMA")
+        else:
+            unit_type_mask = qm_table['unit_type'].str.startswith(unit_type_str)
         unit_type_data = qm_table.loc[unit_type_mask, unit_type_metrics]
 
         # in the unit_type_data dataframe, some metric names should be replaced with more comprehensible "display names"
@@ -319,7 +323,7 @@ def generate_upset_plot(
         elif n_unit_type > 0:
             print(f"{unit_type_str.capitalize()} upset plot skipped: no metrics have failures")
     except (AttributeError, ValueError) as e:
-        print(f"Warning: Could not create noise upset plot due to library compatibility: {e}")
+        print(f"Warning: Could not create {unit_type_str.lower()} upset plot due to library compatibility: {e}")
 
 
 def generate_histogram(
