@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.figure
+import matplotlib.axes
 import pandas as pd
 try:
     from upsetplot import UpSet, from_indicators
@@ -15,7 +17,13 @@ import warnings
 
 from collections import namedtuple
 
-
+######################################################
+# Top Level Functions
+# These functions represent the original interface
+# to BombCell's plotting functionality, and are 
+# geared towards generating plots in the notebook
+# environment
+######################################################
 def plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_string, param):
     """
     This function plots summary figure to visualize bombcell's results
@@ -38,80 +46,8 @@ def plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_
     if param["plotGlobal"]:
         plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param) 
         upset_plots(quality_metrics, unit_type_string, param)
-        plot_all_histograms(quality_metrics, param)
+        plot_histograms(quality_metrics, param)
 
-def generate_upset_plot(qm_table: pd.DataFrame, unit_type_str: str):
-    try:
-        # ensure upper case
-        unit_type_str = unit_type_str.upper()
-
-        # get metrics relevant to chosen unit type
-        if unit_type_str=="NOISE":
-            unit_type_metrics = ["# peaks", "# troughs", "waveform duration", "spatial decay", "baseline flatness", "peak2 / trough"] #Duration is peak to trough duration
-        elif unit_type_str=="NON-SOMATIC":
-            unit_type_metrics = ["trough / peak2", "peak1 / peak2"]
-        elif unit_type_str=="MUA":
-            unit_type_metrics = ["SNR", "amplitude", "presence ratio", "# spikes", "% spikes missing", "fraction RPVs", "max. drift", "isolation dist.", "L-ratio"]
-        else:
-            raise ValueError(f"Invalid unit type {unit_type_str} - allowed values are 'NOISE', 'NON-SOMATIC', 'MUA'")
-        
-        # filter out uncomputed metrics
-        unit_type_metrics = [m for m in unit_type_metrics if m in qm_table.columns]
-
-        # generate mask for the chosen unit type and filter the data from qm_table        
-        unit_type_mask = qm_table['unit_type'].str.startswith(unit_type_str)
-        unit_type_data = qm_table.loc[unit_type_mask, unit_type_metrics]
-
-        # in the unit_type_data dataframe, some metric names should be replaced with more comprehensible "display names"
-        display_names = {
-            "SNR": "signal/noise (SNR)",
-            "fraction RPVs": "refractory period viol. (RPV)",
-            "amplitude": "amplitude"
-        }
-        metric_display_names = [display_names.get(metric_name, metric_name) for metric_name in unit_type_metrics]
-        unit_type_data.columns = metric_display_names
-
-        # count the number of units of the chosen type
-        n_unit_type = unit_type_mask.sum()
-        
-        # count the total number of units
-        n_total_units = len(qm_table)
-        
-        # check how many columns have True values
-        n_cols_with_true_vals = (unit_type_data.sum() > 0).sum()
-        if n_cols_with_true_vals >= 1 and n_unit_type > 0:
-            upset = UpSet(from_indicators(metric_display_names, data=unit_type_data), min_degree=1)
-            upset.plot()
-            plt.suptitle(f"Units classified as {unit_type_str.lower()} (n = {n_unit_type}/{n_total_units})")
-            plt.show()
-        elif n_unit_type > 0:
-            print(f"{unit_type_str.capitalize()} upset plot skipped: no metrics have failures")
-    except (AttributeError, ValueError) as e:
-        print(f"Warning: Could not create noise upset plot due to library compatibility: {e}")
-
-
-def upset_plots(quality_metrics, unit_type_string, param):
-    warnings.simplefilter(action='ignore', category=FutureWarning)
-    """
-    This function plots three upset plots, showing how each metric is connected
-
-    Parameters
-    ----------
-    quality_metrics : dict
-        The dictionary containing all quality metrics
-    unit_type_string : ndarray
-        The bombcell string unit classification
-    unique_templates : ndarray
-        The array which converts to the original unit ID's
-    param : dict
-        The dictionary of all bomcell parameters
-    """
-
-    qm_table = hf.make_qm_table(quality_metrics, param, unit_type_string)
-    
-    generate_upset_plot(qm_table, "NOISE")
-    generate_upset_plot(qm_table, "NON-SOMATIC")
-    generate_upset_plot(qm_table, "MUA")
 
 def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param):
     """
@@ -166,32 +102,42 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
     #TODO change alpha to be inversly proprotional to n units
     fig, axs = plt.subplots(nrows=nrows, ncols=ncols)
     for plot_idx in range(nrows * ncols):
-        unit_type_template_ids = unique_templates[unit_type==plot_idx]
-        n_units_of_type = unit_type_template_ids.size
-        ax = axs[img_pos[plot_idx][0]][img_pos[plot_idx][1]]
-
-        # if the current unit type has more than 0 units, generate a plot
-        if n_units_of_type > 0:
-            for template_id in unit_type_template_ids:
-                max_channel_id = quality_metrics["maxChannels"][template_id]
-                ax.plot(template_waveforms[template_id, 0:, max_channel_id], color="black", alpha=0.1)
-                ax.spines[["right", "top", "bottom", "left"]].set_visible(False)
-                ax.set_xticks([])
-                ax.set_yticks([])
-                ax.set_title(f"{labels[plot_idx]} units (n = {n_units_of_type})")
-
-        # if the current unit type has no units, or if this is an "extra" plot, do this instead
-        elif (n_units_of_type==0) or (plot_idx==n_plots):
+        if plot_idx < n_plots:
+            unit_type_ = plot_idx
+            unit_type_str = labels[unit_type_]
+            ax = axs[img_pos[plot_idx][0]][img_pos[plot_idx][1]]
+            generate_waveform_overlay(param, quality_metrics, unit_type_str, template_waveforms, ax)        
+        else:
             ax.spines[["right", "top", "bottom", "left"]].set_visible(False)
             ax.set_xticks([])
             ax.set_yticks([])
 
-            # if it's not an "extra" plot, add a title signifying 0 units
-            if plot_idx < n_plots:
-                ax.set_title(f"No {labels[plot_idx]} units (n = 0)")
- 
 
-def plot_all_histograms(quality_metrics, param):
+def upset_plots(quality_metrics, unit_type_string, param):
+    warnings.simplefilter(action='ignore', category=FutureWarning)
+    """
+    This function plots three upset plots, showing how each metric is connected
+
+    Parameters
+    ----------
+    quality_metrics : dict
+        The dictionary containing all quality metrics
+    unit_type_string : ndarray
+        The bombcell string unit classification
+    unique_templates : ndarray
+        The array which converts to the original unit ID's
+    param : dict
+        The dictionary of all bomcell parameters
+    """
+
+    qm_table = hf.make_qm_table(quality_metrics, param, unit_type_string)
+    
+    generate_upset_plot(qm_table, "NOISE")
+    generate_upset_plot(qm_table, "NON-SOMATIC")
+    generate_upset_plot(qm_table, "MUA")
+
+
+def plot_histograms(quality_metrics, param):
     """
     This function find what metrics have been extracted and plots histograms for each metric
 
@@ -233,7 +179,7 @@ def plot_all_histograms(quality_metrics, param):
         
         # plotting function goes here
         include_y_label = (idx==0)
-        plot_histogram(vmi.name, quality_metrics, param, bar_color, ax, include_y_label)
+        generate_histogram(vmi.name, quality_metrics, param, bar_color, ax, include_y_label)
 
     # Hide unused subplots
     for i in range(len(valid_metric_info), num_rows * num_cols):
@@ -244,10 +190,151 @@ def plot_all_histograms(quality_metrics, param):
     plt.tight_layout()
     plt.show()
 
-def plot_histogram(metric_name, quality_metrics, param, bar_color=None, ax=None, include_y_label=False):
+
+
+######################################################
+# Individual Plot Generation Functions
+# These functions generate the individual plots that
+# make up the output of the top-level functions
+######################################################
+def generate_waveform_overlay(
+        param: dict, 
+        quality_metrics: dict, 
+        unit_type_str: str, 
+        template_waveforms: np.ndarray=None,
+        ax: matplotlib.axes.Axes = None,
+    ):
+    if template_waveforms is None:
+        from .loading_utils import load_ephys_data
+        ks_dir = param["ephysKilosortPath"]
+        _, _, template_waveforms, _, _, _, _ = load_ephys_data(ks_dir)
+    
+    from .quality_metrics import get_quality_unit_type
+    unit_types_all, _ = get_quality_unit_type(param, quality_metrics)
+
+    # get unit_type integer
+    if param["splitGoodAndMua_NonSomatic"]:
+        try:
+            unit_type = {
+                "noise": 0,
+                "somatic, good": 1,
+                "somatic, MUA": 2,
+                "non-somatic, good": 3,
+                "non-somatic, MUA": 4,
+            }[unit_type_str]
+        except KeyError:
+            raise(f"Invalid unit type {unit_type_str} - permitted values are 'noise', 'somatic, good', 'somatic, MUA', 'non-somatic, good', 'non-somatic, MUA'")
+    else:
+        try:
+            unit_type = {
+                "noise": 0,
+                "somatic, good": 1,
+                "somatic, MUA": 2,
+                "non-somatic": 3,
+            }[unit_type_str]
+        except KeyError:
+            raise(f"Invalid unit type {unit_type_str} - permitted values are 'noise', 'somatic, good', 'somatic, MUA', 'non-somatic'")
+
+        # get unique templates
+        unique_templates = param["unique_templates"]
+        unit_type_template_ids = unique_templates[unit_types_all==unit_type]
+        n_units_of_type = unit_type_template_ids.size
+
+        # if the current unit type has more than 0 units, generate a plot
+        if n_units_of_type > 0:
+            # initialize figure, axis handles
+
+            if ax is None:
+                fig, ax = plt.subplots(1,1)
+            else:
+                fig = plt.gcf() # placeholder???
+
+            for template_id in unit_type_template_ids:
+                max_channel_id = quality_metrics["maxChannels"][template_id]
+                template_max_waveform = template_waveforms[template_id, 0:, max_channel_id] # template waveforms comes from load_ephys_data
+                ax.plot(template_max_waveform, color="black", alpha=0.1)
+                ax.spines[["right", "top", "bottom", "left"]].set_visible(False)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.set_title(f"{unit_type_str} units (n = {n_units_of_type})")
+        
+        else:
+            ax.spines[["right", "top", "bottom", "left"]].set_visible(False)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.set_title(f"No {unit_type_str} units (n = 0)")
+        
+            return (None, None)
+        
+        return fig, ax
+
+
+def generate_upset_plot(
+        qm_table: pd.DataFrame, 
+        unit_type_str: str,
+        fig: matplotlib.figure.Figure = None,
+):
+    try:
+        # ensure upper case
+        unit_type_str = unit_type_str.upper()
+
+        # get metrics relevant to chosen unit type
+        if unit_type_str=="NOISE":
+            unit_type_metrics = ["# peaks", "# troughs", "waveform duration", "spatial decay", "baseline flatness", "peak2 / trough"] #Duration is peak to trough duration
+        elif unit_type_str=="NON-SOMATIC":
+            unit_type_metrics = ["trough / peak2", "peak1 / peak2"]
+        elif unit_type_str=="MUA":
+            unit_type_metrics = ["SNR", "amplitude", "presence ratio", "# spikes", "% spikes missing", "fraction RPVs", "max. drift", "isolation dist.", "L-ratio"]
+        else:
+            raise ValueError(f"Invalid unit type {unit_type_str} - allowed values are 'NOISE', 'NON-SOMATIC', 'MUA'")
+        
+        # filter out uncomputed metrics
+        unit_type_metrics = [m for m in unit_type_metrics if m in qm_table.columns]
+
+        # generate mask for the chosen unit type and filter the data from qm_table        
+        unit_type_mask = qm_table['unit_type'].str.startswith(unit_type_str)
+        unit_type_data = qm_table.loc[unit_type_mask, unit_type_metrics]
+
+        # in the unit_type_data dataframe, some metric names should be replaced with more comprehensible "display names"
+        display_names = {
+            "SNR": "signal/noise (SNR)",
+            "fraction RPVs": "refractory period viol. (RPV)",
+            "amplitude": "amplitude"
+        }
+        metric_display_names = [display_names.get(metric_name, metric_name) for metric_name in unit_type_metrics]
+        unit_type_data.columns = metric_display_names
+
+        # count the number of units of the chosen type
+        n_unit_type = unit_type_mask.sum()
+        
+        # count the total number of units
+        n_total_units = len(qm_table)
+        
+        # check how many columns have True values
+        n_cols_with_true_vals = (unit_type_data.sum() > 0).sum()
+        if n_cols_with_true_vals >= 1 and n_unit_type > 0:
+            upset = UpSet(from_indicators(metric_display_names, data=unit_type_data), min_degree=1)
+            upset.plot(fig=fig)
+            plt.suptitle(f"Units classified as {unit_type_str.lower()} (n = {n_unit_type}/{n_total_units})")
+        elif n_unit_type > 0:
+            print(f"{unit_type_str.capitalize()} upset plot skipped: no metrics have failures")
+    except (AttributeError, ValueError) as e:
+        print(f"Warning: Could not create noise upset plot due to library compatibility: {e}")
+
+
+def generate_histogram(
+        metric_name, 
+        quality_metrics, 
+        param, 
+        bar_color=None, 
+        ax=None, 
+        include_y_label=False
+):
 
     if ax is None:
         fig, ax = plt.subplots(1,1)
+    else:
+        fig = plt.gcf() # placeholder?
 
     if bar_color is None:
         bar_color='k'
@@ -360,3 +447,5 @@ def plot_histogram(metric_name, quality_metrics, param, bar_color=None, ax=None,
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
         ax.tick_params(labelsize=12)
+
+    return fig, ax
