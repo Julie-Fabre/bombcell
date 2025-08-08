@@ -36,34 +36,24 @@ Take a look at:
 - You can also take a look at the exercise we prepared for the 2024 Neuropixels course [here](https://github.com/BombCell/Neuropixels_course_2024). 
 
 #### Installation
-##### Matlab
-Bombcell requires MATLAB>=2019a.
-
-To begin using Bombcell:
-- [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) the [repository](https://github.com/Julie-Fabre/bombcell/bombcell) and the [dependencies](#Dependencies). You can do this either via git/GitHub desktop or directly by downloading the .zip file and decompressing it. 
-- add bombcell's and the dependancies' folders to [MATLAB's path](https://uk.mathworks.com/help/matlab/ref/pathtool.html).
-- in addition, if you want to compute ephys properties, change your working directory to `bombcell\+bc\+ep\+helpers` in matlab and run `mex -O CCGHeart.c` to able to compute fast ACGs, using part of the [FMAToolbox](https://fmatoolbox.sourceforge.net/).
-
-###### Dependencies
-
-- [npy-matlab](https://github.com/kwikteam/npy-matlab), to load .npy data in.
-- If you have z-lib compressed ephys data, compressed with [mtscomp](https://github.com/int-brain-lab/mtscomp), you will need the [zmat toolbox](https://uk.mathworks.com/matlabcentral/fileexchange/71434-zmat). More information about compressing ephys data [here](https://www.biorxiv.org/content/biorxiv/early/2023/05/24/2023.05.22.541700.full.pdf?%3Fcollection=).
-- [prettify-matlab](https://github.com/Julie-Fabre/prettify_matlab), to make plots pretty.
-- MATLAB toolboxes:
-    - Signal Processing Toolbox
-    - Image Processing Toolbox
-    - Statistics and Machine Learning Toolbox
-    - Parallel Computing Toolbox
-    - Optimization Toolbox
-
-In addition we would like to acknowledge:
-- to compute fast ACGs, we use a function (`CCGHeart.c`) part of the [FMAToolbox](https://fmatoolbox.sourceforge.net/), and it is already included in bombcell.
-- to read in spikeGLX meta data, we use a function from Jennifer Colonell's [SpikeGLX_Datafile_Tools](https://github.com/jenniferColonell/SpikeGLX_Datafile_Tools) repository. 
-
 #### Python 
 
-##### Latest stable version
+##### Heys lab version (hyunwoo branch): 
+```bash
+# Navigate to your server code folder
+cd ~/codes/
+# Create a conda environment
+conda create -n bombcell python=3.11
+conda activate bombcell
+# Clone bombcell repository from github
+git clone -b hyunwoo --single-branch git@github.com:heyslab/bombcell.git
+cd bombcell/py_bombcell/
+# Install bombcell
+pip install uv
+uv pip install -e .
+```
 
+##### Original Bombcell:
 ```bash
 # Create a conda environment
 conda create -n bombcell python=3.11
@@ -72,18 +62,7 @@ conda activate bombcell
 pip install uv
 uv pip install bombcell # you could do `pip install .`, but uv is much quicker!
 ```
-##### Dev version (with the latest updates): 
-```bash
-# Create a conda environment
-conda create -n bombcell python=3.11
-conda activate bombcell
-# Clone latest bombcell repository from github
-git clone https://github.com/Julie-Fabre/bombcell.git
-cd bombcell/pyBombCell
-# Install bombcell
-pip install uv
-uv pip install -e .
-```
+
 
 ### 🤗 Support and citing
 
@@ -99,3 +78,4 @@ Bombcell is under the open-source [copyleft](https://www.gnu.org/licenses/copyle
 
 If you run into any issues or if you have any suggestions, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues) or create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request). You can also use the [Neuropixels slack workgroup](https://join.slack.com/t/neuropixelsgroup/shared_invite/zt-2h3sp1nfr-JZrpKWxeVptI0EPbHAoxKA).
 Please star the project to support us, using the top-right "⭐ Star" button.
+
