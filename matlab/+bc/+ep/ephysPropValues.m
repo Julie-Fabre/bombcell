@@ -61,7 +61,49 @@ paramEP.saveMultipleRaw = 0; % If you wish to save the nRawSpikesToExtract as we
     % currently needed if you want to run unit match https://github.com/EnnyvanBeest/UnitMatch
     % to track chronic cells over days after this
 paramEP.decompressData = 0; % whether to decompress .cbin ephys data 
-paramEP.spikeWidth = 82; % width in samples 
+
+% Flexible spike width calculation based on sampling rate
+% First need to get the actual sampling rate from metadata if available
+actualSamplingRate = paramEP.ephys_sample_rate; % default
+if ~isempty(ephysMetaDir) && exist(paramEP.ephysMetaFile, 'file')
+    try
+        % Try to read actual sampling rate from metadata
+        [~, ~, actualSamplingRate, ~] = bc.load.loadMetaData(paramEP.ephysMetaFile);
+        if ~isempty(actualSamplingRate) && actualSamplingRate > 0
+            paramEP.ephys_sample_rate = actualSamplingRate;
+        end
+    catch
+        % If reading fails, use default
+    end
+end
+
+% For ephys properties, default to older KS behavior (82 samples) unless detected
+% Try to detect KS version from template waveform size if possible
+kilosortVersion = 2.5; % Default to older version
+if ~isempty(ephysKilosortPath)
+    templateFile = fullfile(ephysKilosortPath, 'templates.npy');
+    if exist(templateFile, 'file')
+        try
+            templates = readNPY(templateFile);
+            if size(templates, 2) == 61
+                kilosortVersion = 4;
+            end
+        catch
+            % If reading fails, use default
+        end
+    end
+end
+
+% Calculate spike width based on actual sampling rate
+paramEP.spikeWidth = bc.qm.helpers.calculateSpikeWidth(paramEP.ephys_sample_rate, kilosortVersion);
+
+% For backwards compatibility, store the standard spike widths
+if kilosortVersion == 4
+    paramEP.standardSpikeWidth = 61; % width in samples at 30kHz
+else
+    paramEP.standardSpikeWidth = 82; % width in samples at 30kHz
+end
+
 paramEP.extractRaw = 0; %whether to extract raw waveforms or not 
 paramEP.probeType = 1; % if you are using spikeGLX and your meta file does 
     % not contain information about your probe type for some reason
@@ -94,9 +136,12 @@ paramEP.spDecayLinFit = 1;
 % QQ set this the same as qmetrics (load useChunks Start and stop)
 %paramEP.computeTimeChunks = 1; % compute ephysProperties for different time chunks 
 %paramEP.deltaTimeChunk = 360; %time in seconds 
-paramEP.minWidthFirstPeak = 4; % in samples
+
+% Scale width parameters based on spike width
+standardWidth = paramEP.standardSpikeWidth; % 61 or 82 depending on KS version
+paramEP.minWidthFirstPeak = max(2, round(4 * paramEP.spikeWidth / standardWidth)); % in samples
 paramEP.minMainPeakToTroughRatio = 10;
-paramEP.minWidthMainTrough = 5; % in samples
+paramEP.minWidthMainTrough = max(3, round(5 * paramEP.spikeWidth / standardWidth)); % in samples
 paramEP.firstPeakRatio = 3;
 
 % cell classification parameters

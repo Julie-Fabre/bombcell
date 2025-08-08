@@ -1,12 +1,17 @@
 function [nPeaks, nTroughs, mainPeak_before_size, mainPeak_after_size, mainTrough_size, ...
     width_before, width_after, widthTrough, peakLocs, troughLocs, PKS, TRS, troughLoc] = getWaveformPeakProperties(thisWaveform, param)
-if size(thisWaveform, 2) == 82
-    % < KS4 waveforms, remove the zero start values that can create
-    % articifical peaks/troughs
-    thisWaveform(1:24) = NaN;
+% Flexible handling of different spike widths
+waveformWidth = size(thisWaveform, 2);
+if waveformWidth >= 70
+    % Longer waveforms (like KS<4 with 82 samples), remove more initial samples
+    % Scale from standard 24 samples for 82 width
+    samplesToRemove = max(4, round(24 * waveformWidth / 82));
+    thisWaveform(1:samplesToRemove) = NaN;
 else
-    thisWaveform(1:4) = NaN;
-
+    % Shorter waveforms (like KS4 with 61 samples), remove fewer initial samples
+    % Scale from standard 4 samples for 61 width
+    samplesToRemove = max(2, round(4 * waveformWidth / 61));
+    thisWaveform(1:samplesToRemove) = NaN;
 end
 
 % Set minimum threshold for peak/trough detection

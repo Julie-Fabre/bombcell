@@ -50,13 +50,12 @@ if param.extractRaw
             nSpikesToExtract = param.nSpikesToExtract;
         end
 
-        switch spikeWidth
-            case 82
-                % spikeWidth = 82: kilosort <4, baseline = 1:41
-                halfWidth = spikeWidth / 2;
-            case 61
-                % spikeWidth = 61: kilosort 4, baseline = 1:20
-                halfWidth = 20;
+        % Flexible half-width calculation
+        halfWidth = bc.qm.helpers.calculateHalfWidth(spikeWidth);
+        
+        % Display info for non-standard spike widths
+        if ~ismember(spikeWidth, [61, 82])
+            fprintf('\nNote: Using spike width of %d samples (halfWidth = %d)\n', spikeWidth, halfWidth);
         end
         dataTypeNBytes = numel(typecast(cast(0, 'uint16'), 'uint8'));
         nClust = numel(emptyWaveforms);

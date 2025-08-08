@@ -12,7 +12,8 @@
       "Bash(/usr/local/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -n \"rawWaveforms|raw_waveforms\" /home/jf5479/Dropbox/Python/bombcell/pyBombCell/bombcell/unit_quality_gui.py)",
       "Bash(/usr/local/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/x64-linux/rg -n -A 5 -B 5 \"rawWv|raw_waveform\" /home/jf5479/Dropbox/Python/bombcell/pyBombCell/bombcell/unit_quality_gui.py)",
       "Bash(git checkout:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }
