@@ -344,10 +344,13 @@ def generate_histogram(
         bar_color='k'
 
     from .plotting_utils import get_metric_info_dict
+    from .helper_functions import clean_inf_values
 
     vmi = get_metric_info_dict(param, quality_metrics)[metric_name]
-    metric_data = quality_metrics[vmi.name]
-    metric_data = np.where(metric_data==np.inf, np.nan, metric_data) # previously, this was done explicitly for peak1ToPeak2Ratio, troughToPeak2Ratio
+    
+    # Use the shared utility to clean inf values
+    cleaned_metrics = clean_inf_values(quality_metrics, [vmi.name])
+    metric_data = cleaned_metrics[vmi.name]
     
     # Remove NaN and inf values for all metrics
     metric_data = metric_data[~np.isnan(metric_data)]

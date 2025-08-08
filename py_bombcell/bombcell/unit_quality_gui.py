@@ -3211,19 +3211,9 @@ class InteractiveUnitQualityGUI:
     
     def plot_histograms_panel(self, fig, unit_data):
         """Plot histogram distributions showing where current unit sits - exact copy of plot_functions.py"""
-        # Preprocessing - handle inf values
-        if 'peak1ToPeak2Ratio' in self.quality_metrics:
-            self.quality_metrics['peak1ToPeak2Ratio'] = np.where(
-                self.quality_metrics['peak1ToPeak2Ratio'] == np.inf, 
-                np.nan, 
-                self.quality_metrics['peak1ToPeak2Ratio']
-            )
-        if 'troughToPeak2Ratio' in self.quality_metrics:
-            self.quality_metrics['troughToPeak2Ratio'] = np.where(
-                self.quality_metrics['troughToPeak2Ratio'] == np.inf, 
-                np.nan, 
-                self.quality_metrics['troughToPeak2Ratio']
-            )
+        # Preprocessing - handle inf values using shared utility
+        from bombcell.helper_functions import clean_inf_values
+        self.quality_metrics = clean_inf_values(self.quality_metrics)
 
         # Define MATLAB-style color matrices - exact copy
         red_colors = np.array([

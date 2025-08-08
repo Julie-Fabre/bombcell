@@ -15,6 +15,42 @@ from bombcell.save_utils import get_metric_keys, save_results
 from bombcell.plot_functions import *
 
 
+def clean_inf_values(quality_metrics, columns=None):
+    """
+    Convert inf values to nan across specified columns or all numeric columns.
+    
+    Parameters
+    ----------
+    quality_metrics : dict
+        Dictionary containing quality metrics data
+    columns : list, optional
+        List of column names to process. If None, processes all columns that contain numeric data.
+        
+    Returns
+    -------
+    dict
+        Dictionary with inf values converted to nan
+    """
+    # Create a copy to avoid modifying the original
+    cleaned = quality_metrics.copy()
+    
+    # If no specific columns specified, find all numeric columns
+    if columns is None:
+        columns = []
+        for key, value in cleaned.items():
+            if isinstance(value, np.ndarray):
+                # Check if the array contains numeric data
+                if len(value) > 0 and np.issubdtype(value.dtype, np.number):
+                    columns.append(key)
+    
+    # Convert inf to nan for specified columns
+    for col in columns:
+        if col in cleaned:
+            cleaned[col] = np.where(cleaned[col] == np.inf, np.nan, cleaned[col])
+    
+    return cleaned
+
+
 ##TODO can add runtimes to optional steps here
 def show_times(
     runtimes_spikes_missing_1,
