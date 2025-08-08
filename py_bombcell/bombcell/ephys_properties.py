@@ -765,20 +765,39 @@ def compute_waveform_properties(template, param, sampling_rate):
     wf_props['n_peaks'] = len(peaks)
     wf_props['n_troughs'] = len(troughs)
     
-    # Peak-to-trough duration
+    # Peak-to-trough duration using quality_metrics approach
+    # Find the maximum absolute value location in the waveform
+    max_waveform_location = np.nanargmax(np.abs(waveform))
+    max_waveform_value = waveform[max_waveform_location]  # signed value
+    
+    if max_waveform_value > 0:  # positive peak
+        peak_loc_for_duration = max_waveform_location
+        # Find the minimum (trough) after the peak
+        trough_loc_for_duration = np.nanargmin(waveform[peak_loc_for_duration:])
+        trough_loc_for_duration = trough_loc_for_duration + peak_loc_for_duration  # adjust for truncated waveform
+    else:  # negative peak (trough is the max absolute value)
+        trough_loc_for_duration = max_waveform_location
+        # Find the maximum (peak) after the trough
+        peak_loc_for_duration = np.nanargmax(waveform[trough_loc_for_duration:])
+        peak_loc_for_duration = peak_loc_for_duration + trough_loc_for_duration  # adjust for truncated waveform
+    
+    # Calculate duration in microseconds
+    wf_props['waveform_duration_us'] = (
+        10**6
+        * np.abs(trough_loc_for_duration - peak_loc_for_duration)
+        / sampling_rate
+    )
+    
+    # Peak-to-trough ratio using the identified peak and trough
+    if not np.isnan(peak_loc_for_duration) and not np.isnan(trough_loc_for_duration):
+        wf_props['peak_to_trough_ratio'] = abs(waveform[peak_loc_for_duration]) / abs(waveform[trough_loc_for_duration])
+    
+    # For compatibility, still find peaks and troughs for counting
     if len(peaks) > 0 and len(troughs) > 0:
-        main_peak = peaks[np.argmax(waveform[peaks])]
-        main_trough = troughs[np.argmax(-waveform[troughs])]
-        
-        duration_samples = abs(main_peak - main_trough)
-        wf_props['waveform_duration_us'] = (duration_samples / sampling_rate) * 1e6
-        
-        # Peak-to-trough ratio
-        wf_props['peak_to_trough_ratio'] = waveform[main_peak] / abs(waveform[main_trough])
-        
         # First peak-to-trough ratio
         if len(peaks) > 1:
-            first_peak = peaks[0] if peaks[0] < main_trough else main_peak
+            main_trough = troughs[np.argmax(-waveform[troughs])]
+            first_peak = peaks[0] if peaks[0] < main_trough else peaks[np.argmax(waveform[peaks])]
             wf_props['first_peak_to_trough_ratio'] = waveform[first_peak] / abs(waveform[main_trough])
     
     # Half width (simplified)
