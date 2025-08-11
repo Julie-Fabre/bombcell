@@ -28,17 +28,23 @@ def main(argv):
                                       kilosort_version=4)
     param["computeDistanceMetrics"] = 0
     param["computeDrift"] = 0
-    param["maxWvBaselineFraction"] = 2.0    
+    
     # MUA
-    param["maxRPVviolations"] = 30
-    param["maxPercSpikesMissing"] = 20
-    param["minNumSpikes"] = 300
-    param["minPresenceRatio"] = 0.7    
+    param["maxRPVviolations"] = 30 # using kilosort contamPct metric
+    param["maxPercSpikesMissing"] = 100 # default: 20
+    param["minNumSpikes"] = 1 # default: 300
+    param["minPresenceRatio"] = 0 # default: 0.7
     # noise
-    param["minSpatialDecaySlopeExp"] = 0.01
-    param["maxSpatialDecaySlopeExp"] = 0.1    
+    param["minSpatialDecaySlopeExp"] = 0.01 # default
+    param["maxSpatialDecaySlopeExp"] = 0.1 # default
+    param["maxNPeaks"] = 2 # default
+    param["maxNTroughs"] = 2 # default: 1
+    param["minWvDuration"] = 100 # default
+    param["maxWvDuration"] = 1150 # default
+    param["maxWvBaselineFraction"] = 2.0 # default: 0.3
+    param["maxScndPeakToTroughRatio_noise"] = 1.0 # default: 0.8
     # non-somatic
-    param["maxMainPeakToTroughRatio_nonSomatic"] = 0.8
+    param["maxMainPeakToTroughRatio_nonSomatic"] = 0.8 # default
     print("Bombcell parameters:")
     pprint(param)
     

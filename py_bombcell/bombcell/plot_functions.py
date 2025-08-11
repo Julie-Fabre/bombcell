@@ -86,6 +86,8 @@ def upset_plots(quality_metrics, unit_type_string, param, save_path):
         # Check how many columns have True values
         cols_with_true = (noise_data.sum() > 0).sum()
         if cols_with_true >= 1 and n_noise > 0:
+            noise_metrics.append('dummy')
+            noise_data['dummy'] = True
             upset = UpSet(from_indicators(noise_metrics, data=noise_data), min_degree=1)
             upset.plot()
             plt.suptitle(f"Units classified as noise (n = {n_noise}/{total_units})")
@@ -105,6 +107,8 @@ def upset_plots(quality_metrics, unit_type_string, param, save_path):
         # Check how many columns have True values
         cols_with_true = (non_somatic_data.sum() > 0).sum()
         if cols_with_true >= 1 and n_non_somatic > 0:
+            non_somatic_metrics.append('dummy')
+            non_somatic_data['dummy'] = True
             upset = UpSet(from_indicators(non_somatic_metrics, data=non_somatic_data), min_degree=1)
             upset.plot()
             plt.suptitle(f"Units classified as non-somatic (n = {n_non_somatic}/{total_units})")
@@ -128,6 +132,8 @@ def upset_plots(quality_metrics, unit_type_string, param, save_path):
         # Check how many columns have True values
         cols_with_true = (mua_data.sum() > 0).sum()
         if cols_with_true >= 1 and n_mua > 0:
+            mua_display_names.append('dummy')
+            mua_data['dummy'] = True
             upset = UpSet(from_indicators(mua_display_names, data=mua_data), min_degree=1)
             upset.plot()
             plt.suptitle(f"Units classified as MUA (n = {n_mua}/{total_units})")
