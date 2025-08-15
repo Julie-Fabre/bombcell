@@ -26,3 +26,5 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.claude/
+py_bombcell/.claude/
