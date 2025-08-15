@@ -133,7 +133,7 @@ def upset_plots(quality_metrics, unit_type_string, param):
     qm_table = hf.make_qm_table(quality_metrics, param, unit_type_string)
     
     generate_upset_plot(qm_table, "NOISE")
-    generate_upset_plot(qm_table, "NON-SOMATIC")
+    generate_upset_plot(qm_table, "NON-SOMA")
     generate_upset_plot(qm_table, "MUA")
 
 
@@ -281,19 +281,19 @@ def generate_upset_plot(
         # get metrics relevant to chosen unit type
         if unit_type_str=="NOISE":
             unit_type_metrics = ["# peaks", "# troughs", "waveform duration", "spatial decay", "baseline flatness", "peak2 / trough"] #Duration is peak to trough duration
-        elif unit_type_str=="NON-SOMATIC":
+        elif unit_type_str=="NON-SOMA":
             unit_type_metrics = ["trough / peak2", "peak1 / peak2"]
         elif unit_type_str=="MUA":
             unit_type_metrics = ["SNR", "amplitude", "presence ratio", "# spikes", "% spikes missing", "fraction RPVs", "max. drift", "isolation dist.", "L-ratio"]
         else:
-            raise ValueError(f"Invalid unit type {unit_type_str} - allowed values are 'NOISE', 'NON-SOMATIC', 'MUA'")
+            raise ValueError(f"Invalid unit type {unit_type_str} - allowed values are 'NOISE', 'NON-SOMA', 'MUA'")
         
         # filter out uncomputed metrics
         unit_type_metrics = [m for m in unit_type_metrics if m in qm_table.columns]
 
         # generate mask for the chosen unit type and filter the data from qm_table
-        # For NON-SOMATIC, check for NON-SOMA (without TIC) in the data
-        if unit_type_str == "NON-SOMATIC":
+        # For NON-SOMA unit type
+        if unit_type_str == "NON-SOMA":
             unit_type_mask = qm_table['unit_type'].str.startswith("NON-SOMA")
         else:
             unit_type_mask = qm_table['unit_type'].str.startswith(unit_type_str)
