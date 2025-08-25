@@ -108,6 +108,8 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
             ax = axs[img_pos[plot_idx][0]][img_pos[plot_idx][1]]
             generate_waveform_overlay(param, quality_metrics, unit_type_str, template_waveforms, ax)        
         else:
+            # Hide the unused subplot (6th subplot when n_plots=5)
+            ax = axs[img_pos[plot_idx][0]][img_pos[plot_idx][1]]
             ax.spines[["right", "top", "bottom", "left"]].set_visible(False)
             ax.set_xticks([])
             ax.set_yticks([])
