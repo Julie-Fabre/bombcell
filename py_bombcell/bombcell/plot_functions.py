@@ -87,7 +87,7 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
             3: "non-somatic"
         }
     
-    n_categories = np.unique(unit_type).size
+    n_categories = len(labels.keys())
     if n_categories < 5:
         nrows = 2
         ncols = 2
