@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.figure
 import matplotlib.axes
 import pandas as pd
+from pathlib import Path
+import os
 try:
     from upsetplot import UpSet, from_indicators
     UPSETPLOT_AVAILABLE = True
@@ -24,7 +26,7 @@ from collections import namedtuple
 # geared towards generating plots in the notebook
 # environment
 ######################################################
-def plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_string, param):
+def plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_string, param, return_figures=False):
     """
     This function plots summary figure to visualize bombcell's results
 
@@ -42,14 +44,49 @@ def plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_
         The array which converts to the original unit ID's
     param : dict
         The dictionary of all bomcell parameters
+    return_figures : bool, optional
+        If True, returns a dictionary of figure objects, by default False
+
+    Returns
+    -------
+    dict or None
+        If return_figures is True, returns a dictionary with keys:
+        'waveforms_overlay', 'upset_plots', 'histograms'
+        Otherwise returns None
     """
+    figures = {}
+    
     if param["plotGlobal"]:
-        plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param) 
-        upset_plots(quality_metrics, unit_type_string, param)
-        plot_histograms(quality_metrics, param)
+        # Get save directory if saving is enabled
+        save_dir = None
+        if param.get("savePlots", False):
+            if param.get("plotsSaveDir"):
+                save_dir = Path(param["plotsSaveDir"])
+            else:
+                save_dir = Path(param["ephysKilosortPath"]) / "bombcell_plots"
+            save_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Plot waveforms overlay
+        fig_waveforms = plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param, save_dir=save_dir)
+        if return_figures:
+            figures['waveforms_overlay'] = fig_waveforms
+            
+        # Plot upset plots
+        fig_upset_list = upset_plots(quality_metrics, unit_type_string, param, save_dir=save_dir)
+        if return_figures:
+            figures['upset_plots'] = fig_upset_list
+            
+        # Plot histograms
+        fig_histograms = plot_histograms(quality_metrics, param, save_dir=save_dir)
+        if return_figures:
+            figures['histograms'] = fig_histograms
+    
+    if return_figures:
+        return figures
+    return None
 
 
-def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param):
+def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param, save_dir=None):
     """
     This function plots overlaid waveforms for each of bombcell's unit classification types (e.g Noise, MUA..)
 
@@ -65,6 +102,13 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
         The array which converts to the original unit ID's
     param : dict
         The dictionary of all bomcell parameters
+    save_dir : Path or str, optional
+        Directory to save the figure to, by default None
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The figure object
     """
     #One figure all of a unit type
     #if split into 4 unit types
@@ -111,9 +155,19 @@ def plot_waveforms_overlay(quality_metrics, template_waveforms, unit_type, param
             ax.spines[["right", "top", "bottom", "left"]].set_visible(False)
             ax.set_xticks([])
             ax.set_yticks([])
+    
+    # Save figure if requested
+    if save_dir is not None:
+        save_path = Path(save_dir) / "waveforms_overlay.png"
+        fig.savefig(save_path, dpi=300, bbox_inches='tight')
+        if param.get("verbose", True):
+            print(f"Saved waveforms overlay figure to {save_path}")
+    
+    # Return the figure object
+    return fig
 
 
-def upset_plots(quality_metrics, unit_type_string, param):
+def upset_plots(quality_metrics, unit_type_string, param, save_dir=None):
     warnings.simplefilter(action='ignore', category=FutureWarning)
     """
     This function plots three upset plots, showing how each metric is connected
@@ -128,16 +182,36 @@ def upset_plots(quality_metrics, unit_type_string, param):
         The array which converts to the original unit ID's
     param : dict
         The dictionary of all bomcell parameters
+    save_dir : Path or str, optional
+        Directory to save the figures to, by default None
+
+    Returns
+    -------
+    list of matplotlib.figure.Figure
+        List of figure objects for each upset plot
     """
 
     qm_table = hf.make_qm_table(quality_metrics, param, unit_type_string)
     
-    generate_upset_plot(qm_table, "NOISE")
-    generate_upset_plot(qm_table, "NON-SOMA")
-    generate_upset_plot(qm_table, "MUA")
+    figures = []
+    unit_types = ["NOISE", "NON-SOMA", "MUA"]
+    
+    for unit_type in unit_types:
+        fig = plt.figure()
+        generate_upset_plot(qm_table, unit_type, fig=fig)
+        figures.append(fig)
+        
+        # Save figure if requested
+        if save_dir is not None:
+            save_path = Path(save_dir) / f"upset_plot_{unit_type.lower()}.png"
+            fig.savefig(save_path, dpi=300, bbox_inches='tight')
+            if param.get("verbose", True):
+                print(f"Saved {unit_type} upset plot to {save_path}")
+    
+    return figures
 
 
-def plot_histograms(quality_metrics, param):
+def plot_histograms(quality_metrics, param, save_dir=None):
     """
     This function find what metrics have been extracted and plots histograms for each metric
 
@@ -147,6 +221,13 @@ def plot_histograms(quality_metrics, param):
         The dictionary containing all quality metrics
     param : dict
         The dictionary of all bomcell parameters
+    save_dir : Path or str, optional
+        Directory to save the figure to, by default None
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The figure object
     """
 
     from .plotting_utils import get_color_from_matrix, get_metric_info_list
@@ -188,7 +269,20 @@ def plot_histograms(quality_metrics, param):
         axs[row_id, col_id].set_visible(False)
 
     plt.tight_layout()
-    plt.show()
+    
+    # Save figure if requested
+    if save_dir is not None:
+        save_path = Path(save_dir) / "quality_metrics_histograms.png"
+        fig.savefig(save_path, dpi=300, bbox_inches='tight')
+        if param.get("verbose", True):
+            print(f"Saved quality metrics histograms to {save_path}")
+    
+    # Only show if not saving (to avoid backend issues)
+    if save_dir is None:
+        plt.show()
+    
+    # Return the figure object
+    return fig
 
 
 

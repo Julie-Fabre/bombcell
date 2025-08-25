@@ -36,6 +36,8 @@ def get_default_parameters(
         ## general 
         "plotDetails": False,  # show step-by-step plots
         "plotGlobal": True,  # Summary plots of quality metrics
+        "savePlots": False,  # If True will save plots to disk
+        "plotsSaveDir": None,  # Directory to save plots to (if None, saves to kilosort_path/bombcell_plots/)
         "verbose": True,  # If True will update user on progress
         "reextractRaw": False,  # If True will re extract raw waveforms
         "saveAsTSV": True,  # save outputs as a .tsv file, useful for using phy after bombcell
