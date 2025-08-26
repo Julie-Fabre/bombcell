@@ -417,8 +417,8 @@ def generate_upset_plot(
         elif n_unit_type > 0:
             print(f"{unit_type_str.capitalize()} upset plot skipped: no metrics have failures")
     except (AttributeError, ValueError) as e:
-        print(f"Warning: Could not create {unit_type_str.lower()} upset plot due to library compatibility: {e}")
-
+        import warnings
+        warnings.warn(f"Could not create {unit_type_str.lower()} upset plot due to library compatibility: {e}", RuntimeWarning)
 
 def generate_histogram(
         metric_name, 
