@@ -7,6 +7,7 @@ import psutil
 import gc
 from pathlib import Path
 from tqdm.auto import tqdm
+from .ccg_fast import acg as compute_acg_fast
 
 __all__ = [
     'run_all_ephys_properties',
@@ -190,21 +191,8 @@ def ephys_prop_values(param):
 
 def compute_all_ephys_properties(ephys_path, param, save_path):
     """
-    Compute all ephys properties for all units - unit-by-unit processing with aggressive memory cleanup
+    Compute all ephys properties for all units
     
-    This function processes units one at a time with immediate memory cleanup after each unit
-    to prevent memory accumulation. Key features:
-    
-    1. Unit-by-unit processing: Each unit is processed individually with full cleanup
-    2. Memory monitoring: Real-time memory usage tracking with aggressive cleanup
-    3. Efficient ACG computation: Chunk-based processing to avoid large matrix creation
-    4. Immediate cleanup: Variables are deleted and garbage collected after each unit
-    5. Error handling: Graceful handling of memory errors with unit skipping
-    6. Progress tracking: Individual unit progress with memory reporting
-    
-    Memory management parameters:
-    - max_spikes_acg: Maximum spikes for ACG computation (default: 8000)
-    - acg_chunk_size: Chunk size for ACG processing (default: 2000)
     
     Parameters
     ----------
@@ -246,7 +234,7 @@ def compute_all_ephys_properties(ephys_path, param, save_path):
     
     for i, unit_id in enumerate(unique_units):
         properties = {
-            # Unit ID - CRITICAL for matching with other data
+            # Unit ID 
             'unit_id': unit_id,
             # ACG properties
             'postSpikeSuppression': np.nan,
@@ -274,7 +262,7 @@ def compute_all_ephys_properties(ephys_path, param, save_path):
         }
         ephys_properties.append(properties)
     
-    print(f"Computing ephys properties for {n_units} units (unit-by-unit processing)...")
+    print(f"Computing ephys properties for {n_units} units ...")
     log_memory_usage("Initial memory", param.get('verbose', True))
     
     # Get sampling rate
@@ -287,9 +275,7 @@ def compute_all_ephys_properties(ephys_path, param, save_path):
         spike_times_sec = spike_times
     
     log_memory_usage("After spike time conversion", param.get('verbose', True))
-    
-    # Process each unit individually with aggressive memory cleanup
-    # Processing units individually with memory cleanup
+
     
     # Unit-by-unit processing with progress tracking
     for i, unit_id in enumerate(tqdm(unique_units, desc="Computing ephys properties")):
@@ -304,11 +290,8 @@ def compute_all_ephys_properties(ephys_path, param, save_path):
             continue
             
         # Get template for this unit - avoid loading all at once
-        try:
-            unit_template = template_waveforms[unit_id].copy()  # Copy to avoid memory issues
-        except IndexError:
-            # If unit_id is larger than template array, use i instead
-            unit_template = template_waveforms[i].copy() if i < len(template_waveforms) else template_waveforms[0].copy()
+        unit_template = template_waveforms[unit_id].copy()  # Copy to avoid memory issues
+
         
         # Initialize variables for cleanup
         acg_props = {}
@@ -317,7 +300,7 @@ def compute_all_ephys_properties(ephys_path, param, save_path):
         spike_props = {}
         
         try:
-            # Compute ACG properties with memory-efficient implementation
+            # Compute ACG properties
             acg_props = compute_acg_properties(unit_spikes, param)
             ephys_properties[i]['postSpikeSuppression'] = acg_props.get('post_spike_suppression_ratio', np.nan)
             ephys_properties[i]['acg_tau_rise'] = acg_props.get('tau_rise_ms', np.nan)
@@ -562,80 +545,6 @@ def compute_acg_properties(spike_times, param):
     return acg_props
 
 
-def fast_acg(spike_times, bin_size_ms=0.5, win_size_ms=100, max_spikes=8000, chunk_size=2000):
-    """
-    Memory-efficient auto-correlogram computation
-    
-    Parameters
-    ----------
-    spike_times : array
-        Spike times in seconds
-    bin_size_ms : float
-        Bin size in milliseconds
-    win_size_ms : float
-        Window size in milliseconds
-    max_spikes : int
-        Maximum number of spikes to use for computation
-    chunk_size : int
-        Size of chunks for processing
-        
-    Returns
-    -------
-    acg : array
-        Auto-correlogram counts
-    lags : array
-        Lag times in milliseconds
-    """
-    if len(spike_times) < 2:
-        return np.array([]), np.array([])
-    
-    # Convert to milliseconds for computation
-    spike_times_ms = spike_times * 1000
-    n_bins = int(win_size_ms / bin_size_ms)
-    if n_bins % 2 == 0:
-        n_bins += 1
-    
-    half_bins = n_bins // 2
-    max_lag_ms = half_bins * bin_size_ms
-    
-    # Create bins
-    bins = np.arange(-max_lag_ms, max_lag_ms + bin_size_ms, bin_size_ms)
-    
-    # Memory-efficient computation - avoid creating large matrices
-    n_spikes = len(spike_times_ms)
-    
-    # For large spike counts, subsample to avoid memory issues
-    if n_spikes > max_spikes:
-        step = max(1, n_spikes // max_spikes)
-        spike_times_ms = spike_times_ms[::step]
-        n_spikes = len(spike_times_ms)
-    
-    # Use chunk-based processing to avoid memory explosion
-    acg = np.zeros(len(bins) - 1, dtype=np.int64)
-    actual_chunk_size = min(chunk_size, n_spikes)
-    
-    for start_idx in range(0, n_spikes, actual_chunk_size):
-        end_idx = min(start_idx + actual_chunk_size, n_spikes)
-        chunk_spikes = spike_times_ms[start_idx:end_idx]
-        
-        # Compute differences only for this chunk vs all spikes
-        for i, spike_time in enumerate(chunk_spikes):
-            # Only compute with spikes that are within the window
-            time_diffs = spike_times_ms - spike_time
-            
-            # Filter to window and exclude self
-            valid_mask = (np.abs(time_diffs) <= max_lag_ms) & (time_diffs != 0)
-            valid_diffs = time_diffs[valid_mask]
-            
-            # Add to histogram
-            if len(valid_diffs) > 0:
-                chunk_acg, _ = np.histogram(valid_diffs, bins=bins)
-                acg += chunk_acg
-    
-    lags = bins[:-1] + bin_size_ms / 2  # Center of bins
-    
-    return acg, lags
-
 
 def compute_acg(spike_times, bin_size, duration, param=None):
     """
@@ -662,18 +571,22 @@ def compute_acg(spike_times, bin_size, duration, param=None):
     bin_size_ms = bin_size * 1000  # Convert to ms
     duration_ms = duration * 1000  # Convert to ms
     
-    # Get memory management parameters
-    if param is not None:
-        max_spikes = param.get('max_spikes_acg', 8000)
-        chunk_size = param.get('acg_chunk_size', 2000)
-    else:
-        max_spikes = 8000
-        chunk_size = 2000
+    # Get sampling rate from param or use default
+    fs = param.get('ephys_sampling_rate', 30000) if param is not None else 30000
     
-    acg, lags_ms = fast_acg(spike_times, bin_size_ms, duration_ms, max_spikes, chunk_size)
+    # Convert spike times from seconds to samples
+    spike_times_samples = (spike_times * fs).astype(np.uint64)
+    
+    # Use acg from ccg_fast
+    acg_result = compute_acg_fast(spike_times_samples, cbin=bin_size_ms, cwin=duration_ms, 
+                                  fs=fs, normalize="counts", cache_results=False)
+    
+    # Generate lag times to match expected output
+    n_bins = len(acg_result)
+    lags_ms = np.linspace(-duration_ms/2, duration_ms/2, n_bins)
     lags = lags_ms / 1000  # Convert back to seconds
     
-    return acg, lags
+    return acg_result, lags
 
 
 def compute_isi_properties(spike_times, param):
