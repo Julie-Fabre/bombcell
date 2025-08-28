@@ -21,8 +21,8 @@ def get_default_parameters(
         The path to the raw data, by default None
     kilosort_version : int, optional
         Changes parameters based on if KS4 or earlier version were used, by default None
-    ephys_meta_dir : str, optional
-        The path to the meta file of the raw recording, by default None
+    meta_file : str, optional
+        The path to the meta file of the raw recording (.meta for SpikeGLX or .oebin for OpenEphys), by default None
     gain_to_uV : float, optional
         The gain to micro volts if needed to give manually, by default None
 
@@ -139,9 +139,18 @@ def get_default_parameters(
 
     # Fetch metadata uV conversion factor
     if meta_file is not None and gain_to_uV is None:
-        gain_to_uV = get_gain_spikeglx(meta_file)
+        # Check if this is an OpenEphys file
+        if '.oebin' in str(meta_file):
+            # OpenEphys format - use hardcoded scaling factor
+            # OpenEphys already applies standard gain (2.34 μV/bit for AP), 
+            # so we only need the final 0.195 multiplier
+            # Ref: https://open-ephys.atlassian.net/wiki/spaces/OEW/pages/166789121/Flat+binary+format
+            gain_to_uV = 0.1949999928474426  
+        else:
+            # SpikeGLX format - read from meta file
+            gain_to_uV = get_gain_spikeglx(meta_file)
 
-    # Add to param dictionnary
+    # Add to param dictionary
     if meta_file is not None:
         param["ephys_meta_file"] = str(meta_file)
         if gain_to_uV is not None and not np.isnan(gain_to_uV):
@@ -191,7 +200,7 @@ def get_unit_match_parameters(
     kilosort_version : int, optional
         Changes parameters based on if KS4 or earlier version were used, by default None
     meta_file : str, optional
-        The path to the meta file of the raw recording, by default None
+        The path to the meta file of the raw recording (.meta for SpikeGLX or .oebin for OpenEphys), by default None
     gain_to_uV : float, optional
         The gain to micro volts if needed to give manually, by default None
 
