@@ -336,15 +336,15 @@ def generate_waveform_overlay(
     unit_type_template_ids = unique_templates[unit_types_all==unit_type]
     n_units_of_type = unit_type_template_ids.size
 
+    # initialize figure, axis handles
+
+    if ax is None:
+        fig, ax = plt.subplots(1,1)
+    else:
+        fig = plt.gcf() # placeholder???
+
     # if the current unit type has more than 0 units, generate a plot
     if n_units_of_type > 0:
-        # initialize figure, axis handles
-
-        if ax is None:
-            fig, ax = plt.subplots(1,1)
-        else:
-            fig = plt.gcf() # placeholder???
-
         for template_id in unit_type_template_ids:
             max_channel_id = quality_metrics["maxChannels"][template_id]
             template_max_waveform = template_waveforms[template_id, 0:, max_channel_id] # template waveforms comes from load_ephys_data
@@ -359,9 +359,7 @@ def generate_waveform_overlay(
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_title(f"No {unit_type_str} units (n = 0)")
-    
-        return (None, None)
-    
+        
     return fig, ax
 
 
@@ -419,8 +417,8 @@ def generate_upset_plot(
         elif n_unit_type > 0:
             print(f"{unit_type_str.capitalize()} upset plot skipped: no metrics have failures")
     except (AttributeError, ValueError) as e:
-        print(f"Warning: Could not create {unit_type_str.lower()} upset plot due to library compatibility: {e}")
-
+        import warnings
+        warnings.warn(f"Could not create {unit_type_str.lower()} upset plot due to library compatibility: {e}", RuntimeWarning)
 
 def generate_histogram(
         metric_name, 
