@@ -1008,8 +1008,10 @@ def get_all_quality_metrics(
 
         # amplitude
         if raw_waveforms_full is not None and param["extractRaw"] and param['gain_to_uV'] is not None:
+            # Use the template's peak channel for raw amplitude calculation
+            template_peak_channel = quality_metrics["maxChannels"][unit_idx]
             quality_metrics["rawAmplitude"][unit_idx] = qm.get_raw_amplitude(
-                raw_waveforms_full[unit_idx], param["gain_to_uV"]
+                raw_waveforms_full[unit_idx], param["gain_to_uV"], peak_channel=template_peak_channel
             )
         else:
             quality_metrics["rawAmplitude"][unit_idx] = np.nan
@@ -1123,6 +1125,9 @@ def run_bombcell(ks_dir, save_path, param, save_figures=False, return_figures=Fa
     if param.get("verbose", False):
         print(f"Loaded ephys data: {len(np.unique(spike_clusters))} units, {len(spike_times_samples):,} spikes")
 
+    # pre-load peak channels from templates before extracting raw waveforms
+    maxChannels = qm.get_waveform_peak_channel(template_waveforms)
+
     # Extract or load in raw waveforms
     if param["raw_data_file"] is not None:
         # Handle data decompression if needed
@@ -1148,6 +1153,7 @@ def run_bombcell(ks_dir, save_path, param, save_figures=False, return_figures=Fa
             spike_times_samples,
             param["reextractRaw"],
             save_path,
+            maxChannels,  # Pass template peak channels
         )
     else:
         raw_waveforms_full = None
@@ -1155,9 +1161,6 @@ def run_bombcell(ks_dir, save_path, param, save_figures=False, return_figures=Fa
         signal_to_noise_ratio = None
         raw_waveforms_id_match = None
         param["extractRaw"] = False  # No waveforms to extract!
-
-    # pre-load peak channels
-    maxChannels = qm.get_waveform_peak_channel(template_waveforms)
 
     # Remove duplicate spikes
     if param["removeDuplicateSpikes"]:

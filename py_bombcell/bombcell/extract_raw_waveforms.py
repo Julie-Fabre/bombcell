@@ -62,7 +62,8 @@ def process_a_unit(
     detrendForUnitMatch,
     waveform_baseline_noise,
     save_directory,
-    save_multiple_raw
+    save_multiple_raw,
+    template_peak_channel=None
 ):
     """
     Reads in data from a unit, and processes the data.
@@ -93,6 +94,8 @@ def process_a_unit(
         The number of samples before the waveform which are noise
     save_directory : pathlib.Path
         The path to the directory to save the UnitMatch data
+    template_peak_channel : int, optional
+        The peak channel from the template. If provided, this will be used instead of calculating from raw waveforms
 
     Returns
     -------
@@ -190,11 +193,15 @@ def process_a_unit(
     # Smoothing can be applied later
     # spike_map_smoothed = gaussian_filter(raw_waveforms[f'cluster_{cid}']['spike_map_mean'], axes = 1, sigma = 1, radius = 2)
 
-    # find peak channel
-    raw_waveforms_peak_channel = np.argmax(
-        np.max(raw_waveforms_full[:, :], axis=1)
-        - np.min(raw_waveforms_full[:, :], axis=1)
-    )
+    # use template peak channel if provided, otherwise calculate from raw waveforms
+    if template_peak_channel is not None:
+        raw_waveforms_peak_channel = template_peak_channel
+    else:
+        # find peak channel from raw waveforms (old behavior)
+        raw_waveforms_peak_channel = np.argmax(
+            np.max(raw_waveforms_full[:, :], axis=1)
+            - np.min(raw_waveforms_full[:, :], axis=1)
+        )
     average_baseline = np.nanmean(
         spike_map[int(raw_waveforms_peak_channel), :waveform_baseline_noise, :], axis=1
     )
@@ -286,7 +293,7 @@ def unpack_dicts(
 
 
 def extract_raw_waveforms(
-    param, spike_clusters, spike_times, re_extract_waveforms, save_path
+    param, spike_clusters, spike_times, re_extract_waveforms, save_path, template_peak_channels=None
 ):
     """
     Extracts average raw waveforms from the raw data, can be used to get raw waveforms for UnitMatch as well
@@ -303,6 +310,8 @@ def extract_raw_waveforms(
         If True will re-extract waveforms if there are waveforms saved
     save_path : str
         The path to the directory where results will be saved
+    template_peak_channels : ndarray, optional
+        Array of peak channels from templates. If provided, raw waveforms will use these instead of calculating their own
 
     Returns
     -------
@@ -450,6 +459,7 @@ def extract_raw_waveforms(
                 waveform_baseline_noise,
                 raw_waveforms_dir,
                 save_multiple_raw,
+                template_peak_channels[i] if template_peak_channels is not None and i < len(template_peak_channels) else None,
             )
             for i, cid in tqdm(enumerate(unique_clusters))
         )
@@ -844,6 +854,9 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
         for id in new_indexes_to_get:
             # Get the correct index in all_spikes_idxs array
             unit_idx = np.where(unique_id_new == id)[0][0]
+            # Get template peak channel for this unit
+            template_peak_ch = template_peak_channels[unit_idx] if template_peak_channels is not None and unit_idx < len(template_peak_channels) else None
+            
             tmp_raw_waveform_info = process_a_unit(
                 raw_data,
                 spike_width,
@@ -854,9 +867,11 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
                 n_sync_channels,
                 id,
                 detrendWaveform,
+                detrendForUnitMatch,
                 waveform_baseline_noise,
                 raw_waveforms_dir,
                 save_multiple_raw,
+                template_peak_ch,
             )
             new_raw_waveforms_matching_ids[id] = tmp_raw_waveform_info['raw_waveforms_full']
             new_peak_channels_matching_ids[id] = tmp_raw_waveform_info['raw_waveforms_peak_channel']

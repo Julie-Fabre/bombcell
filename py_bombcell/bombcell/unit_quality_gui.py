@@ -1501,10 +1501,7 @@ class InteractiveUnitQualityGUI:
                             # waveforms shape is (channels, time), need to transpose for plotting
                             waveforms = waveforms.T  # Now (time, channels)
                             # Multi-channel raw waveforms - use MATLAB spatial arrangement
-                            # Try to use the peak channel from raw waveforms first
-                            if 'peak_channels' in self.raw_waveforms and self.current_unit_idx < len(self.raw_waveforms['peak_channels']):
-                                max_ch = int(self.raw_waveforms['peak_channels'][self.current_unit_idx])
-                            elif 'maxChannels' in self.quality_metrics and self.current_unit_idx < len(self.quality_metrics['maxChannels']):
+                            if 'maxChannels' in self.quality_metrics and self.current_unit_idx < len(self.quality_metrics['maxChannels']):
                                 max_ch = int(self.quality_metrics['maxChannels'][self.current_unit_idx])
                             else:
                                 max_ch = int(metrics.get('maxChannels', 0))
@@ -2096,8 +2093,8 @@ class InteractiveUnitQualityGUI:
         # Store y-limits for amplitude fit plot consistency
         self._amplitude_ylim = ax.get_ylim()
         
-        # Add spike count quality metric test
-        self._add_spike_count_quality_test(ax, unit_data, time_bins, bin_counts)
+        # Spike count is now displayed as part of add_metrics_text
+        # self._add_spike_count_quality_test(ax, unit_data, time_bins, bin_counts)
         
         # Add legend for time chunk coloring and drift if enabled
         import matplotlib.lines as mlines
@@ -2766,7 +2763,7 @@ class InteractiveUnitQualityGUI:
                     return 'blue' if val > max_ratio else 'black'
             
             # MUA metrics: orange if MUA, green if good
-            elif metric_name in ['rawAmplitude', 'signalToNoiseRatio', 'fractionRPVs_estimatedTauR', 'presenceRatio', 'maxDriftEstimate', 'percentageSpikesMissing_gaussian']:
+            elif metric_name in ['rawAmplitude', 'signalToNoiseRatio', 'fractionRPVs_estimatedTauR', 'presenceRatio', 'maxDriftEstimate', 'percentageSpikesMissing_gaussian', 'numSpikes']:
                 if metric_name == 'rawAmplitude':
                     min_amp = param.get('minAmplitude', 50)
                     return  'darkorange' if val < min_amp else 'green'
@@ -2785,6 +2782,9 @@ class InteractiveUnitQualityGUI:
                 elif metric_name == 'percentageSpikesMissing_gaussian':
                     max_missing = param.get('maxPercSpikesMissing', 20)
                     return  'darkorange' if val > max_missing else 'green'
+                elif metric_name == 'numSpikes':
+                    min_spikes = param.get('minNumSpikes', 300)
+                    return  'darkorange' if val < min_spikes else 'green'
             
             # Default for informational metrics
             else:
@@ -2816,9 +2816,12 @@ class InteractiveUnitQualityGUI:
                 ('fractionRPVs_estimatedTauR', f"RPV rate: {format_metric(metrics.get('fractionRPVs_estimatedTauR'), 4)}")
             ]
         elif plot_type == 'amplitude':
+            # Add spike count to metrics
+            total_spikes = len(unit_data.get('spike_times', []))
             metric_info = [
                 ('maxDriftEstimate', f"Max drift: {format_metric(metrics.get('maxDriftEstimate'), 1)} μm"),
-                ('presenceRatio', f"Presence ratio: {format_metric(metrics.get('presenceRatio'), 3)}")
+                ('presenceRatio', f"Presence ratio: {format_metric(metrics.get('presenceRatio'), 3)}"),
+                ('numSpikes', f"# spikes = {total_spikes}")
             ]
         elif plot_type == 'amplitude_fit':
             metric_info = [

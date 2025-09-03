@@ -1810,16 +1810,18 @@ def get_distance_metrics(
     )
 
 
-def get_raw_amplitude(this_raw_waveform, gain_to_uV):
+def get_raw_amplitude(this_raw_waveform, gain_to_uV, peak_channel=None):
     """
     The raw amplitude from extracted average waveforms
 
     Parameters
     ----------
     this_raw_waveform : ndarray
-        The extracted raw average waveforms
+        The extracted raw average waveforms (n_channels, spike_width) or (spike_width,) if single channel
     gain_to_uV : float
         The waveform gain
+    peak_channel : int, optional
+        The peak channel to use for amplitude calculation. If None, uses all channels (old behavior)
 
     Returns
     -------
@@ -1827,6 +1829,11 @@ def get_raw_amplitude(this_raw_waveform, gain_to_uV):
         The actual raw amplitude
     """
     this_raw_waveform_tmp = this_raw_waveform.copy()
+    
+    # If peak_channel is specified and waveform is multi-channel, use only that channel
+    if peak_channel is not None and this_raw_waveform_tmp.ndim == 2:
+        this_raw_waveform_tmp = this_raw_waveform_tmp[peak_channel, :]
+    
     if ~np.isnan(gain_to_uV):
         this_raw_waveform_tmp *= gain_to_uV
         raw_amplitude = np.abs(np.nanmax(this_raw_waveform_tmp)) + np.abs(
