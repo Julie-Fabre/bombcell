@@ -676,7 +676,7 @@ def decompress_data_if_needed(raw_file_path, decompress_data=True):
             decompressed_data_name[0] = decompressed_data_name[0] + '_bc_decompressed'
             decompressed_data_name = ".".join(decompressed_data_name)
             
-            decompressed_path = decompress_data(
+            decompressed_path = _decompress_raw_data(
                 ephys_raw_dir, compressed_data, compressed_ch, decompressed_data_name
             )
             return str(decompressed_path)
@@ -756,7 +756,7 @@ def manage_data_compression(ephys_raw_dir, param):
             decompressed_data_name = compressed_data.replace(".cbin", ".bin").split('.')
             decompressed_data_name[0] = decompressed_data_name[0] + '_bc_decompressed'
             decompressed_data_name = ".".join(decompressed_data_name)
-            ephys_raw_data = decompress_data(
+            ephys_raw_data = _decompress_raw_data(
                 ephys_raw_dir, compressed_data, compressed_ch, decompressed_data_name
             )
         else:
@@ -770,7 +770,7 @@ def manage_data_compression(ephys_raw_dir, param):
     return ephys_raw_data
 
 
-def decompress_data(
+def _decompress_raw_data(
     source_directory,
     compressed_data,
     compressed_ch,
