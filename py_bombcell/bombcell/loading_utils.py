@@ -159,6 +159,16 @@ def get_gain_spikeglx(meta_path):
         If the probe type is not handled
     """
     meta_dict = erw.read_meta(Path(meta_path))
+    
+    # Check if this is an Open Ephys file
+    if str(meta_path).endswith('.oebin'):
+        # For Open Ephys files, the bit_volts value is already the scaling factor
+        if 'bitVolts' in meta_dict:
+            # bitVolts is already in microvolts per bit
+            return float(meta_dict['bitVolts'])
+        else:
+            # Default Open Ephys scaling: 0.195 μV/bit
+            return 0.195
 
     if np.isin("imDatPrb_type", list(meta_dict.keys())):
         probeType = meta_dict["imDatPrb_type"]

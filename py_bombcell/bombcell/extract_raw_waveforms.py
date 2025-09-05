@@ -1,4 +1,5 @@
 import os
+import json
 from pathlib import Path
 from joblib import Parallel, delayed
 
@@ -27,7 +28,7 @@ def read_meta(meta_path):
     Parameters
     ----------
     meta_path : path
-        The path to the .meta file
+        The path to the .meta file (SpikeGLX) or .oebin file (Open Ephys)
     
      Returns
     -------
@@ -35,16 +36,76 @@ def read_meta(meta_path):
         The meta file opened as a dictionary
     """
     meta_dict = {}
-    with meta_path.open() as f:
-        mdat_list = f.read().splitlines()
-        # convert the list entries into key value pairs
-        for m in mdat_list:
-            cs_list = m.split(sep="=")
-            if cs_list[0][0] == "~":
-                curr_key = cs_list[0][1 : len(cs_list[0])]
+    
+    if str(meta_path).endswith('.oebin'):
+        # Open Ephys Binary format - JSON file
+        with meta_path.open() as f:
+            oebin_data = json.load(f)
+        
+        # Extract relevant metadata from Open Ephys format
+        # We need to find the continuous data recording info
+        if 'continuous' in oebin_data and len(oebin_data['continuous']) > 0:
+            # Usually the first continuous recording is the neural data
+            continuous_data = oebin_data['continuous'][0]
+            
+            # Get the number of channels from the continuous data
+            n_channels = continuous_data.get('num_channels', 384)
+            
+            # Get sample rate
+            sample_rate = continuous_data.get('sample_rate', 30000.0)
+            
+            # Get bit volts for scaling (microvolts per bit)
+            # Default to 0.195 for Open Ephys if not specified
+            bit_volts = 0.195
+            if 'channels' in continuous_data and len(continuous_data['channels']) > 0:
+                # Get bit_volts from first channel if available
+                bit_volts = continuous_data['channels'][0].get('bit_volts', 0.195)
+            
+            # Calculate file size from the binary file
+            # The binary file is usually in the same directory with name continuous.dat
+            binary_file = meta_path.parent / continuous_data.get('folder_name', 'continuous') / 'continuous.dat'
+            if binary_file.exists():
+                file_size_bytes = os.path.getsize(binary_file)
             else:
-                curr_key = cs_list[0]
-            meta_dict.update({curr_key: cs_list[1]})
+                # Try to find any .dat file in the parent directory
+                dat_files = list(meta_path.parent.glob('**/*.dat'))
+                if dat_files:
+                    file_size_bytes = os.path.getsize(dat_files[0])
+                else:
+                    # Default to a large value if we can't find the file
+                    file_size_bytes = 0
+            
+            # Create meta_dict in SpikeGLX format for compatibility
+            meta_dict['fileTimeSecs'] = file_size_bytes / (2 * n_channels * sample_rate) if file_size_bytes > 0 else 0
+            meta_dict['fileSizeBytes'] = str(file_size_bytes)
+            meta_dict['nSavedChans'] = str(n_channels)  # In Open Ephys, this is total channels
+            meta_dict['sRateHz'] = str(sample_rate)
+            meta_dict['imAiRangeMax'] = '1'  # Not used but kept for compatibility
+            meta_dict['imAiRangeMin'] = '-1'  # Not used but kept for compatibility
+            
+            # For Open Ephys, we use the bit_volts directly
+            # The conversion factor is bit_volts * 1e6 to get from volts to microvolts
+            # But since bit_volts is already in microvolts, we use it directly
+            meta_dict['imMaxInt'] = '32768'  # 2^15 for int16
+            meta_dict['bitVolts'] = str(bit_volts)  # Store bit_volts for later use
+            
+        else:
+            raise ValueError(f"Could not find continuous data in {meta_path}")
+            
+    else:
+        # SpikeGLX format - key=value pairs
+        with meta_path.open() as f:
+            mdat_list = f.read().splitlines()
+            # convert the list entries into key value pairs
+            for m in mdat_list:
+                cs_list = m.split(sep="=")
+                if len(cs_list) >= 2:  # Ensure we have at least key=value
+                    if cs_list[0][0] == "~":
+                        curr_key = cs_list[0][1 : len(cs_list[0])]
+                    else:
+                        curr_key = cs_list[0]
+                    # Handle cases where value might contain '=' 
+                    meta_dict.update({curr_key: '='.join(cs_list[1:])})
 
     return meta_dict
 
@@ -394,6 +455,25 @@ def extract_raw_waveforms(
             n_elements = (int(meta_dict["fileSizeBytes"]) / 2)  # int16 so 2 bytes per data point
             n_channels_rec = int(meta_dict["nSavedChans"])  # Total channels including sync
             param["n_channels_rec"] = n_channels_rec
+            
+            # For Open Ephys files, adjust the raw data file path if needed
+            if str(meta_path).endswith('.oebin'):
+                # In Open Ephys, nSavedChans is already the total channel count
+                # Make sure we're using the right raw data file path
+                if not Path(raw_data_file).exists():
+                    # Try to find the continuous.dat file
+                    possible_dat = meta_path.parent / 'continuous' / 'continuous.dat'
+                    if possible_dat.exists():
+                        raw_data_file = str(possible_dat)
+                        param["raw_data_file"] = raw_data_file
+                        print(f"Using Open Ephys raw data file: {raw_data_file}")
+                    else:
+                        # Look for any .dat file
+                        dat_files = list(meta_path.parent.glob('**/*.dat'))
+                        if dat_files:
+                            raw_data_file = str(dat_files[0])
+                            param["raw_data_file"] = raw_data_file
+                            print(f"Using Open Ephys raw data file: {raw_data_file}")
         else:
             # Use default values when no metafile is available
             print("Warning: No meta file found. Using default parameters...")
@@ -685,7 +765,7 @@ def manage_data_compression(ephys_raw_dir, param):
         raise Exception(f"Could not find compressed or decompressed data at {ephys_raw_dir}!")
 
     # need full paths
-    assert ephys_raw_data is not None, f"Raw data (.ap.bin file) not found at {ephys_raw_dir}!"
+    assert ephys_raw_data is not None, f"Raw data (.ap.bin, .dat, or .cbin file) not found at {ephys_raw_dir}!"
 
     return ephys_raw_data
 
@@ -796,6 +876,25 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
             n_elements = (int(meta_dict["fileSizeBytes"]) / 2)  # int16 so 2 bytes per data point
             n_channels_rec = int(meta_dict["nSavedChans"])  # Total channels including sync
             param["n_channels_rec"] = n_channels_rec
+            
+            # For Open Ephys files, adjust the raw data file path if needed
+            if str(meta_path).endswith('.oebin'):
+                # In Open Ephys, nSavedChans is already the total channel count
+                # Make sure we're using the right raw data file path
+                if not Path(raw_data_file).exists():
+                    # Try to find the continuous.dat file
+                    possible_dat = meta_path.parent / 'continuous' / 'continuous.dat'
+                    if possible_dat.exists():
+                        raw_data_file = str(possible_dat)
+                        param["raw_data_file"] = raw_data_file
+                        print(f"Using Open Ephys raw data file: {raw_data_file}")
+                    else:
+                        # Look for any .dat file
+                        dat_files = list(meta_path.parent.glob('**/*.dat'))
+                        if dat_files:
+                            raw_data_file = str(dat_files[0])
+                            param["raw_data_file"] = raw_data_file
+                            print(f"Using Open Ephys raw data file: {raw_data_file}")
         else:
             # Use default values when no metafile is available
             print("Warning: No meta file found. Using inputed parameters...")
