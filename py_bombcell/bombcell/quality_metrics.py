@@ -998,12 +998,15 @@ def presence_ratio(these_spike_times, use_this_time_start, use_this_time_end, pa
             for x in range(presence_ratio_bins.shape[0] - 1)
         ]
     )
+    
     full_bins = np.zeros_like(spikes_per_bin)
-    full_bins[spikes_per_bin >= 0.05 * np.percentile(spikes_per_bin, 90)] = 1
-    # print(f'The presence threshold spike No. is: {0.05 * np.percentile(spikes_per_bin, 90)}')
+    threshold = 0.05 * np.percentile(spikes_per_bin, 90)
+    
+    # Both conditions: >= threshold AND > 0
+    full_bins[np.logical_and(spikes_per_bin >= threshold, spikes_per_bin > 0)] = 1
+    
     presence_ratio = full_bins.sum() / full_bins.shape[0]
-    # print(f'The presence ratio is {presence_ratio}')
-    # ADD presence ratio plots
+    
     return presence_ratio
 
 
