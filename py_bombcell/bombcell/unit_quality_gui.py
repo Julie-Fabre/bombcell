@@ -1141,7 +1141,7 @@ class InteractiveUnitQualityGUI:
         return None
 
     @staticmethod
-    def compile_variables(ephys_data, quality_metrics, ephys_properties=None, raw_waveforms=None, param=None, unit_types=None, gui_data=None, save_path=None, bombcell_unit_types=None, unit_slider=None) -> dict:
+    def compile_variables(ephys_data, quality_metrics, ephys_properties=None, raw_waveforms=None, param=None, unit_types=None, gui_data=None, bombcell_unit_types=None, unit_slider=None) -> dict:
 
         unique_units = np.unique(ephys_data['spike_clusters'])
         n_units = len(unique_units)
@@ -1154,7 +1154,6 @@ class InteractiveUnitQualityGUI:
             "param": param,
             "unit_types": unit_types,
             "gui_data": gui_data,
-            "save_path": save_path,
             "n_units": n_units,
             "unique_units": unique_units,
             "bombcell_unit_types": bombcell_unit_types,
@@ -1172,11 +1171,10 @@ class InteractiveUnitQualityGUI:
         param = self.param if hasattr(self, "param") else None
         unit_types = self.unit_types if hasattr(self, "unit_types") else None
         gui_data = self.gui_data if hasattr(self, "gui_data") else None
-        save_path = self.save_path if hasattr(self, "save_path") else None
         bombcell_unit_types = self.bombcell_unit_types if hasattr(self, "bombcell_unit_types") else None
         unit_slider = self.unit_slider if hasattr(self, "unit_slider") else None
         
-        self.compiled_variables = InteractiveUnitQualityGUI.compile_variables(ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, bombcell_unit_types, unit_slider)
+        self.compiled_variables = InteractiveUnitQualityGUI.compile_variables(ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, bombcell_unit_types, unit_slider)
 
     @staticmethod
     def unpack_variables(compiled_variables: dict) -> list:
@@ -1187,17 +1185,16 @@ class InteractiveUnitQualityGUI:
         param = compiled_variables["param"]
         unit_types = compiled_variables["unit_types"]
         gui_data  = compiled_variables["gui_data"]
-        save_path = compiled_variables["save_path"]
         n_units = compiled_variables["n_units"]
         unique_units = compiled_variables["unique_units"]
         bombcell_unit_types = compiled_variables["bombcell_unit_types"]
         unit_slider = compiled_variables["unit_slider"]
 
-        return ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, n_units, unique_units, bombcell_unit_types, unit_slider
+        return ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider
     
     @staticmethod
     def get_unit_data(unit_idx, compiled_variables):
-        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
 
         """Get data for a specific unit"""
         if unit_idx >= n_units:
@@ -1439,7 +1436,7 @@ class InteractiveUnitQualityGUI:
     
     @staticmethod
     def plot_amplitude_histogram(ax, unit_data, compiled_variables, metric_name):
-        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
 
         """Plot amplitude histogram with current unit highlighted"""
         metric_data = quality_metrics[metric_name]
@@ -1483,7 +1480,7 @@ class InteractiveUnitQualityGUI:
             
     @staticmethod
     def plot_template_waveform(ax, unit_data, compiled_variables):
-        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
         current_unit_idx = unit_data["unit_idx"]
         
         """Plot template waveform using BombCell MATLAB spatial arrangement"""
@@ -1584,7 +1581,7 @@ class InteractiveUnitQualityGUI:
         
     @staticmethod
     def plot_raw_waveforms(ax, unit_data, compiled_variables):
-        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
         current_unit_idx = unit_data["unit_idx"]
 
         """Plot raw waveforms with 16 nearest channels like MATLAB"""
@@ -1722,7 +1719,7 @@ class InteractiveUnitQualityGUI:
     @staticmethod        
     def plot_autocorrelogram(ax, unit_data, compiled_variables, cbin=0.5, cwin=100):
         """Plot autocorrelogram with tauR and firing rate lines"""
-        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
 
         spike_times = unit_data['spike_times']
         metrics = unit_data['metrics']
@@ -1869,7 +1866,7 @@ class InteractiveUnitQualityGUI:
     @staticmethod
     def plot_spatial_decay(ax, unit_data, compiled_variables):
         """Plot spatial decay like MATLAB - only nearby channels"""
-        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
 
         metrics = unit_data['metrics']
         
@@ -1986,7 +1983,7 @@ class InteractiveUnitQualityGUI:
     @staticmethod
     def plot_amplitudes_over_time(ax, unit_data, compiled_variables):
         """Plot amplitudes over time with firing rate below and presence ratio indicators"""
-        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
 
         spike_times = unit_data['spike_times']
         metrics = unit_data['metrics']
@@ -2296,7 +2293,7 @@ class InteractiveUnitQualityGUI:
     @staticmethod
     def plot_time_bin_metrics(ax, unit_data, compiled_variables):
         """Plot time bin metrics: presence ratio, RPV rate, and percentage spikes missing"""
-        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
 
         spike_times = unit_data['spike_times']
         metrics = unit_data['metrics']
@@ -2549,7 +2546,7 @@ class InteractiveUnitQualityGUI:
     @staticmethod
     def plot_unit_location(ax, unit_data, compiled_variables):
         """Plot all units by depth vs log firing rate, colored by classification"""
-        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
 
         # Define classification colors
         classification_colors = {
@@ -2707,7 +2704,7 @@ class InteractiveUnitQualityGUI:
     @staticmethod
     def plot_amplitude_fit(ax, unit_data, compiled_variables):
         """Plot amplitude distribution with cutoff Gaussian fit like BombCell"""
-        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
 
         spike_times = unit_data['spike_times']
         metrics = unit_data['metrics']
@@ -2839,7 +2836,7 @@ class InteractiveUnitQualityGUI:
     @staticmethod
     def add_metrics_text(ax, unit_data, compiled_variables, plot_type):
         """Add quality metrics text overlay to plots like MATLAB with color coding"""
-        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
 
         metrics = unit_data['metrics']
         
@@ -3141,7 +3138,7 @@ class InteractiveUnitQualityGUI:
     def mark_peaks_and_troughs(ax, unit_data, compiled_variables, waveform, x_offset, y_offset, metrics, amp_range):
         """Mark all peaks and troughs on waveform with duration line"""
 
-        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
         current_unit_idx = unit_data["unit_idx"]
         
         if (gui_data and 
@@ -3328,7 +3325,7 @@ class InteractiveUnitQualityGUI:
     @staticmethod
     def get_nearby_channels_for_spatial_decay(peak_channel, n_channels, compiled_variables):
         """Get nearby channels for spatial decay plot - fewer points like MATLAB"""
-        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
 
         if 'channel_positions' in ephys_data:
             positions = ephys_data['channel_positions']
@@ -3354,7 +3351,7 @@ class InteractiveUnitQualityGUI:
     @staticmethod
     def plot_histograms_panel(fig, unit_data, compiled_variables):
         """Plot histogram distributions showing where current unit sits - exact copy of plot_functions.py"""
-        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, save_path, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
 
         # Preprocessing - handle inf values using shared utility
         from bombcell.helper_functions import clean_inf_values
@@ -3877,3 +3874,21 @@ def load_unit_quality_gui(ephys_data_or_path=None, quality_metrics=None, ephys_p
         auto_advance=auto_advance,
     )
     return gui
+
+# make static methods more easily accessible from outside the class
+compile_variables = InteractiveUnitQualityGUI.compile_variables
+unpack_variables = InteractiveUnitQualityGUI.unpack_variables
+get_unit_data = InteractiveUnitQualityGUI.get_unit_data
+plot_amplitude_histogram = InteractiveUnitQualityGUI.plot_amplitude_histogram
+plot_template_waveform = InteractiveUnitQualityGUI.plot_template_waveform
+plot_raw_waveforms = InteractiveUnitQualityGUI.plot_raw_waveforms
+plot_autocorrelogram = InteractiveUnitQualityGUI.plot_autocorrelogram
+plot_spatial_decay = InteractiveUnitQualityGUI.plot_spatial_decay
+plot_amplitudes_over_time = InteractiveUnitQualityGUI.plot_amplitudes_over_time
+plot_time_bin_metrics = InteractiveUnitQualityGUI.plot_time_bin_metrics
+plot_unit_location = InteractiveUnitQualityGUI.plot_unit_location
+plot_amplitude_fit = InteractiveUnitQualityGUI.plot_amplitude_fit
+add_metrics_text = InteractiveUnitQualityGUI.add_metrics_text
+mark_peaks_and_troughs = InteractiveUnitQualityGUI.mark_peaks_and_troughs
+get_nearby_channels_for_spatial_decay = InteractiveUnitQualityGUI.get_nearby_channels_for_spatial_decay
+plot_histograms_panel = InteractiveUnitQualityGUI.plot_histograms_panel
