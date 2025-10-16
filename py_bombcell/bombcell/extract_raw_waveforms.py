@@ -446,9 +446,13 @@ def extract_raw_waveforms(
         # half_width is the number of sample before spike_time which are recorded,
         # then will take spike_width - half_width after
         if spike_width == 82: # kilosort < 4, baseline 0:41
-            half_width = spike_width / 2
+            half_width = 41  # Fixed to be an integer
         elif spike_width == 61: # kilosort = 4, baseline 0:20
             half_width = 20
+        else:
+            # For custom spike widths, use floor division to get the midpoint
+            # This ensures we always get an integer value
+            half_width = spike_width // 2
 
         if meta_path is not None and meta_path.exists():
             meta_dict = read_meta(meta_path)
@@ -866,10 +870,14 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
 
         # half_width is the number of sample before spike_time which are recorded,
         # then will take spike_width - half_width after
-        if spike_width == 81: # kilosort < 4, baseline 0:41
-            half_width = spike_width / 2
+        if spike_width == 82: # kilosort < 4, baseline 0:41 (fixed from 81 to match main function)
+            half_width = 41  # Fixed to be an integer
         elif spike_width == 61: # kilosort = 4, baseline 0:20
             half_width = 20
+        else:
+            # For custom spike widths, use floor division to get the midpoint
+            # This ensures we always get an integer value
+            half_width = spike_width // 2
 
         if meta_path is not None and meta_path.exists():
             meta_dict = read_meta(meta_path)
