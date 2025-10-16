@@ -476,7 +476,14 @@ class InteractiveUnitQualityGUI:
         
         # Setup widgets and display
         self.setup_widgets()
-        self.display_gui()
+        
+        self.compile_class_variables() # do it once here so that self.display_gui() doesn't break
+        
+        self.display_gui() 
+
+        self.compile_class_variables() # do it here again to make sure all variable changes are properly reflected
+
+        
         
     def _initialize_manual_classifications(self):
         """Initialize manual classification system - separate from bombcell classifications"""
@@ -501,6 +508,8 @@ class InteractiveUnitQualityGUI:
             print("🚀 Auto-advance enabled: will automatically go to next unit after classification")
         else:
             print("👆 Auto-advance disabled: use navigation buttons to move between units")
+        
+        self.compile_class_variables()
     
     def export_manual_classifications(self, export_path=None):
         """
@@ -750,6 +759,8 @@ class InteractiveUnitQualityGUI:
         self.classify_nonsomatic_btn.on_click(lambda b: self.classify_unit(3))
         self.classify_noise_btn.on_click(lambda b: self.classify_unit(0))
         self.goto_next_unclassified_btn.on_click(self.goto_next_unclassified)
+
+        self.compile_class_variables()
         
     def display_gui(self):
         """Display the GUI"""
@@ -826,18 +837,24 @@ class InteractiveUnitQualityGUI:
         """Handle unit slider change"""
         self.current_unit_idx = change['new']
         self.update_display()
+
+        self.compile_class_variables()
         
     def prev_unit(self, b=None):
         """Go to previous unit"""
         if self.current_unit_idx > 0:
             self.current_unit_idx -= 1
             self.unit_slider.value = self.current_unit_idx
+        
+        self.compile_class_variables()
             
     def next_unit(self, b=None):
         """Go to next unit"""
         if self.current_unit_idx < self.n_units - 1:
             self.current_unit_idx += 1
             self.unit_slider.value = self.current_unit_idx
+        
+        self.compile_class_variables()
             
     def goto_unit_number(self, b=None):
         """Go to specific unit number"""
@@ -846,6 +863,8 @@ class InteractiveUnitQualityGUI:
             self.current_unit_idx = unit_num
             self.unit_slider.value = self.current_unit_idx
             self.update_display()
+
+        self.compile_class_variables()
             
     def goto_next_good(self, b=None):
         """Go to next BombCell-classified good unit"""
@@ -855,6 +874,7 @@ class InteractiveUnitQualityGUI:
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
+        self.compile_class_variables()
                     
     def goto_prev_good(self, b=None):
         """Go to previous BombCell-classified good unit"""
@@ -864,6 +884,8 @@ class InteractiveUnitQualityGUI:
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
+        
+        self.compile_class_variables()
                     
     def goto_next_mua(self, b=None):
         """Go to next BombCell-classified MUA unit"""
@@ -873,6 +895,8 @@ class InteractiveUnitQualityGUI:
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
+        
+        self.compile_class_variables()
                     
     def goto_prev_mua(self, b=None):
         """Go to previous BombCell-classified MUA unit"""
@@ -882,6 +906,8 @@ class InteractiveUnitQualityGUI:
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
+        
+        self.compile_class_variables()
                     
     def goto_next_noise(self, b=None):
         """Go to next BombCell-classified noise unit"""
@@ -891,6 +917,8 @@ class InteractiveUnitQualityGUI:
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
+        
+        self.compile_class_variables()
                     
     def goto_prev_noise(self, b=None):
         """Go to previous BombCell-classified noise unit"""
@@ -900,6 +928,8 @@ class InteractiveUnitQualityGUI:
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
+        
+        self.compile_class_variables()
                     
     def goto_next_nonsomatic(self, b=None):
         """Go to next BombCell-classified non-somatic unit"""
@@ -909,6 +939,8 @@ class InteractiveUnitQualityGUI:
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
+        
+        self.compile_class_variables()
                     
     def goto_prev_nonsomatic(self, b=None):
         """Go to previous BombCell-classified non-somatic unit"""
@@ -918,6 +950,8 @@ class InteractiveUnitQualityGUI:
                     self.current_unit_idx = i
                     self.unit_slider.value = self.current_unit_idx
                     break
+        
+        self.compile_class_variables()
                     
     def classify_unit(self, classification):
         """
@@ -971,6 +1005,8 @@ class InteractiveUnitQualityGUI:
             print(f"   → Advanced to Unit {self.unique_units[self.current_unit_idx]} (#{self.current_unit_idx+1}/{self.n_units})")
         else:
             print(f"   → Reached last unit ({self.n_units}/{self.n_units})")
+        
+        self.compile_class_variables()
     
     def goto_next_unclassified(self, b=None):
         """Navigate to the next unclassified unit"""
@@ -1103,21 +1139,76 @@ class InteractiveUnitQualityGUI:
             print(f"⚠️  Warning: Could not load manual classifications: {str(e)}")
             
         return None
-            
-    def get_unit_data(self, unit_idx):
+
+    @staticmethod
+    def compile_variables(ephys_data, quality_metrics, ephys_properties=None, raw_waveforms=None, param=None, unit_types=None, gui_data=None, bombcell_unit_types=None, unit_slider=None) -> dict:
+
+        unique_units = np.unique(ephys_data['spike_clusters'])
+        n_units = len(unique_units)
+        
+        compiled_variables = {
+            "ephys_data": ephys_data,
+            "quality_metrics": quality_metrics,
+            "ephys_properties": ephys_properties,
+            "raw_waveforms": raw_waveforms,
+            "param": param,
+            "unit_types": unit_types,
+            "gui_data": gui_data,
+            "n_units": n_units,
+            "unique_units": unique_units,
+            "bombcell_unit_types": bombcell_unit_types,
+            "unit_slider": unit_slider,
+        }
+
+        return compiled_variables
+
+    def compile_class_variables(self):
+        
+        ephys_data = self.ephys_data if hasattr(self, "ephys_data") else None
+        quality_metrics = self.quality_metrics if hasattr(self, "quality_metrics") else None
+        ephys_properties = self.ephys_properties if hasattr(self, "ephys_properties") else None
+        raw_waveforms = self.raw_waveforms if hasattr(self, "raw_waveforms") else None
+        param = self.param if hasattr(self, "param") else None
+        unit_types = self.unit_types if hasattr(self, "unit_types") else None
+        gui_data = self.gui_data if hasattr(self, "gui_data") else None
+        bombcell_unit_types = self.bombcell_unit_types if hasattr(self, "bombcell_unit_types") else None
+        unit_slider = self.unit_slider if hasattr(self, "unit_slider") else None
+        
+        self.compiled_variables = InteractiveUnitQualityGUI.compile_variables(ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, bombcell_unit_types, unit_slider)
+
+    @staticmethod
+    def unpack_variables(compiled_variables: dict) -> list:
+        ephys_data = compiled_variables["ephys_data"]
+        quality_metrics = compiled_variables["quality_metrics"]
+        ephys_properties = compiled_variables["ephys_properties"]
+        raw_waveforms = compiled_variables["raw_waveforms"]
+        param = compiled_variables["param"]
+        unit_types = compiled_variables["unit_types"]
+        gui_data  = compiled_variables["gui_data"]
+        n_units = compiled_variables["n_units"]
+        unique_units = compiled_variables["unique_units"]
+        bombcell_unit_types = compiled_variables["bombcell_unit_types"]
+        unit_slider = compiled_variables["unit_slider"]
+
+        return ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider
+    
+    @staticmethod
+    def get_unit_data(unit_idx, compiled_variables):
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+
         """Get data for a specific unit"""
-        if unit_idx >= self.n_units:
+        if unit_idx >= n_units:
             return None
             
-        unit_id = self.unique_units[unit_idx]
+        unit_id = unique_units[unit_idx]
         
         # Get spike times for this unit
-        spike_mask = self.ephys_data['spike_clusters'] == unit_id
-        spike_times = self.ephys_data['spike_times'][spike_mask]
+        spike_mask = ephys_data['spike_clusters'] == unit_id
+        spike_times = ephys_data['spike_times'][spike_mask]
         
         # Get template waveform
-        if unit_idx < len(self.ephys_data['template_waveforms']):
-            template = self.ephys_data['template_waveforms'][unit_idx]
+        if unit_idx < len(ephys_data['template_waveforms']):
+            template = ephys_data['template_waveforms'][unit_idx]
         else:
             template = np.zeros((82, 1))
             
@@ -1125,10 +1216,10 @@ class InteractiveUnitQualityGUI:
         unit_metrics = {}
         
         # Handle different quality_metrics formats
-        if isinstance(self.quality_metrics, list):
+        if isinstance(quality_metrics, list):
             # List of dicts format: [{'phy_clusterID': 0, 'metric1': val, ...}, ...]
             unit_found = False
-            for unit_dict in self.quality_metrics:
+            for unit_dict in quality_metrics:
                 if unit_dict.get('phy_clusterID') == unit_id:
                     unit_metrics = unit_dict.copy()
                     unit_found = True
@@ -1136,21 +1227,21 @@ class InteractiveUnitQualityGUI:
             if not unit_found:
                 unit_metrics = {'phy_clusterID': unit_id}
                 
-        elif isinstance(self.quality_metrics, dict):
-            if unit_id in self.quality_metrics:
+        elif isinstance(quality_metrics, dict):
+            if unit_id in quality_metrics:
                 # Dict with unit_id keys: {0: {'metric1': val, ...}, 1: {...}}
-                unit_metrics = self.quality_metrics[unit_id].copy()
+                unit_metrics = quality_metrics[unit_id].copy()
             else:
                 # Dict with metric keys: {'metric1': [val0, val1, ...], 'metric2': [...]}
-                for key, values in self.quality_metrics.items():
+                for key, values in quality_metrics.items():
                     if hasattr(values, '__len__') and len(values) > unit_idx:
                         unit_metrics[key] = values[unit_idx]
                     else:
                         unit_metrics[key] = np.nan
-        elif hasattr(self.quality_metrics, 'iloc'):
+        elif hasattr(quality_metrics, 'iloc'):
             # DataFrame format from bc.load_bc_results()
-            if unit_idx < len(self.quality_metrics):
-                unit_metrics = self.quality_metrics.iloc[unit_idx].to_dict()
+            if unit_idx < len(quality_metrics):
+                unit_metrics = quality_metrics.iloc[unit_idx].to_dict()
             else:
                 unit_metrics = {}
         else:
@@ -1158,6 +1249,7 @@ class InteractiveUnitQualityGUI:
                 
         return {
             'unit_id': unit_id,
+            'unit_idx': unit_idx,
             'spike_times': spike_times,
             'template': template,
             'metrics': unit_metrics
@@ -1165,7 +1257,7 @@ class InteractiveUnitQualityGUI:
         
     def update_unit_info(self):
         """Update unit info display"""
-        unit_data = self.get_unit_data(self.current_unit_idx)
+        unit_data = self.get_unit_data(self.current_unit_idx, self.compiled_variables)
         if unit_data is None:
             return
             
@@ -1206,10 +1298,12 @@ class InteractiveUnitQualityGUI:
         """
         
         self.unit_info.value = info_html
+
+        self.compile_class_variables()
         
     def plot_unit(self, unit_idx):
         """Plot data for a specific unit with adaptive layout"""
-        unit_data = self.get_unit_data(unit_idx)
+        unit_data = self.get_unit_data(unit_idx, self.compiled_variables)
         if unit_data is None:
             return
             
@@ -1237,38 +1331,38 @@ class InteractiveUnitQualityGUI:
         # LEFT HALF - Original GUI (columns 0-14) - MUCH LARGER GRID
         # 1. Unit location plot (left column)
         ax_location = plt.subplot2grid((100, 30), (0, 0), rowspan=100, colspan=1)
-        self.plot_unit_location(ax_location, unit_data)
+        self.plot_unit_location(ax_location, unit_data, self.compiled_variables)
         
         # 2. Template waveforms - scale to 100-row grid
         ax_template = plt.subplot2grid((100, 30), (0, 2), rowspan=20, colspan=6)
-        self.plot_template_waveform(ax_template, unit_data)
+        self.plot_template_waveform(ax_template, unit_data, self.compiled_variables)
         
         # 3. Raw waveforms - scale to 100-row grid
         ax_raw = plt.subplot2grid((100, 30), (0, 9), rowspan=20, colspan=6)
-        self.plot_raw_waveforms(ax_raw, unit_data)
+        self.plot_raw_waveforms(ax_raw, unit_data, self.compiled_variables)
         
         # 4. Spatial decay - scale to 100-row grid
         ax_spatial = plt.subplot2grid((100, 30), (30, 2), rowspan=20, colspan=6)
-        self.plot_spatial_decay(ax_spatial, unit_data)
+        self.plot_spatial_decay(ax_spatial, unit_data, self.compiled_variables)
         
         # 5. ACG - scale to 100-row grid
         ax_acg = plt.subplot2grid((100, 30), (30, 9), rowspan=20, colspan=6)
-        self.plot_autocorrelogram(ax_acg, unit_data)
+        self.plot_autocorrelogram(ax_acg, unit_data, self.compiled_variables)
         
         # 6. Amplitudes over time - scale to 100-row grid
         ax_amplitude = plt.subplot2grid((100, 30), (60, 2), rowspan=20, colspan=10)
-        self.plot_amplitudes_over_time(ax_amplitude, unit_data)
+        self.plot_amplitudes_over_time(ax_amplitude, unit_data, self.compiled_variables)
         
         # 6b. Time bin metrics - scale to 100-row grid
         ax_bin_metrics = plt.subplot2grid((100, 30), (85, 2), rowspan=10, colspan=10, sharex=ax_amplitude)
-        self.plot_time_bin_metrics(ax_bin_metrics, unit_data)
+        self.plot_time_bin_metrics(ax_bin_metrics, unit_data, self.compiled_variables)
         
         # 7. Amplitude fit - scale to 100-row grid
         ax_amp_fit = plt.subplot2grid((100, 30), (60, 13), rowspan=20, colspan=2)
-        self.plot_amplitude_fit(ax_amp_fit, unit_data)
+        self.plot_amplitude_fit(ax_amp_fit, unit_data, self.compiled_variables)
         
         # RIGHT HALF - Histogram panel (columns 16-29)
-        self.plot_histograms_panel(fig, unit_data)
+        self.plot_histograms_panel(fig, unit_data, self.compiled_variables)
         
         # Adjust subplot margins to eliminate gap with title/buttons - seamless layout
         plt.subplots_adjust(left=0.03, right=0.98, top=0.99, bottom=0.08, hspace=0.4, wspace=0.4)
@@ -1340,9 +1434,12 @@ class InteractiveUnitQualityGUI:
         
         plt.show()
     
-    def plot_amplitude_histogram(self, ax, unit_data, metric_name):
+    @staticmethod
+    def plot_amplitude_histogram(ax, unit_data, compiled_variables, metric_name):
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+
         """Plot amplitude histogram with current unit highlighted"""
-        metric_data = self.quality_metrics[metric_name]
+        metric_data = quality_metrics[metric_name]
         metric_data = metric_data[~np.isnan(metric_data)]
         
         if len(metric_data) > 0:
@@ -1359,9 +1456,9 @@ class InteractiveUnitQualityGUI:
                 patch.set_height(patch.get_height() * bin_width)
             
             # Add current unit highlighting
-            current_unit_idx = self.current_unit_idx
-            if current_unit_idx < len(self.quality_metrics[metric_name]):
-                current_value = self.quality_metrics[metric_name][current_unit_idx]
+            current_unit_idx = unit_data["unit_idx"]
+            if current_unit_idx < len(quality_metrics[metric_name]):
+                current_value = quality_metrics[metric_name][current_unit_idx]
                 if not np.isnan(current_value):
                     # NO red bin highlighting - removed for cleaner look
                     
@@ -1381,23 +1478,27 @@ class InteractiveUnitQualityGUI:
             ax.set_yticks([0, 1])
             ax.set_yticklabels(['0', '1'])
             
-    def plot_template_waveform(self, ax, unit_data):
+    @staticmethod
+    def plot_template_waveform(ax, unit_data, compiled_variables):
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        current_unit_idx = unit_data["unit_idx"]
+        
         """Plot template waveform using BombCell MATLAB spatial arrangement"""
         template = unit_data['template']
         metrics = unit_data['metrics']
         
         if template.size > 0 and len(template.shape) > 1:
             # Get peak channel from quality metrics
-            if 'maxChannels' in self.quality_metrics and self.current_unit_idx < len(self.quality_metrics['maxChannels']):
-                max_ch = int(self.quality_metrics['maxChannels'][self.current_unit_idx])
+            if 'maxChannels' in quality_metrics and current_unit_idx < len(quality_metrics['maxChannels']):
+                max_ch = int(quality_metrics['maxChannels'][current_unit_idx])
             else:
                 max_ch = int(metrics.get('maxChannels', 0))
             
             n_channels = template.shape[1]
             
             # Find channels within 100μm of max channel (like MATLAB BombCell)
-            if 'channel_positions' in self.ephys_data and max_ch < len(self.ephys_data['channel_positions']):
-                positions = self.ephys_data['channel_positions']
+            if 'channel_positions' in ephys_data and max_ch < len(ephys_data['channel_positions']):
+                positions = ephys_data['channel_positions']
                 max_pos = positions[max_ch]
                 
                 # Calculate distances and find nearby channels
@@ -1456,7 +1557,7 @@ class InteractiveUnitQualityGUI:
                     max_ch_y_offset = max_pos[1] / 100 * scaling_factor  # Same as max channel waveform
                     
                     # Detect and mark peaks/troughs (waveform not inverted now)
-                    self.mark_peaks_and_troughs(ax, max_ch_waveform, max_ch_x_offset, max_ch_y_offset, metrics, scaling_factor)
+                    InteractiveUnitQualityGUI.mark_peaks_and_troughs(ax, unit_data, compiled_variables, max_ch_waveform, max_ch_x_offset, max_ch_y_offset, metrics, scaling_factor)
                     
                     # Don't invert - channel 0 (Y=0) naturally at bottom
                     
@@ -1476,40 +1577,44 @@ class InteractiveUnitQualityGUI:
         ax.set_xlim(x_min, x_max + text_padding)
         
         # Add quality metrics text
-        self.add_metrics_text(ax, unit_data, 'template')
+        InteractiveUnitQualityGUI.add_metrics_text(ax, unit_data, compiled_variables, 'template')
         
-    def plot_raw_waveforms(self, ax, unit_data):
+    @staticmethod
+    def plot_raw_waveforms(ax, unit_data, compiled_variables):
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        current_unit_idx = unit_data["unit_idx"]
+
         """Plot raw waveforms with 16 nearest channels like MATLAB"""
         metrics = unit_data['metrics']
         
         # Check if raw extraction is enabled
-        extract_raw = self.param.get('extractRaw', 0)
+        extract_raw = param.get('extractRaw', 0)
         if extract_raw != 1:
             ax.text(0.5, 0.5, 'Mean raw waveforms\n(extractRaw disabled)', 
                     ha='center', va='center', transform=ax.transAxes, fontsize = 15, fontfamily="DejaVu Sans")
             ax.set_title('Mean raw waveforms', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
             return
         
-        if self.raw_waveforms is not None:
-            raw_wf = self.raw_waveforms.get('average', None)
+        if raw_waveforms is not None:
+            raw_wf = raw_waveforms.get('average', None)
             if raw_wf is not None:
                 try:
-                    if hasattr(raw_wf, '__len__') and self.current_unit_idx < len(raw_wf):
-                        waveforms = raw_wf[self.current_unit_idx]
+                    if hasattr(raw_wf, '__len__') and current_unit_idx < len(raw_wf):
+                        waveforms = raw_wf[current_unit_idx]
                         
                         if hasattr(waveforms, 'shape') and len(waveforms.shape) > 1:
                             # waveforms shape is (channels, time), need to transpose for plotting
                             waveforms = waveforms.T  # Now (time, channels)
                             # Multi-channel raw waveforms - use MATLAB spatial arrangement
-                            if 'maxChannels' in self.quality_metrics and self.current_unit_idx < len(self.quality_metrics['maxChannels']):
-                                max_ch = int(self.quality_metrics['maxChannels'][self.current_unit_idx])
+                            if 'maxChannels' in quality_metrics and current_unit_idx < len(quality_metrics['maxChannels']):
+                                max_ch = int(quality_metrics['maxChannels'][current_unit_idx])
                             else:
                                 max_ch = int(metrics.get('maxChannels', 0))
                             n_channels = waveforms.shape[1]  # Number of channels (after ensuring time x channels)
                             
                             # Find channels within 100μm of max channel (like MATLAB BombCell)
-                            if 'channel_positions' in self.ephys_data and len(self.ephys_data['channel_positions']) > 0 and max_ch < len(self.ephys_data['channel_positions']):
-                                positions = self.ephys_data['channel_positions']
+                            if 'channel_positions' in ephys_data and len(ephys_data['channel_positions']) > 0 and max_ch < len(ephys_data['channel_positions']):
+                                positions = ephys_data['channel_positions']
                                 max_pos = positions[max_ch]
                                 
                                 # Calculate distances and find nearby channels
@@ -1609,17 +1714,19 @@ class InteractiveUnitQualityGUI:
         ax.set_xlim(x_min, x_max + text_padding)
         
         # Add quality metrics text
-        self.add_metrics_text(ax, unit_data, 'raw')
-        
-    def plot_autocorrelogram(self, ax, unit_data, cbin=0.5, cwin=100):
+        InteractiveUnitQualityGUI.add_metrics_text(ax, unit_data, compiled_variables, 'raw')
+
+    @staticmethod        
+    def plot_autocorrelogram(ax, unit_data, compiled_variables, cbin=0.5, cwin=100):
         """Plot autocorrelogram with tauR and firing rate lines"""
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
 
         spike_times = unit_data['spike_times']
         metrics = unit_data['metrics']
         filtered_spike_times = spike_times.copy()
         
         # Filter spike times
-        if self.param and self.param.get('computeTimeChunks', False):
+        if param and param.get('computeTimeChunks', False):
 
             good_start_times = metrics.get('useTheseTimesStart', None)
             good_stop_times = metrics.get('useTheseTimesStop', None)
@@ -1643,7 +1750,7 @@ class InteractiveUnitQualityGUI:
         # Compute autocorrelogram
         bins = np.arange(-cwin / 2, cwin / 2 + cbin, cbin)
         bin_centers = bins[:-1] + cbin/2
-        filtered_spike_times_samples = np.round(filtered_spike_times * self.param['ephys_sample_rate']).astype(np.uint64)
+        filtered_spike_times_samples = np.round(filtered_spike_times * param['ephys_sample_rate']).astype(np.uint64)
         autocorr = acg(filtered_spike_times_samples,
                        cbin,
                        cwin,
@@ -1678,12 +1785,12 @@ class InteractiveUnitQualityGUI:
             
             # Calculate correct tauR using RPV_window_index
             tau_r = None
-            if (self.param and 'tauR_valuesMin' in self.param and 'tauR_valuesMax' in self.param and 
-                'tauR_valuesStep' in self.param and 'RPV_window_index' in metrics):
+            if (param and 'tauR_valuesMin' in param and 'tauR_valuesMax' in param and 
+                'tauR_valuesStep' in param and 'RPV_window_index' in metrics):
                 try:
-                    tau_r_min = self.param['tauR_valuesMin'] * 1000  # Convert to ms
-                    tau_r_max = self.param['tauR_valuesMax'] * 1000  # Convert to ms
-                    tau_r_step = self.param['tauR_valuesStep'] * 1000  # Convert to ms
+                    tau_r_min = param['tauR_valuesMin'] * 1000  # Convert to ms
+                    tau_r_max = param['tauR_valuesMax'] * 1000  # Convert to ms
+                    tau_r_step = param['tauR_valuesStep'] * 1000  # Convert to ms
                     rpv_index = int(metrics['RPV_window_index'])
                     
                     # Calculate tauR array and get the correct value
@@ -1717,9 +1824,9 @@ class InteractiveUnitQualityGUI:
         
         # Add tauR range visualization if min/max tauR are different
         range_text_for_legend = None
-        if self.param and 'tauR_valuesMin' in self.param and 'tauR_valuesMax' in self.param:
-            tau_r_min_ms = self.param['tauR_valuesMin'] * 1000  # Convert to ms
-            tau_r_max_ms = self.param['tauR_valuesMax'] * 1000  # Convert to ms
+        if param and 'tauR_valuesMin' in param and 'tauR_valuesMax' in param:
+            tau_r_min_ms = param['tauR_valuesMin'] * 1000  # Convert to ms
+            tau_r_max_ms = param['tauR_valuesMax'] * 1000  # Convert to ms
             
             # Check if min and max are different (indicating a range)
             if tau_r_min_ms != tau_r_max_ms:
@@ -1754,10 +1861,13 @@ class InteractiveUnitQualityGUI:
             legend.set_zorder(15)  # Set zorder after creation to appear above all lines
         
         # Add quality metrics text
-        self.add_metrics_text(ax, unit_data, 'acg')
+        InteractiveUnitQualityGUI.add_metrics_text(ax, unit_data, compiled_variables, 'acg')
         
-    def plot_spatial_decay(self, ax, unit_data):
+    @staticmethod
+    def plot_spatial_decay(ax, unit_data, compiled_variables):
         """Plot spatial decay like MATLAB - only nearby channels"""
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+
         metrics = unit_data['metrics']
         
         # Check if spatial decay metrics are available
@@ -1767,10 +1877,10 @@ class InteractiveUnitQualityGUI:
             
             if template.size > 0 and len(template.shape) > 1:
                 # Get only nearby channels for spatial decay (like MATLAB)
-                nearby_channels = self.get_nearby_channels_for_spatial_decay(max_ch, template.shape[1])
+                nearby_channels = InteractiveUnitQualityGUI.get_nearby_channels_for_spatial_decay(max_ch, template.shape[1], compiled_variables)
                 
-                if 'channel_positions' in self.ephys_data and len(self.ephys_data['channel_positions']) > max_ch:
-                    positions = self.ephys_data['channel_positions']
+                if 'channel_positions' in ephys_data and len(ephys_data['channel_positions']) > max_ch:
+                    positions = ephys_data['channel_positions']
                     peak_pos = positions[max_ch]
                     
                     distances = []
@@ -1868,17 +1978,20 @@ class InteractiveUnitQualityGUI:
         ax.set_title('Spatial decay', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         
         # Add quality metrics text
-        self.add_metrics_text(ax, unit_data, 'spatial')
-        
-    def plot_amplitudes_over_time(self, ax, unit_data):
+        InteractiveUnitQualityGUI.add_metrics_text(ax, unit_data, compiled_variables, 'spatial')
+    
+    @staticmethod
+    def plot_amplitudes_over_time(ax, unit_data, compiled_variables):
         """Plot amplitudes over time with firing rate below and presence ratio indicators"""
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+
         spike_times = unit_data['spike_times']
         metrics = unit_data['metrics']
         
         if len(spike_times) > 0:
             # Get amplitudes if available
             unit_id = unit_data['unit_id']
-            spike_mask = self.ephys_data['spike_clusters'] == unit_id
+            spike_mask = ephys_data['spike_clusters'] == unit_id
             
             # Calculate time bins for presence ratio and firing rate
             total_duration = np.max(spike_times) - np.min(spike_times)
@@ -1892,13 +2005,13 @@ class InteractiveUnitQualityGUI:
             firing_rates = bin_counts / bin_width
             
             
-            if 'template_amplitudes' in self.ephys_data:
-                amplitudes = self.ephys_data['template_amplitudes'][spike_mask]
+            if 'template_amplitudes' in ephys_data:
+                amplitudes = ephys_data['template_amplitudes'][spike_mask]
                 
                 # Color spikes based on goodTimeChunks if computeTimeChunks is enabled
                 spike_colors = np.full(len(spike_times), 'darkorange')  # Default: bad chunks (orange)
                 
-                if self.param and self.param.get('computeTimeChunks', False):
+                if param and param.get('computeTimeChunks', False):
                     # Use useTheseTimesStart and useTheseTimesStop from metrics
                     good_start_times = metrics.get('useTheseTimesStart', None)
                     good_stop_times = metrics.get('useTheseTimesStop', None)
@@ -1936,14 +2049,14 @@ class InteractiveUnitQualityGUI:
                 ax2.tick_params(axis='y', labelcolor='magenta')
                 
                 # Add drift plot if computeDrift is enabled
-                if (self.param and self.param.get('computeDrift', False) and 
-                    hasattr(self, 'gui_data') and self.gui_data is not None):
+                if (param and param.get('computeDrift', False) and 
+                    gui_data is not None):
                     
-                    unit_idx = self.current_unit_idx
+                    unit_idx = unit_data["unit_idx"]
                     
                     # Check if per_bin_metrics exists and contains drift data
-                    if 'per_bin_metrics' in self.gui_data:
-                        per_bin_metrics = self.gui_data['per_bin_metrics']
+                    if 'per_bin_metrics' in gui_data:
+                        per_bin_metrics = gui_data['per_bin_metrics']
                         
                         # Check if unit has per-bin metrics data
                         if unit_idx in per_bin_metrics:
@@ -1962,7 +2075,7 @@ class InteractiveUnitQualityGUI:
                                     drift_values = drift_data['median_spike_depth_per_bin']
                                     
                                     # Check if pre-computed bins match expected bin size - only plot if they match
-                                    expected_bin_size = self.param.get('driftBinSize', 60)  # Default 60 seconds
+                                    expected_bin_size = param.get('driftBinSize', 60)  # Default 60 seconds
                                     plot_drift = False
                                     
                                     if len(drift_time_bins) > 1:
@@ -1993,7 +2106,7 @@ class InteractiveUnitQualityGUI:
                 y_pos = np.ones_like(spike_times)
                 spike_colors = np.full(len(spike_times), 'darkorange')  # Default: bad chunks (orange)
                 
-                if self.param and self.param.get('computeTimeChunks', False):
+                if param and param.get('computeTimeChunks', False):
                     # Use useTheseTimesStart and useTheseTimesStop from metrics
                     good_start_times = metrics.get('useTheseTimesStart', None)
                     good_stop_times = metrics.get('useTheseTimesStop', None)
@@ -2029,14 +2142,14 @@ class InteractiveUnitQualityGUI:
                 ax2.tick_params(axis='y', labelcolor='magenta')
                 
                 # Add drift plot if computeDrift is enabled
-                if (self.param and self.param.get('computeDrift', False) and 
-                    hasattr(self, 'gui_data') and self.gui_data is not None):
+                if (param and param.get('computeDrift', False) and 
+                    gui_data is not None):
                     
-                    unit_idx = self.current_unit_idx
+                    unit_idx = unit_data["unit_idx"]
                     
                     # Check if per_bin_metrics exists and contains drift data
-                    if 'per_bin_metrics' in self.gui_data:
-                        per_bin_metrics = self.gui_data['per_bin_metrics']
+                    if 'per_bin_metrics' in gui_data:
+                        per_bin_metrics = gui_data['per_bin_metrics']
                         
                         # Check if unit has per-bin metrics data
                         if unit_idx in per_bin_metrics:
@@ -2055,7 +2168,7 @@ class InteractiveUnitQualityGUI:
                                     drift_values = drift_data['median_spike_depth_per_bin']
                                     
                                     # Check if pre-computed bins match expected bin size - only plot if they match
-                                    expected_bin_size = self.param.get('driftBinSize', 60)  # Default 60 seconds
+                                    expected_bin_size = param.get('driftBinSize', 60)  # Default 60 seconds
                                     plot_drift = False
                                     
                                     if len(drift_time_bins) > 1:
@@ -2091,7 +2204,8 @@ class InteractiveUnitQualityGUI:
         ax.tick_params(axis='y', labelcolor='blue')
         
         # Store y-limits for amplitude fit plot consistency
-        self._amplitude_ylim = ax.get_ylim()
+        _amplitude_ylim = ax.get_ylim()
+        compiled_variables['_amplitude_ylim'] = _amplitude_ylim
         
         # Spike count is now displayed as part of add_metrics_text
         # self._add_spike_count_quality_test(ax, unit_data, time_bins, bin_counts)
@@ -2101,7 +2215,7 @@ class InteractiveUnitQualityGUI:
         legend_elements = []
         
         # Add time chunk legend elements if computeTimeChunks is enabled
-        if self.param and self.param.get('computeTimeChunks', False):
+        if param and param.get('computeTimeChunks', False):
             legend_elements.extend([
                 mlines.Line2D([], [], color='green', marker='o', linestyle='None', 
                              markersize=6, label='Spikes in good time chunks'),
@@ -2115,15 +2229,17 @@ class InteractiveUnitQualityGUI:
                          label='Firing rate')
         )
         
+        current_unit_idx = unit_data["unit_idx"]
+
         # Add drift if computeDrift is enabled and drift data exists
-        if (self.param and self.param.get('computeDrift', False) and 
-            hasattr(self, 'gui_data') and self.gui_data is not None and
-            'per_bin_metrics' in self.gui_data and 
-            self.current_unit_idx in self.gui_data['per_bin_metrics'] and
-            'drift' in self.gui_data['per_bin_metrics'][self.current_unit_idx]):
+        if (param and param.get('computeDrift', False) and 
+            gui_data is not None and
+            'per_bin_metrics' in gui_data and 
+            current_unit_idx in gui_data['per_bin_metrics'] and
+            'drift' in gui_data['per_bin_metrics'][current_unit_idx]):
             
             # Add clarification if both drift and time chunks are computed
-            if self.param.get('computeTimeChunks', False):
+            if param.get('computeTimeChunks', False):
                 drift_label = 'Drift (good time chunks only)'
             else:
                 drift_label = 'Drift'
@@ -2143,7 +2259,7 @@ class InteractiveUnitQualityGUI:
             legend.set_zorder(15)  # Ensure legend appears above plot elements
         
         # Add quality metrics text
-        self.add_metrics_text(ax, unit_data, 'amplitude')
+        InteractiveUnitQualityGUI.add_metrics_text(ax, unit_data, compiled_variables, 'amplitude')
     
     def _add_spike_count_quality_test(self, ax, unit_data, time_bins, bin_counts):
         """Add spike count quality metric test overlay to amplitude scaling plot"""
@@ -2174,8 +2290,11 @@ class InteractiveUnitQualityGUI:
                 ha='right', va='top',
                 zorder=10)
     
-    def plot_time_bin_metrics(self, ax, unit_data):
+    @staticmethod
+    def plot_time_bin_metrics(ax, unit_data, compiled_variables):
         """Plot time bin metrics: presence ratio, RPV rate, and percentage spikes missing"""
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+
         spike_times = unit_data['spike_times']
         metrics = unit_data['metrics']
         unit_id = unit_data['unit_id']
@@ -2183,10 +2302,10 @@ class InteractiveUnitQualityGUI:
         if len(spike_times) > 0:
             # Try to get saved per-bin data from GUI precomputation
             per_bin_data = None
-            if hasattr(self, 'gui_data') and self.gui_data is not None:
-                per_bin_data = self.gui_data.get('per_bin_metrics', {}).get(unit_id)
+            if gui_data is not None:
+                per_bin_data = gui_data.get('per_bin_metrics', {}).get(unit_id)
             
-            if per_bin_data and self.param.get('computeTimeChunks', False):
+            if per_bin_data and param.get('computeTimeChunks', False):
                 # Use actual per-bin quality metrics data 
                 
                 # Get RPV data
@@ -2208,7 +2327,7 @@ class InteractiveUnitQualityGUI:
                     if rpv_matrix.shape[1] > 0:
                         # Use middle tau_R value or estimated index if available
                         tau_r_idx = rpv_matrix.shape[1] // 2
-                        if hasattr(self, 'param') and 'RPV_tauR_estimate' in metrics:
+                        if param is not None and 'RPV_tauR_estimate' in metrics:
                             try:
                                 tau_r_idx = int(metrics['RPV_window_index'])
                             except:
@@ -2241,7 +2360,7 @@ class InteractiveUnitQualityGUI:
                     perc_missing = None
                 
                 # Calculate presence ratio per time chunk using proper algorithm
-                presence_ratio_bin_size = self.param.get('presenceRatioBinSize', 60)  # Default 60 seconds
+                presence_ratio_bin_size = param.get('presenceRatioBinSize', 60)  # Default 60 seconds
                 presence_ratios = []
                 
                 for i in range(len(time_bins) - 1):
@@ -2361,7 +2480,7 @@ class InteractiveUnitQualityGUI:
                 bin_counts, _ = np.histogram(spike_times, bins=time_bins)
                 
                 # Calculate presence ratio per time bin using proper algorithm
-                presence_ratio_bin_size = self.param.get('presenceRatioBinSize', 60)  # Default 60 seconds
+                presence_ratio_bin_size = param.get('presenceRatioBinSize', 60)  # Default 60 seconds
                 presence_ratios = []
                 
                 for i in range(len(time_bins) - 1):
@@ -2423,9 +2542,12 @@ class InteractiveUnitQualityGUI:
             ax.set_xlabel('Time (s)', fontsize=13, fontfamily="DejaVu Sans")
             ax.set_ylabel('Metrics', fontsize=13, fontfamily="DejaVu Sans")
             ax.tick_params(labelsize=13)
-        
-    def plot_unit_location(self, ax, unit_data):
+    
+    @staticmethod
+    def plot_unit_location(ax, unit_data, compiled_variables):
         """Plot all units by depth vs log firing rate, colored by classification"""
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+
         # Define classification colors
         classification_colors = {
             'good': [0, 0.7, 0],        # Green
@@ -2434,9 +2556,9 @@ class InteractiveUnitQualityGUI:
             'non-somatic': [0, 0, 1]    # Blue
         }
         
-        if 'channel_positions' in self.ephys_data and 'maxChannels' in self.quality_metrics:
-            positions = self.ephys_data['channel_positions']
-            max_channels = self.quality_metrics['maxChannels']
+        if 'channel_positions' in ephys_data and 'maxChannels' in quality_metrics:
+            positions = ephys_data['channel_positions']
+            max_channels = quality_metrics['maxChannels']
             
             # Get all unit classifications and firing rates
             all_units = []
@@ -2444,7 +2566,7 @@ class InteractiveUnitQualityGUI:
             all_firing_rates = []
             all_colors = []
             
-            for i, unit_id in enumerate(self.unique_units):
+            for i, unit_id in enumerate(unique_units):
                 # Get max channel for this unit
                 if i < len(max_channels):
                     max_ch = int(max_channels[i])
@@ -2453,8 +2575,8 @@ class InteractiveUnitQualityGUI:
                         depth = positions[max_ch, 1]  # Keep original - deeper = lower y values
                         
                         # Calculate firing rate for this unit
-                        unit_spike_mask = self.ephys_data['spike_clusters'] == unit_id
-                        unit_spike_times = self.ephys_data['spike_times'][unit_spike_mask]
+                        unit_spike_mask = ephys_data['spike_clusters'] == unit_id
+                        unit_spike_times = ephys_data['spike_times'][unit_spike_mask]
                         
                         if len(unit_spike_times) > 0:
                             duration = np.max(unit_spike_times) - np.min(unit_spike_times)
@@ -2462,8 +2584,8 @@ class InteractiveUnitQualityGUI:
                                 firing_rate = len(unit_spike_times) / duration
                                 
                                 # Get BombCell classification for dot colors
-                                if self.bombcell_unit_types is not None and i < len(self.bombcell_unit_types):
-                                    unit_type = self.bombcell_unit_types[i]
+                                if bombcell_unit_types is not None and i < len(bombcell_unit_types):
+                                    unit_type = bombcell_unit_types[i]
                                     # Map numeric codes to classification names
                                     type_map = {
                                         0: 'noise',
@@ -2537,37 +2659,38 @@ class InteractiveUnitQualityGUI:
                                                     label=class_name))
                 ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=13)
                 
-                # Add click interactivity to navigate to units
-                def on_location_click(event):
-                    if event.inaxes == ax and event.xdata is not None and event.ydata is not None:
-                        # Find the closest unit to the click
-                        click_x, click_y = event.xdata, event.ydata
-                        min_distance = float('inf')
-                        closest_unit_idx = None
-                        
-                        # Get current axis limits for normalization
-                        xlims = ax.get_xlim()
-                        ylims = ax.get_ylim()
-                        
-                        for i, (unit_id, log_fr, depth) in enumerate(zip(all_units, all_firing_rates, all_depths)):
-                            # Calculate distance in data coordinates (simpler approach)
-                            dx = (log_fr - click_x) / (xlims[1] - xlims[0])  # Normalize by axis range
-                            dy = (depth - click_y) / (ylims[1] - ylims[0])   # Normalize by axis range
+                if unit_slider is not None:
+                    # Add click interactivity to navigate to units
+                    def on_location_click(event):
+                        if event.inaxes == ax and event.xdata is not None and event.ydata is not None:
+                            # Find the closest unit to the click
+                            click_x, click_y = event.xdata, event.ydata
+                            min_distance = float('inf')
+                            closest_unit_idx = None
                             
-                            distance = np.sqrt(dx**2 + dy**2)
-                            if distance < min_distance:
-                                min_distance = distance
-                                closest_unit_idx = list(self.unique_units).index(unit_id)
-                        
-                        # Navigate to the closest unit if click is close enough
-                        if min_distance < 0.1 and closest_unit_idx is not None:  # 10% of normalized plot area
-                            self.current_unit_idx = closest_unit_idx
-                            self.unit_slider.value = closest_unit_idx
-                            print(f"Clicked on unit {closest_unit_idx} (unit_id: {self.unique_units[closest_unit_idx]})")
-                
-                # Store the click handler and connect it
-                self._location_click_handler = on_location_click
-                ax.figure.canvas.mpl_connect('button_press_event', self._location_click_handler)
+                            # Get current axis limits for normalization
+                            xlims = ax.get_xlim()
+                            ylims = ax.get_ylim()
+                            
+                            for i, (unit_id, log_fr, depth) in enumerate(zip(all_units, all_firing_rates, all_depths)):
+                                # Calculate distance in data coordinates (simpler approach)
+                                dx = (log_fr - click_x) / (xlims[1] - xlims[0])  # Normalize by axis range
+                                dy = (depth - click_y) / (ylims[1] - ylims[0])   # Normalize by axis range
+                                
+                                distance = np.sqrt(dx**2 + dy**2)
+                                if distance < min_distance:
+                                    min_distance = distance
+                                    closest_unit_idx = list(unique_units).index(unit_id)
+                            
+                            # Navigate to the closest unit if click is close enough
+                            if min_distance < 0.1 and closest_unit_idx is not None:  # 10% of normalized plot area
+                                current_unit_idx = closest_unit_idx
+                                unit_slider.value = closest_unit_idx
+                                print(f"Clicked on unit {closest_unit_idx} (unit_id: {unique_units[closest_unit_idx]})")
+                    
+                    # Store the click handler and connect it
+                    _location_click_handler = on_location_click
+                    ax.figure.canvas.mpl_connect('button_press_event', _location_click_handler)
                 
             else:
                 ax.text(0.5, 0.5, 'No units with\nvalid locations', 
@@ -2577,27 +2700,30 @@ class InteractiveUnitQualityGUI:
                     ha='center', va='center', transform=ax.transAxes, fontfamily="DejaVu Sans")
         
         ax.set_title('Units by depth', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
-        
-    def plot_amplitude_fit(self, ax, unit_data):
+
+    @staticmethod
+    def plot_amplitude_fit(ax, unit_data, compiled_variables):
         """Plot amplitude distribution with cutoff Gaussian fit like BombCell"""
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+
         spike_times = unit_data['spike_times']
         metrics = unit_data['metrics']
         
         # Get y-limits from amplitude plot for consistency
         amp_ylim = None
-        if hasattr(self, '_amplitude_ylim'):
-            amp_ylim = self._amplitude_ylim
+        if '_amplitude_ylim' in compiled_variables:
+            amp_ylim = compiled_variables['_amplitude_ylim']
         
         if len(spike_times) > 0:
             # Get amplitudes if available
             unit_id = unit_data['unit_id']
-            spike_mask = self.ephys_data['spike_clusters'] == unit_id
+            spike_mask = ephys_data['spike_clusters'] == unit_id
             
-            if 'template_amplitudes' in self.ephys_data:
-                amplitudes = self.ephys_data['template_amplitudes'][spike_mask]
+            if 'template_amplitudes' in ephys_data:
+                amplitudes = ephys_data['template_amplitudes'][spike_mask]
                 
                 # Filter to good time chunks if computeTimeChunks is enabled
-                if self.param and self.param.get('computeTimeChunks', False):
+                if param and param.get('computeTimeChunks', False):
                     good_start_times = metrics.get('useTheseTimesStart', None)
                     good_stop_times = metrics.get('useTheseTimesStop', None)
                     
@@ -2705,10 +2831,13 @@ class InteractiveUnitQualityGUI:
         ax.set_title('Scaling factor \n distribution', fontsize=15, fontweight='bold', fontfamily="DejaVu Sans")
         
         # Add quality metrics text
-        self.add_metrics_text(ax, unit_data, 'amplitude_fit')
+        InteractiveUnitQualityGUI.add_metrics_text(ax, unit_data, compiled_variables, 'amplitude_fit')
         
-    def add_metrics_text(self, ax, unit_data, plot_type):
+    @staticmethod
+    def add_metrics_text(ax, unit_data, compiled_variables, plot_type):
         """Add quality metrics text overlay to plots like MATLAB with color coding"""
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+
         metrics = unit_data['metrics']
         
         def format_metric(value, decimals=2):
@@ -2834,7 +2963,7 @@ class InteractiveUnitQualityGUI:
             line_height = 0.12  # Much larger spacing to prevent overlaps
             
             for i, (metric_name, text) in enumerate(metric_info):
-                color = get_metric_color(metric_name, format_metric(metrics.get(metric_name)), self.param)
+                color = get_metric_color(metric_name, format_metric(metrics.get(metric_name)), param)
                 y_pos = y_start - i * line_height
                 
                 # Skip if text would go below plot area
@@ -3005,16 +3134,20 @@ class InteractiveUnitQualityGUI:
             
             return channels_sorted
     
-    def mark_peaks_and_troughs(self, ax, waveform, x_offset, y_offset, metrics, amp_range):
+    @staticmethod
+    def mark_peaks_and_troughs(ax, unit_data, compiled_variables, waveform, x_offset, y_offset, metrics, amp_range):
         """Mark all peaks and troughs on waveform with duration line"""
+
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+        current_unit_idx = unit_data["unit_idx"]
         
-        if (self.gui_data and 
-            'peak_locations' in self.gui_data and 
-            'trough_locations' in self.gui_data and
-            self.current_unit_idx in self.gui_data['peak_locations']):
+        if (gui_data and 
+            'peak_locations' in gui_data and 
+            'trough_locations' in gui_data and
+            current_unit_idx in gui_data['peak_locations']):
             
-            peaks = list(self.gui_data['peak_locations'][self.current_unit_idx])
-            troughs = list(self.gui_data['trough_locations'][self.current_unit_idx])
+            peaks = list(gui_data['peak_locations'][current_unit_idx])
+            troughs = list(gui_data['trough_locations'][current_unit_idx])
             
             
         else:
@@ -3078,13 +3211,13 @@ class InteractiveUnitQualityGUI:
         
         
         # Use pre-computed duration indices from quality metrics if available
-        if (self.gui_data and 
-            'peak_loc_for_duration' in self.gui_data and 
-            'trough_loc_for_duration' in self.gui_data and
-            self.current_unit_idx in self.gui_data['peak_loc_for_duration']):
+        if (gui_data and 
+            'peak_loc_for_duration' in gui_data and 
+            'trough_loc_for_duration' in gui_data and
+            current_unit_idx in gui_data['peak_loc_for_duration']):
             
-            main_peak_idx = self.gui_data['peak_loc_for_duration'][self.current_unit_idx]
-            main_trough_idx = self.gui_data['trough_loc_for_duration'][self.current_unit_idx]
+            main_peak_idx = gui_data['peak_loc_for_duration'][current_unit_idx]
+            main_trough_idx = gui_data['trough_loc_for_duration'][current_unit_idx]
             
         else:
             # Fallback: Use largest absolute values among detected peaks/troughs
@@ -3189,10 +3322,13 @@ class InteractiveUnitQualityGUI:
                      ncol=len(handles), fontsize=13, frameon=True, framealpha=0.9,
                      prop={'family': 'DejaVu Sans'})
     
-    def get_nearby_channels_for_spatial_decay(self, peak_channel, n_channels):
+    @staticmethod
+    def get_nearby_channels_for_spatial_decay(peak_channel, n_channels, compiled_variables):
         """Get nearby channels for spatial decay plot - fewer points like MATLAB"""
-        if 'channel_positions' in self.ephys_data:
-            positions = self.ephys_data['channel_positions']
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+
+        if 'channel_positions' in ephys_data:
+            positions = ephys_data['channel_positions']
             if len(positions) > peak_channel:
                 peak_pos = positions[peak_channel]
                 
@@ -3212,11 +3348,14 @@ class InteractiveUnitQualityGUI:
         end = min(n_channels, peak_channel + 6)
         return list(range(start, end))
     
-    def plot_histograms_panel(self, fig, unit_data):
+    @staticmethod
+    def plot_histograms_panel(fig, unit_data, compiled_variables):
         """Plot histogram distributions showing where current unit sits - exact copy of plot_functions.py"""
+        ephys_data, quality_metrics, ephys_properties, raw_waveforms, param, unit_types, gui_data, n_units, unique_units, bombcell_unit_types, unit_slider = InteractiveUnitQualityGUI.unpack_variables(compiled_variables)
+
         # Preprocessing - handle inf values using shared utility
         from bombcell.helper_functions import clean_inf_values
-        self.quality_metrics = clean_inf_values(self.quality_metrics)
+        quality_metrics = clean_inf_values(quality_metrics)
 
         # Define MATLAB-style color matrices - exact copy
         red_colors = np.array([
@@ -3262,7 +3401,6 @@ class InteractiveUnitQualityGUI:
                              'isolation dist.', 'L-ratio']
 
         # Define thresholds - exact copy
-        param = self.param
         metric_thresh1 = [param.get('maxNPeaks'), param.get('maxNTroughs'), param.get('maxWvBaselineFraction'),
                          param.get('minWvDuration'), param.get('maxScndPeakToTroughRatio_noise'),
                          param.get('minSpatialDecaySlope') if param.get('spDecayLinFit') else param.get('minSpatialDecaySlopeExp'),
@@ -3280,8 +3418,8 @@ class InteractiveUnitQualityGUI:
         plot_conditions = [True, True, True, True, True,
                           param.get('computeSpatialDecay', False),
                           True, True,
-                          param.get('extractRaw', False) and 'rawAmplitude' in self.quality_metrics and np.any(~np.isnan(self.quality_metrics.get('rawAmplitude', [np.nan]))),
-                          param.get('extractRaw', False) and 'signalToNoiseRatio' in self.quality_metrics and np.any(~np.isnan(self.quality_metrics.get('signalToNoiseRatio', [np.nan]))),
+                          param.get('extractRaw', False) and 'rawAmplitude' in quality_metrics and np.any(~np.isnan(quality_metrics.get('rawAmplitude', [np.nan]))),
+                          param.get('extractRaw', False) and 'signalToNoiseRatio' in quality_metrics and np.any(~np.isnan(quality_metrics.get('signalToNoiseRatio', [np.nan]))),
                           True, True, True, True,
                           param.get('computeDrift', False),
                           param.get('computeDistanceMetrics', False),
@@ -3317,7 +3455,7 @@ class InteractiveUnitQualityGUI:
         valid_line_cols = []
         
         for i, (metric_name, condition) in enumerate(zip(metric_names, plot_conditions)):
-            if condition and metric_name in self.quality_metrics:
+            if condition and metric_name in quality_metrics:
                 valid_metrics.append(metric_name)
                 valid_colors.append(color_mtx[i % len(color_mtx)])
                 valid_labels.append(metric_names_short[i])
@@ -3385,7 +3523,7 @@ class InteractiveUnitQualityGUI:
             else:
                 continue
             
-            metric_data = self.quality_metrics[metric_name]
+            metric_data = quality_metrics[metric_name]
             metric_data = metric_data[~np.isnan(metric_data)]
             
             if len(metric_data) > 0:
@@ -3409,9 +3547,9 @@ class InteractiveUnitQualityGUI:
                         patch.set_height(patch.get_height() * bin_width)
                 
                 # Add current unit highlighting with ARROW instead of line
-                current_unit_idx = self.current_unit_idx
-                if current_unit_idx < len(self.quality_metrics[metric_name]):
-                    current_value = self.quality_metrics[metric_name][current_unit_idx]
+                current_unit_idx = unit_data["unit_idx"]
+                if current_unit_idx < len(quality_metrics[metric_name]):
+                    current_value = quality_metrics[metric_name][current_unit_idx]
                     if not np.isnan(current_value):
                         # NO red bin highlighting - removed for cleaner look
                         
@@ -3662,7 +3800,7 @@ def load_metrics_for_gui(ks_dir, quality_metrics, ephys_properties=None, param=N
     }
 
 
-def unit_quality_gui(ephys_data_or_path=None, quality_metrics=None, ephys_properties=None, 
+def load_unit_quality_gui(ephys_data_or_path=None, quality_metrics=None, ephys_properties=None, 
                      unit_types=None, param=None, ks_dir=None, save_path=None, layout='landscape', auto_advance=True):
     """
     Launch the Unit Quality GUI - Python equivalent of unitQualityGUI_synced
@@ -3736,3 +3874,21 @@ def unit_quality_gui(ephys_data_or_path=None, quality_metrics=None, ephys_proper
         auto_advance=auto_advance,
     )
     return gui
+
+# make static methods more easily accessible from outside the class
+compile_variables = InteractiveUnitQualityGUI.compile_variables
+unpack_variables = InteractiveUnitQualityGUI.unpack_variables
+get_unit_data = InteractiveUnitQualityGUI.get_unit_data
+plot_amplitude_histogram = InteractiveUnitQualityGUI.plot_amplitude_histogram
+plot_template_waveform = InteractiveUnitQualityGUI.plot_template_waveform
+plot_raw_waveforms = InteractiveUnitQualityGUI.plot_raw_waveforms
+plot_autocorrelogram = InteractiveUnitQualityGUI.plot_autocorrelogram
+plot_spatial_decay = InteractiveUnitQualityGUI.plot_spatial_decay
+plot_amplitudes_over_time = InteractiveUnitQualityGUI.plot_amplitudes_over_time
+plot_time_bin_metrics = InteractiveUnitQualityGUI.plot_time_bin_metrics
+plot_unit_location = InteractiveUnitQualityGUI.plot_unit_location
+plot_amplitude_fit = InteractiveUnitQualityGUI.plot_amplitude_fit
+add_metrics_text = InteractiveUnitQualityGUI.add_metrics_text
+mark_peaks_and_troughs = InteractiveUnitQualityGUI.mark_peaks_and_troughs
+get_nearby_channels_for_spatial_decay = InteractiveUnitQualityGUI.get_nearby_channels_for_spatial_decay
+plot_histograms_panel = InteractiveUnitQualityGUI.plot_histograms_panel
