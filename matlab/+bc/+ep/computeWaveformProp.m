@@ -20,6 +20,10 @@ if ~isnan(nPeaks) && ~isnan(nTroughs)
 % time 
 wvTime = 1e3 * ((0:size(thisWaveform, 2) - 1) / param.ephys_sample_rate);
 
+% Get peak and trough information from waveformShape call
+[PKS, peakLocs_info] = max(abs(thisWaveform(peakLocs)));
+[TRS, troughLocs_info] = max(abs(thisWaveform(troughLocs)));
+
 % Compute Half-Width
 troughAmplitude = thisWaveform(troughLocs(1));
 

@@ -15,6 +15,42 @@ from bombcell.save_utils import get_metric_keys, save_results
 from bombcell.plot_functions import *
 
 
+def clean_inf_values(quality_metrics, columns=None):
+    """
+    Convert inf values to nan across specified columns or all numeric columns.
+    
+    Parameters
+    ----------
+    quality_metrics : dict
+        Dictionary containing quality metrics data
+    columns : list, optional
+        List of column names to process. If None, processes all columns that contain numeric data.
+        
+    Returns
+    -------
+    dict
+        Dictionary with inf values converted to nan
+    """
+    # Create a copy to avoid modifying the original
+    cleaned = quality_metrics.copy()
+    
+    # If no specific columns specified, find all numeric columns
+    if columns is None:
+        columns = []
+        for key, value in cleaned.items():
+            if isinstance(value, np.ndarray):
+                # Check if the array contains numeric data
+                if len(value) > 0 and np.issubdtype(value.dtype, np.number):
+                    columns.append(key)
+    
+    # Convert inf to nan for specified columns
+    for col in columns:
+        if col in cleaned:
+            cleaned[col] = np.where(cleaned[col] == np.inf, np.nan, cleaned[col])
+    
+    return cleaned
+
+
 ##TODO can add runtimes to optional steps here
 def show_times(
     runtimes_spikes_missing_1,
@@ -972,8 +1008,10 @@ def get_all_quality_metrics(
 
         # amplitude
         if raw_waveforms_full is not None and param["extractRaw"] and param['gain_to_uV'] is not None:
+            # Use the template's peak channel for raw amplitude calculation
+            template_peak_channel = quality_metrics["maxChannels"][unit_idx]
             quality_metrics["rawAmplitude"][unit_idx] = qm.get_raw_amplitude(
-                raw_waveforms_full[unit_idx], param["gain_to_uV"]
+                raw_waveforms_full[unit_idx], param["gain_to_uV"], peak_channel=template_peak_channel
             )
         else:
             quality_metrics["rawAmplitude"][unit_idx] = np.nan
@@ -1036,7 +1074,7 @@ def get_all_quality_metrics(
     return quality_metrics, runtimes
 
 
-def run_bombcell(ks_dir, save_path, param):
+def run_bombcell(ks_dir, save_path, param, save_figures=False, return_figures=False):
     """
     This function runs the entire bombcell pipeline from input data paths
 
@@ -1048,6 +1086,10 @@ def run_bombcell(ks_dir, save_path, param):
         The path to the directory to save the bombcell results
     param : dict
         The param dictionary
+    save_figures : bool, optional
+        If True, saves the generated figures to disk, by default False
+    return_figures : bool, optional
+        If True, returns the generated figures, by default False
 
     Returns
     -------
@@ -1059,6 +1101,9 @@ def run_bombcell(ks_dir, save_path, param):
         The unit classifications as numbers 
     unit_type_string: ndarray
         The unit classifications as names
+    figures : dict, optional
+        If return_figures=True, returns dictionary with figure objects:
+        'waveforms_overlay', 'upset_plots', 'histograms'
     """
     
     if param.get("verbose", False):
@@ -1080,8 +1125,21 @@ def run_bombcell(ks_dir, save_path, param):
     if param.get("verbose", False):
         print(f"Loaded ephys data: {len(np.unique(spike_clusters))} units, {len(spike_times_samples):,} spikes")
 
+    # pre-load peak channels from templates before extracting raw waveforms
+    maxChannels = qm.get_waveform_peak_channel(template_waveforms)
+
     # Extract or load in raw waveforms
     if param["raw_data_file"] is not None:
+        # Handle data decompression if needed
+        if param.get("decompress_data", False):
+            if param.get("verbose", False):
+                print("\n📦 Checking for compressed data...")
+            from bombcell.extract_raw_waveforms import decompress_data_if_needed
+            param["raw_data_file"] = decompress_data_if_needed(
+                param["raw_data_file"], 
+                decompress_data=param["decompress_data"]
+            )
+        
         if param.get("verbose", False):
             print("\n🔍 Extracting raw waveforms...")
         (
@@ -1095,6 +1153,7 @@ def run_bombcell(ks_dir, save_path, param):
             spike_times_samples,
             param["reextractRaw"],
             save_path,
+            maxChannels,  # Pass template peak channels
         )
     else:
         raw_waveforms_full = None
@@ -1102,9 +1161,6 @@ def run_bombcell(ks_dir, save_path, param):
         signal_to_noise_ratio = None
         raw_waveforms_id_match = None
         param["extractRaw"] = False  # No waveforms to extract!
-
-    # pre-load peak channels
-    maxChannels = qm.get_waveform_peak_channel(template_waveforms)
 
     # Remove duplicate spikes
     if param["removeDuplicateSpikes"]:
@@ -1183,10 +1239,21 @@ def run_bombcell(ks_dir, save_path, param):
         param, quality_metrics
     )  # JF: this should be inside bc.get_all_quality_metrics
 
+    # Override param settings if save_figures is explicitly set
+    if save_figures:
+        param["savePlots"] = True
+        if param.get("plotsSaveDir") is None:
+            param["plotsSaveDir"] = str(Path(save_path) / "bombcell_plots")
+    
+    figures = None
     if param.get("verbose", False):
         print("\nGenerating summary plots...")
     
-    plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_string, param)
+    # Call plot_summary_data with return_figures parameter if needed
+    if return_figures:
+        figures = plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_string, param, return_figures=True)
+    else:
+        plot_summary_data(quality_metrics, template_waveforms, unit_type, unit_type_string, param)
 
     if param.get("verbose", False):
         print("\nSaving results...")
@@ -1203,15 +1270,24 @@ def run_bombcell(ks_dir, save_path, param):
         ks_dir,
     )  
 
-    return (
-        quality_metrics,
-        param,
-        unit_type,
-        unit_type_string,
-    )
+    if return_figures and figures is not None:
+        return (
+            quality_metrics,
+            param,
+            unit_type,
+            unit_type_string,
+            figures,
+        )
+    else:
+        return (
+            quality_metrics,
+            param,
+            unit_type,
+            unit_type_string,
+        )
 
 
-def run_bombcell_unit_match(ks_dir, save_path, raw_file=None, meta_file=None, kilosort_version=4, gain_to_uV=None):
+def run_bombcell_unit_match(ks_dir, save_path, raw_file=None, meta_file=None, kilosort_version=4, gain_to_uV=None, save_figures=False, return_figures=False):
     """
     This function runs bombcell pipeline with parameters optimized for UnitMatch
     
@@ -1229,6 +1305,10 @@ def run_bombcell_unit_match(ks_dir, save_path, raw_file=None, meta_file=None, ki
         The kilosort version used (default: 4)
     gain_to_uV : float, optional
         The gain to microvolts conversion factor
+    save_figures : bool, optional
+        If True, saves the generated figures to disk, by default False
+    return_figures : bool, optional
+        If True, returns the generated figures, by default False
         
     Returns
     -------
@@ -1240,6 +1320,9 @@ def run_bombcell_unit_match(ks_dir, save_path, raw_file=None, meta_file=None, ki
         The unit classifications as numbers 
     unit_type_string: ndarray
         The unit classifications as names
+    figures : dict, optional
+        If return_figures=True, returns dictionary with figure objects:
+        'waveforms_overlay', 'upset_plots', 'histograms'
     """
     from bombcell.default_parameters import get_unit_match_parameters
     
@@ -1253,7 +1336,7 @@ def run_bombcell_unit_match(ks_dir, save_path, raw_file=None, meta_file=None, ki
         print(f"   - Detrending waveforms: {param['detrendWaveform']}")
     
     # Run bombcell with unit match parameters
-    return run_bombcell(ks_dir, save_path, param)
+    return run_bombcell(ks_dir, save_path, param, save_figures=save_figures, return_figures=return_figures)
 
 
 def make_qm_table(quality_metrics, param, unit_type_string):
@@ -1281,65 +1364,94 @@ def make_qm_table(quality_metrics, param, unit_type_string):
     qm_table_list = [unit_type_string, unique_templates]
     qm_table_names = ["unit_type", "Original ID"]
 
-    nan_result = np.isnan(quality_metrics["nPeaks"])
-
-    too_many_peaks = quality_metrics["nPeaks"] > param["maxNPeaks"]
-    too_many_troughs = quality_metrics["nTroughs"] > param["maxNTroughs"]
-    too_short_waveform = (
-        quality_metrics["waveformDuration_peakTrough"] < param["minWvDuration"]
+    # Only evaluate noise metrics for units actually classified as NOISE
+    is_noise_unit = unit_type_string == 'NOISE'
+    
+    too_many_peaks = np.full(len(unit_type_string), False, dtype=bool)
+    too_many_peaks[is_noise_unit] = quality_metrics["nPeaks"][is_noise_unit] > param["maxNPeaks"]
+    
+    too_many_troughs = np.full(len(unit_type_string), False, dtype=bool)
+    too_many_troughs[is_noise_unit] = quality_metrics["nTroughs"][is_noise_unit] > param["maxNTroughs"]
+    
+    duration = np.full(len(unit_type_string), False, dtype=bool)
+    if np.any(is_noise_unit):
+        too_short_waveform = quality_metrics["waveformDuration_peakTrough"] < param["minWvDuration"]
+        too_long_waveform = quality_metrics["waveformDuration_peakTrough"] > param["maxWvDuration"]
+        duration[is_noise_unit] = (too_short_waveform | too_long_waveform)[is_noise_unit]
+    
+    too_noisy_baseline = np.full(len(unit_type_string), False, dtype=bool)
+    too_noisy_baseline[is_noise_unit] = (
+        quality_metrics["waveformBaselineFlatness"][is_noise_unit] > param["maxWvBaselineFraction"]
     )
-    too_long_waveform = (
-        quality_metrics["waveformDuration_peakTrough"] > param["maxWvDuration"]
+    
+    peak2_to_trough = np.full(len(unit_type_string), False, dtype=bool)
+    peak2_to_trough[is_noise_unit] = (
+        quality_metrics["scndPeakToTroughRatio"][is_noise_unit] > param["maxScndPeakToTroughRatio_noise"]
     )
-    duration = np.logical_or(too_short_waveform, too_long_waveform).squeeze()
-    too_noisy_baseline = (
-        quality_metrics["waveformBaselineFlatness"] > param["maxWvBaselineFraction"]
-    )
-    peak2_to_trough = quality_metrics["scndPeakToTroughRatio"] > param["maxScndPeakToTroughRatio_noise"]
 
     qm_table_list.extend([too_many_peaks, too_many_troughs, duration, too_noisy_baseline, peak2_to_trough])
     qm_table_names.extend(["# peaks", "# troughs", "waveform duration", "baseline flatness", "peak2 / trough"])
 
     if param["computeSpatialDecay"]:
-        if param["computeSpatialDecay"] & param["spDecayLinFit"]:
-            bad_spatial_decay = quality_metrics['spatialDecaySlope'] > param['minSpatialDecaySlope']
-        elif param["computeSpatialDecay"]:
-            too_shallow_decay = quality_metrics["spatialDecaySlope"] < param["minSpatialDecaySlopeExp"]
-            too_steep_decay = (
-                quality_metrics["spatialDecaySlope"] > param["maxSpatialDecaySlopeExp"]
-            )  
-            bad_spatial_decay = np.logical_or(too_shallow_decay, too_steep_decay).squeeze()
+        bad_spatial_decay = np.full(len(unit_type_string), False, dtype=bool)
+        if np.any(is_noise_unit):
+            if param["spDecayLinFit"]:
+                bad_spatial_decay[is_noise_unit] = (
+                    quality_metrics['spatialDecaySlope'][is_noise_unit] < param['minSpatialDecaySlope']
+                )
+            else:
+                too_shallow_decay = quality_metrics["spatialDecaySlope"] < param["minSpatialDecaySlopeExp"]
+                too_steep_decay = quality_metrics["spatialDecaySlope"] > param["maxSpatialDecaySlopeExp"]
+                bad_spatial_decay[is_noise_unit] = (too_shallow_decay | too_steep_decay)[is_noise_unit]
         
         qm_table_list.append(bad_spatial_decay)
         qm_table_names.append("spatial decay")
     # classify as mua
     # ALL or ANY?
 
-    too_few_total_spikes = quality_metrics["nSpikes"] < param["minNumSpikes"]
-    too_many_spikes_missing = (
-        quality_metrics["percentageSpikesMissing_gaussian"] > param["maxPercSpikesMissing"]
+    # Only evaluate MUA metrics for units actually classified as MUA 
+    is_mua_unit = (unit_type_string == 'MUA')
+    
+    too_many_spikes_missing = np.full(len(unit_type_string), False, dtype=bool)
+    too_many_spikes_missing[is_mua_unit] = (
+        quality_metrics["percentageSpikesMissing_gaussian"][is_mua_unit] > param["maxPercSpikesMissing"]
     )
-    too_low_presence_ratio = (
-        quality_metrics["presenceRatio"] < param["minPresenceRatio"]
+    
+    too_low_presence_ratio = np.full(len(unit_type_string), False, dtype=bool)
+    too_low_presence_ratio[is_mua_unit] = (
+        quality_metrics["presenceRatio"][is_mua_unit] < param["minPresenceRatio"]
     )
-    too_many_RPVs = quality_metrics["fractionRPVs_estimatedTauR"] > param["maxRPVviolations"]
+    
+    too_few_total_spikes = np.full(len(unit_type_string), False, dtype=bool)
+    too_few_total_spikes[is_mua_unit] = (
+        quality_metrics["nSpikes"][is_mua_unit] < param["minNumSpikes"]
+    )
+    
+    too_many_RPVs = np.full(len(unit_type_string), False, dtype=bool)
+    too_many_RPVs[is_mua_unit] = (
+        quality_metrics["fractionRPVs_estimatedTauR"][is_mua_unit] > param["maxRPVviolations"]
+    )
 
-    qm_table_list.extend([too_few_total_spikes, too_many_spikes_missing, too_low_presence_ratio, too_many_RPVs])
-    qm_table_names.extend(["# spikes", "% spikes missing", "presence ratio", "fraction RPVs"])
+    qm_table_list.extend([too_many_spikes_missing, too_low_presence_ratio, too_few_total_spikes, too_many_RPVs])
+    qm_table_names.extend(["% spikes missing", "presence ratio", "# spikes", "fraction RPVs"])
 
     if param["extractRaw"]:
-        too_small_amplitude = (
-            quality_metrics["rawAmplitude"] < param["minAmplitude"]
-        ) 
-        too_small_SNR = (
-            quality_metrics["signalToNoiseRatio"] < param["minSNR"]
+        too_small_amplitude = np.full(len(unit_type_string), False, dtype=bool)
+        too_small_amplitude[is_mua_unit] = (
+            quality_metrics["rawAmplitude"][is_mua_unit] < param["minAmplitude"]
+        )
+        
+        too_small_SNR = np.full(len(unit_type_string), False, dtype=bool)
+        too_small_SNR[is_mua_unit] = (
+            quality_metrics["signalToNoiseRatio"][is_mua_unit] < param["minSNR"]
         )
         qm_table_list.extend([too_small_amplitude, too_small_SNR])
         qm_table_names.extend(["amplitude", "SNR"])
 
     if param["computeDrift"]:
-        too_large_drift = (
-            quality_metrics["maxDriftEstimate"] > param["maxDrift"]
+        too_large_drift = np.full(len(unit_type_string), False, dtype=bool)
+        too_large_drift[is_mua_unit] = (
+            quality_metrics["maxDriftEstimate"][is_mua_unit] > param["maxDrift"]
         )
         qm_table_list.append(too_large_drift)
         qm_table_names.append("max. drift")
@@ -1352,19 +1464,44 @@ def make_qm_table(quality_metrics, param, unit_type_string):
         (quality_metrics["peak1ToPeak2Ratio"] > param["maxPeak1ToPeak2Ratio_nonSomatic"]) |
         (quality_metrics["mainPeakToTroughRatio"] > param["maxMainPeakToTroughRatio_nonSomatic"])
     )
-    peak_main_to_trough = quality_metrics["mainPeakToTroughRatio"] > param["maxMainPeakToTroughRatio_nonSomatic"]
-    peak1_to_peak2 = quality_metrics["peak1ToPeak2Ratio"] > param["maxPeak1ToPeak2Ratio_nonSomatic"]
+    # Only evaluate non-somatic metrics for units actually classified as non-somatic
+    is_non_somatic_unit = np.char.find(unit_type_string.astype(str), 'NON-SOMA') >= 0
+    
+    trough_to_peak2 = np.full(len(unit_type_string), False, dtype=bool)
+    trough_to_peak2[is_non_somatic_unit] = (
+        quality_metrics["troughToPeak2Ratio"][is_non_somatic_unit] < param["minTroughToPeak2Ratio_nonSomatic"]
+    )
+    
+    peak1_to_peak2 = np.full(len(unit_type_string), False, dtype=bool)
+    # For non-somatic units, check if peak1/peak2 criteria failed (only when first 3 criteria were met)
+    if np.any(is_non_somatic_unit):
+        first_three_criteria = (
+            (quality_metrics["troughToPeak2Ratio"] < param["minTroughToPeak2Ratio_nonSomatic"]) &
+            (quality_metrics["mainPeak_before_width"] < param["minWidthFirstPeak_nonSomatic"]) &
+            (quality_metrics["mainTrough_width"] < param["minWidthMainTrough_nonSomatic"])
+        )
+        non_soma_with_first_three = is_non_somatic_unit & first_three_criteria
+        peak1_to_peak2[non_soma_with_first_three] = (
+            quality_metrics["peak1ToPeak2Ratio"][non_soma_with_first_three] > param["maxPeak1ToPeak2Ratio_nonSomatic"]
+        )
 
-    qm_table_list.extend([is_non_somatic, peak_main_to_trough, peak1_to_peak2])
-    qm_table_names.extend(["non somatic", "peak(main) / trough", "peak1 / peak2"])
+    qm_table_list.extend([trough_to_peak2, peak1_to_peak2])
+    qm_table_names.extend(["trough / peak2", "peak1 / peak2"])
 
 
     if param["computeDistanceMetrics"]:
-        too_low_iso_dist = quality_metrics['isolationDistance'] < param["isoDmin"]
-        too_high_lratio = quality_metrics["Lratio"] > param["lratioMax"]
+        too_low_iso_dist = np.full(len(unit_type_string), False, dtype=bool)
+        too_low_iso_dist[is_mua_unit] = (
+            quality_metrics['isolationDistance'][is_mua_unit] < param["isoDmin"]
+        )
+        
+        too_high_lratio = np.full(len(unit_type_string), False, dtype=bool)
+        too_high_lratio[is_mua_unit] = (
+            quality_metrics["Lratio"][is_mua_unit] > param["lratioMax"]
+        )
 
         qm_table_list.extend([too_low_iso_dist, too_high_lratio])
-        qm_table_names.extend(["isolation dist.", "L-Ratio"])
+        qm_table_names.extend(["isolation dist.", "L-ratio"])
 
 
     # DO this for the optional params

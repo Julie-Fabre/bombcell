@@ -1,4 +1,5 @@
 import os
+import json
 from pathlib import Path
 from joblib import Parallel, delayed
 
@@ -27,7 +28,7 @@ def read_meta(meta_path):
     Parameters
     ----------
     meta_path : path
-        The path to the .meta file
+        The path to the .meta file (SpikeGLX) or .oebin file (Open Ephys)
     
      Returns
     -------
@@ -35,16 +36,76 @@ def read_meta(meta_path):
         The meta file opened as a dictionary
     """
     meta_dict = {}
-    with meta_path.open() as f:
-        mdat_list = f.read().splitlines()
-        # convert the list entries into key value pairs
-        for m in mdat_list:
-            cs_list = m.split(sep="=")
-            if cs_list[0][0] == "~":
-                curr_key = cs_list[0][1 : len(cs_list[0])]
+    
+    if str(meta_path).endswith('.oebin'):
+        # Open Ephys Binary format - JSON file
+        with meta_path.open() as f:
+            oebin_data = json.load(f)
+        
+        # Extract relevant metadata from Open Ephys format
+        # We need to find the continuous data recording info
+        if 'continuous' in oebin_data and len(oebin_data['continuous']) > 0:
+            # Usually the first continuous recording is the neural data
+            continuous_data = oebin_data['continuous'][0]
+            
+            # Get the number of channels from the continuous data
+            n_channels = continuous_data.get('num_channels', 384)
+            
+            # Get sample rate
+            sample_rate = continuous_data.get('sample_rate', 30000.0)
+            
+            # Get bit volts for scaling (microvolts per bit)
+            # Default to 0.195 for Open Ephys if not specified
+            bit_volts = 0.195
+            if 'channels' in continuous_data and len(continuous_data['channels']) > 0:
+                # Get bit_volts from first channel if available
+                bit_volts = continuous_data['channels'][0].get('bit_volts', 0.195)
+            
+            # Calculate file size from the binary file
+            # The binary file is usually in the same directory with name continuous.dat
+            binary_file = meta_path.parent / continuous_data.get('folder_name', 'continuous') / 'continuous.dat'
+            if binary_file.exists():
+                file_size_bytes = os.path.getsize(binary_file)
             else:
-                curr_key = cs_list[0]
-            meta_dict.update({curr_key: cs_list[1]})
+                # Try to find any .dat file in the parent directory
+                dat_files = list(meta_path.parent.glob('**/*.dat'))
+                if dat_files:
+                    file_size_bytes = os.path.getsize(dat_files[0])
+                else:
+                    # Default to a large value if we can't find the file
+                    file_size_bytes = 0
+            
+            # Create meta_dict in SpikeGLX format for compatibility
+            meta_dict['fileTimeSecs'] = file_size_bytes / (2 * n_channels * sample_rate) if file_size_bytes > 0 else 0
+            meta_dict['fileSizeBytes'] = str(file_size_bytes)
+            meta_dict['nSavedChans'] = str(n_channels)  # In Open Ephys, this is total channels
+            meta_dict['sRateHz'] = str(sample_rate)
+            meta_dict['imAiRangeMax'] = '1'  # Not used but kept for compatibility
+            meta_dict['imAiRangeMin'] = '-1'  # Not used but kept for compatibility
+            
+            # For Open Ephys, we use the bit_volts directly
+            # The conversion factor is bit_volts * 1e6 to get from volts to microvolts
+            # But since bit_volts is already in microvolts, we use it directly
+            meta_dict['imMaxInt'] = '32768'  # 2^15 for int16
+            meta_dict['bitVolts'] = str(bit_volts)  # Store bit_volts for later use
+            
+        else:
+            raise ValueError(f"Could not find continuous data in {meta_path}")
+            
+    else:
+        # SpikeGLX format - key=value pairs
+        with meta_path.open() as f:
+            mdat_list = f.read().splitlines()
+            # convert the list entries into key value pairs
+            for m in mdat_list:
+                cs_list = m.split(sep="=")
+                if len(cs_list) >= 2:  # Ensure we have at least key=value
+                    if cs_list[0][0] == "~":
+                        curr_key = cs_list[0][1 : len(cs_list[0])]
+                    else:
+                        curr_key = cs_list[0]
+                    # Handle cases where value might contain '=' 
+                    meta_dict.update({curr_key: '='.join(cs_list[1:])})
 
     return meta_dict
 
@@ -62,7 +123,8 @@ def process_a_unit(
     detrendForUnitMatch,
     waveform_baseline_noise,
     save_directory,
-    save_multiple_raw
+    save_multiple_raw,
+    template_peak_channel=None
 ):
     """
     Reads in data from a unit, and processes the data.
@@ -93,6 +155,8 @@ def process_a_unit(
         The number of samples before the waveform which are noise
     save_directory : pathlib.Path
         The path to the directory to save the UnitMatch data
+    template_peak_channel : int, optional
+        The peak channel from the template. If provided, this will be used instead of calculating from raw waveforms
 
     Returns
     -------
@@ -123,9 +187,11 @@ def process_a_unit(
 
         # option to remove a linear in time trends
         if detrendWaveform:
-            detrended = detrend(tmp[:, :-n_sync_channels], axis=0).swapaxes(
-                0, 1
-            )
+            if n_sync_channels > 0:
+                detrended = detrend(tmp[:, :-n_sync_channels], axis=0).swapaxes(0, 1)
+            else:
+                detrended = detrend(tmp[:, :], axis=0).swapaxes(0, 1)
+            
             spike_map[:, :, i] = detrended
         else:
             spike_map[:, :, i] = tmp[:, :-n_sync_channels].swapaxes(0, 1)
@@ -188,11 +254,15 @@ def process_a_unit(
     # Smoothing can be applied later
     # spike_map_smoothed = gaussian_filter(raw_waveforms[f'cluster_{cid}']['spike_map_mean'], axes = 1, sigma = 1, radius = 2)
 
-    # find peak channel
-    raw_waveforms_peak_channel = np.argmax(
-        np.max(raw_waveforms_full[:, :], axis=1)
-        - np.min(raw_waveforms_full[:, :], axis=1)
-    )
+    # use template peak channel if provided, otherwise calculate from raw waveforms
+    if template_peak_channel is not None:
+        raw_waveforms_peak_channel = template_peak_channel
+    else:
+        # find peak channel from raw waveforms (old behavior)
+        raw_waveforms_peak_channel = np.argmax(
+            np.max(raw_waveforms_full[:, :], axis=1)
+            - np.min(raw_waveforms_full[:, :], axis=1)
+        )
     average_baseline = np.nanmean(
         spike_map[int(raw_waveforms_peak_channel), :waveform_baseline_noise, :], axis=1
     )
@@ -284,7 +354,7 @@ def unpack_dicts(
 
 
 def extract_raw_waveforms(
-    param, spike_clusters, spike_times, re_extract_waveforms, save_path
+    param, spike_clusters, spike_times, re_extract_waveforms, save_path, template_peak_channels=None
 ):
     """
     Extracts average raw waveforms from the raw data, can be used to get raw waveforms for UnitMatch as well
@@ -301,6 +371,8 @@ def extract_raw_waveforms(
         If True will re-extract waveforms if there are waveforms saved
     save_path : str
         The path to the directory where results will be saved
+    template_peak_channels : ndarray, optional
+        Array of peak channels from templates. If provided, raw waveforms will use these instead of calculating their own
 
     Returns
     -------
@@ -374,15 +446,38 @@ def extract_raw_waveforms(
         # half_width is the number of sample before spike_time which are recorded,
         # then will take spike_width - half_width after
         if spike_width == 82: # kilosort < 4, baseline 0:41
-            half_width = spike_width / 2
+            half_width = 41  # Fixed to be an integer
         elif spike_width == 61: # kilosort = 4, baseline 0:20
             half_width = 20
+        else:
+            # For custom spike widths, use floor division to get the midpoint
+            # This ensures we always get an integer value
+            half_width = spike_width // 2
 
         if meta_path is not None and meta_path.exists():
             meta_dict = read_meta(meta_path)
             n_elements = (int(meta_dict["fileSizeBytes"]) / 2)  # int16 so 2 bytes per data point
             n_channels_rec = int(meta_dict["nSavedChans"])  # Total channels including sync
             param["n_channels_rec"] = n_channels_rec
+            
+            # For Open Ephys files, adjust the raw data file path if needed
+            if str(meta_path).endswith('.oebin'):
+                # In Open Ephys, nSavedChans is already the total channel count
+                # Make sure we're using the right raw data file path
+                if not Path(raw_data_file).exists():
+                    # Try to find the continuous.dat file
+                    possible_dat = meta_path.parent / 'continuous' / 'continuous.dat'
+                    if possible_dat.exists():
+                        raw_data_file = str(possible_dat)
+                        param["raw_data_file"] = raw_data_file
+                        print(f"Using Open Ephys raw data file: {raw_data_file}")
+                    else:
+                        # Look for any .dat file
+                        dat_files = list(meta_path.parent.glob('**/*.dat'))
+                        if dat_files:
+                            raw_data_file = str(dat_files[0])
+                            param["raw_data_file"] = raw_data_file
+                            print(f"Using Open Ephys raw data file: {raw_data_file}")
         else:
             # Use default values when no metafile is available
             print("Warning: No meta file found. Using default parameters...")
@@ -448,10 +543,10 @@ def extract_raw_waveforms(
                 waveform_baseline_noise,
                 raw_waveforms_dir,
                 save_multiple_raw,
+                template_peak_channels[i] if template_peak_channels is not None and i < len(template_peak_channels) else None,
             )
             for i, cid in tqdm(enumerate(unique_clusters))
         )
-
 
         (raw_waveforms,
          raw_waveforms_full,
@@ -507,6 +602,93 @@ def extract_raw_waveforms(
         np.save(raw_waveforms_id_match_file, raw_waveforms_id_match)
 
     return raw_waveforms_full, raw_waveforms_peak_channel, SNR, raw_waveforms_id_match
+
+
+def decompress_data_if_needed(raw_file_path, decompress_data=True):
+    """
+    Check if raw data needs decompression and decompress if necessary.
+    
+    Parameters
+    ----------
+    raw_file_path : str or Path
+        Path to the raw data file (can be .bin or .cbin)
+    decompress_data : bool, optional
+        Whether to decompress compressed data, by default True
+        
+    Returns
+    -------
+    str
+        Path to the usable raw data file (decompressed if needed)
+        
+    Raises
+    ------
+    Exception
+        If compressed data is found but decompress_data is False
+    """
+    raw_file_path = Path(raw_file_path)
+    ephys_raw_dir = raw_file_path.parent
+    
+    # If the file is already .bin and exists, just return it
+    if raw_file_path.suffix == '.bin' and raw_file_path.exists():
+        return str(raw_file_path)
+    
+    # Look for data files in the directory
+    files = os.listdir(ephys_raw_dir)
+    bc_decompressed_data = None
+    decompressed_data = None
+    compressed_data = None
+    compressed_ch = None
+    
+    # Find compressed or decompressed binary files
+    for file in files:
+        ext = os.path.splitext(file)[1]
+        
+        if "_bc_decompressed" in file:
+            bc_decompressed_data = file
+        
+        elif ext == ".bin":
+            pre_ext = os.path.splitext(os.path.splitext(file)[0])[1]
+            if pre_ext != ".lf":  # Exclude LFP data
+                decompressed_data = file
+        
+        elif ext == ".cbin":
+            compressed_data = file
+        
+        elif ext == ".ch":
+            pre_ext = os.path.splitext(os.path.splitext(file)[0])[1]
+            if pre_ext != ".lf":  # Exclude LFP data
+                compressed_ch = file
+    
+    # Check for previously decompressed data with bombcell suffix
+    if bc_decompressed_data is not None:
+        print(f"Using previously decompressed ephys data file {bc_decompressed_data}")
+        return str(ephys_raw_dir / bc_decompressed_data)
+    
+    # Check for regular decompressed data
+    elif decompressed_data is not None:
+        print(f"Using raw data {decompressed_data}")
+        return str(ephys_raw_dir / decompressed_data)
+    
+    # Handle compressed data
+    elif compressed_data is not None:
+        if compressed_ch is None:
+            raise Exception(f"Found compressed data file {compressed_data} but no matching .ch file!")
+        
+        if decompress_data:
+            print(f"Decompressing ephys data file {compressed_data}...")
+            decompressed_data_name = compressed_data.replace(".cbin", ".bin").split('.')
+            decompressed_data_name[0] = decompressed_data_name[0] + '_bc_decompressed'
+            decompressed_data_name = ".".join(decompressed_data_name)
+            
+            decompressed_path = _decompress_raw_data(
+                ephys_raw_dir, compressed_data, compressed_ch, decompressed_data_name
+            )
+            return str(decompressed_path)
+        else:
+            raise Exception(f"Found compressed data at {ephys_raw_dir} but decompress_data=False. "
+                          f"Set decompress_data=True to decompress {compressed_data}")
+    else:
+        raise Exception(f"Could not find any suitable ephys data (.bin, .cbin) at {ephys_raw_dir}!")
 
 
 def manage_data_compression(ephys_raw_dir, param):
@@ -578,7 +760,7 @@ def manage_data_compression(ephys_raw_dir, param):
             decompressed_data_name = compressed_data.replace(".cbin", ".bin").split('.')
             decompressed_data_name[0] = decompressed_data_name[0] + '_bc_decompressed'
             decompressed_data_name = ".".join(decompressed_data_name)
-            ephys_raw_data = decompress_data(
+            ephys_raw_data = _decompress_raw_data(
                 ephys_raw_dir, compressed_data, compressed_ch, decompressed_data_name
             )
         else:
@@ -587,12 +769,12 @@ def manage_data_compression(ephys_raw_dir, param):
         raise Exception(f"Could not find compressed or decompressed data at {ephys_raw_dir}!")
 
     # need full paths
-    assert ephys_raw_data is not None, f"Raw data (.ap.bin file) not found at {ephys_raw_dir}!"
+    assert ephys_raw_data is not None, f"Raw data (.ap.bin, .dat, or .cbin file) not found at {ephys_raw_dir}!"
 
     return ephys_raw_data
 
 
-def decompress_data(
+def _decompress_raw_data(
     source_directory,
     compressed_data,
     compressed_ch,
@@ -688,16 +870,39 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
 
         # half_width is the number of sample before spike_time which are recorded,
         # then will take spike_width - half_width after
-        if spike_width == 81: # kilosort < 4, baseline 0:41
-            half_width = spike_width / 2
+        if spike_width == 82: # kilosort < 4, baseline 0:41 (fixed from 81 to match main function)
+            half_width = 41  # Fixed to be an integer
         elif spike_width == 61: # kilosort = 4, baseline 0:20
             half_width = 20
+        else:
+            # For custom spike widths, use floor division to get the midpoint
+            # This ensures we always get an integer value
+            half_width = spike_width // 2
 
         if meta_path is not None and meta_path.exists():
             meta_dict = read_meta(meta_path)
             n_elements = (int(meta_dict["fileSizeBytes"]) / 2)  # int16 so 2 bytes per data point
             n_channels_rec = int(meta_dict["nSavedChans"])  # Total channels including sync
             param["n_channels_rec"] = n_channels_rec
+            
+            # For Open Ephys files, adjust the raw data file path if needed
+            if str(meta_path).endswith('.oebin'):
+                # In Open Ephys, nSavedChans is already the total channel count
+                # Make sure we're using the right raw data file path
+                if not Path(raw_data_file).exists():
+                    # Try to find the continuous.dat file
+                    possible_dat = meta_path.parent / 'continuous' / 'continuous.dat'
+                    if possible_dat.exists():
+                        raw_data_file = str(possible_dat)
+                        param["raw_data_file"] = raw_data_file
+                        print(f"Using Open Ephys raw data file: {raw_data_file}")
+                    else:
+                        # Look for any .dat file
+                        dat_files = list(meta_path.parent.glob('**/*.dat'))
+                        if dat_files:
+                            raw_data_file = str(dat_files[0])
+                            param["raw_data_file"] = raw_data_file
+                            print(f"Using Open Ephys raw data file: {raw_data_file}")
         else:
             # Use default values when no metafile is available
             print("Warning: No meta file found. Using inputed parameters...")
@@ -756,6 +961,9 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
         for id in new_indexes_to_get:
             # Get the correct index in all_spikes_idxs array
             unit_idx = np.where(unique_id_new == id)[0][0]
+            # Get template peak channel for this unit
+            template_peak_ch = template_peak_channels[unit_idx] if template_peak_channels is not None and unit_idx < len(template_peak_channels) else None
+            
             tmp_raw_waveform_info = process_a_unit(
                 raw_data,
                 spike_width,
@@ -766,9 +974,11 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
                 n_sync_channels,
                 id,
                 detrendWaveform,
+                detrendForUnitMatch,
                 waveform_baseline_noise,
                 raw_waveforms_dir,
                 save_multiple_raw,
+                template_peak_ch,
             )
             new_raw_waveforms_matching_ids[id] = tmp_raw_waveform_info['raw_waveforms_full']
             new_peak_channels_matching_ids[id] = tmp_raw_waveform_info['raw_waveforms_peak_channel']

@@ -42,7 +42,7 @@ if ~istable(param)
     if ~isfield(param,'gain_to_uV') || isempty(param.gain_to_uV)
         param.gain_to_uV = 'NaN';
     end
-    parquetwrite([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')], struct2table(param))
+    parquetwrite([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')], struct2table(param, 'AsArray', true))
 end
 % save quality metrics
 if param.saveMatFileForGUI

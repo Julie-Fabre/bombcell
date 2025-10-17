@@ -40,7 +40,7 @@ end
 % Initialize unitType array
 unitType = nan(length(qMetric.percentageSpikesMissing_gaussian), 1);
 
-% check quality metric and apram names
+% check quality metric and ram names
 [qMetric, param] = bc.qm.prettify_names(qMetric, param);
 
 %% Classify units

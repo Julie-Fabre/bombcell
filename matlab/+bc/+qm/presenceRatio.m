@@ -21,19 +21,19 @@ function presenceRatio = presenceRatio(theseSpikeTimes, theseAmplis, presenceRat
 % presenceRatio : fraction of bins (of bin size presenceRatioBinSize) that
 %   contain at least 5% of the largest spike count per bin
 %
-% Note that cells can have low scores in this metric if they have highly selective
+% Note that good units can have low scores in this metric if they have highly selective
 %   firing patterns. 
 % ------
 % Reference 
 % ------
-% Siegle, J.H., Jia, X., Durand, S. et al. Survey of spiking in the mouse 
+% inspired and modified from: Siegle, J.H., Jia, X., Durand, S. et al. Survey of spiking in the mouse 
 % visual system reveals functional hierarchy. Nature 592, 86–92 (2021). https://doi.org/10.1038/s41586-020-03171-x
 
 % divide recordings times in chunks
 presenceRatio_bins = startTime:presenceRatioBinSize:stopTime;
 % count number of spikes in each chunk 
 spikesPerBin = arrayfun(@(x) sum(theseSpikeTimes>=presenceRatio_bins(x) & theseSpikeTimes<presenceRatio_bins(x+1)),1:length(presenceRatio_bins)-1);
-fullBins = spikesPerBin >= 0.05*prctile(spikesPerBin, 90);
+fullBins = spikesPerBin >= 0.05*prctile(spikesPerBin, 90) & spikesPerBin > 0;
 presenceRatio = sum(fullBins)/length(spikesPerBin);
 
 if param.plotDetails 

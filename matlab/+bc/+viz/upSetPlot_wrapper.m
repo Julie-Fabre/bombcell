@@ -176,10 +176,10 @@ if param.splitGoodAndMua_NonSomatic
 
     if param.computeDistanceMetrics && ~isnan(param.isoDmin)
         UpSet_data_muaNonSoma = [UpSet_data_muaNonSoma, ...
-            qMetric.isoD < param.isoDmin, ...
+            qMetric.isolationDistance < param.isoDmin, ...
             qMetric.Lratio > param.lratioMax];
-        UpSet_labels_mua{end+1} = 'isolation dist.';
-        UpSet_labels_mua{end+1} = 'l-ratio';
+        UpSet_labels_muaNonSoma{end+1} = 'isolation dist.';
+        UpSet_labels_muaNonSoma{end+1} = 'l-ratio';
 
     end
     if param.extractRaw

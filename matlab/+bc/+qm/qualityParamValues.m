@@ -15,6 +15,7 @@ function param = qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, ga
 % classification parameters (see bc_qualityParamValues for required fields
 % and suggested starting values)
 % 
+
 if nargin < 5 
     kilosortVersion = 2;
 end
@@ -43,7 +44,7 @@ param.saveMatFileForGUI = 1; % save certain outputs at .mat file - useful for GU
 
 % duplicate spikes parameters 
 param.removeDuplicateSpikes = 0;
-param.duplicateSpikeWindow_s = 0.00001; % in seconds 
+param.duplicateSpikeWindow_s = 0.000034; % in seconds 
 param.saveSpikes_withoutDuplicates = 1;
 param.recomputeDuplicateSpikes = 0;
 
@@ -56,11 +57,8 @@ param.saveMultipleRaw = 0; % If you wish to save the nRawSpikesToExtract as well
     % currently needed if you want to run unit match https://github.com/EnnyvanBeest/UnitMatch
     % to track chronic cells over days after this
 param.decompressData = 0; % whether to decompress .cbin ephys data 
-if kilosortVersion == 4
-    param.spikeWidth = 61; % width in samples 
-else
-    param.spikeWidth = 82; % width in samples 
-end
+
+% Spike width will be calculated after recording parameters are set
 if strcmp(rawFile, "NaN")
     param.extractRaw = 0;
 else
@@ -75,15 +73,7 @@ param.probeType = 1; % if you are using spikeGLX and your meta file does
 param.computeSpatialDecay = 1;
 
 % signal to noise ratio
-if kilosortVersion == 4
-    param.waveformBaselineNoiseWindow = 10; %time in samples at beginning of times
-        % extracted to computer the mean raw waveform - this needs to be before the
-        % waveform starts 
-else
-    param.waveformBaselineNoiseWindow = 20; %time in samples at beginning of times
-        % extracted to computer the mean raw waveform - this needs to be before the
-        % waveform starts 
-end
+% Baseline noise window will be calculated after spike width is determined
 
 % refractory period parameters
 param.tauR_valuesMin = 2/1000; % refractory period time (s), usually 0.0020. 
@@ -110,13 +100,7 @@ param.computeDrift = 0; % whether to compute each units drift. this is a
     % critically slow step that takes around 2seconds per unit 
 
 % waveform parameters
-if kilosortVersion == 4
-    param.waveformBaselineWindowStart = 1;
-    param.waveformBaselineWindowStop = 11; % in samples 
-else
-    param.waveformBaselineWindowStart = 20;
-    param.waveformBaselineWindowStop = 30; % in samples 
-end
+% Baseline windows will be calculated after spike width is determined
 param.minThreshDetectPeaksTroughs = 0.2; % this is multiplied by the max value 
     % in a units waveform to give the minimum prominence to detect peaks using
     % matlab's findpeaks function.
@@ -139,6 +123,48 @@ else
     param.gain_to_uV = gain_to_uV;
 end
 param.rawFile = rawFile;
+
+% Flexible spike width calculation based on sampling rate
+% Try to get actual sampling rate from metadata if available
+if ~isempty(ephysMetaDir) && exist(param.ephysMetaFile, 'file')
+    try
+        % Try to read actual sampling rate from metadata
+        [~, ~, actualSamplingRate, ~] = bc.load.loadMetaData(param.ephysMetaFile);
+        if ~isempty(actualSamplingRate) && actualSamplingRate > 0
+            param.ephys_sample_rate = actualSamplingRate;
+        end
+    catch
+        % If reading fails, use default (30000 will be set later)
+    end
+end
+
+% Calculate spike width based on actual sampling rate (will use default 30000 if not overridden)
+param.spikeWidth = bc.qm.helpers.calculateSpikeWidth(param.ephys_sample_rate, kilosortVersion);
+
+% For backwards compatibility, store the standard spike widths
+if kilosortVersion == 4
+    param.standardSpikeWidth = 61; % width in samples at 30kHz
+else
+    param.standardSpikeWidth = 82; % width in samples at 30kHz
+end
+
+% Now calculate all spike-width-dependent parameters
+% Signal to noise ratio - baseline noise window
+if param.spikeWidth <= 70  % Shorter waveforms (like KS4)
+    param.waveformBaselineNoiseWindow = round(param.spikeWidth * 10/61); % Scale from standard 10 samples at 61 width
+else  % Longer waveforms
+    param.waveformBaselineNoiseWindow = round(param.spikeWidth * 20/82); % Scale from standard 20 samples at 82 width
+end
+param.waveformBaselineNoiseWindow = max(5, param.waveformBaselineNoiseWindow); % Ensure at least 5 samples
+
+% Waveform baseline windows
+if param.spikeWidth <= 70  % Shorter waveforms (like KS4)
+    param.waveformBaselineWindowStart = max(1, round(param.spikeWidth * 1/61));
+    param.waveformBaselineWindowStop = max(5, round(param.spikeWidth * 11/61)); % in samples 
+else  % Longer waveforms
+    param.waveformBaselineWindowStart = max(1, round(param.spikeWidth * 20/82));
+    param.waveformBaselineWindowStop = max(10, round(param.spikeWidth * 30/82)); % in samples 
+end
 
 % distance metric parameters
 param.computeDistanceMetrics = 0; % whether to compute distance metrics - this can be time consuming 
@@ -166,8 +192,10 @@ param.maxScndPeakToTroughRatio_noise = 0.8; % peak must be less than this x the 
 param.maxPeak1ToPeak2Ratio_nonSomatic = 3; % if units have an initial peak before the trough,
     % it must be at least firstPeakRatio times larger than the peak after the trough to qualify as a non-somatic unit. 
 param.maxMainPeakToTroughRatio_nonSomatic = 0.8; % peak must be less than this x the trough 
-param.minWidthFirstPeak_nonSomatic = 4; % in samples 
-param.minWidthMainTrough_nonSomatic = 5; % in samples
+% Scale width parameters based on spike width
+standardWidth = param.standardSpikeWidth; % 61 or 82 depending on KS version
+param.minWidthFirstPeak_nonSomatic = max(2, round(4 * param.spikeWidth / standardWidth)); % in samples 
+param.minWidthMainTrough_nonSomatic = max(3, round(5 * param.spikeWidth / standardWidth)); % in samples
 param.minTroughToPeak2Ratio_nonSomatic = 5; % trough should be min 5 x bigger than 1rst peak to count as non-somatic 
 
 % distance metrics

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bombcell"
-version = "0.52"
+version = "0.65"
 description = "Python port of bombcell. Automated quality control, curation and neuron classification of spike-sorted electrophysiology data."
 readme = "README.md"
 license = {text = "GPL-3.0"}

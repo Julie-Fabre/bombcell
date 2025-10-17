@@ -1,4 +1,4 @@
-# BombCell
+# Bombcell
 
 Python port of BombCell. Automated quality control, curation and neuron classification of spike-sorted electrophysiology data.
 
@@ -23,28 +23,7 @@ uv pip install -e .
 
 ## Quick Start
 
-```python
-import bombcell as bc
-
-# Set up parameters
-param = bc.get_default_parameters("path/to/kilosort_output")
-
-# Run quality metrics
-quality_metrics, param, unit_type, unit_type_string = bc.run_bombcell(
-    "path/to/kilosort_output", 
-    "path/to/bombcell_output", 
-    param
-)
-
-# Launch GUI for manual inspection
-gui = bc.unit_quality_gui(
-    ks_dir="path/to/kilosort_output",
-    quality_metrics=quality_metrics,
-    unit_types=unit_type,
-    param=param,
-    save_path="path/to/bombcell_output"
-)
-```
+See the [demo script](https://github.com/Julie-Fabre/bombcell/blob/main/py_bombcell/demos/BC_demo.ipynb) 
 
 ## Features
 
@@ -56,7 +35,7 @@ gui = bc.unit_quality_gui(
 
 ## Documentation
 
-See the demo notebooks in the `Demos/` directory for detailed examples.
+See the demo notebooks in the `Demos/` directory for detailed examples, and see the [wiki](https://github.com/Julie-Fabre/bombcell/wiki) for more information
 
 ## License
 

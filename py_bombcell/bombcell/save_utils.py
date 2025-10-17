@@ -94,18 +94,33 @@ def save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_d
     template_ids : array
         Array of unit template IDs
     output_dir : str
-        Directory path for saving the files
+        Directory path for saving BombCell results (used for internal files)
+    ks_dir : str
+        Directory path to the original Kilosort directory (for TSV files - Phy compatibility)
     """
     if param["saveAsTSV"]:
         # Ensure output directory exists
         os.makedirs(output_dir, exist_ok=True)
+        
+        # IMPORTANT: TSV files must be saved in the original Kilosort directory for Phy compatibility
+        # Always use ks_dir (the original Kilosort directory) for TSV files
+        tsv_save_dir = ks_dir
+        
+        # Additional safety check: if ks_dir somehow contains 'bombcell' subdirectory, correct it
+        if 'bombcell' in str(ks_dir) and os.path.basename(ks_dir) == 'bombcell':
+            tsv_save_dir = os.path.dirname(ks_dir)
+            if param.get("verbose", False):
+                print(f"📁 Corrected TSV location from bombcell subdirectory to: {tsv_save_dir}")
+        
+        if param.get("verbose", False):
+            print(f"📁 Saving TSV files to Kilosort directory: {tsv_save_dir}")
 
         if param["unit_type_for_phy"]:
-            # Save unit types first
+            # Save unit types to Kilosort directory (not bombcell subdirectory)
             save_quality_metric_tsv(
                 unit_types,
                 template_ids,
-                ks_dir,
+                tsv_save_dir,  # Use corrected directory
                 "cluster_bc_unitType.tsv",
                 ("cluster_id", "bc_unitType")
             )
@@ -122,11 +137,11 @@ def save_all_quality_metrics(quality_metrics, unit_types, template_ids, output_d
                 # Create column headers
                 column_names = ("cluster_id", metric_name)
                 
-                # Save the metric
+                # Save the metric to Kilosort directory (not bombcell subdirectory)
                 save_quality_metric_tsv(
                     quality_metrics[metric_name],
                     template_ids,
-                    ks_dir,
+                    tsv_save_dir,  # Use corrected directory
                     filename,
                     column_names
                 )

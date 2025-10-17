@@ -196,7 +196,7 @@ def remove_duplicate_spikes(
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
-    if param["remove_duplicate_spikes"]:
+    if param["removeDuplicateSpikes"]:
         # check if spikes are already extract or need to recompute
         if param["recomputeDuplicateSpikes"] or ~os.path.isdir(
             os.path.join(save_path, "spikes._bc_duplicateSpikes.npy")
@@ -711,11 +711,12 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
                 isi_violations_sum = 0
 
                 # Count all pair-wise violations
-                for i in range(N):
-                    for j in range(i+1, N):
-                        isi = chunk_spike_times[j] - chunk_spike_times[i]
-                        if isi <= tauR and isi >= tauC:
-                            isi_violations_sum += 1
+                if N > 1:
+                    for i in range(N - 1):
+                        isi_vec = chunk_spike_times[i+1:] - chunk_spike_times[i]
+                        isi_violations_sum += np.sum((isi_vec <= tauR) & (isi_vec >= tauC))
+                else:
+                    isi_violations_sum = 0
 
                 # Calculate fraction using Llobet equation
                 if N > 0:  # Avoid division by zero
@@ -997,12 +998,15 @@ def presence_ratio(these_spike_times, use_this_time_start, use_this_time_end, pa
             for x in range(presence_ratio_bins.shape[0] - 1)
         ]
     )
+    
     full_bins = np.zeros_like(spikes_per_bin)
-    full_bins[spikes_per_bin >= 0.05 * np.percentile(spikes_per_bin, 90)] = 1
-    # print(f'The presence threshold spike No. is: {0.05 * np.percentile(spikes_per_bin, 90)}')
+    threshold = 0.05 * np.percentile(spikes_per_bin, 90)
+    
+    # Both conditions: >= threshold AND > 0
+    full_bins[np.logical_and(spikes_per_bin >= threshold, spikes_per_bin > 0)] = 1
+    
     presence_ratio = full_bins.sum() / full_bins.shape[0]
-    # print(f'The presence ratio is {presence_ratio}')
-    # ADD presence ratio plots
+    
     return presence_ratio
 
 
@@ -1809,16 +1813,18 @@ def get_distance_metrics(
     )
 
 
-def get_raw_amplitude(this_raw_waveform, gain_to_uV):
+def get_raw_amplitude(this_raw_waveform, gain_to_uV, peak_channel=None):
     """
     The raw amplitude from extracted average waveforms
 
     Parameters
     ----------
     this_raw_waveform : ndarray
-        The extracted raw average waveforms
+        The extracted raw average waveforms (n_channels, spike_width) or (spike_width,) if single channel
     gain_to_uV : float
         The waveform gain
+    peak_channel : int, optional
+        The peak channel to use for amplitude calculation. If None, uses all channels (old behavior)
 
     Returns
     -------
@@ -1826,6 +1832,11 @@ def get_raw_amplitude(this_raw_waveform, gain_to_uV):
         The actual raw amplitude
     """
     this_raw_waveform_tmp = this_raw_waveform.copy()
+    
+    # If peak_channel is specified and waveform is multi-channel, use only that channel
+    if peak_channel is not None and this_raw_waveform_tmp.ndim == 2:
+        this_raw_waveform_tmp = this_raw_waveform_tmp[peak_channel, :]
+    
     if ~np.isnan(gain_to_uV):
         this_raw_waveform_tmp *= gain_to_uV
         raw_amplitude = np.abs(np.nanmax(this_raw_waveform_tmp)) + np.abs(

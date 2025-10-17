@@ -154,10 +154,14 @@ if param.plotGlobal
             singleU = uniqueTemplates_idx(find(unitType == iUnitType));
             set(gca, 'XColor', 'w', 'YColor', 'w')
             singleUnitLines = arrayfun(@(x) plot(squeeze(templateWaveforms(singleU(x), :)), 'linewidth', 1, 'Color', [0, 0, 0, 0.2]), 1:size(singleU, 2));
-            if param.spikeWidth == 61 %Kilosort 4
-                xlim([1, 61])
+            % Flexible xlim based on spike width
+            if param.spikeWidth <= 70
+                % For shorter waveforms, show full range
+                xlim([1, param.spikeWidth])
             else
-                xlim([21, 82])
+                % For longer waveforms, skip initial baseline portion
+                startIdx = max(1, round(21 * param.spikeWidth / 82));
+                xlim([startIdx, param.spikeWidth])
             end
         end
 
