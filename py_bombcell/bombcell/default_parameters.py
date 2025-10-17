@@ -43,6 +43,7 @@ def get_default_parameters(
         "saveAsTSV": True,  # save outputs as a .tsv file, useful for using phy after bombcell
         "unit_type_for_phy": True,  # save a unit_type .tsv file for phy
         "ephysKilosortPath": str(kilosort_path),  # path to the KiloSort directory
+        "joblib_backend_preference": "processes", # 'processes' OR 'threads
 
         ## Duplicate spike parameters
         "removeDuplicateSpikes": False,
