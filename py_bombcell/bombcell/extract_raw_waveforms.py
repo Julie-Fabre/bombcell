@@ -571,7 +571,7 @@ def extract_raw_waveforms(
     # Compute SNR
     SNR = np.zeros(n_clusters)
     for i, cid in enumerate(unique_clusters):
-        mask = unique_clusters == i
+        mask = unique_clusters == cid
         cluster_idx = np.where(mask)[0]
         peak_channel = raw_waveforms_peak_channel[cluster_idx].astype(int)
 
@@ -580,7 +580,7 @@ def extract_raw_waveforms(
         signal = np.max(np.abs(np.squeeze(peak_waveform)))
 
         # Get baseline noise for this cluster
-        baseline_mask = baseline_noise_idx  == i
+        baseline_mask = baseline_noise_idx  == cid
         baseline = baseline_noise_all[baseline_mask]
 
         # Calculate MAD (noise) - Median Absolute Deviation
