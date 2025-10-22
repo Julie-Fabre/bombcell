@@ -524,7 +524,11 @@ def extract_raw_waveforms(
                 all_spikes_idxs[i, : len(clus_spike_times[i])] = clus_spike_times[i]
                 all_spikes_idxs[i, len(clus_spike_times[i]) :] = np.nan
 
-        prefer = param["joblib_backend_preference"]
+        try:
+            prefer = param["joblib_backend_preference"]
+        except KeyError:
+            param["joblib_backend_preference"] = "processes"
+            prefer = param["joblib_backend_preference"]
         all_waveforms = Parallel(n_jobs=-1, verbose=10, mmap_mode="r", max_nbytes=None, prefer=prefer)(
             delayed(process_a_unit)(
                 raw_data,
