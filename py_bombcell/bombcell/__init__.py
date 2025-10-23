@@ -8,8 +8,8 @@ from . import (
     helper_functions,
     plot_functions,
     classification,
-    unit_quality_gui,
-    manual_analysis
+    manual_analysis,
+    unit_quality_gui
 )
 
 from .default_parameters import *
@@ -27,7 +27,7 @@ from .ccg_fast import acg, ccg
 from .ephys_properties import get_ephys_parameters
 from .classification import classify_and_plot_brain_region
 from .default_parameters import get_unit_match_parameters
-from .unit_quality_gui import load_unit_quality_gui, InteractiveUnitQualityGUI, precompute_gui_data, load_gui_data
+from .unit_quality_gui import unit_quality_gui, InteractiveUnitQualityGUI, precompute_gui_data, load_gui_data
 # CCG functions are in ephys_properties.py (fast_acg, compute_acg)
 from .manual_analysis import (
     load_manual_classifications, 
