@@ -79,7 +79,7 @@ conda create -n bombcell python=3.11
 conda activate bombcell
 # Clone latest bombcell repository from github
 git clone https://github.com/Julie-Fabre/bombcell.git
-cd bombcell/pyBombCell
+cd bombcell/py_bombCell
 # Install bombcell
 pip install uv
 uv pip install -e .
@@ -99,4 +99,5 @@ Bombcell is under the open-source [copyleft](https://www.gnu.org/licenses/copyle
 
 If you run into any issues or if you have any suggestions, please raise a [github issue](https://github.com/Julie-Fabre/bombcell/issues) or create a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request). You can also use the [Neuropixels slack workgroup](https://join.slack.com/t/neuropixelsgroup/shared_invite/zt-2h3sp1nfr-JZrpKWxeVptI0EPbHAoxKA).
 Please star the project to support us, using the top-right "⭐ Star" button.
+
 
