@@ -26,6 +26,7 @@ function [spikeTimes_samples, spikeClusters, templateWaveforms, templateAmplitud
 %
 
 % load spike templates (= waveforms)
+
 spike_templates_0idx = readNPY([ephys_path, filesep, 'spike_templates.npy']);
 spikeTemplates = spike_templates_0idx + 1;
 

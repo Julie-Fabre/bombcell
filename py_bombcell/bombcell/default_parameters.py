@@ -92,8 +92,12 @@ def get_default_parameters(
         "spDecayLinFit": False, # if True, use a linear fit for spatial decay. If false, use exponential (preferred)
         "computeSpatialDecay": True,
 
-        ## Recording parameters - !WARNING! if you modify any of these after having already run bombcell, you 
+        ## Recording parameters - !!WARNINGS!! :
+        # 1. if you modify any of these after having already run bombcell, you 
         # will need to set 'reextractRaw' to true to update the raw waveforms
+        # 2. if you also specify a meta file as input & you are using spikeGLX or 
+        # OpenEphys to record your probes, these values will be over-ridden by the ones
+        # in your provided meta file (bombcell reads them in)
         "ephys_sample_rate": 30000,  # samples per second
         "nChannels": 385,  # Number of recorded channels (including any sync channels) in raw data
         "nSyncChannels": 1, # Number of recorded SYNC channels in raw data
@@ -143,7 +147,7 @@ def get_default_parameters(
         if '.oebin' in str(meta_file):
             # OpenEphys format - use hardcoded scaling factor
             # OpenEphys already applies standard gain (2.34 μV/bit for AP), 
-            # so we only need the final 0.195 multiplier
+            # so we only need the final ~0.195 multiplier
             # Ref: https://open-ephys.atlassian.net/wiki/spaces/OEW/pages/166789121/Flat+binary+format
             gain_to_uV = 0.1949999928474426  
         else:

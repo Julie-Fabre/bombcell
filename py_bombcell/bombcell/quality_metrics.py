@@ -1658,7 +1658,14 @@ def custom_mahal_loop(test_spike_features, current_spike_features):
     """
     # inv covarriance metric from the current spike
     cov = np.cov(current_spike_features.T)
-    inv_covmat = np.linalg.inv(cov)
+    
+    # Add regularization to handle singular matrices
+    # Add a small value to the diagonal to make it invertible
+    regularization = 1e-10
+    cov_reg = cov + regularization * np.eye(cov.shape[0])
+    
+    inv_covmat = np.linalg.inv(cov_reg)
+    
     # numba cant do mean with axis =
     mean_data = np.zeros(current_spike_features.shape[1])
     for i in range(current_spike_features.shape[1]):
@@ -1794,7 +1801,10 @@ def get_distance_metrics(
         if np.logical_and(
             n_count > n_spikes, n_spikes > n_pcs * param["nChannelsIsoDist"]
         ):
-            isolation_dist = mahal_sort[n_spikes]
+            # Only calculate isolation distance if we have enough spikes from other units
+            if n_spikes < len(mahal_sort):
+                isolation_dist = mahal_sort[n_spikes]
+            # Otherwise isolation_dist remains NaN (undefined)
 
         mahal_self = custom_mahal_loop(these_features, these_features)
         mahal_self_sort = np.sort(mahal_self)  # JF: I don't think this is used
@@ -1914,8 +1924,9 @@ def get_quality_unit_type(param, quality_metrics):
         (quality_metrics["presenceRatio"] < param["minPresenceRatio"])
     )
     
-    if param["extractRaw"] and np.all(~np.isnan(quality_metrics['rawAmplitude'])):
-        mua_mask |= np.isnan(unit_type) & (
+    if param["extractRaw"]:
+        # Apply amplitude/SNR checks only to units with valid rawAmplitude values
+        mua_mask |= np.isnan(unit_type) & ~np.isnan(quality_metrics['rawAmplitude']) & (
             (quality_metrics["rawAmplitude"] < param["minAmplitude"]) |
             (quality_metrics["signalToNoiseRatio"] < param["minSNR"])
         )

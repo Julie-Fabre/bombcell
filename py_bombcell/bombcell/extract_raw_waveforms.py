@@ -41,70 +41,92 @@ def read_meta(meta_path):
         # Open Ephys Binary format - JSON file
         with meta_path.open() as f:
             oebin_data = json.load(f)
-        
-        # Extract relevant metadata from Open Ephys format
-        # We need to find the continuous data recording info
-        if 'continuous' in oebin_data and len(oebin_data['continuous']) > 0:
-            # Usually the first continuous recording is the neural data
-            continuous_data = oebin_data['continuous'][0]
-            
-            # Get the number of channels from the continuous data
-            n_channels = continuous_data.get('num_channels', 384)
-            
-            # Get sample rate
-            sample_rate = continuous_data.get('sample_rate', 30000.0)
-            
-            # Get bit volts for scaling (microvolts per bit)
-            # Default to 0.195 for Open Ephys if not specified
-            bit_volts = 0.195
-            if 'channels' in continuous_data and len(continuous_data['channels']) > 0:
-                # Get bit_volts from first channel if available
-                bit_volts = continuous_data['channels'][0].get('bit_volts', 0.195)
-            
-            # Calculate file size from the binary file
-            # The binary file is usually in the same directory with name continuous.dat
-            binary_file = meta_path.parent / continuous_data.get('folder_name', 'continuous') / 'continuous.dat'
-            if binary_file.exists():
-                file_size_bytes = os.path.getsize(binary_file)
-            else:
-                # Try to find any .dat file in the parent directory
-                dat_files = list(meta_path.parent.glob('**/*.dat'))
-                if dat_files:
-                    file_size_bytes = os.path.getsize(dat_files[0])
-                else:
-                    # Default to a large value if we can't find the file
-                    file_size_bytes = 0
-            
-            # Create meta_dict in SpikeGLX format for compatibility
-            meta_dict['fileTimeSecs'] = file_size_bytes / (2 * n_channels * sample_rate) if file_size_bytes > 0 else 0
-            meta_dict['fileSizeBytes'] = str(file_size_bytes)
-            meta_dict['nSavedChans'] = str(n_channels)  # In Open Ephys, this is total channels
-            meta_dict['sRateHz'] = str(sample_rate)
-            meta_dict['imAiRangeMax'] = '1'  # Not used but kept for compatibility
-            meta_dict['imAiRangeMin'] = '-1'  # Not used but kept for compatibility
-            
-            # For Open Ephys, we use the bit_volts directly
-            # The conversion factor is bit_volts * 1e6 to get from volts to microvolts
-            # But since bit_volts is already in microvolts, we use it directly
-            meta_dict['imMaxInt'] = '32768'  # 2^15 for int16
-            meta_dict['bitVolts'] = str(bit_volts)  # Store bit_volts for later use
-            
-        else:
+
+        # Extract channel counts and metadata for each stream
+        streams = {}
+        for stream in oebin_data.get('continuous', []):
+            stream_name = stream.get('stream_name', '')
+            streams[stream_name] = stream
+
+        if not streams:
             raise ValueError(f"Could not find continuous data in {meta_path}")
+
+        # Get AP stream (primary neural data)
+        ap_stream = next((s for name, s in streams.items() if 'AP' in name), None)
+        # Get NI-DAQmx stream (analog inputs - separate from AP sync channels)
+        nidaq_stream = next((s for name, s in streams.items() if 'PXIe' in name or 'DAQ' in name), None)
+
+        # Use AP stream as primary, fall back to first available
+        primary_stream = ap_stream or list(streams.values())[0]
+
+        sample_rate = primary_stream.get('sample_rate', 30000.0)
+
+        # Get bit volts for scaling
+        bit_volts = 0.195
+        if 'channels' in primary_stream and len(primary_stream['channels']) > 0:
+            bit_volts = primary_stream['channels'][0].get('bit_volts', 0.195)
+
+        # Calculate file size from the binary file
+        binary_file = meta_path.parent / primary_stream.get('folder_name', 'continuous') / 'continuous.dat'
+        if binary_file.exists():
+            file_size_bytes = os.path.getsize(binary_file)
+        else:
+            # Try to find any .dat file in the parent directory
+            dat_files = list(meta_path.parent.glob('**/*.dat'))
+            if dat_files:
+                file_size_bytes = os.path.getsize(dat_files[0])
+            else:
+                file_size_bytes = 0
+
+        # For Open Ephys: determine actual channel count from file size
+        # The stream metadata may not include sync channels in its count
+        n_channels_stream = primary_stream['num_channels']
+
+        # Calculate total channels in file from file size
+        # Try common channel counts to find which gives integer number of samples
+        n_channels_actual = n_channels_stream  # Default fallback
+        if file_size_bytes > 0:
+            # For Neuropixels: typically 384 neural + N sync (commonly 1)
+            # Common total channel counts: 385, 384, 383
+            for n_test in [n_channels_stream, n_channels_stream + 1, n_channels_stream + 2, 385, 384, 383]:
+                n_samples_test = file_size_bytes / (2 * n_test)
+                # Check if this gives an integer number of samples (within floating point tolerance)
+                if abs(n_samples_test - round(n_samples_test)) < 0.01:
+                    n_channels_actual = n_test
+                    break
+
+        # Sync channels are the difference between total and neural channels
+        # Assume the stream reports neural channels only, extra channels in file are sync
+        n_channels_sync = max(0, n_channels_actual - n_channels_stream)
+
+        # Total channels and AP channels
+        n_channels = n_channels_actual  # Total in file (including sync)
+        n_channels_ap = n_channels_stream  # Neural channels only
+
+        # Create meta_dict in SpikeGLX format for compatibility
+        meta_dict['fileTimeSecs'] = file_size_bytes / (2 * n_channels * sample_rate) if file_size_bytes > 0 else 0
+        meta_dict['fileSizeBytes'] = str(file_size_bytes)
+        meta_dict['nSavedChans'] = str(n_channels)  # Total channels in file
+        meta_dict['nSavedChansAP'] = str(n_channels_ap)  # Neural channels only
+        meta_dict['nChansSync'] = str(n_channels_sync)  # Sync channels in AP stream
+        meta_dict['sRateHz'] = str(sample_rate)
+        # meta_dict['imAiRangeMax'] = '1'
+       #  meta_dict['imAiRangeMin'] = '-1'
+        # meta_dict['imMaxInt'] = '32768'
+        meta_dict['bitVolts'] = str(bit_volts)
+        
             
     else:
         # SpikeGLX format - key=value pairs
         with meta_path.open() as f:
             mdat_list = f.read().splitlines()
-            # convert the list entries into key value pairs
             for m in mdat_list:
                 cs_list = m.split(sep="=")
-                if len(cs_list) >= 2:  # Ensure we have at least key=value
+                if len(cs_list) >= 2:
                     if cs_list[0][0] == "~":
-                        curr_key = cs_list[0][1 : len(cs_list[0])]
+                        curr_key = cs_list[0][1:]
                     else:
                         curr_key = cs_list[0]
-                    # Handle cases where value might contain '=' 
                     meta_dict.update({curr_key: '='.join(cs_list[1:])})
 
     return meta_dict
@@ -458,6 +480,9 @@ def extract_raw_waveforms(
             meta_dict = read_meta(meta_path)
             n_elements = (int(meta_dict["fileSizeBytes"]) / 2)  # int16 so 2 bytes per data point
             n_channels_rec = int(meta_dict["nSavedChans"])  # Total channels including sync
+            n_sync_channels = int(meta_dict["nChansSync"])  # Sync channels
+            # Update n_channels to match meta file value
+            n_channels = n_channels_rec
             param["n_channels_rec"] = n_channels_rec
             
             # For Open Ephys files, adjust the raw data file path if needed
@@ -487,7 +512,7 @@ def extract_raw_waveforms(
             n_elements = file_size_bytes / 2  # int16 so 2 bytes per data point
             
             # When no metafile, nChannels already includes sync channels
-            n_channels_rec = n_channels  # Should be 385 (384 neural + 1 sync)
+            n_channels_rec = n_channels  
             print(f"Using {n_channels_rec} total channels in recording")
             param["n_channels_rec"] = n_channels_rec
 
@@ -883,8 +908,11 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
             meta_dict = read_meta(meta_path)
             n_elements = (int(meta_dict["fileSizeBytes"]) / 2)  # int16 so 2 bytes per data point
             n_channels_rec = int(meta_dict["nSavedChans"])  # Total channels including sync
+            n_sync_channels = int(meta_dict["nChansSync"])  # Sync channels
+            # Update n_channels to match meta file value
+            n_channels = n_channels_rec
             param["n_channels_rec"] = n_channels_rec
-            
+
             # For Open Ephys files, adjust the raw data file path if needed
             if str(meta_path).endswith('.oebin'):
                 # In Open Ephys, nSavedChans is already the total channel count
