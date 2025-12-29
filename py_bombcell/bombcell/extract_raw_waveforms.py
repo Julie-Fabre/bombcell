@@ -129,6 +129,24 @@ def read_meta(meta_path):
                         curr_key = cs_list[0]
                     meta_dict.update({curr_key: '='.join(cs_list[1:])})
 
+        # Calculate nChansSync for SpikeGLX if not directly present
+        # Newer SpikeGLX versions don't have nChansSync directly, but it can be
+        # derived from snsApLfSy (format: AP,LFP,Sync) or acqApLfSy
+        if 'nChansSync' not in meta_dict:
+            n_sync = 0
+            # Try snsApLfSy first (saved channels), then acqApLfSy (acquired channels)
+            for key in ['snsApLfSy', 'acqApLfSy']:
+                if key in meta_dict:
+                    try:
+                        # Format is "nAP,nLFP,nSync" e.g. "384,0,1"
+                        parts = meta_dict[key].split(',')
+                        if len(parts) >= 3:
+                            n_sync = int(parts[2])
+                            break
+                    except (ValueError, IndexError):
+                        continue
+            meta_dict['nChansSync'] = str(n_sync)
+
     return meta_dict
 
 

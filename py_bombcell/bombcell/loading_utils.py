@@ -141,25 +141,37 @@ def handle_manual_curation(ephys_path, spike_templates, templates_waveforms, pc_
 
 def get_gain_spikeglx(meta_path):
     """
-    This function finds the probe type for the spike glx meta folder and also works out the gain
+    This function calculates the scaling factor to convert 16-bit analog values to microvolts.
+
+    Uses the SpikeGLX formula: V = i * Vmax / Imax / gain
+
+    For NP1/3A/3B probes:
+        - Imax = imMaxInt (typically 512)
+        - Vmax = imAiRangeMax (typically 0.6V)
+        - gain = imChan0apGain (typically 500)
+
+    For NP2/NP2.1/NP2.4 probes (type 21, 24):
+        - Imax = 8192
+        - Vmax = imAiRangeMax (typically 0.6V)
+        - gain = 80 (fixed)
 
     Parameters
     ----------
     meta_path : str
-        The path to the meta data folder
+        The path to the meta data file
 
     Returns
     -------
     scaling_factor : float
-        The scaling factor for the probe
+        The scaling factor to convert from int16 to microvolts (µV/bit)
 
     Raises
     ------
     Exception
-        If the probe type is not handled
+        If the probe type is not handled or required meta fields are missing
     """
     meta_dict = erw.read_meta(Path(meta_path))
-    
+
     # Check if this is an Open Ephys file
     if str(meta_path).endswith('.oebin'):
         # For Open Ephys files, the bit_volts value is already the scaling factor
@@ -167,54 +179,82 @@ def get_gain_spikeglx(meta_path):
             # bitVolts is already in microvolts per bit
             return float(meta_dict['bitVolts'])
         else:
-            # Default Open Ephys scaling: 0.195 μV/bit
-            return 0.195
+            raise Exception(
+                "Open Ephys meta file missing 'bitVolts' field. "
+                "Cannot determine scaling factor."
+            )
 
-    if np.isin("imDatPrb_type", list(meta_dict.keys())):
+    # Determine probe type
+    if "imDatPrb_type" in meta_dict:
         probeType = meta_dict["imDatPrb_type"]
-    elif np.isin("imProbeOpt", list(meta_dict.keys())):
+    elif "imProbeOpt" in meta_dict:
         probeType = meta_dict["imProbeOpt"]
     else:
-        # NOTE will have to update for new probes!
-        print("Can not find imDatPrb_type or imProbeOpt in meta file")
+        raise Exception(
+            "Cannot find imDatPrb_type or imProbeOpt in meta file. "
+            "Cannot determine probe type."
+        )
 
+    # NP1, 3A, 3B and similar probes
     probeType_1 = np.array(
         (
+            "0",
             "1",
             "3",
-            "0",
             "1020",
             "1030",
             "1100",
+            "1110",
             "1120",
             "1121",
             "1122",
             "1123",
             "1200",
             "1300",
-            "1110",
         )
-    )  # NP1, NP2-like
+    )
+    # NP2, NP2.1, NP2.4 probes
     probeType_2 = np.array(
-        ("21", "2003", "2004", "24", "2013", "2014", "2020")
-    )  # NP2, NP2-like
+        ("21", "24", "2003", "2004", "2013", "2014", "2020")
+    )
+
+    # Get Vmax from meta file (in Volts), convert to microvolts
+    if "imAiRangeMax" not in meta_dict:
+        raise Exception(
+            "Meta file missing 'imAiRangeMax' field. "
+            "Cannot determine voltage range."
+        )
+    Vmax_uV = float(meta_dict["imAiRangeMax"]) * 1e6  # Convert V to µV
 
     if np.isin(probeType, probeType_1):
-        bits_encoding = 2**10
-        v_range = 1.2e6
-        gain = 500
+        # NP1/3A/3B: Read Imax and gain from meta file
+        if "imMaxInt" not in meta_dict:
+            raise Exception(
+                f"Meta file missing 'imMaxInt' field for probe type {probeType}. "
+                "Cannot determine Imax."
+            )
+        Imax = int(meta_dict["imMaxInt"])
+
+        if "imChan0apGain" not in meta_dict:
+            raise Exception(
+                f"Meta file missing 'imChan0apGain' field for probe type {probeType}. "
+                "Cannot determine gain."
+            )
+        gain = float(meta_dict["imChan0apGain"])
+
     elif np.isin(probeType, probeType_2):
-        bits_encoding = 2**14
-        v_range = 1e6
+        # NP2/NP2.1/NP2.4: Fixed Imax=8192 and gain=80
+        Imax = 8192
         gain = 80
     else:
         raise Exception(
-            "Probe type is not one of the know values please raise a GitHub issue or add the gain_to_uv manually"
+            f"Probe type '{probeType}' is not recognized. "
+            "Please raise a GitHub issue or add the gain_to_uv manually."
         )
 
-    scaling_factor = (
-        v_range / bits_encoding / gain
-    )  # is v_range / (bits_encoding * gain)
+    # Calculate scaling factor: V = i * Vmax / Imax / gain
+    scaling_factor = Vmax_uV / Imax / gain
+
     return scaling_factor
 
 
