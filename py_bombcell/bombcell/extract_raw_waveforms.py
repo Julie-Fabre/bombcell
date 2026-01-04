@@ -451,6 +451,15 @@ def extract_raw_waveforms(
     save_multiple_raw = param.get("saveMultipleRaw", False)  # get and save data for UnitMatch
     waveform_baseline_noise = param.get("waveformBaselineNoiseWindow", 20)
     spike_width = param["spike_width"]
+
+    # Load channel_map.npy if available (maps site index -> hardware index)
+    # This is needed for sparse Neuropixels configurations where hardware and site indices differ
+    kilosort_path = Path(param["ephysKilosortPath"])
+    channel_map_file = kilosort_path / "channel_map.npy"
+    channel_map = None
+    if channel_map_file.exists():
+        channel_map = np.load(channel_map_file).squeeze()
+        # channel_map[site_index] = hardware_index
     
 
     # if data exists and re_extract_waveforms is false, load in data
@@ -603,6 +612,29 @@ def extract_raw_waveforms(
                             n_channels,
                             n_sync_channels,
                             waveform_baseline_noise)
+
+        # Reorder waveforms from hardware order to site order if channel_map exists
+        # This is needed for sparse Neuropixels configurations where not all hardware
+        # channels are used, and the site indices don't match hardware indices
+        if channel_map is not None:
+            n_sites = len(channel_map)
+            n_hardware_channels = raw_waveforms_full.shape[1]
+
+            # Only reorder if this is a sparse configuration
+            if n_sites < n_hardware_channels:
+                print(f"Reordering waveforms from hardware order to site order ({n_sites} sites, {n_hardware_channels} hardware channels)")
+                raw_waveforms_site_order = np.full((n_clusters, n_sites, spike_width), np.nan)
+
+                for site_idx in range(n_sites):
+                    hardware_idx = int(channel_map[site_idx])
+                    if hardware_idx < n_hardware_channels:
+                        raw_waveforms_site_order[:, site_idx, :] = raw_waveforms_full[:, hardware_idx, :]
+
+                raw_waveforms_full = raw_waveforms_site_order
+
+                # Update n_channels to reflect site count for downstream processing
+                n_channels = n_sites + n_sync_channels
+
         # Final processing and saving data
         # NOTE not +1 !
         baseline_noise_all = baseline_noise_all.reshape(-1)
@@ -634,7 +666,9 @@ def extract_raw_waveforms(
 
 
     #Save a copy of the waveforms were the row number matches the cluster index
-    raw_waveforms_id_match = np.full((max_cluster_id + 1, n_channels - n_sync_channels, spike_width), np.nan)
+    # Use actual shape from raw_waveforms_full to handle sparse configurations correctly
+    n_waveform_channels = raw_waveforms_full.shape[1]
+    raw_waveforms_id_match = np.full((max_cluster_id + 1, n_waveform_channels, spike_width), np.nan)
     for i, idx in enumerate(unique_clusters):
         raw_waveforms_id_match[idx] = raw_waveforms_full[i]
 
@@ -906,9 +940,17 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
         n_sync_channels = param["nSyncChannels"]
         n_spikes_to_extract = param["nRawSpikesToExtract"]
         detrendWaveform = param["detrendWaveform"]
+        detrendForUnitMatch = param.get("detrendForUnitMatch", False)
         waveform_baseline_noise = param.get("waveformBaselineNoiseWindow", 20)
         spike_width = param["spike_width"]
         save_multiple_raw = param.get("saveMultipleRaw", False)  # get and save data for UnitMatch
+
+        # Load channel_map.npy if available (maps site index -> hardware index)
+        kilosort_path = Path(param["ephysKilosortPath"])
+        channel_map_file = kilosort_path / "channel_map.npy"
+        channel_map = None
+        if channel_map_file.exists():
+            channel_map = np.load(channel_map_file).squeeze()
     
 
         # half_width is the number of sample before spike_time which are recorded,
@@ -1026,7 +1068,21 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
                 save_multiple_raw,
                 template_peak_ch,
             )
-            new_raw_waveforms_matching_ids[id] = tmp_raw_waveform_info['raw_waveforms_full']
+
+            # Reorder waveform from hardware order to site order if channel_map exists
+            raw_waveform_full = tmp_raw_waveform_info['raw_waveforms_full']
+            if channel_map is not None:
+                n_sites = len(channel_map)
+                n_hardware_channels = raw_waveform_full.shape[0]
+                if n_sites < n_hardware_channels:
+                    raw_waveform_site_order = np.full((n_sites, spike_width), np.nan)
+                    for site_idx in range(n_sites):
+                        hardware_idx = int(channel_map[site_idx])
+                        if hardware_idx < n_hardware_channels:
+                            raw_waveform_site_order[site_idx, :] = raw_waveform_full[hardware_idx, :]
+                    raw_waveform_full = raw_waveform_site_order
+
+            new_raw_waveforms_matching_ids[id] = raw_waveform_full
             new_peak_channels_matching_ids[id] = tmp_raw_waveform_info['raw_waveforms_peak_channel']
 
         #remove all empty rows
