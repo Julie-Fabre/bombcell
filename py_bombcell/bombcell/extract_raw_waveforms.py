@@ -4,6 +4,7 @@ from pathlib import Path
 from joblib import Parallel, delayed
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 try:
     from mtscomp import Reader
@@ -14,6 +15,131 @@ except ImportError:
 from scipy.signal import detrend
 from scipy.ndimage import gaussian_filter
 from tqdm.auto import tqdm
+
+
+# DEBUG FLAG - set to True to enable debug plots
+DEBUG_WAVEFORMS = False
+DEBUG_UNIT_IDX = 0  # Which unit index to debug (0 = first unit)
+DEBUG_EXIT_AFTER_PLOT = False  # Exit after showing debug plot (don't run full extraction)
+
+
+def debug_plot_raw_waveforms(raw_data, spike_times, spike_clusters, unit_idx, n_channels_rec,
+                              n_sync_channels, spike_width, half_width, channel_map=None,
+                              template_peak_channel=None, save_path=None):
+    """
+    Debug function to plot raw waveforms across ALL channels for a specific unit.
+    """
+    unique_clusters = np.unique(spike_clusters)
+    if unit_idx >= len(unique_clusters):
+        print(f"DEBUG: unit_idx {unit_idx} out of range")
+        return
+
+    cid = unique_clusters[unit_idx]
+    unit_spike_times = spike_times[spike_clusters == cid]
+
+    # Sample up to 100 spikes
+    n_spikes = min(100, len(unit_spike_times))
+    if n_spikes == 0:
+        print(f"DEBUG: No spikes for unit {cid}")
+        return
+
+    spike_idx = unit_spike_times[np.linspace(0, len(unit_spike_times)-1, n_spikes, dtype=int)]
+
+    # Extract raw snippets
+    all_snippets = []
+    for sid in spike_idx:
+        start = int(sid - half_width - 1)
+        end = int(sid + spike_width - half_width - 1)
+        if start < 0 or end > raw_data.shape[0]:
+            continue
+        snippet = raw_data[start:end, :n_channels_rec - n_sync_channels]
+        if snippet.shape[0] == spike_width:
+            all_snippets.append(snippet)
+
+    if len(all_snippets) == 0:
+        print(f"DEBUG: No valid snippets for unit {cid}")
+        return
+
+    snippets = np.array(all_snippets)  # (n_spikes, spike_width, n_channels)
+    mean_waveform = np.mean(snippets, axis=0)  # (spike_width, n_channels)
+
+    n_channels = mean_waveform.shape[1]
+
+    # Plot 1: Heatmap of mean waveform across all channels
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+
+    # Heatmap
+    ax = axes[0, 0]
+    im = ax.imshow(mean_waveform.T, aspect='auto', cmap='RdBu_r',
+                   vmin=-np.percentile(np.abs(mean_waveform), 99),
+                   vmax=np.percentile(np.abs(mean_waveform), 99))
+    ax.set_xlabel('Time (samples)')
+    ax.set_ylabel('Channel')
+    ax.set_title(f'Unit {cid}: Mean waveform heatmap (all {n_channels} channels)')
+    plt.colorbar(im, ax=ax)
+
+    # Mark peak channel if provided
+    if template_peak_channel is not None:
+        ax.axhline(template_peak_channel, color='green', linestyle='--', label=f'Template peak ch: {template_peak_channel}')
+        ax.legend()
+
+    # Plot 2: Waveform on peak channel (calculated from data)
+    ax = axes[0, 1]
+    ptp = np.ptp(mean_waveform, axis=0)
+    calc_peak_ch = np.argmax(ptp)
+    ax.plot(mean_waveform[:, calc_peak_ch], 'b-', linewidth=2, label=f'Calc peak ch: {calc_peak_ch}')
+    if template_peak_channel is not None and template_peak_channel != calc_peak_ch:
+        ax.plot(mean_waveform[:, template_peak_channel], 'g--', linewidth=2, label=f'Template peak ch: {template_peak_channel}')
+    ax.set_xlabel('Time (samples)')
+    ax.set_ylabel('Amplitude (raw)')
+    ax.set_title(f'Unit {cid}: Waveform at peak channel')
+    ax.legend()
+
+    # Plot 3: Peak-to-peak amplitude per channel
+    ax = axes[1, 0]
+    ax.plot(ptp, 'k-')
+    ax.axvline(calc_peak_ch, color='blue', linestyle='--', label=f'Calc peak: {calc_peak_ch}')
+    if template_peak_channel is not None:
+        ax.axvline(template_peak_channel, color='green', linestyle=':', label=f'Template peak: {template_peak_channel}')
+    ax.set_xlabel('Channel')
+    ax.set_ylabel('Peak-to-peak amplitude')
+    ax.set_title('Peak-to-peak amplitude per channel')
+    ax.legend()
+
+    # Plot 4: First 10 raw snippets on calculated peak channel
+    ax = axes[1, 1]
+    for i in range(min(10, len(all_snippets))):
+        ax.plot(all_snippets[i][:, calc_peak_ch], alpha=0.3)
+    ax.plot(mean_waveform[:, calc_peak_ch], 'r-', linewidth=2, label='Mean')
+    ax.set_xlabel('Time (samples)')
+    ax.set_ylabel('Amplitude (raw)')
+    ax.set_title(f'Individual spikes at calc peak channel {calc_peak_ch}')
+    ax.legend()
+
+    plt.suptitle(f'DEBUG: Unit {cid} (idx {unit_idx}) | n_channels_rec={n_channels_rec}, n_sync={n_sync_channels}\n'
+                 f'channel_map loaded: {channel_map is not None}', fontsize=12)
+    plt.tight_layout()
+
+    if save_path:
+        debug_file = Path(save_path) / f'DEBUG_waveforms_unit{cid}.png'
+        plt.savefig(debug_file, dpi=150)
+        print(f"DEBUG: Saved plot to {debug_file}")
+
+    plt.show()
+
+    # Print some stats
+    print(f"\nDEBUG STATS for unit {cid}:")
+    print(f"  n_channels_rec: {n_channels_rec}")
+    print(f"  n_sync_channels: {n_sync_channels}")
+    print(f"  n_channels used: {n_channels}")
+    print(f"  spike_width: {spike_width}")
+    print(f"  n_spikes sampled: {len(all_snippets)}")
+    print(f"  Calculated peak channel: {calc_peak_ch}")
+    print(f"  Template peak channel: {template_peak_channel}")
+    print(f"  Mean waveform range: [{mean_waveform.min():.2f}, {mean_waveform.max():.2f}]")
+    print(f"  Peak-to-peak at calc peak ch: {ptp[calc_peak_ch]:.2f}")
+    if template_peak_channel is not None and template_peak_channel < len(ptp):
+        print(f"  Peak-to-peak at template peak ch: {ptp[template_peak_channel]:.2f}")
 
 def path_handler(path: str) -> None:
     path = Path(path).expanduser()
@@ -460,6 +586,14 @@ def extract_raw_waveforms(
     if channel_map_file.exists():
         channel_map = np.load(channel_map_file).squeeze()
         # channel_map[site_index] = hardware_index
+
+        # Map template peak channels from Kilosort coordinates to binary file coordinates
+        # This is needed for zigzag/non-sequential channel configurations
+        if template_peak_channels is not None:
+            template_peak_channels = np.array([
+                channel_map[int(ch)] if int(ch) < len(channel_map) else int(ch)
+                for ch in template_peak_channels
+            ])
     
 
     # if data exists and re_extract_waveforms is false, load in data
@@ -534,7 +668,6 @@ def extract_raw_waveforms(
             # Use default values when no metafile is available
             print("Warning: No meta file found. Using default parameters...")
             # Get file size directly from the raw data file
-            import os
             file_size_bytes = os.path.getsize(raw_data_file)
             n_elements = file_size_bytes / 2  # int16 so 2 bytes per data point
             
@@ -579,6 +712,71 @@ def extract_raw_waveforms(
             else:
                 all_spikes_idxs[i, : len(clus_spike_times[i])] = clus_spike_times[i]
                 all_spikes_idxs[i, len(clus_spike_times[i]) :] = np.nan
+
+        # Always check file size vs expected channel count
+        actual_file_size = os.path.getsize(raw_data_file)
+        expected_samples = actual_file_size // (2 * n_channels_rec)  # int16 = 2 bytes
+        remainder = actual_file_size % (2 * n_channels_rec)
+        if remainder != 0:
+            print(f"\nWARNING: File size not divisible by n_channels_rec!")
+            print(f"  Actual file size: {actual_file_size:,} bytes")
+            print(f"  n_channels_rec (from meta): {n_channels_rec}")
+            print(f"  Remainder bytes: {remainder}")
+            print(f"  Trying to find correct channel count...")
+            for test_ch in range(380, 390):
+                if actual_file_size % (2 * test_ch) == 0:
+                    test_samples = actual_file_size // (2 * test_ch)
+                    print(f"    {test_ch} channels -> {test_samples:,} samples (WORKS)")
+
+        # Check spike times sanity
+        print(f"\nSPIKE TIMES CHECK:")
+        print(f"  Raw data file: {raw_data_file}")
+        print(f"  Total samples in file: {raw_data.shape[0]:,}")
+        print(f"  Spike times range: [{spike_times.min():,.0f}, {spike_times.max():,.0f}]")
+        print(f"  Spike times (first 10): {spike_times[:10]}")
+        if spike_times.max() > raw_data.shape[0]:
+            print(f"  WARNING: Max spike time exceeds file length!")
+        if spike_times.max() < 1000:
+            print(f"  WARNING: Spike times seem very small - maybe in seconds instead of samples?")
+
+        # Quick sanity check: read a small snippet at a spike time and check if it has signal
+        test_spike_time = int(spike_times[len(spike_times)//2])  # middle spike
+        test_snippet = raw_data[max(0, test_spike_time-30):test_spike_time+30, :10]  # 60 samples, first 10 channels
+        print(f"\nRAW DATA SANITY CHECK (at spike time {test_spike_time}):")
+        print(f"  Snippet shape: {test_snippet.shape}")
+        print(f"  Snippet range: [{test_snippet.min()}, {test_snippet.max()}]")
+        print(f"  Snippet std: {test_snippet.std():.2f}")
+
+        # DEBUG: Plot raw waveforms for one unit to diagnose issues
+        if DEBUG_WAVEFORMS:
+            print(f"\n{'='*60}")
+            print("DEBUG MODE: Plotting raw waveforms for diagnosis")
+            print(f"{'='*60}")
+            print(f"raw_data shape: {raw_data.shape}")
+            print(f"n_channels_rec: {n_channels_rec}")
+            print(f"n_sync_channels: {n_sync_channels}")
+            print(f"n_channels: {n_channels}")
+            print(f"spike_width: {spike_width}, half_width: {half_width}")
+            print(f"channel_map loaded: {channel_map is not None}")
+            if channel_map is not None:
+                print(f"channel_map shape: {channel_map.shape}")
+                print(f"channel_map[:10]: {channel_map[:10]}")
+            if template_peak_channels is not None:
+                print(f"template_peak_channels[:10]: {template_peak_channels[:10]}")
+
+            debug_peak_ch = template_peak_channels[DEBUG_UNIT_IDX] if template_peak_channels is not None and DEBUG_UNIT_IDX < len(template_peak_channels) else None
+            debug_plot_raw_waveforms(
+                raw_data, spike_times_filt, spike_clusters_filt,
+                DEBUG_UNIT_IDX, n_channels_rec, n_sync_channels,
+                spike_width, half_width, channel_map,
+                template_peak_channel=debug_peak_ch,
+                save_path=save_path
+            )
+            print(f"{'='*60}\n")
+
+            if DEBUG_EXIT_AFTER_PLOT:
+                print("DEBUG_EXIT_AFTER_PLOT is True, exiting early...")
+                return None, None, None, None
 
         all_waveforms = Parallel(n_jobs=-1, verbose=10, mmap_mode="r", max_nbytes=None)(
             delayed(process_a_unit)(

@@ -1130,31 +1130,47 @@ def run_bombcell(ks_dir, save_path, param, save_figures=False, return_figures=Fa
 
     # Extract or load in raw waveforms
     if param["raw_data_file"] is not None:
-        # Handle data decompression if needed
-        if param.get("decompress_data", False):
+        # Check if data is compressed and handle accordingly
+        raw_file = param["raw_data_file"]
+        is_compressed = raw_file.endswith('.cbin') if isinstance(raw_file, str) else False
+
+        if is_compressed and not param.get("decompress_data", False):
+            # Compressed data but decompress_data is False - warn and skip raw extraction
+            print("\nWARNING: Raw data file is compressed (.cbin) but decompress_data=False")
+            print(f"    File: {raw_file}")
+            print("    Skipping raw waveform extraction. Set param['decompress_data']=True to enable.")
+            param["extractRaw"] = False
+        elif param.get("decompress_data", False):
             if param.get("verbose", False):
-                print("\n📦 Checking for compressed data...")
+                print("\nChecking for compressed data...")
             from bombcell.extract_raw_waveforms import decompress_data_if_needed
             param["raw_data_file"] = decompress_data_if_needed(
-                param["raw_data_file"], 
+                param["raw_data_file"],
                 decompress_data=param["decompress_data"]
             )
-        
-        if param.get("verbose", False):
-            print("\n🔍 Extracting raw waveforms...")
-        (
-        raw_waveforms_full,
-        raw_waveforms_peak_channel,
-        signal_to_noise_ratio,
-        raw_waveforms_id_match,
-        ) = extract_raw_waveforms(
-            param,
-            spike_clusters,
-            spike_times_samples,
-            param["reextractRaw"],
-            save_path,
-            maxChannels,  # Pass template peak channels
-        )
+
+        # Only extract if extractRaw is still True (not disabled due to compressed data)
+        if param.get("extractRaw", True):
+            if param.get("verbose", False):
+                print("\n🔍 Extracting raw waveforms...")
+            (
+            raw_waveforms_full,
+            raw_waveforms_peak_channel,
+            signal_to_noise_ratio,
+            raw_waveforms_id_match,
+            ) = extract_raw_waveforms(
+                param,
+                spike_clusters,
+                spike_times_samples,
+                param["reextractRaw"],
+                save_path,
+                maxChannels,  # Pass template peak channels
+            )
+        else:
+            raw_waveforms_full = None
+            raw_waveforms_peak_channel = None
+            signal_to_noise_ratio = None
+            raw_waveforms_id_match = None
     else:
         raw_waveforms_full = None
         raw_waveforms_peak_channel = None
