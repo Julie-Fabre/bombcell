@@ -145,13 +145,20 @@ def get_gain_spikeglx(meta_path):
 
     Uses the SpikeGLX formula: V = i * Vmax / Imax / gain
 
+    Imax is determined with the following fallback chain:
+        1. Read 'imMaxInt' from meta file (preferred)
+        2. Fall back to probe-type-specific defaults:
+           - NP1/3A/3B probes: 512 (10-bit ADC)
+           - NP2/NP2.1/NP2.4 probes: 2048 (commercial) or 8192 (pre-commercial)
+        3. Fall back to commercial Neuropixels default (512 for NP1, 2048 for NP2)
+
     For NP1/3A/3B probes:
         - Imax = imMaxInt (typically 512)
         - Vmax = imAiRangeMax (typically 0.6V)
         - gain = imChan0apGain (typically 500)
 
     For NP2/NP2.1/NP2.4 probes (type 21, 24):
-        - Imax = 8192
+        - Imax = imMaxInt (typically 2048 for commercial, 8192 for pre-commercial)
         - Vmax = imAiRangeMax (typically 0.6V)
         - gain = 80 (fixed)
 
@@ -227,13 +234,11 @@ def get_gain_spikeglx(meta_path):
     Vmax_uV = float(meta_dict["imAiRangeMax"]) * 1e6  # Convert V to µV
 
     if np.isin(probeType, probeType_1):
-        # NP1/3A/3B: Read Imax and gain from meta file
-        if "imMaxInt" not in meta_dict:
-            raise Exception(
-                f"Meta file missing 'imMaxInt' field for probe type {probeType}. "
-                "Cannot determine Imax."
-            )
-        Imax = int(meta_dict["imMaxInt"])
+        # NP1/3A/3B: Read Imax from meta file, fallback to 512 (commercial default)
+        if "imMaxInt" in meta_dict:
+            Imax = int(meta_dict["imMaxInt"])
+        else:
+            Imax = 512  # Commercial NP1 default (10-bit ADC: 2^10 / 2)
 
         if "imChan0apGain" not in meta_dict:
             raise Exception(
@@ -243,13 +248,29 @@ def get_gain_spikeglx(meta_path):
         gain = float(meta_dict["imChan0apGain"])
 
     elif np.isin(probeType, probeType_2):
-        # NP2/NP2.1/NP2.4: Fixed Imax=8192 and gain=80
-        Imax = 8192
-        gain = 80
+        # NP2/NP2.1/NP2.4: Read Imax from meta file, fallback to 2048 (commercial default)
+        if "imMaxInt" in meta_dict:
+            Imax = int(meta_dict["imMaxInt"])
+        else:
+            Imax = 2048  # Commercial NP2 default (14-bit ADC: 2^12 / 2)
+        gain = 80  # Fixed gain for NP2 probes
     else:
-        raise Exception(
+        # Unknown probe type: try to read from meta, fallback to commercial NP2 default
+        if "imMaxInt" in meta_dict:
+            Imax = int(meta_dict["imMaxInt"])
+        else:
+            Imax = 2048  # Commercial default
+
+        if "imChan0apGain" in meta_dict:
+            gain = float(meta_dict["imChan0apGain"])
+        else:
+            gain = 80  # NP2 default gain
+
+        import warnings
+        warnings.warn(
             f"Probe type '{probeType}' is not recognized. "
-            "Please raise a GitHub issue or add the gain_to_uv manually."
+            f"Using Imax={Imax} and gain={gain}. "
+            "Please raise a GitHub issue to add support for this probe type."
         )
 
     # Calculate scaling factor: V = i * Vmax / Imax / gain
