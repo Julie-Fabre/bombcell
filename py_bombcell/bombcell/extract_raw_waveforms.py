@@ -818,8 +818,14 @@ def extract_raw_waveforms(
             n_sites = len(channel_map)
             n_hardware_channels = raw_waveforms_full.shape[1]
 
-            # Only reorder if this is a sparse configuration
-            if n_sites < n_hardware_channels:
+            # Check if channel_map is a non-identity mapping
+            # This handles both sparse configs (n_sites < n_hardware_channels) and
+            # one-column-per-shank configs where n_sites == n_hardware_channels but
+            # the mapping is non-trivial (e.g., site 58 -> hardware 116)
+            is_identity_map = (n_sites == n_hardware_channels and
+                               np.array_equal(channel_map, np.arange(n_sites)))
+
+            if not is_identity_map:
                 print(f"Reordering waveforms from hardware order to site order ({n_sites} sites, {n_hardware_channels} hardware channels)")
                 raw_waveforms_site_order = np.full((n_clusters, n_sites, spike_width), np.nan)
 
