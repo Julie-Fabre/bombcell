@@ -450,7 +450,7 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param,
                 surrogate_amplitudes, np.argwhere(surrogate_bins < 0)
             )
             surrogate_bins = np.delete(
-                surrogate_amplitudes, np.argwhere(surrogate_bins < 0)
+                surrogate_bins, np.argwhere(surrogate_bins < 0)
             )
             surrogate_area = np.sum(surrogate_amplitudes) * bin_step
 
