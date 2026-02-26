@@ -728,25 +728,6 @@ def extract_raw_waveforms(
                     test_samples = actual_file_size // (2 * test_ch)
                     print(f"    {test_ch} channels -> {test_samples:,} samples (WORKS)")
 
-        # Check spike times sanity
-        print(f"\nSPIKE TIMES CHECK:")
-        print(f"  Raw data file: {raw_data_file}")
-        print(f"  Total samples in file: {raw_data.shape[0]:,}")
-        print(f"  Spike times range: [{spike_times.min():,.0f}, {spike_times.max():,.0f}]")
-        print(f"  Spike times (first 10): {spike_times[:10]}")
-        if spike_times.max() > raw_data.shape[0]:
-            print(f"  WARNING: Max spike time exceeds file length!")
-        if spike_times.max() < 1000:
-            print(f"  WARNING: Spike times seem very small - maybe in seconds instead of samples?")
-
-        # Quick sanity check: read a small snippet at a spike time and check if it has signal
-        test_spike_time = int(spike_times[len(spike_times)//2])  # middle spike
-        test_snippet = raw_data[max(0, test_spike_time-30):test_spike_time+30, :10]  # 60 samples, first 10 channels
-        print(f"\nRAW DATA SANITY CHECK (at spike time {test_spike_time}):")
-        print(f"  Snippet shape: {test_snippet.shape}")
-        print(f"  Snippet range: [{test_snippet.min()}, {test_snippet.max()}]")
-        print(f"  Snippet std: {test_snippet.std():.2f}")
-
         # DEBUG: Plot raw waveforms for one unit to diagnose issues
         if DEBUG_WAVEFORMS:
             print(f"\n{'='*60}")
@@ -829,12 +810,24 @@ def extract_raw_waveforms(
                 print(f"Reordering waveforms from hardware order to site order ({n_sites} sites, {n_hardware_channels} hardware channels)")
                 raw_waveforms_site_order = np.full((n_clusters, n_sites, spike_width), np.nan)
 
+                # Create inverse channel map: hardware_idx -> site_idx
+                # This is needed to remap raw_waveforms_peak_channel from hardware to site order
+                inverse_channel_map = np.full(n_hardware_channels, -1, dtype=int)
                 for site_idx in range(n_sites):
                     hardware_idx = int(channel_map[site_idx])
                     if hardware_idx < n_hardware_channels:
                         raw_waveforms_site_order[:, site_idx, :] = raw_waveforms_full[:, hardware_idx, :]
+                        inverse_channel_map[hardware_idx] = site_idx
 
                 raw_waveforms_full = raw_waveforms_site_order
+
+                # Remap raw_waveforms_peak_channel from hardware indices to site indices
+                # This ensures peak channel indices match the reordered waveform array
+                for i in range(len(raw_waveforms_peak_channel)):
+                    hw_peak = int(raw_waveforms_peak_channel[i])
+                    if 0 <= hw_peak < n_hardware_channels and inverse_channel_map[hw_peak] >= 0:
+                        raw_waveforms_peak_channel[i] = inverse_channel_map[hw_peak]
+                    # If mapping fails, keep original (will be caught by bounds check later)
 
                 # Update n_channels to reflect site count for downstream processing
                 n_channels = n_sites + n_sync_channels
