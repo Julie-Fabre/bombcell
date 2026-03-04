@@ -2870,8 +2870,15 @@ class InteractiveUnitQualityGUI:
                     max_baseline = param.get('maxWvBaselineFraction', 0.3)
                     return 'red' if val > max_baseline else 'black'
                 elif metric_name == 'spatialDecaySlope':
-                    min_slope = param.get('minSpatialDecaySlope', 0.001)
-                    return 'red' if val < min_slope else 'black'
+                    # Threshold depends on linear vs exponential fit
+                    if param.get('spDecayLinFit', False):
+                        min_slope = param.get('minSpatialDecaySlope', -0.008)
+                        return 'red' if val < min_slope else 'black'
+                    else:
+                        # Exponential fit: check both min and max thresholds
+                        min_slope_exp = param.get('minSpatialDecaySlopeExp', 0.01)
+                        max_slope_exp = param.get('maxSpatialDecaySlopeExp', 0.1)
+                        return 'red' if (val < min_slope_exp or val > max_slope_exp) else 'black'
                 elif metric_name == 'scndPeakToTroughRatio':
                     max_ratio = param.get('maxScndPeakToTroughRatio_noise', 0.5)
                     return 'red' if val > max_ratio else 'black'
