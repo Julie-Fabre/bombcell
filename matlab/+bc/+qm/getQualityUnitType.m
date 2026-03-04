@@ -102,8 +102,15 @@ else
     end
 end
 
+% Handle empty units (nSpikes == 0) - set to NaN
+if isfield(qMetric, 'nSpikes')
+    emptyUnits = qMetric.nSpikes == 0;
+    unitType(emptyUnits) = NaN;
+end
+
 % Get unit type string
 unitType_string = cell(size(unitType, 1), 1);
+unitType_string(:) = {''};  % Initialize all as empty string
 unitType_string(unitType == 0) = {'NOISE'};
 unitType_string(unitType == 1) = {'GOOD'};
 unitType_string(unitType == 2) = {'MUA'};
@@ -113,6 +120,7 @@ if param.splitGoodAndMua_NonSomatic
 else
     unitType_string(unitType == 3) = {'NON-SOMA'};
 end
+% Empty units (NaN unitType) keep empty string ''
 
 %% Save classification for phy
 % save unitType for phy if param.unitType_for_phy is equal to 1

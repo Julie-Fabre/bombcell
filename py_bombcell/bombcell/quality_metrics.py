@@ -174,8 +174,10 @@ def remove_duplicate_spikes(
 
     Returns
     -------
-    non_empty_units : ndarray
-        Units which are not empty
+    unique_templates : ndarray
+        All unique unit IDs (including empty units)
+    empty_unit_idx : ndarray
+        Boolean array indicating which units are empty (all spikes removed as duplicates)
     spike_times_samples : ndarray
         The array of spike times in samples
     spike_clusters : ndarray
@@ -256,13 +258,13 @@ def remove_duplicate_spikes(
                 os.path.join(save_path, "spikes._bc_duplicateSpikes.npy")
             )
 
-        # check if there are any empty units
+        # check if there are any empty units (all spikes removed as duplicates)
         unique_templates = np.unique(spike_clusters)
         non_empty_units = np.unique(spike_clusters[duplicate_spike_idx == 0])
         empty_unit_idx = np.isin(unique_templates, non_empty_units, invert=True)
         spike_idx_to_remove = np.argwhere(duplicate_spike_idx == 0).squeeze()
 
-        # remove any empty units and duplicate spikes
+        # remove duplicate spikes (but keep all units in arrays)
         spike_times_samples = spike_times_samples[spike_idx_to_remove]
         spike_clusters = spike_clusters[spike_idx_to_remove]
         template_amplitudes = template_amplitudes[spike_idx_to_remove]
@@ -272,18 +274,19 @@ def remove_duplicate_spikes(
                 spike_idx_to_remove, :, :
             ]
 
+        # Filter raw_waveforms to exclude empty units (for GUI compatibility)
+        # Empty units have no spikes so no waveforms to extract
+        # Note: quality_metrics WILL include all units (empty ones get NaN values)
+        # signal_to_noise_ratio is NOT filtered - it goes directly into quality_metrics
         if raw_waveforms_full is not None:
             raw_waveforms_full = raw_waveforms_full[empty_unit_idx == False, :, :]
             raw_waveforms_peak_channel = raw_waveforms_peak_channel[
                 empty_unit_idx == False
             ]
 
-        if signal_to_noise_ratio is not None:
-            signal_to_noise_ratio = signal_to_noise_ratio[empty_unit_idx == False]
-
         return (
-            non_empty_units,
-            duplicate_spike_idx,
+            unique_templates,  # Return ALL units, not just non_empty_units
+            empty_unit_idx,    # Return empty unit flags instead of duplicate_spike_idx
             spike_times_samples,
             spike_clusters,
             template_amplitudes,
@@ -1885,9 +1888,12 @@ def get_quality_unit_type(param, quality_metrics):
     """
     n_units = len(quality_metrics["nPeaks"])
     unit_type = np.full(n_units, np.nan)
-    
-    # Noise classification
-    noise_mask = (
+
+    # Identify empty units (0 spikes after duplicate removal) - these get empty string, not NOISE
+    empty_units_mask = quality_metrics["nSpikes"] == 0
+
+    # Noise classification (exclude empty units - they're not noise, they just don't exist)
+    noise_mask = ~empty_units_mask & (
         np.isnan(quality_metrics["nPeaks"]) |
         (quality_metrics["nPeaks"] > param["maxNPeaks"]) |
         (quality_metrics["nTroughs"] > param["maxNTroughs"]) |
@@ -1953,12 +1959,16 @@ def get_quality_unit_type(param, quality_metrics):
         unit_type[(unit_type != 0) & is_non_somatic] = 3
     
     # Create string labels
-    labels = {0: "NOISE", 1: "GOOD", 2: "MUA", 
+    labels = {0: "NOISE", 1: "GOOD", 2: "MUA",
              3: "NON-SOMA GOOD" if param["splitGoodAndMua_NonSomatic"] else "NON-SOMA",
              4: "NON-SOMA MUA"}
-    
+
     unit_type_string = np.full(n_units, "", dtype=object)
     for code, label in labels.items():
         unit_type_string[unit_type == code] = label
-    
+
+    # Empty units (0 spikes after duplicate removal) get empty string - they don't exist
+    unit_type_string[empty_units_mask] = ""
+    unit_type[empty_units_mask] = np.nan  # Keep as NaN since they have no classification
+
     return unit_type, unit_type_string

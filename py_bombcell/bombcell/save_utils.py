@@ -221,13 +221,19 @@ def save_params_as_parquet(
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
-    # PyArrow cant save Path type objects as a parquet
-    param_save = param.copy()
+    # PyArrow cant save Path type objects or numpy arrays as a parquet
+    param_save = {}
     for key, value in param.items():
+        # Skip numpy arrays (can't be saved to parquet)
+        if isinstance(value, np.ndarray):
+            continue
+        # Convert Path objects to strings
         if key == 'ephysKilosortPath':
             param_save[key] = str(value)
-        if type(value) == Path:
+        elif isinstance(value, Path):
             param_save[key] = str(value)
+        else:
+            param_save[key] = value
 
     file_path = save_path / file_name
     param_df = pd.DataFrame.from_dict([param_save])
@@ -296,11 +302,8 @@ def save_results(
 
     save_quality_metrics_and_verify(quality_metrics, unit_type_string, unique_templates, save_path, param, ks_dir)
 
-    # Get rid of peak channels of empty rows, which were kept for convenient indexing up to here
+    # maxChannels and other arrays all have same size (all templates, including empty ones)
     quality_metrics_save = quality_metrics.copy()
-    quality_metrics_save["maxChannels"] = quality_metrics["maxChannels"][
-        quality_metrics["phy_clusterID"].astype(int)
-    ]
 
     # Save full quality metrics table
     save_dict_as_parquet_and_csv(

@@ -89,7 +89,7 @@ maxChannels = bc.qm.helpers.getWaveformMaxChannel(templateWaveforms);
 scalingFactors = bc.qm.helpers.getAnalogToVoltageScaling(param);
 
 % remove any duplicate spikes
-[uniqueTemplates, ~, spikeTimes_samples, spikeTemplates, templateAmplitudes, ...
+[uniqueTemplates, emptyUnits_idx, ~, spikeTimes_samples, spikeTemplates, templateAmplitudes, ...
     pcFeatures, rawWaveformsFull, rawWaveformsPeakChan, signalToNoiseRatio, ...
     qMetric.maxChannels] = ...
     bc.qm.removeDuplicateSpikes(spikeTimes_samples, spikeClusters, templateAmplitudes, ...
@@ -116,10 +116,77 @@ for iUnit = 1:size(uniqueTemplates, 1)
     qMetric.phy_clusterID(iUnit) = thisUnit - 1; % this is the cluster ID as it appears in phy
     qMetric.clusterID(iUnit) = thisUnit; % this is the cluster ID as it appears in phy, 1-indexed (adding 1)
 
+    % Check if this unit is empty (no spikes after duplicate removal)
+    if emptyUnits_idx(iUnit)
+        % Determine array sizes for forGUI fields
+        if isfield(param, 'spDecayLinFit') && param.spDecayLinFit
+            num_buff = 6;
+        else
+            num_buff = 10;
+        end
+        nTimePoints = size(templateWaveforms, 2);
+
+        % Assign NaN to all metrics for empty units
+        qMetric.useTheseTimesStart(iUnit) = NaN;
+        qMetric.useTheseTimesStop(iUnit) = NaN;
+        qMetric.RPV_window_index(iUnit) = NaN;
+        qMetric.percentageSpikesMissing_gaussian(iUnit) = NaN;
+        qMetric.percentageSpikesMissing_symmetric(iUnit) = NaN;
+        qMetric.ksTest_pValue(iUnit) = NaN;
+        qMetric.fractionRPVs(iUnit, :) = NaN(1, length(param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax));
+        qMetric.presenceRatio(iUnit) = NaN;
+        qMetric.maxDriftEstimate(iUnit) = NaN;
+        qMetric.cumDriftEstimate(iUnit) = NaN;
+        medianSpikeDepth(iUnit,:) = NaN(1, length(timeChunks)-1);
+        qMetric.nSpikes(iUnit) = 0;  % Explicitly 0 spikes
+        qMetric.nPeaks(iUnit) = NaN;
+        qMetric.nTroughs(iUnit) = NaN;
+        qMetric.spatialDecaySlope(iUnit) = NaN;
+        qMetric.waveformBaselineFlatness(iUnit) = NaN;
+        qMetric.scndPeakToTroughRatio(iUnit) = NaN;
+        qMetric.mainPeakToTroughRatio(iUnit) = NaN;
+        qMetric.peak1ToPeak2Ratio(iUnit) = NaN;
+        qMetric.mainPeak_before_width(iUnit) = NaN;
+        qMetric.troughToPeak2Ratio(iUnit) = NaN;
+        qMetric.mainPeak_after_width(iUnit) = NaN;
+        qMetric.mainTrough_width(iUnit) = NaN;
+        qMetric.waveformDuration_peakTrough(iUnit) = NaN;
+        qMetric.rawAmplitude(iUnit) = NaN;
+        if param.extractRaw
+            qMetric.signalToNoiseRatio(iUnit) = NaN;
+        end
+        if param.computeDistanceMetrics
+            qMetric.isolationDistance(iUnit) = NaN;
+            qMetric.Lratio(iUnit) = NaN;
+            qMetric.silhouetteScore(iUnit) = NaN;
+        end
+        % Set forGUI fields for empty units with proper sizes
+        forGUI.ampliBinCenters{iUnit} = [];
+        forGUI.ampliBinCounts{iUnit} = [];
+        forGUI.ampliGaussianFit{iUnit} = [];
+        forGUI.peakLocs{iUnit} = [];
+        forGUI.troughLocs{iUnit} = [];
+        forGUI.spatialDecayPoints(iUnit, 1:num_buff) = NaN;
+        forGUI.tempWv(iUnit, 1:nTimePoints) = NaN;
+        forGUI.spatialDecayPoints_loc(iUnit, 1:num_buff) = NaN;
+        forGUI.spatialDecayFit(iUnit) = NaN;
+        if param.computeDistanceMetrics
+            forGUI.unit_mahal_counts{iUnit} = [];
+            forGUI.unit_mahal_edges{iUnit} = [];
+            forGUI.noise_mahal_counts{iUnit} = [];
+        end
+
+        % Display progress for empty units too
+        if ((mod(iUnit, 50) == 0) || iUnit == length(uniqueTemplates)) && param.verbose
+            fprintf(['\n   Finished ', num2str(iUnit), ' / ', num2str(length(uniqueTemplates)), ' units.']);
+        end
+        continue;  % Skip to next unit
+    end
+
     theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
     theseAmplis = double(theseAmplis); % make sure amplitudes is a double()
-    
+
     %% percentage spikes missing (false negatives)
     [percentageSpikesMissing_gaussian, percentageSpikesMissing_symmetric, ksTest_pValue, ~, ~, ~] = ...
         bc.qm.percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param);
@@ -201,6 +268,8 @@ end
 qMetric.maxChannels = qMetric.maxChannels(uniqueTemplates)';
 if param.extractRaw
     qMetric.signalToNoiseRatio = signalToNoiseRatio';
+    % Set NaN for empty units (those with no spikes after duplicate removal)
+    qMetric.signalToNoiseRatio(emptyUnits_idx) = NaN;
 end
 
 fprintf('\n Finished extracting quality metrics from %s', param.rawFile)

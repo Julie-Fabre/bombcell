@@ -28,3 +28,4 @@ wheels/
 *.egg
 .claude/
 py_bombcell/.claude/
+BC_demo_jf_tests.ipynb

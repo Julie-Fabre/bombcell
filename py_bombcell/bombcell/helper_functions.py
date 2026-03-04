@@ -247,6 +247,7 @@ def nearest_channels(quality_metrics, channel_positions, this_unit, unique_templ
 
     unit_id = unique_templates[this_unit]  # JF: this function needs some cleaning up
 
+    # maxChannels is indexed by template/cluster ID
     max_channel = quality_metrics["maxChannels"][unit_id]
 
     x, y = channel_positions[max_channel, :]
@@ -473,12 +474,14 @@ def set_unit_nan(unit_idx, quality_metrics, not_enough_spikes):
 
 
 
-def _precompute_unit_gui_data(unit_idx, unit_id, template_waveforms, quality_metrics, 
-                             spike_clusters, template_amplitudes, channel_positions, 
+def _precompute_unit_gui_data(unit_idx, unit_id, template_waveforms, quality_metrics,
+                             spike_clusters, template_amplitudes, channel_positions,
                              gui_data, param, per_bin_data=None):
     """Helper function to precompute GUI data for a single unit during quality metrics computation"""
     try:
-        template = template_waveforms[unit_idx]
+        # Use unit_id (actual cluster ID) to index template_waveforms, not unit_idx (loop counter)
+        # This handles cases where unit IDs have gaps (e.g., units 0-100 but 89 is missing)
+        template = template_waveforms[unit_id]
         max_ch = np.argmax(np.ptp(template, axis=0))
         waveform = template[:, max_ch]
         
@@ -918,20 +921,22 @@ def get_all_quality_metrics(
 
         # maximum cumulative drift estimate
         time_tmp = time.time()
-        (
-            quality_metrics["maxDriftEstimate"][unit_idx],
-            quality_metrics["cumDriftEstimate"][unit_idx],
-            drift_per_bin_data
-        ) = qm.max_drift_estimate(
-            pc_features,
-            pc_features_idx,
-            these_spike_clusters,
-            these_spike_times,
-            this_unit,
-            channel_positions,
-            param,
-            return_per_bin=True
-        )
+        drift_per_bin_data = None
+        if param.get("computeDrift", False):
+            (
+                quality_metrics["maxDriftEstimate"][unit_idx],
+                quality_metrics["cumDriftEstimate"][unit_idx],
+                drift_per_bin_data
+            ) = qm.max_drift_estimate(
+                pc_features,
+                pc_features_idx,
+                these_spike_clusters,
+                these_spike_times,
+                this_unit,
+                channel_positions,
+                param,
+                return_per_bin=True
+            )
         runtimes_max_drift[unit_idx] = time.time() - time_tmp
 
         # number of spikes
@@ -966,7 +971,7 @@ def get_all_quality_metrics(
         ) = qm.waveform_shape(
             template_waveforms,
             this_unit,
-            quality_metrics["maxChannels"],
+            quality_metrics["maxChannels"],  # maxChannels indexed by cluster ID
             channel_positions,
             waveform_baseline_window,
             param,
@@ -1007,11 +1012,13 @@ def get_all_quality_metrics(
                 gui_data['trough_loc_for_duration'][this_unit] = None
 
         # amplitude
-        if raw_waveforms_full is not None and param["extractRaw"] and param['gain_to_uV'] is not None:
+        # Use raw_waveforms_id_match (indexed by cluster ID) to handle gaps in unit IDs
+        raw_waveforms_id_match = param.get('raw_waveforms_id_match')
+        if raw_waveforms_id_match is not None and param["extractRaw"] and param['gain_to_uV'] is not None:
             # Use the template's peak channel for raw amplitude calculation
-            template_peak_channel = quality_metrics["maxChannels"][unit_idx]
+            template_peak_channel = quality_metrics["maxChannels"][this_unit]
             quality_metrics["rawAmplitude"][unit_idx] = qm.get_raw_amplitude(
-                raw_waveforms_full[unit_idx], param["gain_to_uV"], peak_channel=template_peak_channel
+                raw_waveforms_id_match[this_unit], param["gain_to_uV"], peak_channel=template_peak_channel
             )
         else:
             quality_metrics["rawAmplitude"][unit_idx] = np.nan
@@ -1181,8 +1188,8 @@ def run_bombcell(ks_dir, save_path, param, save_figures=False, return_figures=Fa
     # Remove duplicate spikes
     if param["removeDuplicateSpikes"]:
         (
-            non_empty_units,
-            duplicate_spike_idx,
+            unique_templates,
+            empty_unit_idx,
             spike_times_samples,
             spike_clusters,
             template_amplitudes,
@@ -1204,7 +1211,13 @@ def run_bombcell(ks_dir, save_path, param, save_figures=False, return_figures=Fa
             signal_to_noise_ratio=signal_to_noise_ratio,
         )
     else:
-        non_empty_units = np.unique(spike_clusters)
+        # Use ALL template IDs (0 to n_templates-1), not just units with spikes
+        # This ensures output has rows for all templates, with NaN for units without spikes
+        n_templates = template_waveforms.shape[0]
+        unique_templates = np.arange(n_templates)
+        # Track which units have no spikes (empty units get NaN metrics)
+        units_with_spikes = np.unique(spike_clusters)
+        empty_unit_idx = ~np.isin(unique_templates, units_with_spikes)
 
     # Divide recording into time chunks
     spike_times_seconds = spike_times_samples / param["ephys_sample_rate"]
@@ -1219,13 +1232,30 @@ def run_bombcell(ks_dir, save_path, param, save_figures=False, return_figures=Fa
             (np.min(spike_times_seconds), np.max(spike_times_seconds))
         )
 
-    unique_templates = non_empty_units # template ids are cluster ids, in bombcell
+    # unique_templates contains ALL units (including empty ones)
+    # empty_unit_idx indicates which units have 0 spikes
     param['unique_templates'] = unique_templates
+    param['empty_unit_idx'] = empty_unit_idx
 
     # Initialize quality metrics dictionary
     n_units = unique_templates.size
+
+    # Expand signal_to_noise_ratio to all templates (SNR was only computed for units with spikes)
+    if signal_to_noise_ratio is not None:
+        units_with_spikes = np.unique(spike_clusters)
+        snr_full = np.full(n_units, np.nan)
+        for i, uid in enumerate(units_with_spikes):
+            if uid < n_units:  # Only assign if uid is within range
+                snr_full[uid] = signal_to_noise_ratio[i]
+        signal_to_noise_ratio = snr_full
+
     quality_metrics = create_quality_metrics_dict(n_units, snr=signal_to_noise_ratio)
+    # maxChannels is indexed by template ID (same as unique_templates when no manual curation)
     quality_metrics["maxChannels"] = maxChannels
+    # Keep full maxChannels in param for template-based operations
+    param['maxChannels_full'] = maxChannels
+    # Store raw_waveforms_id_match for cluster ID-based access (handles gaps in unit IDs)
+    param['raw_waveforms_id_match'] = raw_waveforms_id_match
 
     # Complete with remaining quality metrics  
     if param.get("verbose", False):

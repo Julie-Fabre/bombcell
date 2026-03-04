@@ -51,9 +51,25 @@ def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
     """
     if param.get("verbose", False):
         print("Pre-computing GUI visualization data...")
-    
+
     unique_units = np.unique(ephys_data['spike_clusters'])
     n_units = len(unique_units)
+
+    # Filter quality_metrics to only include units with spikes
+    # This handles cases where quality_metrics includes empty units (0 spikes after duplicate removal)
+    if 'phy_clusterID' in quality_metrics:
+        qm_cluster_ids = quality_metrics['phy_clusterID']
+        keep_mask = np.isin(qm_cluster_ids, unique_units)
+        if np.sum(keep_mask) < len(qm_cluster_ids):
+            if param.get("verbose", False):
+                print(f"   Filtering quality_metrics to {np.sum(keep_mask)} units with spikes")
+            filtered_qm = {}
+            for key, value in quality_metrics.items():
+                if isinstance(value, np.ndarray) and len(value) == len(qm_cluster_ids):
+                    filtered_qm[key] = value[keep_mask]
+                else:
+                    filtered_qm[key] = value
+            quality_metrics = filtered_qm
     
     gui_data = {
         'peak_locations': {},
@@ -465,10 +481,31 @@ class InteractiveUnitQualityGUI:
         else:
             print("No pre-computed GUI data found - will compute everything real-time")
         
-        # Get unique units
+        # Get unique units (only units with spikes - can't visualize empty units)
         self.unique_units = np.unique(ephys_data['spike_clusters'])
         self.n_units = len(self.unique_units)
         print(f"Total units: {self.n_units}")
+
+        # Filter quality_metrics to only include units with spikes
+        # This handles cases where quality_metrics includes empty units (0 spikes after duplicate removal)
+        if 'phy_clusterID' in quality_metrics:
+            qm_cluster_ids = quality_metrics['phy_clusterID']
+            # Find which quality_metrics entries correspond to our displayable units
+            keep_mask = np.isin(qm_cluster_ids, self.unique_units)
+            if np.sum(keep_mask) < len(quality_metrics['phy_clusterID']):
+                print(f"   Note: Filtering quality_metrics to {np.sum(keep_mask)} units with spikes (excluding empty units)")
+                # Filter quality_metrics dict
+                filtered_qm = {}
+                for key, value in quality_metrics.items():
+                    if isinstance(value, np.ndarray) and len(value) == len(qm_cluster_ids):
+                        filtered_qm[key] = value[keep_mask]
+                    else:
+                        filtered_qm[key] = value
+                self.quality_metrics = filtered_qm
+            else:
+                self.quality_metrics = quality_metrics
+        else:
+            self.quality_metrics = quality_metrics
         self.current_unit_idx = 0
         
         # Initialize manual classifications (separate from bombcell unit_types)
@@ -664,10 +701,10 @@ class InteractiveUnitQualityGUI:
         )
         self.unit_slider.observe(self.on_unit_change, names='value')
         
-        # Unit number input
+        # Unit ID input (accepts cluster IDs, not indices)
         self.unit_input = widgets.IntText(
-            value=0, min=0, max=self.n_units-1,
-            description='Go to:', placeholder='Enter unit #'
+            value=self.unique_units[0], min=0, max=int(self.unique_units.max()),
+            description='Go to ID:', placeholder='Enter unit ID'
         )
         self.goto_unit_btn = widgets.Button(description='Go', button_style='primary')
         
@@ -825,6 +862,8 @@ class InteractiveUnitQualityGUI:
     def on_unit_change(self, change):
         """Handle unit slider change"""
         self.current_unit_idx = change['new']
+        # Update the unit ID input to show current unit ID
+        self.unit_input.value = int(self.unique_units[self.current_unit_idx])
         self.update_display()
         
     def prev_unit(self, b=None):
@@ -840,10 +879,28 @@ class InteractiveUnitQualityGUI:
             self.unit_slider.value = self.current_unit_idx
             
     def goto_unit_number(self, b=None):
-        """Go to specific unit number"""
-        unit_num = self.unit_input.value
-        if 0 <= unit_num < self.n_units:
-            self.current_unit_idx = unit_num
+        """Go to specific unit ID (cluster ID). If unit doesn't exist, go to nearest valid unit."""
+        requested_id = self.unit_input.value
+
+        # Check if the requested unit ID exists
+        if requested_id in self.unique_units:
+            # Find the index of this unit ID
+            unit_idx = np.where(self.unique_units == requested_id)[0][0]
+            self.current_unit_idx = unit_idx
+            self.unit_slider.value = self.current_unit_idx
+            self.update_display()
+        else:
+            # Find the nearest valid unit ID (next one >= requested)
+            valid_ids_above = self.unique_units[self.unique_units >= requested_id]
+            if len(valid_ids_above) > 0:
+                nearest_id = valid_ids_above[0]
+                unit_idx = np.where(self.unique_units == nearest_id)[0][0]
+                print(f"Unit {requested_id} doesn't exist (no spikes). Going to unit {nearest_id} instead.")
+            else:
+                # If no unit above, go to the last unit
+                unit_idx = self.n_units - 1
+                print(f"Unit {requested_id} doesn't exist. Going to last unit {self.unique_units[unit_idx]}.")
+            self.current_unit_idx = unit_idx
             self.unit_slider.value = self.current_unit_idx
             self.update_display()
             
