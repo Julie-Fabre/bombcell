@@ -774,7 +774,7 @@ def extract_raw_waveforms(
                 waveform_baseline_noise,
                 raw_waveforms_dir,
                 save_multiple_raw,
-                template_peak_channels[i] if template_peak_channels is not None and i < len(template_peak_channels) else None,
+                template_peak_channels[cid] if template_peak_channels is not None and cid < len(template_peak_channels) else None,
             )
             for i, cid in tqdm(enumerate(unique_clusters))
         )
