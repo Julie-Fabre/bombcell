@@ -52,24 +52,51 @@ def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
     if param.get("verbose", False):
         print("Pre-computing GUI visualization data...")
 
-    unique_units = np.unique(ephys_data['spike_clusters'])
-    n_units = len(unique_units)
-
-    # Filter quality_metrics to only include units with spikes
-    # This handles cases where quality_metrics includes empty units (0 spikes after duplicate removal)
+    # Filter quality_metrics to only include units with enough spikes
+    # Units with < minNumSpikes have NaN metrics and can't be visualized
     if 'phy_clusterID' in quality_metrics:
-        qm_cluster_ids = quality_metrics['phy_clusterID']
-        keep_mask = np.isin(qm_cluster_ids, unique_units)
-        if np.sum(keep_mask) < len(qm_cluster_ids):
-            if param.get("verbose", False):
-                print(f"   Filtering quality_metrics to {np.sum(keep_mask)} units with spikes")
+        qm_cluster_ids = np.array(quality_metrics['phy_clusterID'])
+
+        # Detect invalid units by checking nSpikes (< minNumSpikes means NaN metrics)
+        min_spikes = param.get('minNumSpikes', 50) if param else 50
+        if 'nSpikes' in quality_metrics:
+            nspikes = np.array(quality_metrics['nSpikes'])
+            # Filter out units with too few spikes - they have NaN metrics
+            non_empty_mask = (nspikes >= min_spikes) & ~np.isnan(nspikes)
+        else:
+            # Fallback: check if unit has spikes in spike_clusters
+            unique_spike_units = np.unique(ephys_data['spike_clusters'])
+            non_empty_mask = np.isin(qm_cluster_ids, unique_spike_units)
+
+        n_filtered = np.sum(~non_empty_mask)
+        if n_filtered > 0 and param.get("verbose", False):
+            print(f"   Filtering out {n_filtered} units with < {min_spikes} spikes")
+
+        # Get unique_units from filtered cluster IDs (in quality_metrics order)
+        unique_units = qm_cluster_ids[non_empty_mask]
+        n_units = len(unique_units)
+
+        # Filter quality_metrics to non-empty units
+        if hasattr(quality_metrics, 'iloc'):
+            # DataFrame format - filter rows and reset index
+            quality_metrics = quality_metrics.loc[non_empty_mask].reset_index(drop=True)
+        else:
+            # Dict format - filter each array
             filtered_qm = {}
             for key, value in quality_metrics.items():
-                if isinstance(value, np.ndarray) and len(value) == len(qm_cluster_ids):
-                    filtered_qm[key] = value[keep_mask]
+                if hasattr(value, '__len__') and len(value) == len(qm_cluster_ids):
+                    if isinstance(value, np.ndarray):
+                        filtered_qm[key] = value[non_empty_mask]
+                    elif hasattr(value, 'values'):  # pandas Series
+                        filtered_qm[key] = value.values[non_empty_mask]
+                    else:
+                        filtered_qm[key] = np.array(value)[non_empty_mask]
                 else:
                     filtered_qm[key] = value
             quality_metrics = filtered_qm
+    else:
+        unique_units = np.unique(ephys_data['spike_clusters'])
+        n_units = len(unique_units)
     
     gui_data = {
         'peak_locations': {},
@@ -100,11 +127,11 @@ def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
             
         unit_id = unique_units[unit_idx]
         
-        # Get unit data
-        if 'templates' in ephys_data and unit_idx < len(ephys_data['templates']):
-            template = ephys_data['templates'][unit_idx]
-        elif 'template_waveforms' in ephys_data and unit_idx < len(ephys_data['template_waveforms']):
-            template = ephys_data['template_waveforms'][unit_idx]
+        # Get unit data - index by unit_id since template_waveforms is indexed by unit ID, not sequential
+        if 'templates' in ephys_data and unit_id < len(ephys_data['templates']):
+            template = ephys_data['templates'][unit_id]
+        elif 'template_waveforms' in ephys_data and unit_id < len(ephys_data['template_waveforms']):
+            template = ephys_data['template_waveforms'][unit_id]
         else:
             continue
             
@@ -121,23 +148,21 @@ def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
             
             # Use the same waveform_shape function as quality metrics to get consistent results
             try:
-                from .quality_metrics import waveform_shape
-                
-                # Get max channels for all units (quality metrics has this)
-                if 'maxChannels' in quality_metrics and len(quality_metrics['maxChannels']) > unit_idx:
-                    all_max_channels = quality_metrics['maxChannels']
-                else:
-                    # Fallback: compute max channels  
-                    all_max_channels = np.argmax(np.max(np.abs(ephys_data['template_waveforms']), axis=1), axis=1)
-                
+                from .quality_metrics import waveform_shape, get_waveform_peak_channel
+
+                # Compute max channels from full template_waveforms (indexed by unit_id)
+                # Don't use filtered quality_metrics['maxChannels'] since waveform_shape expects unit_id indexing
+                all_max_channels = get_waveform_peak_channel(ephys_data['template_waveforms'])
+
                 # Get waveform baseline window from param
-                baseline_window = [param.get('waveform_baseline_window_start', 21), 
+                baseline_window = [param.get('waveform_baseline_window_start', 21),
                                  param.get('waveform_baseline_window_stop', 31)]
-                
+
                 # Run waveform_shape to get the actual peak/trough locations
+                # Use unit_id (not unit_idx) since template_waveforms is indexed by unit_id
                 result = waveform_shape(
                     template_waveforms=ephys_data['template_waveforms'],
-                    this_unit=unit_idx,
+                    this_unit=unit_id,
                     maxChannels=all_max_channels,
                     channel_positions=ephys_data.get('channel_positions', np.array([[0, 0]])),
                     waveform_baseline_window=baseline_window,
@@ -481,33 +506,65 @@ class InteractiveUnitQualityGUI:
         else:
             print("No pre-computed GUI data found - will compute everything real-time")
         
-        # Get unique units (only units with spikes - can't visualize empty units)
-        self.unique_units = np.unique(ephys_data['spike_clusters'])
-        self.n_units = len(self.unique_units)
-        print(f"Total units: {self.n_units}")
-
-        # Filter quality_metrics to only include units with spikes
+        # Filter quality_metrics and unit_types to only include units with spikes
         # This handles cases where quality_metrics includes empty units (0 spikes after duplicate removal)
+        # Empty units have nSpikes == 0 or NaN values in essential metrics
         if 'phy_clusterID' in quality_metrics:
-            qm_cluster_ids = quality_metrics['phy_clusterID']
-            # Find which quality_metrics entries correspond to our displayable units
-            keep_mask = np.isin(qm_cluster_ids, self.unique_units)
-            if np.sum(keep_mask) < len(quality_metrics['phy_clusterID']):
-                print(f"   Note: Filtering quality_metrics to {np.sum(keep_mask)} units with spikes (excluding empty units)")
-                # Filter quality_metrics dict
+            qm_cluster_ids = np.array(quality_metrics['phy_clusterID'])
+
+            # Detect empty/invalid units by checking nSpikes
+            # Units with 0 spikes or < minNumSpikes have NaN metrics and can't be visualized
+            min_spikes = self.param.get('minNumSpikes', 50) if self.param else 50
+            if 'nSpikes' in quality_metrics:
+                nspikes = np.array(quality_metrics['nSpikes'])
+                # Filter out units with too few spikes (< minNumSpikes) - they have NaN metrics
+                non_empty_mask = (nspikes >= min_spikes) & ~np.isnan(nspikes)
+            else:
+                # Fallback: check if unit has spikes in spike_clusters
+                unique_spike_units = np.unique(ephys_data['spike_clusters'])
+                non_empty_mask = np.isin(qm_cluster_ids, unique_spike_units)
+
+            n_filtered = np.sum(~non_empty_mask)
+            if n_filtered > 0:
+                print(f"   Note: Filtering out {n_filtered} units with < {min_spikes} spikes (have NaN metrics)")
+
+            # Filter quality_metrics to non-empty units
+            if hasattr(quality_metrics, 'iloc'):
+                # DataFrame format - filter rows and reset index
+                self.quality_metrics = quality_metrics.loc[non_empty_mask].reset_index(drop=True)
+            else:
+                # Dict format - filter each array
                 filtered_qm = {}
                 for key, value in quality_metrics.items():
-                    if isinstance(value, np.ndarray) and len(value) == len(qm_cluster_ids):
-                        filtered_qm[key] = value[keep_mask]
+                    if hasattr(value, '__len__') and len(value) == len(qm_cluster_ids):
+                        if isinstance(value, np.ndarray):
+                            filtered_qm[key] = value[non_empty_mask]
+                        elif hasattr(value, 'values'):  # pandas Series
+                            filtered_qm[key] = value.values[non_empty_mask]
+                        else:
+                            filtered_qm[key] = np.array(value)[non_empty_mask]
                     else:
                         filtered_qm[key] = value
                 self.quality_metrics = filtered_qm
-            else:
-                self.quality_metrics = quality_metrics
+
+            # Also filter unit_types using the same mask
+            if self.unit_types is not None and len(self.unit_types) == len(qm_cluster_ids):
+                self.unit_types = self.unit_types[non_empty_mask]
+
+            # Get filtered cluster IDs as unique_units (in the same order as quality_metrics)
+            self.unique_units = qm_cluster_ids[non_empty_mask]
         else:
+            # No phy_clusterID - fall back to spike_clusters
+            self.unique_units = np.unique(ephys_data['spike_clusters'])
             self.quality_metrics = quality_metrics
+            # Ensure DataFrame index is reset for proper integer indexing
+            if hasattr(self.quality_metrics, 'iloc'):
+                self.quality_metrics = self.quality_metrics.reset_index(drop=True)
+
+        self.n_units = len(self.unique_units)
+        print(f"Total units: {self.n_units}")
         self.current_unit_idx = 0
-        
+
         # Initialize manual classifications (separate from bombcell unit_types)
         self._initialize_manual_classifications()
         
@@ -1172,9 +1229,9 @@ class InteractiveUnitQualityGUI:
         spike_mask = self.ephys_data['spike_clusters'] == unit_id
         spike_times = self.ephys_data['spike_times'][spike_mask]
         
-        # Get template waveform
-        if unit_idx < len(self.ephys_data['template_waveforms']):
-            template = self.ephys_data['template_waveforms'][unit_idx]
+        # Get template waveform - index by unit_id since template_waveforms is indexed by unit ID
+        if unit_id < len(self.ephys_data['template_waveforms']):
+            template = self.ephys_data['template_waveforms'][unit_id]
         else:
             template = np.zeros((82, 1))
             
@@ -1551,8 +1608,17 @@ class InteractiveUnitQualityGUI:
             raw_wf = self.raw_waveforms.get('average', None)
             if raw_wf is not None:
                 try:
-                    if hasattr(raw_wf, '__len__') and self.current_unit_idx < len(raw_wf):
-                        waveforms = raw_wf[self.current_unit_idx]
+                    # Determine index based on whether raw_waveforms is indexed by unit_id or sequential
+                    unit_id = self.unique_units[self.current_unit_idx]
+                    if self.raw_waveforms.get('indexed_by_unit_id', False):
+                        # Use unit_id to index (raw_waveforms_id_match format)
+                        wf_idx = unit_id
+                    else:
+                        # Use sequential index (legacy raw_waveforms_full format)
+                        wf_idx = self.current_unit_idx
+
+                    if hasattr(raw_wf, '__len__') and wf_idx < len(raw_wf):
+                        waveforms = raw_wf[wf_idx]
                         
                         if hasattr(waveforms, 'shape') and len(waveforms.shape) > 1:
                             # waveforms shape is (channels, time), need to transpose for plotting
@@ -3693,14 +3759,29 @@ def load_metrics_for_gui(ks_dir, quality_metrics, ephys_properties=None, param=N
         bombcell_path = Path(save_path)
     
     # Load raw waveforms if available
+    # Prefer _bc_rawWaveforms_kilosort_format.npy which is indexed by unit_id (handles gaps in cluster IDs)
+    # Fall back to templates._bc_rawWaveforms.npy (sequential indexing) if not available
     raw_waveforms = None
+    raw_wf_id_match_path = bombcell_path / "_bc_rawWaveforms_kilosort_format.npy"
     raw_wf_path = bombcell_path / "templates._bc_rawWaveforms.npy"
-    if raw_wf_path.exists():
+
+    if raw_wf_id_match_path.exists():
+        try:
+            raw_waveforms = {
+                'average': np.load(raw_wf_id_match_path, allow_pickle=True),
+                'peak_channels': np.load(bombcell_path / "templates._bc_rawWaveformPeakChannels.npy", allow_pickle=True),
+                'indexed_by_unit_id': True  # Flag to indicate unit_id indexing
+            }
+        except FileNotFoundError:
+            raw_waveforms = None
+    elif raw_wf_path.exists():
         try:
             raw_waveforms = {
                 'average': np.load(raw_wf_path, allow_pickle=True),
-                'peak_channels': np.load(bombcell_path / "templates._bc_rawWaveformPeakChannels.npy", allow_pickle=True)
+                'peak_channels': np.load(bombcell_path / "templates._bc_rawWaveformPeakChannels.npy", allow_pickle=True),
+                'indexed_by_unit_id': False  # Sequential indexing (legacy)
             }
+            print("   Warning: Using legacy raw waveforms file (sequential indexing). Consider re-running BombCell.")
         except FileNotFoundError:
             raw_waveforms = None
     
