@@ -120,13 +120,19 @@ def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
     except ImportError:
         SCIPY_AVAILABLE = False
         print("Warning: SciPy not available, using simplified computations")
-    
+
+    # Compute max channels from UNFILTERED template_waveforms (indexed by unit_id)
+    # This avoids issues with filtered quality_metrics['maxChannels'] which gets reindexed
+    from .quality_metrics import get_waveform_peak_channel
+    template_waveforms_key = 'template_waveforms' if 'template_waveforms' in ephys_data else 'templates'
+    all_max_channels = get_waveform_peak_channel(ephys_data[template_waveforms_key])
+
     for unit_idx in range(n_units):
         if unit_idx % 50 == 0 and param.get("verbose", False):
             print(f"Processing unit {unit_idx}/{n_units}")
-            
+
         unit_id = unique_units[unit_idx]
-        
+
         # Get unit data - index by unit_id since template_waveforms is indexed by unit ID, not sequential
         if 'templates' in ephys_data and unit_id < len(ephys_data['templates']):
             template = ephys_data['templates'][unit_id]
@@ -134,10 +140,10 @@ def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
             template = ephys_data['template_waveforms'][unit_id]
         else:
             continue
-            
-        # Get max channel
-        if 'maxChannels' in quality_metrics and unit_idx < len(quality_metrics['maxChannels']):
-            max_ch = int(quality_metrics['maxChannels'][unit_idx])
+
+        # Get max channel from all_max_channels (indexed by unit_id, not affected by filtering)
+        if unit_id < len(all_max_channels):
+            max_ch = int(all_max_channels[unit_id])
         else:
             max_ch = 0
             
@@ -148,11 +154,7 @@ def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
             
             # Use the same waveform_shape function as quality metrics to get consistent results
             try:
-                from .quality_metrics import waveform_shape, get_waveform_peak_channel
-
-                # Compute max channels from full template_waveforms (indexed by unit_id)
-                # Don't use filtered quality_metrics['maxChannels'] since waveform_shape expects unit_id indexing
-                all_max_channels = get_waveform_peak_channel(ephys_data['template_waveforms'])
+                from .quality_metrics import waveform_shape
 
                 # Get waveform baseline window from param
                 baseline_window = [param.get('waveform_baseline_window_start', 21),
@@ -160,8 +162,9 @@ def precompute_gui_data(ephys_data, quality_metrics, param, save_path=None):
 
                 # Run waveform_shape to get the actual peak/trough locations
                 # Use unit_id (not unit_idx) since template_waveforms is indexed by unit_id
+                # all_max_channels was computed before the loop from unfiltered template_waveforms
                 result = waveform_shape(
-                    template_waveforms=ephys_data['template_waveforms'],
+                    template_waveforms=ephys_data[template_waveforms_key],
                     this_unit=unit_id,
                     maxChannels=all_max_channels,
                     channel_positions=ephys_data.get('channel_positions', np.array([[0, 0]])),
@@ -505,7 +508,13 @@ class InteractiveUnitQualityGUI:
                 print(f"   {status}")
         else:
             print("No pre-computed GUI data found - will compute everything real-time")
-        
+
+        # Compute max channels from UNFILTERED template_waveforms (indexed by unit_id)
+        # This must be done BEFORE filtering quality_metrics, as filtering breaks unit_id indexing
+        from .quality_metrics import get_waveform_peak_channel
+        template_waveforms_key = 'template_waveforms' if 'template_waveforms' in ephys_data else 'templates'
+        self.all_max_channels = get_waveform_peak_channel(ephys_data[template_waveforms_key])
+
         # Filter quality_metrics and unit_types to only include units with spikes
         # This handles cases where quality_metrics includes empty units (0 spikes after duplicate removal)
         # Empty units have nSpikes == 0 or NaN values in essential metrics
@@ -1257,8 +1266,17 @@ class InteractiveUnitQualityGUI:
             else:
                 # Dict with metric keys: {'metric1': [val0, val1, ...], 'metric2': [...]}
                 for key, values in self.quality_metrics.items():
-                    if hasattr(values, '__len__') and len(values) > unit_idx:
-                        unit_metrics[key] = values[unit_idx]
+                    if hasattr(values, '__len__'):
+                        # maxChannels is indexed by unit_id (cluster ID), not unit_idx
+                        if key == 'maxChannels':
+                            if unit_id < len(values):
+                                unit_metrics[key] = values[unit_id]
+                            else:
+                                unit_metrics[key] = np.nan
+                        elif len(values) > unit_idx:
+                            unit_metrics[key] = values[unit_idx]
+                        else:
+                            unit_metrics[key] = np.nan
                     else:
                         unit_metrics[key] = np.nan
         elif hasattr(self.quality_metrics, 'iloc'):
@@ -1269,7 +1287,12 @@ class InteractiveUnitQualityGUI:
                 unit_metrics = {}
         else:
             unit_metrics = {}
-                
+
+        # Override maxChannels with correct value from all_max_channels (indexed by unit_id)
+        # This fixes issues where filtered quality_metrics has wrong indexing for maxChannels
+        if hasattr(self, 'all_max_channels') and unit_id < len(self.all_max_channels):
+            unit_metrics['maxChannels'] = self.all_max_channels[unit_id]
+
         return {
             'unit_id': unit_id,
             'spike_times': spike_times,
@@ -1499,13 +1522,15 @@ class InteractiveUnitQualityGUI:
         """Plot template waveform using BombCell MATLAB spatial arrangement"""
         template = unit_data['template']
         metrics = unit_data['metrics']
-        
+        unit_id = unit_data['unit_id']
+
         if template.size > 0 and len(template.shape) > 1:
-            # Get peak channel from quality metrics
-            if 'maxChannels' in self.quality_metrics and self.current_unit_idx < len(self.quality_metrics['maxChannels']):
-                max_ch = int(self.quality_metrics['maxChannels'][self.current_unit_idx])
+            # Get peak channel from all_max_channels (computed from unfiltered template_waveforms, indexed by unit_id)
+            if hasattr(self, 'all_max_channels') and unit_id < len(self.all_max_channels):
+                max_ch = int(self.all_max_channels[unit_id])
             else:
                 max_ch = int(metrics.get('maxChannels', 0))
+
             
             n_channels = template.shape[1]
             
@@ -1624,8 +1649,9 @@ class InteractiveUnitQualityGUI:
                             # waveforms shape is (channels, time), need to transpose for plotting
                             waveforms = waveforms.T  # Now (time, channels)
                             # Multi-channel raw waveforms - use MATLAB spatial arrangement
-                            if 'maxChannels' in self.quality_metrics and self.current_unit_idx < len(self.quality_metrics['maxChannels']):
-                                max_ch = int(self.quality_metrics['maxChannels'][self.current_unit_idx])
+                            # Use all_max_channels (computed from unfiltered template_waveforms, indexed by unit_id)
+                            if hasattr(self, 'all_max_channels') and unit_id < len(self.all_max_channels):
+                                max_ch = int(self.all_max_channels[unit_id])
                             else:
                                 max_ch = int(metrics.get('maxChannels', 0))
                             n_channels = waveforms.shape[1]  # Number of channels (after ensuring time x channels)
@@ -2557,20 +2583,19 @@ class InteractiveUnitQualityGUI:
             'non-somatic': [0, 0, 1]    # Blue
         }
         
-        if 'channel_positions' in self.ephys_data and 'maxChannels' in self.quality_metrics:
+        if 'channel_positions' in self.ephys_data and hasattr(self, 'all_max_channels'):
             positions = self.ephys_data['channel_positions']
-            max_channels = self.quality_metrics['maxChannels']
-            
+
             # Get all unit classifications and firing rates
             all_units = []
             all_depths = []
             all_firing_rates = []
             all_colors = []
-            
+
             for i, unit_id in enumerate(self.unique_units):
-                # Get max channel for this unit
-                if i < len(max_channels):
-                    max_ch = int(max_channels[i])
+                # Get max channel from all_max_channels (indexed by unit_id, not affected by filtering)
+                if unit_id < len(self.all_max_channels):
+                    max_ch = int(self.all_max_channels[unit_id])
                     if max_ch < len(positions):
                         # Use Y position as depth - deeper channels have higher index, should be at bottom
                         depth = positions[max_ch, 1]  # Keep original - deeper = lower y values
@@ -3137,16 +3162,19 @@ class InteractiveUnitQualityGUI:
     
     def mark_peaks_and_troughs(self, ax, waveform, x_offset, y_offset, metrics, amp_range):
         """Mark all peaks and troughs on waveform with duration line"""
-        
-        if (self.gui_data and 
-            'peak_locations' in self.gui_data and 
+
+
+        # Use real-time peak/trough detection (more reliable than precomputed gui_data)
+        use_gui_data_for_peaks = False
+
+        if (use_gui_data_for_peaks and self.gui_data and
+            'peak_locations' in self.gui_data and
             'trough_locations' in self.gui_data and
             self.current_unit_idx in self.gui_data['peak_locations']):
-            
+
             peaks = list(self.gui_data['peak_locations'][self.current_unit_idx])
             troughs = list(self.gui_data['trough_locations'][self.current_unit_idx])
-            
-            
+
         else:
             # Fallback to real-time computation
             try:
@@ -3207,15 +3235,15 @@ class InteractiveUnitQualityGUI:
         main_trough_idx = None
         
         
-        # Use pre-computed duration indices from quality metrics if available
-        if (self.gui_data and 
-            'peak_loc_for_duration' in self.gui_data and 
+        # Use pre-computed duration indices if gui_data is enabled
+        if (use_gui_data_for_peaks and self.gui_data and
+            'peak_loc_for_duration' in self.gui_data and
             'trough_loc_for_duration' in self.gui_data and
             self.current_unit_idx in self.gui_data['peak_loc_for_duration']):
-            
+
             main_peak_idx = self.gui_data['peak_loc_for_duration'][self.current_unit_idx]
             main_trough_idx = self.gui_data['trough_loc_for_duration'][self.current_unit_idx]
-            
+
         else:
             # Fallback: Use largest absolute values among detected peaks/troughs
             # Main peak: peak with largest absolute value among detected peaks
@@ -3247,7 +3275,7 @@ class InteractiveUnitQualityGUI:
             main_peak_idx = int(main_peak_idx)
         if main_trough_idx is not None:
             main_trough_idx = int(main_trough_idx)
-        
+
         # Plot all peaks with red dots
         legend_elements = []
         for i, peak_idx in enumerate(peaks):
