@@ -2954,6 +2954,7 @@ class InteractiveUnitQualityGUI:
                 ('waveformDuration_peakTrough', f"Duration: {format_metric(metrics.get('waveformDuration_peakTrough'), 1)} ms"),
                 ('scndPeakToTroughRatio', f"Peak2/Trough: {format_metric(metrics.get('scndPeakToTroughRatio'), 2)}"),
                 ('waveformBaselineFlatness', f"Baseline: {format_metric(metrics.get('waveformBaselineFlatness'), 3)}"),
+                ('spatialDecaySlope', f"Spatial decay: {format_metric(metrics.get('spatialDecaySlope'), 3)}"),
                 ('peak1ToPeak2Ratio', f"Peak1/Peak2: {format_metric(metrics.get('peak1ToPeak2Ratio'), 2)}"),
                 ('mainPeakToTroughRatio', f"Main P/T: {format_metric(metrics.get('mainPeakToTroughRatio'), 2)}")
             ]
