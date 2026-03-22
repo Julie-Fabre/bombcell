@@ -25,10 +25,11 @@ def fraction_RP_violations_sliding(
     return_per_bin=False,
 ):
     """
-    Compute sliding refractory period violations - drop-in replacement for
-    fraction_RP_violations when using the sliding method.
+    Compute sliding refractory period violations.
 
-    This uses the same interface as the Hill/Llobet method for easy switching.
+    Uses the same tauR window as Hill/Llobet (tauR_valuesMin/Max/Step) and
+    returns contamination estimates for each tauR value, so the downstream
+    code (time_chunks_to_keep, RPV_window_index) works identically.
 
     Parameters
     ----------
@@ -40,41 +41,43 @@ def fraction_RP_violations_sliding(
         Time chunk boundaries in seconds.
     param : dict
         Parameter dict. Uses:
+        - tauR_valuesMin/Max/Step: RP window to evaluate (shared with Hill/Llobet)
         - ephys_sample_rate: Sample rate in Hz (default 30000)
-        - tauC: Censored period in seconds (default 0.0001)
-        - slidingRP_minRP: Min RP to consider in seconds (default 0.0005)
-        - slidingRP_maxRP: Max RP to consider in seconds (default 0.01)
-        - slidingRP_binSize: ACG bin size in seconds (default 1/30000)
         - slidingRP_confThresh: Confidence threshold 0-1 (default 0.9)
 
     Returns
     -------
     fraction_RPVs : ndarray
-        Shape (n_time_chunks, 1). Minimum contamination estimate per chunk.
-        Note: returns shape (n_chunks, 1) to match Hill/Llobet interface.
+        Shape (n_time_chunks, n_tauR_values). Contamination estimate per
+        chunk per tauR value — same shape as Hill/Llobet output.
     num_violations : ndarray
-        Shape (n_time_chunks, 1). Total ISI violations per chunk.
+        Shape (n_time_chunks, n_tauR_values). ISI violation counts.
     per_bin_data : dict, optional
         If return_per_bin=True, dict with detailed per-bin data.
     """
     sample_rate = param.get("ephys_sample_rate", 30000)
-    tau_c = param.get("tauC", 0.0001)
-    rp_min = param.get("slidingRP_minRP", 0.0005)  # 0.5ms
-    rp_max = param.get("slidingRP_maxRP", 0.01)    # 10ms
-    bin_size = param.get("slidingRP_binSize", 1.0 / sample_rate)
     conf_thresh = param.get("slidingRP_confThresh", 0.9)
 
-    # Contamination values to test (0.5% to 35% in 0.5% steps)
-    cont_values = np.arange(0.5, 35.5, 0.5) / 100.0
+    # Use the same tauR window as Hill/Llobet
+    tauR_min = param["tauR_valuesMin"]
+    tauR_max = param["tauR_valuesMax"]
+    tauR_step = param["tauR_valuesStep"]
+    tauR_window = np.arange(tauR_min, tauR_max + tauR_step, tauR_step)
+    n_tauR = len(tauR_window)
+
+    # Internal sliding RP grid: fine-grained RP values at sample resolution
+    bin_size = 1.0 / sample_rate
+    rp_grid = np.arange(bin_size, tauR_max + bin_size, bin_size)
+
+    # Contamination values to test (0.5% to 34.5% in 0.5% steps)
+    # Matches SteinmetzLab/SpikeInterface reference implementations
+    cont_values = np.arange(0.5, 35, 0.5) / 100.0
 
     n_chunks = len(time_chunks) - 1
-    # Return shape matches Hill/Llobet: (n_chunks, n_tauR_values)
-    # For sliding RP, we only have 1 "tauR" value (the optimal one found)
-    fraction_RPVs = np.zeros((n_chunks, 1))
-    num_violations = np.zeros((n_chunks, 1))
+    fraction_RPVs = np.full((n_chunks, n_tauR), np.nan)
+    num_violations = np.zeros((n_chunks, n_tauR))
 
-    # Store extra info for per-bin data
-    rp_at_min_cont = np.full(n_chunks, np.nan)
+    # Per-bin storage
     all_conf_matrices = []
 
     for chunk_idx in range(n_chunks):
@@ -82,62 +85,55 @@ def fraction_RP_violations_sliding(
         t_stop = time_chunks[chunk_idx + 1]
         duration = t_stop - t_start
 
-        # Get spikes in this chunk
         chunk_mask = (these_spike_times >= t_start) & (these_spike_times < t_stop)
         chunk_spikes = these_spike_times[chunk_mask]
         n_spikes = len(chunk_spikes)
 
         if n_spikes < 2:
-            fraction_RPVs[chunk_idx, 0] = np.nan
             all_conf_matrices.append(None)
             continue
 
-        # Compute ISIs and count violations at each RP threshold
         isis = np.diff(chunk_spikes)
-
-        # Create RP values from bin_size to rp_max
-        rp_values = np.arange(bin_size, rp_max + bin_size, bin_size)
-
-        # Filter to only RPs >= rp_min
-        rp_mask = rp_values >= rp_min
-        rp_values_filtered = rp_values[rp_mask]
-
-        if len(rp_values_filtered) == 0:
-            fraction_RPVs[chunk_idx, 0] = np.nan
-            all_conf_matrices.append(None)
-            continue
-
-        # Count cumulative violations at each RP (×2 for symmetric ACG)
-        acg_cumsum = np.array([np.sum(isis <= rp) * 2 for rp in rp_values])
-        acg_cumsum_filtered = acg_cumsum[rp_mask]
-
-        # Store total violations for output
-        num_violations[chunk_idx, 0] = np.sum(isis <= rp_max)
-
-        # Compute confidence matrix and find minimum contamination
+        isis_sorted = np.sort(isis)
         firing_rate = n_spikes / duration if duration > 0 else 0
 
-        conf_matrix, min_cont, rp_at_min = _compute_confidence_matrix(
-            acg_cumsum_filtered,
-            rp_values_filtered,
-            cont_values,
-            n_spikes,
-            firing_rate,
-            conf_thresh,
-            tau_c,
-        )
+        # Count violations at each fine-grained RP (one-sided, from ISIs)
+        acg_cumsum = np.searchsorted(isis_sorted, rp_grid, side='right')
 
-        fraction_RPVs[chunk_idx, 0] = min_cont if not np.isnan(min_cont) else 1.0
-        rp_at_min_cont[chunk_idx] = rp_at_min
+        # Compute confidence matrix over the full fine grid
+        conf_matrix = _compute_confidence_matrix(
+            acg_cumsum, rp_grid, cont_values, n_spikes, firing_rate, conf_thresh
+        )
         all_conf_matrices.append(conf_matrix)
+
+        # For each tauR value, find the minimum contamination using
+        # only RP grid points up to that tauR
+        for t_idx, tauR in enumerate(tauR_window):
+            # Mask: RP grid points <= this tauR
+            rp_mask = rp_grid <= tauR + 1e-12  # small epsilon for float comparison
+            if not rp_mask.any():
+                continue
+
+            num_violations[chunk_idx, t_idx] = np.sum(isis <= tauR)
+
+            # Find minimum contamination where confidence >= threshold
+            # at any RP point up to this tauR
+            sub_conf = conf_matrix[:, rp_mask]  # (n_cont, n_rp_sub)
+            thresh_pct = conf_thresh * 100
+            passes = np.any(sub_conf >= thresh_pct, axis=1)
+            if passes.any():
+                first_idx = np.argmax(passes)
+                fraction_RPVs[chunk_idx, t_idx] = cont_values[first_idx]
+            else:
+                fraction_RPVs[chunk_idx, t_idx] = 1.0
 
     if return_per_bin:
         per_bin_data = {
             "time_bins": time_chunks,
             "fraction_RPVs_per_bin": fraction_RPVs.copy(),
-            "rp_at_min_contamination": rp_at_min_cont,
             "confidence_matrices": all_conf_matrices,
             "contamination_values_tested": cont_values,
+            "rp_grid": rp_grid,
         }
         return fraction_RPVs, num_violations, per_bin_data
 
@@ -151,10 +147,9 @@ def _compute_confidence_matrix(
     n_spikes,
     firing_rate,
     conf_thresh,
-    tau_c,
 ):
     """
-    Compute confidence matrix for contamination × refractory period.
+    Compute confidence matrix for contamination x refractory period.
 
     Uses Poisson statistics: given a contamination level, what's the probability
     that we'd observe this few (or fewer) violations?
@@ -162,7 +157,7 @@ def _compute_confidence_matrix(
     Parameters
     ----------
     acg_cumsum : ndarray
-        Cumulative ACG counts at each RP value.
+        Cumulative ACG counts at each RP value (one-sided).
     rp_values : ndarray
         Refractory period values in seconds.
     cont_values : ndarray
@@ -173,125 +168,29 @@ def _compute_confidence_matrix(
         Firing rate in Hz.
     conf_thresh : float
         Confidence threshold (e.g., 0.9 for 90%).
-    tau_c : float
-        Censored period in seconds.
 
     Returns
     -------
     conf_matrix : ndarray
         Shape (n_cont, n_rp). Confidence values (0-100).
-    min_contamination : float
-        Minimum contamination with confidence >= conf_thresh.
-    rp_at_min : float
-        RP value where minimum contamination was found.
     """
-    n_cont = len(cont_values)
-    n_rp = len(rp_values)
-    conf_matrix = np.zeros((n_cont, n_rp))
+    # Vectorized: build full (n_cont, n_rp) grids in one shot
+    # expected_viol = firing_rate * contamination * 2 * rp_duration * n_spikes
+    # Factor of 2 accounts for both sides of the ACG (observed counts are one-sided)
+    # Matches SteinmetzLab/SpikeInterface reference implementations
+    expected_viol = (firing_rate * n_spikes * 2) * np.outer(cont_values, rp_values)
+    obs = acg_cumsum[np.newaxis, :]  # (1, n_rp) broadcast
 
-    for i, cont in enumerate(cont_values):
-        for j, rp in enumerate(rp_values):
-            # Effective refractory period (excluding censored period)
-            effective_rp = max(0, rp - tau_c)
-
-            # Expected violations under Poisson model:
-            # contamination_rate × 2×RP_window × n_spikes
-            cont_rate = firing_rate * cont
-            expected_viol = cont_rate * 2 * effective_rp * n_spikes
-
-            if expected_viol > 0:
-                # Confidence = P(observed >= expected | Poisson(expected))
-                # = 1 - P(observed < expected) = 1 - CDF(observed - 1)
-                # Higher value = more confident unit is cleaner than this cont level
-                obs = acg_cumsum[j]
-                conf_matrix[i, j] = 1.0 - stats.poisson.cdf(obs, expected_viol)
-            else:
-                conf_matrix[i, j] = 1.0 if acg_cumsum[j] == 0 else 0.0
+    # Confidence = 1 - CDF(observed, expected) where expected > 0
+    conf_matrix = np.zeros_like(expected_viol)
+    pos = expected_viol > 0
+    obs_full = np.broadcast_to(obs, expected_viol.shape)
+    conf_matrix[pos] = 1.0 - stats.poisson.cdf(obs_full[pos], expected_viol[pos])
+    # Where expected == 0: confidence is 1 if no violations, 0 otherwise
+    zero = ~pos
+    conf_matrix[zero] = np.where(obs_full[zero] == 0, 1.0, 0.0)
 
     # Scale to percentage
     conf_matrix *= 100
 
-    # Find minimum contamination where confidence >= threshold at any RP
-    min_contamination = np.nan
-    rp_at_min = np.nan
-
-    for i, cont in enumerate(cont_values):
-        if np.any(conf_matrix[i, :] >= conf_thresh * 100):
-            min_contamination = cont
-            rp_idx = np.argmax(conf_matrix[i, :])
-            rp_at_min = rp_values[rp_idx]
-            break
-
-    return conf_matrix, min_contamination, rp_at_min
-
-
-def compute_sliding_rp_all_units(
-    spike_times_seconds,
-    spike_clusters,
-    unique_templates,
-    quality_metrics,
-    param,
-):
-    """
-    Compute sliding RP for all units using their selected time windows.
-
-    Called after time_chunks_to_keep has determined good time periods.
-
-    Parameters
-    ----------
-    spike_times_seconds : ndarray
-        All spike times in seconds.
-    spike_clusters : ndarray
-        Cluster ID for each spike.
-    unique_templates : ndarray
-        Array of unique cluster IDs.
-    quality_metrics : dict
-        Must contain useTheseTimesStart/Stop.
-    param : dict
-        Parameter dictionary.
-
-    Returns
-    -------
-    quality_metrics : dict
-        Updated with 'slidingRP_contamination' per unit.
-    """
-    n_units = len(unique_templates)
-    sliding_rp_cont = np.full(n_units, np.nan)
-
-    t_starts = quality_metrics.get("useTheseTimesStart", np.full(n_units, np.nan))
-    t_stops = quality_metrics.get("useTheseTimesStop", np.full(n_units, np.nan))
-
-    for unit_idx in range(n_units):
-        t_start = t_starts[unit_idx]
-        t_stop = t_stops[unit_idx]
-
-        if np.isnan(t_start) or np.isnan(t_stop):
-            continue
-
-        this_unit = unique_templates[unit_idx]
-        these_spikes = spike_times_seconds[spike_clusters == this_unit]
-        mask = (these_spikes >= t_start) & (these_spikes < t_stop)
-        these_spikes = these_spikes[mask]
-
-        if len(these_spikes) < 2:
-            continue
-
-        time_chunks = np.array([t_start, t_stop])
-        # Dummy amplitudes (not used by sliding method)
-        dummy_amps = np.ones(len(these_spikes))
-
-        fraction_RPVs, _ = fraction_RP_violations_sliding(
-            these_spikes, dummy_amps, time_chunks, param
-        )
-
-        sliding_rp_cont[unit_idx] = fraction_RPVs[0, 0]
-
-    quality_metrics["slidingRP_contamination"] = sliding_rp_cont
-
-    if param.get("verbose", False):
-        valid = sliding_rp_cont[~np.isnan(sliding_rp_cont)]
-        if len(valid) > 0:
-            print(f"  Sliding RP contamination — mean: {np.mean(valid):.4f}, "
-                  f"median: {np.median(valid):.4f} (n={len(valid)} units)")
-
-    return quality_metrics
+    return conf_matrix

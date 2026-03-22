@@ -190,6 +190,9 @@ def compute_dscisi_fdr(spike_times_seconds, spike_clusters, unique_templates,
 
         fdr_values[unit_idx] = np.mean(fdrs_for_N)
 
+    # Clamp FDR to [0, 1] — negative values are numerical noise
+    fdr_values = np.clip(fdr_values, 0.0, 1.0)
+
     quality_metrics["dcisi_fdr"] = fdr_values
     _print_summary(fdr_values, param)
     return quality_metrics
@@ -279,6 +282,97 @@ def _fdr_homo(f_t, isi_v, tau_e, N):
     return fdr
 
 
+def fraction_RP_violations_dcisiv(
+    these_spike_times,
+    these_amplitudes,
+    time_chunks,
+    param,
+    return_per_bin=False,
+):
+    """
+    Compute DCISIv FDR as a per-unit RPV method, using the homogeneous model.
+
+    Uses the same tauR window as Hill/Llobet/Sliding and returns the same
+    shape (n_chunks, n_tauR_values). For each tauR value, computes the
+    homogeneous FDR estimate (mean of N=1 and N=inf).
+
+    Parameters
+    ----------
+    these_spike_times : ndarray
+        Spike times in seconds for this unit.
+    these_amplitudes : ndarray
+        Spike amplitudes (not used, kept for interface compatibility).
+    time_chunks : ndarray
+        Time chunk boundaries in seconds.
+    param : dict
+        Parameter dict. Uses tauR_valuesMin/Max/Step, tauC.
+    return_per_bin : bool, optional
+        If True, return per-bin data for GUI plotting.
+
+    Returns
+    -------
+    fraction_RPVs : ndarray
+        Shape (n_chunks, n_tauR_values). DCISIv FDR per chunk per tauR.
+    num_violations : ndarray
+        Shape (n_chunks, n_tauR_values). ISI violation counts.
+    per_bin_data : dict, optional
+        If return_per_bin=True, dict with per-bin data.
+    """
+    tauR_min = param["tauR_valuesMin"]
+    tauR_max = param["tauR_valuesMax"]
+    tauR_step = param["tauR_valuesStep"]
+    tauR_window = np.arange(tauR_min, tauR_max + tauR_step, tauR_step)
+    tauC = param["tauC"]
+    n_tauR = len(tauR_window)
+
+    N_values = (1, float("inf"))
+
+    n_chunks = len(time_chunks) - 1
+    fraction_RPVs = np.full((n_chunks, n_tauR), np.nan)
+    num_violations = np.zeros((n_chunks, n_tauR))
+
+    for chunk_idx in range(n_chunks):
+        t_start = time_chunks[chunk_idx]
+        t_stop = time_chunks[chunk_idx + 1]
+        duration = t_stop - t_start
+
+        chunk_mask = (these_spike_times >= t_start) & (these_spike_times < t_stop)
+        chunk_spikes = these_spike_times[chunk_mask]
+        n_spikes = len(chunk_spikes)
+
+        if n_spikes < 2:
+            continue
+
+        isis = np.diff(chunk_spikes)
+        firing_rate = n_spikes / duration if duration > 0 else 0
+
+        if firing_rate <= 0:
+            continue
+
+        for t_idx, tauR in enumerate(tauR_window):
+            tau_e = tauR - tauC
+            if tau_e <= 0:
+                continue
+
+            # ISI violation rate at this tauR
+            isi_v = np.sum(isis < tauR) / n_spikes
+            num_violations[chunk_idx, t_idx] = np.sum(isis < tauR)
+
+            # Homogeneous FDR: mean of N=1 and N=inf estimates
+            fdrs = [_fdr_homo(firing_rate, isi_v, tau_e, N) for N in N_values]
+            fdr = np.clip(np.mean(fdrs), 0.0, 1.0)
+            fraction_RPVs[chunk_idx, t_idx] = fdr
+
+    if return_per_bin:
+        per_bin_data = {
+            "time_bins": time_chunks,
+            "fraction_RPVs_per_bin": fraction_RPVs.copy(),
+        }
+        return fraction_RPVs, num_violations, per_bin_data
+
+    return fraction_RPVs, num_violations
+
+
 def _print_summary(fdr_values, param):
     """Print and store population-level FDR summary."""
     valid = fdr_values[~np.isnan(fdr_values)]
@@ -357,7 +451,12 @@ def compute_combined_contamination(
     sliding_rp_mean = np.full(n_units, np.nan)
 
     # Compute sliding RP per time bin for each unit
+    verbose = param.get("verbose", False)
+    if verbose:
+        print(f"\n  Computing combined sliding RP + DCISIv ({n_units} units x {n_bins} time bins)...")
     for unit_idx in range(n_units):
+        if verbose:
+            print(f"    Sliding RP per-bin: unit {unit_idx+1}/{n_units}", end="\r")
         if not valid_times[unit_idx]:
             continue
 
@@ -377,9 +476,13 @@ def compute_combined_contamination(
             these_spikes, dummy_amps, time_bins, param
         )
 
-        sliding_rp_per_bin[unit_idx, :] = fraction_RPVs[:, 0]
-        sliding_rp_mean[unit_idx] = np.nanmean(fraction_RPVs[:, 0])
+        # fraction_RPVs is (n_bins, n_tauR) — take min across tauR per bin
+        min_per_bin = np.nanmin(fraction_RPVs, axis=1)
+        sliding_rp_per_bin[unit_idx, :] = min_per_bin
+        sliding_rp_mean[unit_idx] = np.nanmean(min_per_bin)
 
+    if verbose:
+        print()  # newline after \r progress
     quality_metrics["slidingRP_contamination_per_bin"] = sliding_rp_per_bin
 
     # Compute DCISIv (uses same bin size internally)

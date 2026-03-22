@@ -905,14 +905,9 @@ def get_all_quality_metrics(
         runtimes_RPV_2[unit_idx] = time.time() - time_tmp
         fraction_RPVs = fraction_RPVs[0]  # only 'use_these_times', so single time chunk
 
-        # Handle both multi-tauR (Hill/Llobet) and single-value (sliding RP) cases
+        # All methods now return (n_chunks, n_tauR_values) — index with RPV_window_index
         rpv_idx = int(quality_metrics["RPV_window_index"][unit_idx])
-        if len(fraction_RPVs) == 1:
-            # Sliding RP: only one value
-            quality_metrics["fractionRPVs_estimatedTauR"][unit_idx] = fraction_RPVs[0]
-        else:
-            # Hill/Llobet: index into the tauR array
-            quality_metrics["fractionRPVs_estimatedTauR"][unit_idx] = fraction_RPVs[rpv_idx]
+        quality_metrics["fractionRPVs_estimatedTauR"][unit_idx] = fraction_RPVs[rpv_idx]
         RPV_tauR_estimate_units_NtauR.append([unit_idx, fraction_RPVs])
 
         # get presence ratio
@@ -1052,7 +1047,7 @@ def get_all_quality_metrics(
                                     spike_clusters, template_amplitudes, channel_positions, 
                                     gui_data, param, unit_per_bin_data)
 
-    # DCISIv FDR estimation (optional, not used for classification)
+    # DCISIv FDR estimation (optional, used for classification when enabled)
     # When using sliding RP method with DCISIv, compute combined estimate
     if param.get("computeDCISI", True):
         rpv_method = param.get("rpvMethod", "hill").lower()
@@ -1494,13 +1489,29 @@ def make_qm_table(quality_metrics, param, unit_type_string):
         quality_metrics["nSpikes"][is_mua_unit] < param["minNumSpikes"]
     )
     
+    # Use the same contamination estimate as get_quality_unit_type
+    if param.get("computeDCISI", False):
+        rpv_method = param.get("rpvMethod", "hill").lower()
+        if rpv_method == "sliding" and "combined_contamination" in quality_metrics:
+            rpv_for_classification = quality_metrics["combined_contamination"]
+            rpv_label = "combined contamination"
+        elif "dcisi_fdr" in quality_metrics:
+            rpv_for_classification = quality_metrics["dcisi_fdr"]
+            rpv_label = "DCISIv FDR"
+        else:
+            rpv_for_classification = quality_metrics["fractionRPVs_estimatedTauR"]
+            rpv_label = "fraction RPVs"
+    else:
+        rpv_for_classification = quality_metrics["fractionRPVs_estimatedTauR"]
+        rpv_label = "fraction RPVs"
+
     too_many_RPVs = np.full(len(unit_type_string), False, dtype=bool)
     too_many_RPVs[is_mua_unit] = (
-        quality_metrics["fractionRPVs_estimatedTauR"][is_mua_unit] > param["maxRPVviolations"]
+        rpv_for_classification[is_mua_unit] > param["maxRPVviolations"]
     )
 
     qm_table_list.extend([too_many_spikes_missing, too_low_presence_ratio, too_few_total_spikes, too_many_RPVs])
-    qm_table_names.extend(["% spikes missing", "presence ratio", "# spikes", "fraction RPVs"])
+    qm_table_names.extend(["% spikes missing", "presence ratio", "# spikes", rpv_label])
 
     if param["extractRaw"]:
         too_small_amplitude = np.full(len(unit_type_string), False, dtype=bool)

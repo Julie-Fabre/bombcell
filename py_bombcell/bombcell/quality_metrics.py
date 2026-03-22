@@ -579,6 +579,11 @@ def compute_rpv(these_spike_times, these_amplitudes, time_chunks, param, return_
     - "hill": Hill et al. quadratic equation (default)
     - "llobet": Llobet et al. pairwise ISI method
     - "sliding": SteinmetzLab sliding RP with Poisson confidence
+    - "dcisiv": DCISIv per-unit FDR (Bhagat et al. 2024, eNeuro)
+
+    All methods use the same tauR window (tauR_valuesMin/Max/Step) and return
+    shape (n_chunks, n_tauR_values), so downstream code (time_chunks_to_keep,
+    RPV_window_index) works identically regardless of method.
 
     Parameters
     ----------
@@ -596,9 +601,9 @@ def compute_rpv(these_spike_times, these_amplitudes, time_chunks, param, return_
     Returns
     -------
     fraction_RPVs : ndarray
-        Contamination fraction estimates per time chunk.
+        Shape (n_chunks, n_tauR_values). Contamination fraction estimates.
     num_violations : ndarray
-        Number of violations per time chunk.
+        Shape (n_chunks, n_tauR_values). Number of violations.
     per_bin_data : dict, optional
         Per-bin data if return_per_bin=True.
     """
@@ -609,9 +614,13 @@ def compute_rpv(these_spike_times, these_amplitudes, time_chunks, param, return_
         return fraction_RP_violations_sliding(
             these_spike_times, these_amplitudes, time_chunks, param, return_per_bin
         )
+    elif method == "dcisiv":
+        from bombcell.dscisi import fraction_RP_violations_dcisiv
+        return fraction_RP_violations_dcisiv(
+            these_spike_times, these_amplitudes, time_chunks, param, return_per_bin
+        )
     else:
         # "hill" or "llobet" - use the original function
-        # hillOrLlobetMethod is set based on rpvMethod for backward compatibility
         if method == "llobet":
             param["hillOrLlobetMethod"] = False
         else:
@@ -925,13 +934,11 @@ def time_chunks_to_keep(
     maxRPVviolationss = param["maxRPVviolations"]
     maxPercSpikesMissing = param["maxPercSpikesMissing"]
 
-    # Handle both multi-tauR (Hill/Llobet) and single-column (sliding RP) cases
+    # All methods now return (n_chunks, n_tauR_values)
     if fraction_RPVs.ndim == 1:
-        # Single tauR value (e.g., from compute_rpv returning 1D array)
         fraction_RPVs = fraction_RPVs.reshape(-1, 1)
 
     if fraction_RPVs.shape[1] == 1:
-        # Sliding RP or single tauR: only one column, use it directly
         use_tauR = 0
     else:
         # Multiple tauR values: find the one with smallest total contamination
@@ -1987,10 +1994,36 @@ def get_quality_unit_type(param, quality_metrics):
     )
     
     # MUA classification
+    # Choose the contamination estimate to use for RPV-based classification:
+    # - If DCISIv is enabled with sliding RP: use combined_contamination (70% sliding + 30% DCISIv)
+    # - If DCISIv is enabled alone: use dcisi_fdr
+    # - Otherwise: use the standard fractionRPVs_estimatedTauR
+    if param.get("computeDCISI", False):
+        rpv_method = param.get("rpvMethod", "hill").lower()
+        if rpv_method == "sliding" and "combined_contamination" in quality_metrics:
+            rpv_for_classification = quality_metrics["combined_contamination"]
+            _rpv_source = "combined_contamination (sliding RP + DCISIv)"
+        elif "dcisi_fdr" in quality_metrics:
+            rpv_for_classification = quality_metrics["dcisi_fdr"]
+            _rpv_source = "dcisi_fdr"
+        else:
+            rpv_for_classification = quality_metrics["fractionRPVs_estimatedTauR"]
+            _rpv_source = "fractionRPVs_estimatedTauR (DCISIv fallback)"
+    else:
+        rpv_for_classification = quality_metrics["fractionRPVs_estimatedTauR"]
+        _rpv_source = "fractionRPVs_estimatedTauR"
+
+    if param.get("verbose", False):
+        n_non_noise = np.sum(np.isnan(unit_type))  # units not yet classified as noise
+        rpv_vals = rpv_for_classification[np.isnan(unit_type)]
+        n_fail_rpv = np.sum(rpv_vals > param["maxRPVviolations"]) if len(rpv_vals) > 0 else 0
+        print(f"  RPV metric for classification: {_rpv_source}")
+        print(f"  Non-noise units: {n_non_noise}, of which {n_fail_rpv} fail RPV threshold ({param['maxRPVviolations']})")
+
     mua_mask = np.isnan(unit_type) & (
         (quality_metrics["percentageSpikesMissing_gaussian"] > param["maxPercSpikesMissing"]) |
         (quality_metrics["nSpikes"] < param["minNumSpikes"]) |
-        (quality_metrics["fractionRPVs_estimatedTauR"] > param["maxRPVviolations"]) |
+        (rpv_for_classification > param["maxRPVviolations"]) |
         (quality_metrics["presenceRatio"] < param["minPresenceRatio"])
     )
     

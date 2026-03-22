@@ -61,27 +61,26 @@ def get_default_parameters(
         # '1' for 1.0 (3Bs) and '2' for 2.0 (single or 4-shanks)
 
         ## Refractory period parameters
-        "rpvMethod": "hill",  # RPV estimation method: "hill", "llobet", or "sliding"
+        "rpvMethod": "hill",  # RPV estimation method: "hill", "llobet", "sliding", or "dcisiv"
                               # - "hill": Hill et al. quadratic equation (default, fast)
                               # - "llobet": Llobet et al. pairwise ISI method (slower)
                               # - "sliding": SteinmetzLab sliding RP (Poisson-based,
                               #   robust to unknown RP duration, uses confidence threshold)
-        "tauR_valuesMin": 2 / 1000,  # refractory period time (s), usually 0.002 s
-        "tauR_valuesMax": 2 / 1000,  # refractory period time (s)
-        "tauR_valuesStep": 0.5 / 1000,  # if tauR_valuesMin and tauR_valuesMax are different
-        # bombcell will estimate values in between using
-        # tauR_valuesStep
+                              # - "dcisiv": DCISIv homogeneous FDR (Bhagat et al. 2024, eNeuro)
+                              # All methods use the tauR window below.
+        "tauR_valuesMin": 0.5 / 1000,  # minimum refractory period to test (s), default 0.5 ms
+        "tauR_valuesMax": 10 / 1000,   # maximum refractory period to test (s), default 10 ms
+        "tauR_valuesStep": 0.5 / 1000, # step between tauR values (s), default 0.5 ms
+        # bombcell estimates contamination at each tauR from tauR_valuesMin to
+        # tauR_valuesMax in tauR_valuesStep increments, then picks the best window.
         "tauC": 0.1 / 1000,  # censored period time (s), to prevent duplicate spikes
 
-        # Sliding RP specific parameters (only used when rpvMethod="sliding")
-        "slidingRP_minRP": 0.5 / 1000,  # minimum RP to test (s), default 0.5ms
-        "slidingRP_maxRP": 10 / 1000,   # maximum RP to test (s), default 10ms
+        # Sliding RP specific parameter
         "slidingRP_confThresh": 0.9,    # confidence threshold (0-1), default 90%
-        # slidingRP_binSize defaults to 1/ephys_sample_rate if not specified
 
         # DCISIv parameters
-        "computeDCISI": True,  # compute DCISIv FDR estimate (Bhagat et al. 2024, eNeuro)
-                               # stored as 'dcisi_fdr', not used for unit classification
+        "computeDCISI": True,  # also compute population-level DCISIv FDR (inhomogeneous model)
+                               # stored as 'dcisi_fdr', independent of rpvMethod choice
         "dcisi_bin_size": 10,  # time bin in seconds for DCISIv inhomogeneous model
                                # firing rate vectors; larger = faster, smaller = captures
                                # more temporal structure
