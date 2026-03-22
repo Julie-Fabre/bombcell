@@ -13,6 +13,7 @@ from bombcell.loading_utils import load_ephys_data
 import bombcell.quality_metrics as qm
 from bombcell.save_utils import get_metric_keys, save_results
 from bombcell.plot_functions import *
+from bombcell.dscisi import compute_dscisi_fdr, compute_combined_contamination
 
 
 def clean_inf_values(quality_metrics, columns=None):
@@ -851,9 +852,9 @@ def get_all_quality_metrics(
         )
         runtimes_spikes_missing_1[unit_idx] = time.time() - time_tmp
 
-        # fraction contamination
+        # fraction contamination (uses Hill, Llobet, or Sliding method based on rpvMethod)
         time_tmp = time.time()
-        fraction_RPVs, num_violations, rpv_per_bin_data = qm.fraction_RP_violations(
+        fraction_RPVs, num_violations, rpv_per_bin_data = qm.compute_rpv(
             these_spike_times, these_amplitudes, time_chunks, param, return_per_bin=True
         )
         runtimes_RPV_1[unit_idx] = time.time() - time_tmp
@@ -896,17 +897,22 @@ def get_all_quality_metrics(
         runtimes_spikes_missing_2[unit_idx] = time.time() - time_tmp
 
         time_tmp = time.time()
-        fraction_RPVs, num_violations = qm.fraction_RP_violations(
+        fraction_RPVs, num_violations = qm.compute_rpv(
             these_spike_times,
             these_amplitudes,
             use_these_times,
             param)
         runtimes_RPV_2[unit_idx] = time.time() - time_tmp
-        fraction_RPVs = fraction_RPVs[0] # only 'use_these_times', so single time chunk
+        fraction_RPVs = fraction_RPVs[0]  # only 'use_these_times', so single time chunk
 
-        quality_metrics["fractionRPVs_estimatedTauR"][unit_idx] = fraction_RPVs[
-            int(quality_metrics["RPV_window_index"][unit_idx])
-        ]
+        # Handle both multi-tauR (Hill/Llobet) and single-value (sliding RP) cases
+        rpv_idx = int(quality_metrics["RPV_window_index"][unit_idx])
+        if len(fraction_RPVs) == 1:
+            # Sliding RP: only one value
+            quality_metrics["fractionRPVs_estimatedTauR"][unit_idx] = fraction_RPVs[0]
+        else:
+            # Hill/Llobet: index into the tauR array
+            quality_metrics["fractionRPVs_estimatedTauR"][unit_idx] = fraction_RPVs[rpv_idx]
         RPV_tauR_estimate_units_NtauR.append([unit_idx, fraction_RPVs])
 
         # get presence ratio
@@ -1045,6 +1051,21 @@ def get_all_quality_metrics(
             _precompute_unit_gui_data(unit_idx, this_unit, template_waveforms, quality_metrics, 
                                     spike_clusters, template_amplitudes, channel_positions, 
                                     gui_data, param, unit_per_bin_data)
+
+    # DCISIv FDR estimation (optional, not used for classification)
+    # When using sliding RP method with DCISIv, compute combined estimate
+    if param.get("computeDCISI", True):
+        rpv_method = param.get("rpvMethod", "hill").lower()
+        if rpv_method == "sliding":
+            # Compute both sliding RP per-bin and DCISIv, then combine
+            quality_metrics = compute_combined_contamination(
+                spike_times_seconds, spike_clusters, unique_templates,
+                quality_metrics, param)
+        else:
+            # Standard DCISIv only
+            quality_metrics = compute_dscisi_fdr(
+                spike_times_seconds, spike_clusters, unique_templates,
+                quality_metrics, param)
 
     # Save GUI data after processing all units
     if param.get("verbose", False):

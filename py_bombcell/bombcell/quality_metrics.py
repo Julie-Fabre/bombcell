@@ -571,9 +571,62 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param,
             percent_missing_symmetric
         )
 
+def compute_rpv(these_spike_times, these_amplitudes, time_chunks, param, return_per_bin=False):
+    """
+    Unified wrapper for refractory period violation estimation.
+
+    Dispatches to the appropriate method based on param["rpvMethod"]:
+    - "hill": Hill et al. quadratic equation (default)
+    - "llobet": Llobet et al. pairwise ISI method
+    - "sliding": SteinmetzLab sliding RP with Poisson confidence
+
+    Parameters
+    ----------
+    these_spike_times : ndarray
+        Spike times in seconds for this unit.
+    these_amplitudes : ndarray
+        Spike amplitudes for this unit.
+    time_chunks : ndarray
+        Time chunk boundaries in seconds.
+    param : dict
+        Parameter dictionary containing rpvMethod and method-specific params.
+    return_per_bin : bool, optional
+        If True, return per-bin data for GUI plotting.
+
+    Returns
+    -------
+    fraction_RPVs : ndarray
+        Contamination fraction estimates per time chunk.
+    num_violations : ndarray
+        Number of violations per time chunk.
+    per_bin_data : dict, optional
+        Per-bin data if return_per_bin=True.
+    """
+    method = param.get("rpvMethod", "hill").lower()
+
+    if method == "sliding":
+        from bombcell.sliding_rp_violations import fraction_RP_violations_sliding
+        return fraction_RP_violations_sliding(
+            these_spike_times, these_amplitudes, time_chunks, param, return_per_bin
+        )
+    else:
+        # "hill" or "llobet" - use the original function
+        # hillOrLlobetMethod is set based on rpvMethod for backward compatibility
+        if method == "llobet":
+            param["hillOrLlobetMethod"] = False
+        else:
+            param["hillOrLlobetMethod"] = True
+        return fraction_RP_violations(
+            these_spike_times, these_amplitudes, time_chunks, param, return_per_bin
+        )
+
+
 def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, param, return_per_bin = False):
     """
-    This function estimates the fraction of refractory period violations for a given unit.
+    Estimate fraction of refractory period violations using Hill or Llobet method.
+
+    Note: Consider using compute_rpv() instead, which supports all methods
+    including the sliding RP approach.
 
     Parameters
     ----------
@@ -872,8 +925,19 @@ def time_chunks_to_keep(
     maxRPVviolationss = param["maxRPVviolations"]
     maxPercSpikesMissing = param["maxPercSpikesMissing"]
 
-    sum_RPV = np.sum(fraction_RPVs, axis=0)
-    use_tauR = np.where(sum_RPV == np.min(sum_RPV))[0][-1] # gives the last index of the tauR which has smallest contamination # CAUGHT BUG was argmax!!
+    # Handle both multi-tauR (Hill/Llobet) and single-column (sliding RP) cases
+    if fraction_RPVs.ndim == 1:
+        # Single tauR value (e.g., from compute_rpv returning 1D array)
+        fraction_RPVs = fraction_RPVs.reshape(-1, 1)
+
+    if fraction_RPVs.shape[1] == 1:
+        # Sliding RP or single tauR: only one column, use it directly
+        use_tauR = 0
+    else:
+        # Multiple tauR values: find the one with smallest total contamination
+        sum_RPV = np.sum(fraction_RPVs, axis=0)
+        use_tauR = np.where(sum_RPV == np.min(sum_RPV))[0][-1]
+
     use_these_times_temp = np.zeros(time_chunks.shape[0] - 1)
 
     use_these_times_temp = np.argwhere(

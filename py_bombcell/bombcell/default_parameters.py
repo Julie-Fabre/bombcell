@@ -61,13 +61,30 @@ def get_default_parameters(
         # '1' for 1.0 (3Bs) and '2' for 2.0 (single or 4-shanks)
 
         ## Refractory period parameters
+        "rpvMethod": "hill",  # RPV estimation method: "hill", "llobet", or "sliding"
+                              # - "hill": Hill et al. quadratic equation (default, fast)
+                              # - "llobet": Llobet et al. pairwise ISI method (slower)
+                              # - "sliding": SteinmetzLab sliding RP (Poisson-based,
+                              #   robust to unknown RP duration, uses confidence threshold)
         "tauR_valuesMin": 2 / 1000,  # refractory period time (s), usually 0.002 s
         "tauR_valuesMax": 2 / 1000,  # refractory period time (s)
         "tauR_valuesStep": 0.5 / 1000,  # if tauR_valuesMin and tauR_valuesMax are different
         # bombcell will estimate values in between using
         # tauR_valuesStep
         "tauC": 0.1 / 1000,  # censored period time (s), to prevent duplicate spikes
-        "hillOrLlobetMethod": True,  # use hill if 1, else use Llobet et al.
+
+        # Sliding RP specific parameters (only used when rpvMethod="sliding")
+        "slidingRP_minRP": 0.5 / 1000,  # minimum RP to test (s), default 0.5ms
+        "slidingRP_maxRP": 10 / 1000,   # maximum RP to test (s), default 10ms
+        "slidingRP_confThresh": 0.9,    # confidence threshold (0-1), default 90%
+        # slidingRP_binSize defaults to 1/ephys_sample_rate if not specified
+
+        # DCISIv parameters
+        "computeDCISI": True,  # compute DCISIv FDR estimate (Bhagat et al. 2024, eNeuro)
+                               # stored as 'dcisi_fdr', not used for unit classification
+        "dcisi_bin_size": 10,  # time bin in seconds for DCISIv inhomogeneous model
+                               # firing rate vectors; larger = faster, smaller = captures
+                               # more temporal structure
 
         ## Percentage spikes missing parameters
         "computeTimeChunks": False,  # compute fraction refractory period violations and
