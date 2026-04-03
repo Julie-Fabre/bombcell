@@ -33,7 +33,7 @@ if ~exist(savePath, 'dir')
     mkdir(fullfile(savePath))
 end
 
-% save parameters
+% save parameters as both parquet and CSV
 if ~istable(param)
     if ~isfield(param,'ephysKilosortPath') || isempty(param.ephysKilosortPath)
         param.ephysKilosortPath = 'NaN';
@@ -42,7 +42,9 @@ if ~istable(param)
     if ~isfield(param,'gain_to_uV') || isempty(param.gain_to_uV)
         param.gain_to_uV = 'NaN';
     end
-    parquetwrite([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')], struct2table(param, 'AsArray', true))
+    paramTable = struct2table(param, 'AsArray', true);
+    parquetwrite([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')], paramTable)
+    writetable(paramTable, fullfile(savePath, '_bc_parameters._bc_qMetrics.csv'));
 end
 % save quality metrics
 if param.saveMatFileForGUI
@@ -74,8 +76,16 @@ qMetricTable.Properties.VariableNames = fieldnames(qMetric);
 
 parquetwrite([fullfile(savePath, 'templates._bc_qMetrics.parquet')], qMetricTable)
 
-% Additionally, save all metrics to a single CSV file
-writetable(qMetricTable, fullfile(savePath, 'templates._bc_qMetrics_all.csv'));
+% Compute unit type classification to include in CSV
+% This will be updated when parameters change and classification is rerun
+[~, unitType_string] = bc.qm.getQualityUnitType(param, qMetricTable, savePath);
+
+% Add BombCell unit type to the table for CSV export
+qMetricTableWithType = qMetricTable;
+qMetricTableWithType.bc_unitType = unitType_string;
+
+% Additionally, save all metrics (including unit type) to a single CSV file
+writetable(qMetricTableWithType, fullfile(savePath, 'templates._bc_qMetrics_all.csv'));
 
 % overwrite qMetric with the table, to be consistent with it for next steps
 % of the pipeline

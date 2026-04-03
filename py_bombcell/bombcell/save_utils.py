@@ -203,11 +203,11 @@ def save_dict_as_parquet_and_csv(
     quality_metrics_df.to_csv(file_path + ".csv")
 
 
-def save_params_as_parquet(
+def save_params_as_parquet_and_csv(
     param, save_path, file_name="_bc_parameters._bc_qMetrics"
 ):
     """
-    This function save the whole param dictionary as a parquet file
+    This function saves the whole param dictionary as both parquet and CSV files
 
     Parameters
     ----------
@@ -216,7 +216,7 @@ def save_params_as_parquet(
     save_path : str
         The path to the save directory
     file_name : str, optional
-        The name of the file, by default '_bc_parameters._bc_qMetrics.parquet'
+        The name of the file, by default '_bc_parameters._bc_qMetrics'
     """
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
@@ -238,6 +238,7 @@ def save_params_as_parquet(
     file_path = save_path / file_name
     param_df = pd.DataFrame.from_dict([param_save])
     param_df.to_parquet(str(file_path) + ".parquet")
+    param_df.to_csv(str(file_path) + ".csv", index=False)
 
 
 def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, raw_waveforms_id_match, save_path):
@@ -305,11 +306,15 @@ def save_results(
     # maxChannels and other arrays all have same size (all templates, including empty ones)
     quality_metrics_save = quality_metrics.copy()
 
-    # Save full quality metrics table
+    # Add BombCell unit type label to quality metrics (updated when re-running classification)
+    quality_metrics_save["bc_unitType"] = unit_type_string
+
+    # Save full quality metrics table (including BombCell label)
     save_dict_as_parquet_and_csv(
         quality_metrics_save, save_path, file_name="templates._bc_qMetrics"
     )
-    save_params_as_parquet(
+    # Save parameters as both parquet and CSV
+    save_params_as_parquet_and_csv(
         param, save_path, file_name="_bc_parameters._bc_qMetrics"
     )
 
