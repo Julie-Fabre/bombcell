@@ -4,8 +4,27 @@ function [propLongISI, coefficient_variation, coefficient_variation2, isi_skewne
 % Yamin/Cohen 2013
 % Stalnaker/Schoenbaum 2016
 
-% (for whole session right now, can modified in the future) 
+% Handle empty or insufficient spike times
+if isempty(theseSpikes) || numel(theseSpikes) < 2
+    propLongISI = NaN;
+    coefficient_variation = NaN;
+    coefficient_variation2 = NaN;
+    isi_skewness = NaN;
+    return
+end
+
+% (for whole session right now, can modified in the future)
 spiking_stat_window = max(theseSpikes) - min(theseSpikes);
+
+% Handle case where all spikes are at the same time
+if spiking_stat_window == 0
+    propLongISI = NaN;
+    coefficient_variation = NaN;
+    coefficient_variation2 = NaN;
+    isi_skewness = NaN;
+    return
+end
+
 spiking_stat_bins = [min(theseSpikes), max(theseSpikes)];
 
 % Get firing rate across the session

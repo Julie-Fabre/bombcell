@@ -1,5 +1,24 @@
 function [mean_firingRate, fanoFactor, max_firingRate, min_firingRate] = computeSpikeProp(theseSpikes)
+    % Handle empty or insufficient spike times
+    if isempty(theseSpikes) || numel(theseSpikes) < 2
+        mean_firingRate = NaN;
+        fanoFactor = NaN;
+        max_firingRate = NaN;
+        min_firingRate = NaN;
+        return
+    end
+
     spiking_stat_window = max(theseSpikes) - min(theseSpikes);
+
+    % Handle case where all spikes are at the same time
+    if spiking_stat_window == 0
+        mean_firingRate = NaN;
+        fanoFactor = NaN;
+        max_firingRate = NaN;
+        min_firingRate = NaN;
+        return
+    end
+
     spiking_stat_bins = [min(theseSpikes), max(theseSpikes)];
 
     % Get firing rate across the session
