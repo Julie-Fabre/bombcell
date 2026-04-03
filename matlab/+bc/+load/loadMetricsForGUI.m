@@ -26,6 +26,20 @@ if exist('spikeTimes_samples','var')
     ephysData.templates = templateWaveforms;
     ephysData.template_amplitudes = templateAmplitudes;
     ephysData.channel_positions = channelPositions;
+    if exist('channelMap', 'var')
+        ephysData.channel_map = channelMap;
+        % Create raw channel to position mapping
+        % channelMap(i) = raw channel index for template channel i
+        % So raw_channel_positions(channelMap(i), :) = channelPositions(i, :)
+        maxRawChan = max(channelMap);
+        ephysData.raw_channel_positions = nan(maxRawChan, 2);
+        for i = 1:length(channelMap)
+            ephysData.raw_channel_positions(channelMap(i), :) = channelPositions(i, :);
+        end
+    else
+        ephysData.channel_map = (1:size(channelPositions, 1))';
+        ephysData.raw_channel_positions = channelPositions;
+    end
 
 else % load in unit match data 
     if iscell(sp)

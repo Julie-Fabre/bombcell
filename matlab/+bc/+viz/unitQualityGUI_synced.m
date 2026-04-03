@@ -577,18 +577,18 @@ for iChanToPlot = 1:min(20, size(chansToPlot, 1))
     vals(iChanToPlot, :) = -thisChannelWaveform + (ephysData.channel_positions(chansToPlot(iChanToPlot), 2) / 100 * scalingFactor);
 
     if maxChan == chansToPlot(iChanToPlot)
-        set(guiData.maxTemplateWaveformLines, 'XData', (ephysData.waveform_t + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
+        set(guiData.maxTemplateWaveformLines, 'XData', (ephysData.waveform_t + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - maxXC) / 10), ...
             'YData', vals(iChanToPlot, :));
 
         % Update peaks and troughs
-        set(guiData.peaks, 'XData', (ephysData.waveform_t(forGUI.peakLocs{iCluster}) + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
+        set(guiData.peaks, 'XData', (ephysData.waveform_t(forGUI.peakLocs{iCluster}) + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - maxXC) / 10), ...
             'YData', vals(iChanToPlot, forGUI.peakLocs{iCluster}));
-        set(guiData.troughs, 'XData', (ephysData.waveform_t(forGUI.troughLocs{iCluster}) + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
+        set(guiData.troughs, 'XData', (ephysData.waveform_t(forGUI.troughLocs{iCluster}) + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - maxXC) / 10), ...
             'YData', vals(iChanToPlot, forGUI.troughLocs{iCluster}));
 
         set(guiData.templateWaveformLines(iChanToPlot), 'XData', nan(82, 1), 'YData', nan(82, 1));
     else
-        set(guiData.templateWaveformLines(iChanToPlot), 'XData', (ephysData.waveform_t + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - 11) / 10), ...
+        set(guiData.templateWaveformLines(iChanToPlot), 'XData', (ephysData.waveform_t + (ephysData.channel_positions(chansToPlot(iChanToPlot), 1) - maxXC) / 10), ...
             'YData', vals(iChanToPlot, :));
     end
 end
@@ -691,35 +691,57 @@ set(guiData.tempLegend, 'Location', 'southwest');
 %% plot 3: plot unit mean raw waveform (and individual traces)
 if param.extractRaw
     maxChanRaw = rawWaveforms.peakChan(iCluster);
-    chansToPlotRaw = chansToPlot + diff([maxChan, maxChanRaw]);
-    chansToPlotRaw(chansToPlotRaw < 1) = [];
-    chansToPlotRaw(chansToPlotRaw > size(rawWaveforms.average, 2)) = [];
-    chansToPlotRaw(chansToPlotRaw > size(ephysData.channel_positions, 1)) = [];
 
+    % Use raw_channel_positions if available, otherwise fall back to channel_positions
+    if isfield(ephysData, 'raw_channel_positions')
+        raw_positions = ephysData.raw_channel_positions;
+    else
+        raw_positions = ephysData.channel_positions;
+    end
+
+    % Get max channel position in raw space
+    maxXCRaw = raw_positions(maxChanRaw, 1);
+    maxYCRaw = raw_positions(maxChanRaw, 2);
+
+    % Find raw channels within 100um of max channel (same logic as template)
+    nRawChans = size(rawWaveforms.average, 2);
+    chanDistancesRaw = inf(nRawChans, 1);
+    for iChan = 1:nRawChans
+        if iChan <= size(raw_positions, 1) && ~any(isnan(raw_positions(iChan, :)))
+            chanDistancesRaw(iChan) = sqrt((raw_positions(iChan, 1) - maxXCRaw).^2 + ...
+                (raw_positions(iChan, 2) - maxYCRaw).^2);
+        end
+    end
+    chansToPlotRaw = find(chanDistancesRaw < 100);
 
     % Calculate scaling factor for raw waveforms
     maxRawWaveform = squeeze(rawWaveforms.average(iCluster, maxChanRaw, :));
-    rawScalingFactor = range(-maxRawWaveform) * 3; %// Increased from 2.5 to 3 for better visibility
+    rawScalingFactor = range(-maxRawWaveform) * 3;
 
     valsRaw = zeros(min(20, size(chansToPlotRaw, 1)), size(rawWaveforms.average, 3));
 
     for iChanToPlot = 1:min(20, size(chansToPlotRaw, 1))
-        thisRawWaveform = squeeze(rawWaveforms.average(iCluster, chansToPlotRaw(iChanToPlot), :))';
-        valsRaw(iChanToPlot, :) = -thisRawWaveform + (ephysData.channel_positions(chansToPlotRaw(iChanToPlot), 2) / 100 * rawScalingFactor);
+        thisChan = chansToPlotRaw(iChanToPlot);
+        if thisChan > size(raw_positions, 1) || any(isnan(raw_positions(thisChan, :)))
+            continue;
+        end
 
-        if maxChan + diff([maxChan, maxChanRaw]) == chansToPlotRaw(iChanToPlot)
-            set(guiData.maxRawWaveformLines, 'XData', (ephysData.waveform_t + (ephysData.channel_positions(chansToPlotRaw(iChanToPlot), 1) - 11) / 10), ...
+        thisRawWaveform = squeeze(rawWaveforms.average(iCluster, thisChan, :))';
+        valsRaw(iChanToPlot, :) = -thisRawWaveform + (raw_positions(thisChan, 2) / 100 * rawScalingFactor);
+
+        if maxChanRaw == thisChan
+            set(guiData.maxRawWaveformLines, 'XData', (ephysData.waveform_t + (raw_positions(thisChan, 1) - maxXCRaw) / 10), ...
                 'YData', valsRaw(iChanToPlot, :));
             set(guiData.rawWaveformLines(iChanToPlot), 'XData', nan(82, 1), 'YData', nan(82, 1));
         else
-            set(guiData.rawWaveformLines(iChanToPlot), 'XData', (ephysData.waveform_t + (ephysData.channel_positions(chansToPlotRaw(iChanToPlot), 1) - 11) / 10), ...
+            set(guiData.rawWaveformLines(iChanToPlot), 'XData', (ephysData.waveform_t + (raw_positions(thisChan, 1) - maxXCRaw) / 10), ...
                 'YData', valsRaw(iChanToPlot, :));
         end
     end
 
     % Adjust y-axis limits for raw waveforms to prevent overlap with legend
     yMinRaw = min(min(valsRaw, [], 2));
-    yMaxRaw = max(max(valsRaw, [], 2)) + 0.5 * range(valsRaw(:)); %// Extra space for legend
+    yMaxRaw = max(max(valsRaw, [], 2)) + 0.5 * range(valsRaw(:));
     try
         ylim(guiData.rawWaveformYLim, [yMinRaw, yMaxRaw]);
     catch

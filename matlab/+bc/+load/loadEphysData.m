@@ -1,5 +1,5 @@
 function [spikeTimes_samples, spikeClusters, templateWaveforms, templateAmplitudes, ...
-    pcFeatures, pcFeatureIdx, channelPositions] = loadEphysData(ephys_path, savePath, datasetidx)
+    pcFeatures, pcFeatureIdx, channelPositions, channelMap] = loadEphysData(ephys_path, savePath, datasetidx)
 % JF, Load ephys data (1-indexed)
 % ------
 % Inputs
@@ -23,6 +23,7 @@ function [spikeTimes_samples, spikeClusters, templateWaveforms, templateAmplitud
 %   channels contribute to each entry in dim 3 of the pc_features matrix
 % channelPositions: nChannels x 2 double matrix, each row gives the x and y
 %   coordinates of each channel
+% channelMap: nChannels x 1 vector mapping template channel index to raw channel index
 %
 
 % load spike templates (= waveforms)
@@ -59,7 +60,7 @@ else % not computed in early kilosort3 version - the distance and drift metrics 
     pcFeatureIdx = NaN;
 end
 channelPositions = readNPY([ephys_path, filesep, 'channel_positions.npy']);
-%goodChannels = readNPY([ephys_path filesep  'channel_map.npy']) + 1;
+channelMap = readNPY([ephys_path, filesep, 'channel_map.npy']) + 1; % 1-indexed
 
 
 % in any merging/splitting has been done in phy, create the corresponding
