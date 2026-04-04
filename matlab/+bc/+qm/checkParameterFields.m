@@ -40,8 +40,12 @@ defaultValues.unitType_for_phy = 0;
 % separate good from mua in non-somatic
 defaultValues.splitGoodAndMua_NonSomatic = 0;
 
-% refactory period violations
-defaultValues.hillOrLlobetMethod = 1;
+% refractory period violations
+defaultValues.hillOrLlobetMethod = 1;  % legacy: 1=hill, 0=llobet
+defaultValues.rpvMethod = 'hill';  % new: 'hill', 'llobet', or 'ibl_sliding'
+defaultValues.tauR_values = 0.002;  % refractory period values to test (s)
+defaultValues.contaminationValues = [];  % for ibl_sliding (default 0.5-35%)
+defaultValues.confidenceThreshold = 0.9;  % for ibl_sliding
 
 % waveform - noise
 defaultValues.normalizeSpDecay = 0;% whether to normalize spatial decay points relative to 

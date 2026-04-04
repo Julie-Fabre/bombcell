@@ -32,11 +32,12 @@ def get_metric_keys():
             "troughToPeak2Ratio",
             "mainPeak_before_width",
             "mainTrough_width",
-            # MUA metrics 
+            # MUA metrics
             "percentageSpikesMissing_gaussian",
             "percentageSpikesMissing_symmetric",
             "RPV_window_index",
             "fractionRPVs_estimatedTauR",
+            "estimatedTauR",  # Estimated refractory period in seconds
             "presenceRatio",
             "maxDriftEstimate",
             "cumDriftEstimate",

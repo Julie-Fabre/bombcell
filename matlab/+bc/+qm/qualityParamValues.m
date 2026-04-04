@@ -76,15 +76,21 @@ param.computeSpatialDecay = 1;
 % Baseline noise window will be calculated after spike width is determined
 
 % refractory period parameters
-param.tauR_valuesMin = 2/1000; % refractory period time (s), usually 0.0020. 
-    % If this value is different than param.tauR_valuesMax, bombcell will
-    % estimate the tauR value taking possible values between :
-    % param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax
-param.tauR_valuesStep = 0.5/1000; % refractory period time (s) steps. Only 
-    % used if param.tauR_valuesMin is different from param.tauR_valuesMax
+% New recommended parameters:
+param.rpvMethod = 'hill'; % Method for RPV computation: 'hill', 'llobet', or 'ibl_sliding'
+param.tauR_values = 0.002; % Refractory period values to test (in seconds)
+    % For sweeping, use e.g. 0.001:0.0005:0.005 to test 1-5ms
+param.tauC = 0.1/1000; % Censored period time (s) - ISIs below this are excluded
+    % (prevents counting duplicate spike detections as violations)
+param.contaminationValues = []; % For ibl_sliding: contamination values to test
+    % If empty, uses (0.5:0.5:35)/100 (0.5% to 35%)
+param.confidenceThreshold = 0.9; % For ibl_sliding: confidence threshold
+
+% Legacy parameters (still supported for backward compatibility):
+param.tauR_valuesMin = 2/1000; % refractory period time (s), usually 0.0020
+param.tauR_valuesStep = 0.5/1000; % refractory period time (s) steps
 param.tauR_valuesMax = 2/1000; % refractory period time (s), usually 0.0020
-param.tauC = 0.1/1000; % censored period time (s) - this is to prevent duplicate spikes 
-param.hillOrLlobetMethod = 1; % 1 to use Hill et al method; 0 to use Llobet et al method
+param.hillOrLlobetMethod = 1; % 1 to use Hill et al method; 0 to use Llobet et al method (legacy)
 
 % percentage spikes missing parameters 
 param.computeTimeChunks = 0; % compute fraction refractory period violations 

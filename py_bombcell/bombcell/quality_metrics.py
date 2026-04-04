@@ -571,43 +571,465 @@ def perc_spikes_missing(these_amplitudes, these_spike_times, time_chunks, param,
             percent_missing_symmetric
         )
 
-def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, param, return_per_bin = False):
+def _compute_contamination_hill(n_violations, n_spikes, duration, tauR, tauC):
     """
-    This function estimates the fraction of refractory period violations for a given unit.
+    Compute contamination using Hill et al. method.
+
+    Parameters
+    ----------
+    n_violations : int
+        Number of refractory period violations
+    n_spikes : int
+        Number of spikes
+    duration : float
+        Duration in seconds
+    tauR : float
+        Refractory period in seconds
+    tauC : float
+        Censored period in seconds
+
+    Returns
+    -------
+    contamination : float
+        Estimated contamination fraction (0-1)
+    """
+    if n_spikes <= 1:
+        return np.nan
+
+    k = 2 * (tauR - tauC) * n_spikes**2
+    T = duration
+
+    if n_violations == 0:
+        return 0.0
+
+    # Solve quadratic equation
+    rts = np.roots([k, -k, n_violations * T])
+    min_root = np.min(rts)
+
+    if np.isreal(min_root):
+        contamination = np.real(min_root)
+    else:
+        # Approximation when roots are complex
+        if n_violations < n_spikes:
+            contamination = n_violations / (2 * (tauR - tauC) * (n_spikes - n_violations))
+        else:
+            contamination = 1.0
+
+    return min(contamination, 1.0)
+
+
+def _compute_contamination_llobet(spike_times, duration, tauR, tauC):
+    """
+    Compute contamination using Llobet et al. method.
+
+    Parameters
+    ----------
+    spike_times : ndarray
+        Spike times in seconds
+    duration : float
+        Duration in seconds
+    tauR : float
+        Refractory period in seconds
+    tauC : float
+        Censored period in seconds
+
+    Returns
+    -------
+    contamination : float
+        Estimated contamination fraction (0-1)
+    """
+    N = len(spike_times)
+    if N <= 1:
+        return np.nan
+
+    # Count all pair-wise violations
+    isi_violations_sum = 0
+    for i in range(N - 1):
+        isi_vec = spike_times[i+1:] - spike_times[i]
+        isi_violations_sum += np.sum((isi_vec <= tauR) & (isi_vec >= tauC))
+
+    if N > 0 and (tauR - tauC) > 0:
+        underRoot = 1 - (isi_violations_sum * (duration - 2 * N * tauC)) / (N**2 * (tauR - tauC))
+        if underRoot >= 0:
+            contamination = 1 - np.sqrt(underRoot)
+        else:
+            contamination = 1.0
+    else:
+        contamination = 0.0
+
+    return min(contamination, 1.0)
+
+
+def _compute_sliding_rp_ibl(spike_times, duration, tauR_values, tauC=None,
+                             bin_size_ms=0.25, contamination_values=None,
+                             confidence_threshold=0.9):
+    """
+    Compute contamination using IBL sliding refractory period method.
+
+    This method sweeps across refractory periods and contamination values to find
+    the minimum contamination with at least 90% confidence.
+
+    Parameters
+    ----------
+    spike_times : ndarray
+        Spike times in seconds
+    duration : float
+        Duration in seconds
+    tauR_values : ndarray
+        Refractory period values to test in seconds
+    tauC : float, optional
+        Censored period in seconds. ISIs below tauC are excluded from violation
+        counts (e.g., duplicate spike detections). Also used to skip testing
+        refractory periods <= tauC. Default: 0.5ms
+    bin_size_ms : float
+        Bin size for autocorrelogram in ms (not currently used, kept for API compatibility)
+    contamination_values : ndarray, optional
+        Contamination values to test. If None, uses np.arange(0.5, 35, 0.5) / 100
+    confidence_threshold : float
+        Confidence threshold for accepting contamination estimate (default 0.9)
+
+    Returns
+    -------
+    min_contamination : float
+        Minimum contamination at specified confidence level
+    estimated_tauR : float
+        The estimated refractory period (in seconds) that gives minimum contamination
+    """
+    from scipy.stats import poisson
+
+    n_spikes = len(spike_times)
+    if n_spikes <= 1:
+        return np.nan, np.nan
+
+    if contamination_values is None:
+        contamination_values = np.arange(0.5, 35, 0.5) / 100
+
+    # Compute ISIs
+    isis = np.diff(spike_times)
+
+    # Censored period - ISIs below this are excluded (duplicates/artifacts)
+    if tauC is None:
+        tauC = 0.5 / 1000  # Default 0.5ms
+
+    # Effective duration: total duration minus censored periods around each spike
+    # Each spike has tauC on both sides where violations can't be detected
+    effective_duration = duration - 2 * n_spikes * tauC
+    if effective_duration <= 0:
+        return np.nan, np.nan
+
+    # Firing rate adjusted for effective duration
+    firing_rate = n_spikes / effective_duration
+
+    # For each tauR value, compute violations in range [tauC, tauR)
+    min_contamination = np.nan
+    estimated_tauR = np.nan
+
+    for tauR in tauR_values:
+        # Skip if tauR is not greater than censored period
+        if tauR <= tauC:
+            continue
+
+        # Count violations: ISIs in range [tauC, tauR)
+        # This excludes ISIs < tauC (censored, e.g., duplicates)
+        n_violations = np.sum((isis >= tauC) & (isis < tauR))
+
+        # Test each contamination value (from lowest to highest)
+        for cont_val in contamination_values:
+            # Expected violations given contamination
+            # Window around each spike where violations can be detected: (tauR - tauC) on each side
+            contamination_rate = firing_rate * cont_val
+            effective_window = tauR - tauC
+            expected_violations = contamination_rate * effective_window * 2 * n_spikes
+
+            # Confidence score using Poisson distribution
+            # P(observed <= expected | contamination) - we want this to be high
+            if expected_violations > 0:
+                confidence = 1 - poisson.cdf(n_violations, expected_violations)
+            else:
+                confidence = 0 if n_violations > 0 else 1
+
+            if confidence > confidence_threshold:
+                if np.isnan(min_contamination) or cont_val < min_contamination:
+                    min_contamination = cont_val
+                    estimated_tauR = tauR
+                break
+
+    return min_contamination, estimated_tauR
+
+
+def sliding_rp_violations(these_spike_times, time_chunks, param, return_per_bin=False):
+    """
+    Compute refractory period violations using sliding methods.
+
+    This function supports three methods:
+    - 'hill': Hill et al. method for contamination estimation
+    - 'llobet': Llobet et al. method for contamination estimation
+    - 'ibl_sliding': IBL sliding refractory period method with confidence-based estimation
 
     Parameters
     ----------
     these_spike_times : ndarray
-        The spike times for the given unit
-    these_amplitudes : ndarray
-        The spike amplitudes for the given unit
+        The spike times for the given unit in seconds
     time_chunks : ndarray
         The time chunks to consider
     param : dict
         The param dictionary containing:
-        - tauR_valuesMin: minimum refractory period value
-        - tauR_valuesMax: maximum refractory period value
-        - tauR_valuesStep: step size for refractory period values
-        - tauC: censored period
-        - hillOrLlobetMethod: boolean to choose method
+        - rpv_method: 'hill', 'llobet', or 'ibl_sliding'
+        - tauR_values: array of refractory period values to test (in seconds)
+        - tauC: censored period in seconds (optional, default 0.1ms)
+        - contamination_values: array of contamination values to test (for ibl_sliding)
+        - confidence_threshold: confidence threshold for ibl_sliding (default 0.9)
         - plotDetails: boolean to enable plotting (default: False)
-        - RPV_tauR_estimate: index of tauR to use for plotting (optional)
     return_per_bin : bool, optional
         If True will return per-bin data for GUI plotting, by default False
 
     Returns
     -------
-    fraction_RPVs : ndarray 
-        The fraction of refractory period violations for the unit
-    num_violations : ndarray
-        The number of refractory period violations for the unit
+    contamination : float
+        The estimated contamination fraction for this unit
+    estimated_tauR : float
+        The estimated refractory period (in seconds) that gives minimum contamination
+    num_violations : int
+        The number of refractory period violations at estimated_tauR
     per_bin_data : dict, optional
-        If return_per_bin=True, returns dict with 'time_bins', 'fraction_RPVs_per_bin'
+        If return_per_bin=True, returns dict with per-bin contamination data
     """
-    import numpy as np
     import matplotlib.pyplot as plt
     from matplotlib.gridspec import GridSpec
 
+    # Get parameters with defaults
+    rpv_method = param.get("rpv_method", "hill")
+    tauR_values = np.atleast_1d(param.get("tauR_values", np.array([0.002])))  # Default 2ms
+    tauC = param.get("tauC", 0.0001)  # Default 0.1ms
+    contamination_values = param.get("contamination_values", None)
+    confidence_threshold = param.get("confidence_threshold", 0.9)
+    plot_details = param.get("plotDetails", False)
+
+    # Validate method
+    valid_methods = ['hill', 'llobet', 'ibl_sliding']
+    if rpv_method not in valid_methods:
+        raise ValueError(f"rpv_method must be one of {valid_methods}, got '{rpv_method}'")
+
+    # Initialize outputs
+    n_time_chunks = len(time_chunks) - 1
+    contamination_per_chunk = np.zeros(n_time_chunks)
+    estimated_tauR_per_chunk = np.zeros(n_time_chunks)
+    num_violations_per_chunk = np.zeros(n_time_chunks)
+
+    # Create figure if plotting
+    if plot_details and n_time_chunks > 0:
+        fig = plt.figure(figsize=(12, 8))
+        gs = GridSpec(2, max(n_time_chunks, 1), figure=fig)
+        ax_top = fig.add_subplot(gs[0, :])
+
+    # Process each time chunk
+    for time_chunk_idx in range(n_time_chunks):
+        # Get spikes in this chunk
+        chunk_mask = (these_spike_times >= time_chunks[time_chunk_idx]) & \
+                     (these_spike_times < time_chunks[time_chunk_idx + 1])
+        chunk_spike_times = these_spike_times[chunk_mask]
+
+        n_chunk = len(chunk_spike_times)
+        duration_chunk = time_chunks[time_chunk_idx + 1] - time_chunks[time_chunk_idx]
+
+        if n_chunk <= 1:
+            contamination_per_chunk[time_chunk_idx] = np.nan
+            estimated_tauR_per_chunk[time_chunk_idx] = np.nan
+            num_violations_per_chunk[time_chunk_idx] = 0
+            continue
+
+        chunk_ISIs = np.diff(chunk_spike_times)
+
+        if rpv_method == 'ibl_sliding':
+            # IBL sliding method
+            cont, est_tauR = _compute_sliding_rp_ibl(
+                chunk_spike_times, duration_chunk, tauR_values, tauC,
+                contamination_values=contamination_values,
+                confidence_threshold=confidence_threshold
+            )
+            contamination_per_chunk[time_chunk_idx] = cont
+            estimated_tauR_per_chunk[time_chunk_idx] = est_tauR if not np.isnan(est_tauR) else tauR_values[0]
+            # Count violations at estimated tauR
+            if not np.isnan(est_tauR):
+                num_violations_per_chunk[time_chunk_idx] = np.sum(chunk_ISIs < est_tauR)
+            else:
+                num_violations_per_chunk[time_chunk_idx] = np.sum(chunk_ISIs < tauR_values[0])
+
+        else:
+            # Hill or Llobet method - sweep through tauR values
+            best_contamination = np.inf
+            best_tauR = tauR_values[0]
+
+            for tauR in tauR_values:
+                if rpv_method == 'hill':
+                    n_violations = np.sum(chunk_ISIs <= tauR)
+                    cont = _compute_contamination_hill(
+                        n_violations, n_chunk, duration_chunk, tauR, tauC
+                    )
+                else:  # llobet
+                    cont = _compute_contamination_llobet(
+                        chunk_spike_times, duration_chunk, tauR, tauC
+                    )
+
+                if not np.isnan(cont) and cont < best_contamination:
+                    best_contamination = cont
+                    best_tauR = tauR
+
+            contamination_per_chunk[time_chunk_idx] = best_contamination if best_contamination != np.inf else np.nan
+            estimated_tauR_per_chunk[time_chunk_idx] = best_tauR
+            num_violations_per_chunk[time_chunk_idx] = np.sum(chunk_ISIs <= best_tauR)
+
+        # Plot ISI histogram if requested
+        if plot_details:
+            ax_bottom = fig.add_subplot(gs[1, time_chunk_idx])
+
+            if n_chunk > 1:
+                clean_isis = chunk_ISIs[chunk_ISIs >= tauC]
+                clean_isis_ms = clean_isis * 1000
+
+                hist_values, edges = np.histogram(clean_isis_ms, bins=np.arange(0, 100.5, 0.5))
+                centers = edges[:-1] + np.diff(edges)/2
+
+                ax_bottom.bar(centers, hist_values, width=0.5, color=[0, 0.35, 0.71], edgecolor=[0, 0.35, 0.71])
+
+                if time_chunk_idx == 0:
+                    ax_bottom.set_xlabel('Interspike interval (ms)')
+                    ax_bottom.set_ylabel('# of spikes')
+                else:
+                    ax_bottom.set_xticks([])
+                    ax_bottom.set_yticks([])
+
+                # Add refractory period line at estimated tauR
+                est_tauR = estimated_tauR_per_chunk[time_chunk_idx]
+                ax_bottom.axvline(x=est_tauR * 1000, color=[0.86, 0.2, 0.13], linewidth=2)
+                ax_bottom.set_title(f"{contamination_per_chunk[time_chunk_idx]*100:.1f}% cont\n"
+                                   f"tauR={est_tauR*1000:.2f}ms")
+
+    # Plot spike times in top panel if plotting
+    if plot_details and n_time_chunks > 0:
+        ax_top.scatter(these_spike_times, np.ones_like(these_spike_times), s=1, c=[0, 0.35, 0.71], alpha=0.3)
+        for t in time_chunks:
+            ax_top.axvline(x=t, color=[0.7, 0.7, 0.7])
+        ax_top.set_xlabel('time (s)')
+        ax_top.set_ylabel('spikes')
+        ax_top.set_yticks([])
+        plt.tight_layout()
+        plt.show()
+
+    # Aggregate results across chunks
+    valid_chunks = ~np.isnan(contamination_per_chunk)
+    if np.any(valid_chunks):
+        # Use the chunk with minimum contamination to determine estimated tauR
+        min_idx = np.nanargmin(contamination_per_chunk)
+        final_contamination = np.nanmean(contamination_per_chunk)
+        final_estimated_tauR = estimated_tauR_per_chunk[min_idx]
+        final_num_violations = int(np.nansum(num_violations_per_chunk))
+    else:
+        final_contamination = np.nan
+        final_estimated_tauR = tauR_values[0] if len(tauR_values) > 0 else np.nan
+        final_num_violations = 0
+
+    # Store per-bin data for GUI
+    per_bin_data = None
+    if return_per_bin:
+        per_bin_data = {
+            'time_bins': time_chunks,
+            'contamination_per_bin': contamination_per_chunk.copy(),
+            'estimated_tauR_per_bin': estimated_tauR_per_chunk.copy(),
+            'num_violations_per_bin': num_violations_per_chunk.copy()
+        }
+
+    if return_per_bin:
+        return final_contamination, final_estimated_tauR, final_num_violations, per_bin_data
+    else:
+        return final_contamination, final_estimated_tauR, final_num_violations
+
+
+def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, param, return_per_bin=False):
+    """
+    Compute refractory period violations for a given unit.
+
+    This is the main entry point that dispatches to the appropriate method.
+
+    Parameters
+    ----------
+    these_spike_times : ndarray
+        The spike times for the given unit in seconds
+    these_amplitudes : ndarray
+        The spike amplitudes for the given unit (used for plotting only)
+    time_chunks : ndarray
+        The time chunks to consider
+    param : dict
+        The param dictionary. Supports two modes:
+
+        **New mode (recommended):** Set 'rpv_method' to one of:
+        - 'hill': Hill et al. contamination estimation
+        - 'llobet': Llobet et al. contamination estimation
+        - 'ibl_sliding': IBL sliding refractory period method
+
+        With parameters:
+        - tauR_values: array of refractory period values to sweep (in seconds)
+        - tauC: censored period in seconds (optional)
+        - contamination_values: contamination values for ibl_sliding (optional)
+        - confidence_threshold: confidence for ibl_sliding (default 0.9)
+
+        **Legacy mode:** If 'rpv_method' is not set, uses old parameters:
+        - tauR_valuesMin/Max/Step: to create tauR sweep array
+        - hillOrLlobetMethod: boolean (True=hill, False=llobet)
+        - tauC: censored period
+
+    return_per_bin : bool, optional
+        If True will return per-bin data for GUI plotting, by default False
+
+    Returns
+    -------
+    fraction_RPVs : ndarray
+        The fraction of refractory period violations for the unit.
+        Shape: (n_time_chunks, n_tauR_values) for legacy mode
+        Or scalar for new mode.
+    num_violations : ndarray or int
+        The number of refractory period violations
+    per_bin_data : dict, optional
+        If return_per_bin=True, returns dict with per-bin data
+    estimated_tauR : float (new mode only)
+        The estimated refractory period in seconds
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.gridspec import GridSpec
+
+    # Check if using new mode or legacy mode
+    use_new_mode = "rpv_method" in param
+
+    if use_new_mode:
+        # Convert legacy params to new format if needed
+        if "tauR_values" not in param:
+            # Build from legacy params
+            tauR_min = param.get("tauR_valuesMin", 0.002)
+            tauR_max = param.get("tauR_valuesMax", 0.002)
+            tauR_step = param.get("tauR_valuesStep", 0.0005)
+            param["tauR_values"] = np.arange(tauR_min, tauR_max + tauR_step/2, tauR_step)
+
+        # Call new sliding function
+        result = sliding_rp_violations(these_spike_times, time_chunks, param, return_per_bin)
+
+        if return_per_bin:
+            contamination, estimated_tauR, num_violations, per_bin_data = result
+            # Convert to legacy output format for compatibility
+            n_chunks = len(time_chunks) - 1
+            n_tauR = len(param["tauR_values"])
+            fraction_RPVs = np.full((n_chunks, n_tauR), contamination)
+            # Store estimated_tauR index in per_bin_data
+            per_bin_data['estimated_tauR'] = estimated_tauR
+            per_bin_data['fraction_RPVs_per_bin'] = per_bin_data['contamination_per_bin'][:, np.newaxis]
+            return fraction_RPVs, np.array([[num_violations]]), per_bin_data
+        else:
+            contamination, estimated_tauR, num_violations = result
+            n_chunks = len(time_chunks) - 1
+            n_tauR = len(param["tauR_values"])
+            fraction_RPVs = np.full((n_chunks, n_tauR), contamination)
+            return fraction_RPVs, np.array([[num_violations]])
+
+    # Legacy mode - original implementation
     tauR_min = param["tauR_valuesMin"]
     tauR_max = param["tauR_valuesMax"]
     tauR_step = param["tauR_valuesStep"]
@@ -616,7 +1038,7 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
     # Create tauR window array (includes endpoint)
     tauR_window = np.arange(tauR_min, tauR_max + tauR_step, tauR_step)
     tauC = param["tauC"]
-    
+
     # Set default value for plotting if not provided
     if "plotDetails" not in param:
         param["plotDetails"] = False
@@ -625,7 +1047,7 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
     fraction_RPVs = np.zeros((time_chunks.shape[0] - 1, tauR_window.shape[0]))
     overestimate_bool = np.zeros_like(fraction_RPVs)
     num_violations = np.zeros_like(fraction_RPVs)
-    
+
     # Initialize raw fraction (violations/total spikes) for plotting
     RPV_fraction = np.zeros_like(fraction_RPVs)
 
@@ -637,7 +1059,7 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
     if param["plotDetails"]:
         fig = plt.figure(figsize=(12, 8))
         gs = GridSpec(2, len(time_chunks) - 1, figure=fig)
-        
+
         # Create the top panel that spans all columns
         ax_top = fig.add_subplot(gs[0, :])
 
@@ -650,19 +1072,19 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
                 these_spike_times < time_chunks[time_chunk_idx + 1],
             )
         ]
-        
+
         # Number of spikes in chunk
         n_chunk = chunk_spike_times.size
-        
+
         # Calculate duration of this chunk
         duration_chunk = time_chunks[time_chunk_idx + 1] - time_chunks[time_chunk_idx]
-        
+
         # Calculate chunk ISIs
         if n_chunk > 1:
             chunk_ISIs = np.diff(chunk_spike_times)
         else:
             chunk_ISIs = np.array([])
-        
+
         # Loop through each tauR value
         for i_tau_r, tauR in enumerate(tauR_window):
             # Calculate number of refractory period violations
@@ -673,13 +1095,13 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
             else:
                 num_violations[time_chunk_idx, i_tau_r] = 0
                 RPV_fraction[time_chunk_idx, i_tau_r] = 0
-                
+
             # Apply either Hill or Llobet method
             if param["hillOrLlobetMethod"]:
                 # Hill et al. method
                 k = 2 * (tauR - tauC) * n_chunk**2
                 T = duration_chunk
-                
+
                 if num_violations[time_chunk_idx, i_tau_r] == 0:
                     # No observed refractory period violations
                     fraction_RPVs[time_chunk_idx, i_tau_r] = 0
@@ -688,7 +1110,7 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
                     # Solve the quadratic equation
                     # Using coefficients [k, -k, nRPVs * T] to match MATLAB
                     rts = np.roots([k, -k, num_violations[time_chunk_idx, i_tau_r] * T])
-                    
+
                     # Get minimum root and check if it's real
                     min_root = np.min(rts)
                     if np.isreal(min_root):
@@ -703,7 +1125,7 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
                         else:
                             fraction_RPVs[time_chunk_idx, i_tau_r] = 1
                             overestimate_bool[time_chunk_idx, i_tau_r] = 1
-                            
+
                     # Cap fraction at 1 (assumptions failing if > 1)
                     if fraction_RPVs[time_chunk_idx, i_tau_r] > 1:
                         fraction_RPVs[time_chunk_idx, i_tau_r] = 1
@@ -731,26 +1153,26 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
                         overestimate_bool[time_chunk_idx, i_tau_r] = 1
                 else:
                     fraction_RPVs[time_chunk_idx, i_tau_r] = 0
-        
+
         # Plot ISI histogram if requested
         if param["plotDetails"]:
             # Create a subplot for each time chunk in the bottom row
             ax_bottom = fig.add_subplot(gs[1, time_chunk_idx])
-            
+
             if n_chunk > 1:
                 # Clean ISIs - removing duplicates (censored period)
                 clean_isis = chunk_ISIs[chunk_ISIs >= tauC]
-                
+
                 # Convert to ms for plotting
                 clean_isis_ms = clean_isis * 1000
-                
+
                 # Create histogram
                 hist_values, edges = np.histogram(clean_isis_ms, bins=np.arange(0, 100.5, 0.5))
                 centers = edges[:-1] + np.diff(edges)/2
-                
+
                 # Plot histogram
                 ax_bottom.bar(centers, hist_values, width=0.5, color=[0, 0.35, 0.71], edgecolor=[0, 0.35, 0.71])
-                
+
                 # Add labels to first subplot only
                 if time_chunk_idx == 0:
                     ax_bottom.set_xlabel('Interspike interval (ms)')
@@ -758,16 +1180,16 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
                 else:
                     ax_bottom.set_xticks([])
                     ax_bottom.set_yticks([])
-                
+
                 # Get y-limits for reference line
                 ylims = ax_bottom.get_ylim()
-                
+
                 # Calculate baseline firing rate for reference line (similar to MATLAB's nanmean)
                 long_isis = clean_isis_ms[(clean_isis_ms >= 400) & (clean_isis_ms <= 500)]
                 if len(long_isis) > 0:
                     baseline = np.nanmean(np.histogram(long_isis, bins=np.arange(400, 500.5, 0.5))[0])
                     ax_bottom.plot([0, 10], [baseline, baseline], '--', color=[0.86, 0.2, 0.13])
-                
+
                 # Add refractory period lines
                 RPV_tauR_estimate = param["RPV_tauR_estimate"]
                 if RPV_tauR_estimate is None:
@@ -775,7 +1197,7 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
                     if len(tauR_window) > 1:
                         for idx in [0, len(tauR_window)-1]:
                             ax_bottom.axvline(x=tauR_window[idx] * 1000, color=[0.86, 0.2, 0.13])
-                        
+
                         # Add title with min/max RPV rates
                         ax_bottom.set_title(f"{fraction_RPVs[time_chunk_idx, 0]*100:.0f}% rpv\n"
                                   f"{fraction_RPVs[time_chunk_idx, -1]*100:.0f}% rpv")
@@ -790,24 +1212,24 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
                         ax_bottom.axvline(x=tauR_window[RPV_tauR_estimate] * 1000, color=[0.86, 0.2, 0.13])
                         ax_bottom.set_title(f"{fraction_RPVs[time_chunk_idx, RPV_tauR_estimate]*100:.0f}% rpv\n"
                                   f"frac. rpv={RPV_fraction[time_chunk_idx, RPV_tauR_estimate]:.3f}")
-    
+
     # Create top row plot with spike amplitudes vs time if plotting is enabled
     if param["plotDetails"]:
         # Plot spike amplitudes vs time in the top panel
         ax_top.scatter(these_spike_times, these_amplitudes, s=4, c=[0, 0.35, 0.71], alpha=0.7)
-        
+
         # Add vertical lines for time chunks
         ylims = ax_top.get_ylim()
         for i, t in enumerate(time_chunks):
             ax_top.axvline(x=t, color=[0.7, 0.7, 0.7])
-        
+
         ax_top.set_xlabel('time (s)')
         ax_top.set_ylabel('amplitude scaling\nfactor')
-        
+
         # Adjust layout and display
         plt.tight_layout()
         plt.show()
-    
+
     # Store per-bin data for GUI
     per_bin_data = None
     if return_per_bin:

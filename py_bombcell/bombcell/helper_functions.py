@@ -896,18 +896,45 @@ def get_all_quality_metrics(
         runtimes_spikes_missing_2[unit_idx] = time.time() - time_tmp
 
         time_tmp = time.time()
-        fraction_RPVs, num_violations = qm.fraction_RP_violations(
-            these_spike_times,
-            these_amplitudes,
-            use_these_times,
-            param)
-        runtimes_RPV_2[unit_idx] = time.time() - time_tmp
-        fraction_RPVs = fraction_RPVs[0] # only 'use_these_times', so single time chunk
+        # Check if using new sliding RPV mode
+        use_new_rpv_mode = "rpv_method" in param
 
-        quality_metrics["fractionRPVs_estimatedTauR"][unit_idx] = fraction_RPVs[
-            int(quality_metrics["RPV_window_index"][unit_idx])
-        ]
-        RPV_tauR_estimate_units_NtauR.append([unit_idx, fraction_RPVs])
+        if use_new_rpv_mode:
+            # New mode: use sliding_rp_violations directly for cleaner output
+            contamination, estimated_tauR, n_violations = qm.sliding_rp_violations(
+                these_spike_times,
+                use_these_times,
+                param,
+                return_per_bin=False
+            )
+            quality_metrics["fractionRPVs_estimatedTauR"][unit_idx] = contamination
+            quality_metrics["estimatedTauR"][unit_idx] = estimated_tauR
+            RPV_tauR_estimate_units_NtauR.append([unit_idx, np.array([contamination])])
+        else:
+            # Legacy mode: use original fraction_RP_violations
+            fraction_RPVs, num_violations = qm.fraction_RP_violations(
+                these_spike_times,
+                these_amplitudes,
+                use_these_times,
+                param)
+            fraction_RPVs = fraction_RPVs[0]  # only 'use_these_times', so single time chunk
+
+            quality_metrics["fractionRPVs_estimatedTauR"][unit_idx] = fraction_RPVs[
+                int(quality_metrics["RPV_window_index"][unit_idx])
+            ]
+            # Compute estimated tauR from legacy parameters
+            tauR_min = param.get("tauR_valuesMin", 0.002)
+            tauR_max = param.get("tauR_valuesMax", 0.002)
+            tauR_step = param.get("tauR_valuesStep", 0.0005)
+            tauR_window = np.arange(tauR_min, tauR_max + tauR_step, tauR_step)
+            rpv_idx = int(quality_metrics["RPV_window_index"][unit_idx])
+            if rpv_idx < len(tauR_window):
+                quality_metrics["estimatedTauR"][unit_idx] = tauR_window[rpv_idx]
+            else:
+                quality_metrics["estimatedTauR"][unit_idx] = tauR_window[0]
+            RPV_tauR_estimate_units_NtauR.append([unit_idx, fraction_RPVs])
+
+        runtimes_RPV_2[unit_idx] = time.time() - time_tmp
 
         # get presence ratio
         time_tmp = time.time()

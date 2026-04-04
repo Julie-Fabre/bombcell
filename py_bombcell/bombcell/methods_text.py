@@ -68,6 +68,23 @@ CITATIONS = {
             "}"
         ),
     },
+    "ibl2022": {
+        "inline": "International Brain Laboratory, 2022",
+        "full": (
+            "International Brain Laboratory et al. (2022). Reproducibility of "
+            "in-vivo electrophysiological measurements in mice. bioRxiv. "
+            "https://doi.org/10.1101/2022.05.09.491042"
+        ),
+        "bibtex": (
+            "@article{ibl2022reproducibility,\n"
+            "  author = {{International Brain Laboratory} and others},\n"
+            "  title = {Reproducibility of in-vivo electrophysiological measurements in mice},\n"
+            "  journal = {bioRxiv},\n"
+            "  year = {2022},\n"
+            "  doi = {10.1101/2022.05.09.491042}\n"
+            "}"
+        ),
+    },
     "deligkaris2016": {
         "inline": "Deligkaris et al., 2016",
         "full": (
@@ -290,8 +307,8 @@ def _nonsomatic_section(param, tracker):
 
 
 def _mua_section(param, tracker):
-    tau_r_min = param.get("tauR_valuesMin", 0.002) * 1000
-    tau_r_max = param.get("tauR_valuesMax", 0.002) * 1000
+    import numpy as np
+
     tau_c = param.get("tauC", 0.0001) * 1000
     max_rpv = param.get("maxRPVviolations", 0.1)
     max_pct = param.get("maxPercSpikesMissing", 20)
@@ -305,28 +322,72 @@ def _mua_section(param, tracker):
         "the following criteria were met."
     )
 
-    # RPV
-    if param.get("hillOrLlobetMethod", True):
+    # RPV - determine method
+    rpv_method_name = param.get("rpv_method", None)
+    if rpv_method_name is None:
+        # Legacy mode
+        if param.get("hillOrLlobetMethod", True):
+            rpv_method_name = "hill"
+        else:
+            rpv_method_name = "llobet"
+
+    if rpv_method_name == "hill":
         rpv_method = f"the method of {tracker.textcite('hill2011')}"
-    else:
+    elif rpv_method_name == "llobet":
         rpv_method = f"the method of {tracker.textcite('llobet2022')}"
+    elif rpv_method_name == "ibl_sliding":
+        rpv_method = f"the IBL sliding refractory period method ({tracker.textcite('ibl2022')})"
+    else:
+        rpv_method = f"the method of {tracker.textcite('hill2011')}"
+
     rpv_text = (
         " The fraction of refractory period violations was estimated "
         f"using {rpv_method}"
     )
-    if tau_r_min == tau_r_max:
-        rpv_text += (
-            f", with a refractory period of {tau_r_min:.1f} ms and a "
-            f"censored period of {tau_c:.1f} ms"
-        )
+
+    # Get tauR values
+    tauR_values = param.get("tauR_values", None)
+    if tauR_values is not None:
+        tauR_values = np.atleast_1d(tauR_values) * 1000  # Convert to ms
+        if len(tauR_values) == 1:
+            rpv_text += (
+                f", with a refractory period of {tauR_values[0]:.1f} ms and a "
+                f"censored period of {tau_c:.1f} ms"
+            )
+        else:
+            rpv_text += (
+                f", testing refractory period values from {tauR_values[0]:.1f} to "
+                f"{tauR_values[-1]:.1f} ms (with a "
+                f"censored period of {tau_c:.1f} ms), and selecting the "
+                "optimal value per unit"
+            )
     else:
-        tau_r_step = param.get("tauR_valuesStep", 0.0005) * 1000
+        # Legacy parameters
+        tau_r_min = param.get("tauR_valuesMin", 0.002) * 1000
+        tau_r_max = param.get("tauR_valuesMax", 0.002) * 1000
+        if tau_r_min == tau_r_max:
+            rpv_text += (
+                f", with a refractory period of {tau_r_min:.1f} ms and a "
+                f"censored period of {tau_c:.1f} ms"
+            )
+        else:
+            tau_r_step = param.get("tauR_valuesStep", 0.0005) * 1000
+            rpv_text += (
+                f", testing refractory period values from {tau_r_min:.1f} to "
+                f"{tau_r_max:.1f} ms in steps of {tau_r_step:.1f} ms (with a "
+                f"censored period of {tau_c:.1f} ms), and selecting the "
+                "optimal value per unit"
+            )
+
+    # Add IBL-specific details
+    if rpv_method_name == "ibl_sliding":
+        conf_threshold = param.get("confidence_threshold", 0.9) * 100
         rpv_text += (
-            f", testing refractory period values from {tau_r_min:.1f} to "
-            f"{tau_r_max:.1f} ms in steps of {tau_r_step:.1f} ms (with a "
-            f"censored period of {tau_c:.1f} ms), and selecting the "
-            "optimal value per unit"
+            f". The IBL method estimates the minimum contamination at "
+            f"{conf_threshold:.0f}% confidence by sweeping across "
+            "refractory periods and contamination values"
         )
+
     rpv_text += (
         f"; units exceeding {max_rpv * 100:.0f}% violations were "
         "classified as MUA."

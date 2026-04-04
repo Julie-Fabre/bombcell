@@ -192,8 +192,13 @@ for iUnit = 1:size(uniqueTemplates, 1)
         bc.qm.percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param);
 
     %% fraction contamination (false positives)
-    tauR_window = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
-    [rateRPVs, ~, ~] = bc.qm.fractionRPviolations(theseSpikeTimes, theseAmplis, ...
+    % Build tauR values from new or legacy parameters
+    if isfield(param, 'tauR_values') && ~isempty(param.tauR_values)
+        tauR_window = param.tauR_values;
+    else
+        tauR_window = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
+    end
+    [rateRPVs, ~, ~, ~] = bc.qm.fractionRPviolations(theseSpikeTimes, theseAmplis, ...
         tauR_window, param, timeChunks, NaN);
     
     %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
@@ -210,7 +215,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
         forGUI.ampliGaussianFit{iUnit}] = bc.qm.percSpikesMissing(theseAmplis, theseSpikeTimes, ...
         thisUnits_timesToUse, param);
 
-    [qMetric.fractionRPVs(iUnit, :), ~, ~] = bc.qm.fractionRPviolations(theseSpikeTimes, theseAmplis, ...
+    [qMetric.fractionRPVs(iUnit, :), ~, ~, qMetric.estimatedTauR(iUnit)] = bc.qm.fractionRPviolations(theseSpikeTimes, theseAmplis, ...
         tauR_window, param, thisUnits_timesToUse, qMetric.RPV_window_index(iUnit)); %rename: fractionRPV should be called RPVrate
 
     %% presence ratio (potential false negatives)

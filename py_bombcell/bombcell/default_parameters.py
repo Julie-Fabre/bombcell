@@ -61,13 +61,20 @@ def get_default_parameters(
         # '1' for 1.0 (3Bs) and '2' for 2.0 (single or 4-shanks)
 
         ## Refractory period parameters
+        # New recommended parameters:
+        "rpv_method": "hill",  # Method for RPV computation: 'hill', 'llobet', or 'ibl_sliding'
+        "tauR_values": np.array([0.002]),  # Refractory period values to test (in seconds)
+                                            # For sweeping, use e.g. np.arange(0.001, 0.005, 0.0005)
+        "tauC": 0.1 / 1000,  # Censored period time (s), to prevent duplicate spikes
+        "contamination_values": None,  # For ibl_sliding: contamination values to test
+                                       # If None, uses np.arange(0.5, 35, 0.5) / 100
+        "confidence_threshold": 0.9,  # For ibl_sliding: confidence threshold for contamination estimate
+
+        # Legacy parameters (still supported for backward compatibility):
         "tauR_valuesMin": 2 / 1000,  # refractory period time (s), usually 0.002 s
         "tauR_valuesMax": 2 / 1000,  # refractory period time (s)
-        "tauR_valuesStep": 0.5 / 1000,  # if tauR_valuesMin and tauR_valuesMax are different
-        # bombcell will estimate values in between using
-        # tauR_valuesStep
-        "tauC": 0.1 / 1000,  # censored period time (s), to prevent duplicate spikes
-        "hillOrLlobetMethod": True,  # use hill if 1, else use Llobet et al.
+        "tauR_valuesStep": 0.5 / 1000,  # step size for tauR sweep
+        "hillOrLlobetMethod": True,  # use hill if 1, else use Llobet et al. (legacy)
 
         ## Percentage spikes missing parameters
         "computeTimeChunks": False,  # compute fraction refractory period violations and
