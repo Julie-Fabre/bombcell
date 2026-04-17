@@ -1206,11 +1206,46 @@ def run_bombcell(ks_dir, save_path, param, save_figures=False, return_figures=Fa
             signal_to_noise_ratio = None
             raw_waveforms_id_match = None
     else:
-        raw_waveforms_full = None
-        raw_waveforms_peak_channel = None
-        signal_to_noise_ratio = None
-        raw_waveforms_id_match = None
-        param["extractRaw"] = False  # No waveforms to extract!
+        # No raw data file available - try to load existing waveforms from disk
+        raw_waveforms_file = Path(save_path) / "templates._bc_rawWaveforms.npy"
+        raw_waveforms_peak_channel_file = Path(save_path) / "templates._bc_rawWaveformPeakChannels.npy"
+        raw_waveforms_id_match_file = Path(save_path) / "_bc_rawWaveforms_kilosort_format.npy"
+        snr_noise_file = Path(save_path) / "templates._bc_baselineNoiseAmplitude.npy"
+        snr_noise_idx_file = Path(save_path) / "templates._bc_baselineNoiseAmplitudeIndex.npy"
+
+        if raw_waveforms_file.exists() and raw_waveforms_peak_channel_file.exists():
+            if param.get("verbose", False):
+                print("\n📂 Loading existing raw waveforms (no raw data file available)...")
+            raw_waveforms_full = np.load(raw_waveforms_file)
+            raw_waveforms_peak_channel = np.load(raw_waveforms_peak_channel_file)
+            raw_waveforms_id_match = np.load(raw_waveforms_id_match_file) if raw_waveforms_id_match_file.exists() else None
+
+            # Compute SNR from loaded waveforms if baseline noise exists
+            if snr_noise_file.exists() and snr_noise_idx_file.exists():
+                baseline_noise_all = np.load(snr_noise_file)
+                baseline_noise_idx = np.load(snr_noise_idx_file)
+                unique_clusters = np.unique(spike_clusters)
+                n_clusters = len(unique_clusters)
+                signal_to_noise_ratio = np.zeros(n_clusters)
+                for i, cid in enumerate(unique_clusters):
+                    cluster_idx = np.where(unique_clusters == cid)[0]
+                    peak_channel = int(raw_waveforms_peak_channel[cluster_idx])
+                    peak_waveform = raw_waveforms_full[cluster_idx, peak_channel, :]
+                    signal = np.max(np.abs(np.squeeze(peak_waveform)))
+                    baseline_mask = baseline_noise_idx == cid
+                    baseline = baseline_noise_all[baseline_mask]
+                    noise = np.median(np.abs(baseline - np.median(baseline))) if len(baseline) > 0 else np.nan
+                    signal_to_noise_ratio[i] = signal / noise if noise > 0 else np.nan
+            else:
+                signal_to_noise_ratio = None
+
+            param["extractRaw"] = False  # Waveforms loaded, not extracted
+        else:
+            raw_waveforms_full = None
+            raw_waveforms_peak_channel = None
+            signal_to_noise_ratio = None
+            raw_waveforms_id_match = None
+            param["extractRaw"] = False  # No waveforms to extract!
 
     # Remove duplicate spikes
     if param["removeDuplicateSpikes"]:

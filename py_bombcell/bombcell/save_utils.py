@@ -255,6 +255,12 @@ def save_waveforms_as_npy(raw_waveforms_full, raw_waveforms_peak_channel, raw_wa
     save_path : str
         The path to the save directory
     """
+    # Don't save if waveforms are None - this preserves existing valid files
+    # This can happen when raw_data_file is not available but existing waveforms exist
+    if raw_waveforms_full is None:
+        print("  Skipping waveform save (raw_waveforms_full is None)")
+        return
+
     # Create save_path if it does not exist
     save_path = path_handler(save_path)
 
