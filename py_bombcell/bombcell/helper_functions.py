@@ -1228,13 +1228,23 @@ def run_bombcell(ks_dir, save_path, param, save_figures=False, return_figures=Fa
                 n_clusters = len(unique_clusters)
                 signal_to_noise_ratio = np.zeros(n_clusters)
                 for i, cid in enumerate(unique_clusters):
-                    peak_channel = int(raw_waveforms_peak_channel[i])
-                    peak_waveform = raw_waveforms_full[i, peak_channel, :]
-                    signal = np.max(np.abs(peak_waveform))
+                    mask = unique_clusters == cid
+                    cluster_idx = np.where(mask)[0]
+                    peak_channel = raw_waveforms_peak_channel[cluster_idx].astype(int)
+
+                    # Maximum absolute value of the waveform (signal)
+                    peak_waveform = raw_waveforms_full[cluster_idx, peak_channel, :]
+                    signal = np.max(np.abs(np.squeeze(peak_waveform)))
+
+                    # Get baseline noise for this cluster
                     baseline_mask = baseline_noise_idx == cid
                     baseline = baseline_noise_all[baseline_mask]
-                    noise = np.median(np.abs(baseline - np.median(baseline))) if len(baseline) > 0 else np.nan
-                    signal_to_noise_ratio[i] = signal / noise if noise > 0 else np.nan
+
+                    # Calculate MAD (noise) - Median Absolute Deviation
+                    noise = np.median(np.abs(baseline - np.median(baseline)))
+
+                    # Calculate SNR
+                    signal_to_noise_ratio[i] = signal / noise
             else:
                 signal_to_noise_ratio = None
 
