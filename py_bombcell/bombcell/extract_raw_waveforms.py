@@ -192,42 +192,54 @@ def read_meta(meta_path):
         if 'channels' in primary_stream and len(primary_stream['channels']) > 0:
             bit_volts = primary_stream['channels'][0].get('bit_volts', 0.195)
 
-        # Calculate file size from the binary file
-        binary_file = meta_path.parent / primary_stream.get('folder_name', 'continuous') / 'continuous.dat'
-        if binary_file.exists():
+        # Calculate file size from the binary file.
+        # Open Ephys layout: <recording>/continuous/<folder_name>/continuous.dat
+        # `folder_name` from the stream is usually just the leaf (e.g. "Acquisition_Board-100.acquisition_board/").
+        folder_name = primary_stream.get('folder_name', 'continuous').strip('/')
+        candidates = [
+            meta_path.parent / 'continuous' / folder_name / 'continuous.dat',
+            meta_path.parent / folder_name / 'continuous.dat',
+            meta_path.parent / 'continuous' / 'continuous.dat',
+        ]
+        binary_file = next((p for p in candidates if p.exists()), None)
+        if binary_file is not None:
             file_size_bytes = os.path.getsize(binary_file)
         else:
-            # Try to find any .dat file in the parent directory
-            dat_files = list(meta_path.parent.glob('**/*.dat'))
+            # Fall back to globbing — prefer continuous.dat, and otherwise pick the largest
+            # .dat file (events/timestamps .dat files are tiny and would mislead downstream sizing).
+            dat_files = list(meta_path.parent.glob('**/continuous.dat'))
+            if not dat_files:
+                dat_files = list(meta_path.parent.glob('**/*.dat'))
             if dat_files:
+                dat_files.sort(key=lambda p: os.path.getsize(p), reverse=True)
                 file_size_bytes = os.path.getsize(dat_files[0])
             else:
                 file_size_bytes = 0
 
-        # For Open Ephys: determine actual channel count from file size
-        # The stream metadata may not include sync channels in its count
+        # For Open Ephys: determine neural vs sync channel split from channel names.
+        # Convention: CH* = neural channels, anything else (ADC*, AUX*, etc.) = sync/aux.
         n_channels_stream = primary_stream['num_channels']
+        channel_names = [c.get('channel_name', '') for c in primary_stream.get('channels', [])]
+        n_neural_channels = sum(1 for n in channel_names if n.startswith('CH'))
+        if n_neural_channels == 0:
+            # No CH-prefixed channels found — assume all channels are neural
+            n_neural_channels = n_channels_stream
 
-        # Calculate total channels in file from file size
-        # Try common channel counts to find which gives integer number of samples
-        n_channels_actual = n_channels_stream  # Default fallback
-        if file_size_bytes > 0:
-            # For Neuropixels: typically 384 neural + N sync (commonly 1)
-            # Common total channel counts: 385, 384, 383
-            for n_test in [n_channels_stream, n_channels_stream + 1, n_channels_stream + 2, 385, 384, 383]:
-                n_samples_test = file_size_bytes / (2 * n_test)
-                # Check if this gives an integer number of samples (within floating point tolerance)
-                if abs(n_samples_test - round(n_samples_test)) < 0.01:
+        # Total channel count in file: trust num_channels from oebin (this is the count in continuous.dat).
+        # Cross-check against file size when possible.
+        n_channels_actual = n_channels_stream
+        if file_size_bytes > 0 and file_size_bytes % (2 * n_channels_stream) != 0:
+            # File size doesn't match num_channels — try common alternatives
+            for n_test in [n_channels_stream + 1, n_channels_stream + 2, 385, 384, 383]:
+                if file_size_bytes % (2 * n_test) == 0:
                     n_channels_actual = n_test
                     break
 
-        # Sync channels are the difference between total and neural channels
-        # Assume the stream reports neural channels only, extra channels in file are sync
-        n_channels_sync = max(0, n_channels_actual - n_channels_stream)
+        n_channels_sync = max(0, n_channels_actual - n_neural_channels)
 
         # Total channels and AP channels
         n_channels = n_channels_actual  # Total in file (including sync)
-        n_channels_ap = n_channels_stream  # Neural channels only
+        n_channels_ap = n_neural_channels  # Neural channels only
 
         # Create meta_dict in SpikeGLX format for compatibility
         meta_dict['fileTimeSecs'] = file_size_bytes / (2 * n_channels * sample_rate) if file_size_bytes > 0 else 0
@@ -354,13 +366,13 @@ def process_a_unit(
         # option to remove a linear in time trends
         if detrendWaveform:
             if n_sync_channels > 0:
-                detrended = detrend(tmp[:, :-n_sync_channels], axis=0).swapaxes(0, 1)
+                detrended = detrend((tmp[:, :-n_sync_channels] if n_sync_channels > 0 else tmp), axis=0).swapaxes(0, 1)
             else:
                 detrended = detrend(tmp[:, :], axis=0).swapaxes(0, 1)
             
             spike_map[:, :, i] = detrended
         else:
-            spike_map[:, :, i] = tmp[:, :-n_sync_channels].swapaxes(0, 1)
+            spike_map[:, :, i] = (tmp[:, :-n_sync_channels] if n_sync_channels > 0 else tmp).swapaxes(0, 1)
 
     # Save average waveforms for unitmatch
     # create the waveforms now, save later
@@ -383,12 +395,12 @@ def process_a_unit(
 
             # option to remove a linear in time trends for UnitMatch (separate from BombCell)
             if detrendForUnitMatch:
-                detrended = detrend(tmp[:, :-n_sync_channels], axis=0).swapaxes(
+                detrended = detrend((tmp[:, :-n_sync_channels] if n_sync_channels > 0 else tmp), axis=0).swapaxes(
                     0, 1
                 )
                 unitmatch_spike_map[:, :, i] = detrended
             else:
-                unitmatch_spike_map[:, :, i] = tmp[:, :-n_sync_channels].swapaxes(0, 1)
+                unitmatch_spike_map[:, :, i] = (tmp[:, :-n_sync_channels] if n_sync_channels > 0 else tmp).swapaxes(0, 1)
         
         tmp_spike_map = unitmatch_spike_map.swapaxes(0, 1)  # align with UnitMatch
 
@@ -609,15 +621,26 @@ def extract_raw_waveforms(
             baseline_noise_idx = np.load(snr_noise_idx_file)
             print(f"\rLoading file {raw_waveforms_file}... Done!") 
 
-            check = check_extracted_waveforms(
-                raw_waveforms_id_match, raw_waveforms_peak_channel, spike_clusters, spike_times, baseline_noise_all, param, save_path)
+            try:
+                check = check_extracted_waveforms(
+                    raw_waveforms_id_match, raw_waveforms_peak_channel, spike_clusters, spike_times, baseline_noise_all, param, save_path)
+            except (ValueError, IndexError) as e:
+                # Cached waveforms are inconsistent with current spike clusters
+                # (e.g. empty/all-NaN cache from a previous failed run).
+                print(f"\rCached raw waveforms unusable ({e}); recomputing.")
+                check = None
+                recompute = True
 
-            if check != (None, None, None, None, None):
+            if check is not None and check != (None, None, None, None, None):
                 raw_waveforms_id_match, raw_waveforms_peak_channel, raw_waveforms_full, baseline_noise_all, baseline_noise_idx = check
             # Check whether number of clusters changed
             # assumes that raw_waveforms_full has empty rows for jumps in unit indices
-            if raw_waveforms_full.shape[0] != n_clusters:
-                print("\rSome units' raw waveforms are not extracted. Extracting now ...") 
+            if not recompute and raw_waveforms_full.shape[0] != n_clusters:
+                print("\rSome units' raw waveforms are not extracted. Extracting now ...")
+                recompute = True
+            # Force recompute if cache is mostly NaN (e.g. from a previous failed extraction).
+            if not recompute and np.isnan(raw_waveforms_full).mean() > 0.99:
+                print("\rCached raw waveforms are nearly all NaN; recomputing.")
                 recompute = True
         else:
             recompute = True
@@ -639,13 +662,12 @@ def extract_raw_waveforms(
 
         if meta_path is not None and meta_path.exists():
             meta_dict = read_meta(meta_path)
-            n_elements = (int(meta_dict["fileSizeBytes"]) / 2)  # int16 so 2 bytes per data point
             n_channels_rec = int(meta_dict["nSavedChans"])  # Total channels including sync
             n_sync_channels = int(meta_dict["nChansSync"])  # Sync channels
             # Update n_channels to match meta file value
             n_channels = n_channels_rec
             param["n_channels_rec"] = n_channels_rec
-            
+
             # For Open Ephys files, adjust the raw data file path if needed
             if str(meta_path).endswith('.oebin'):
                 # In Open Ephys, nSavedChans is already the total channel count
@@ -658,21 +680,26 @@ def extract_raw_waveforms(
                         param["raw_data_file"] = raw_data_file
                         print(f"Using Open Ephys raw data file: {raw_data_file}")
                     else:
-                        # Look for any .dat file
+                        # Look for any .dat file — pick the largest (avoid events/timestamps .dat files)
                         dat_files = list(meta_path.parent.glob('**/*.dat'))
                         if dat_files:
+                            dat_files.sort(key=lambda p: os.path.getsize(p), reverse=True)
                             raw_data_file = str(dat_files[0])
                             param["raw_data_file"] = raw_data_file
                             print(f"Using Open Ephys raw data file: {raw_data_file}")
+
+            # Trust the actual raw data file size over whatever read_meta inferred —
+            # the user-supplied path is authoritative.
+            n_elements = os.path.getsize(raw_data_file) / 2  # int16 so 2 bytes per data point
         else:
             # Use default values when no metafile is available
             print("Warning: No meta file found. Using default parameters...")
             # Get file size directly from the raw data file
             file_size_bytes = os.path.getsize(raw_data_file)
             n_elements = file_size_bytes / 2  # int16 so 2 bytes per data point
-            
+
             # When no metafile, nChannels already includes sync channels
-            n_channels_rec = n_channels  
+            n_channels_rec = n_channels
             print(f"Using {n_channels_rec} total channels in recording")
             param["n_channels_rec"] = n_channels_rec
 
@@ -902,8 +929,8 @@ def decompress_data_if_needed(raw_file_path, decompress_data=True):
     raw_file_path = Path(raw_file_path)
     ephys_raw_dir = raw_file_path.parent
     
-    # If the file is already .bin and exists, just return it
-    if raw_file_path.suffix == '.bin' and raw_file_path.exists():
+    # If the file is already an uncompressed binary (.bin or Open Ephys .dat) and exists, just return it
+    if raw_file_path.suffix in ('.bin', '.dat') and raw_file_path.exists():
         return str(raw_file_path)
     
     # Look for data files in the directory
@@ -1163,7 +1190,6 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
 
         if meta_path is not None and meta_path.exists():
             meta_dict = read_meta(meta_path)
-            n_elements = (int(meta_dict["fileSizeBytes"]) / 2)  # int16 so 2 bytes per data point
             n_channels_rec = int(meta_dict["nSavedChans"])  # Total channels including sync
             n_sync_channels = int(meta_dict["nChansSync"])  # Sync channels
             # Update n_channels to match meta file value
@@ -1182,20 +1208,24 @@ def check_extracted_waveforms(raw_waveforms_id_match, raw_waveforms_peak_channel
                         param["raw_data_file"] = raw_data_file
                         print(f"Using Open Ephys raw data file: {raw_data_file}")
                     else:
-                        # Look for any .dat file
+                        # Look for any .dat file — pick the largest (avoid events/timestamps .dat files)
                         dat_files = list(meta_path.parent.glob('**/*.dat'))
                         if dat_files:
+                            dat_files.sort(key=lambda p: os.path.getsize(p), reverse=True)
                             raw_data_file = str(dat_files[0])
                             param["raw_data_file"] = raw_data_file
                             print(f"Using Open Ephys raw data file: {raw_data_file}")
+
+            # Trust the actual raw data file size over whatever read_meta inferred —
+            # the user-supplied path is authoritative.
+            n_elements = os.path.getsize(raw_data_file) / 2  # int16 so 2 bytes per data point
         else:
             # Use default values when no metafile is available
             print("Warning: No meta file found. Using inputed parameters...")
             # Get file size directly from the raw data file
-            import os
             file_size_bytes = os.path.getsize(raw_data_file)
             n_elements = file_size_bytes / 2  # int16 so 2 bytes per data point
-            
+
             # When no metafile, nChannels already includes sync channels
             n_channels_rec = n_channels  # Should be 385 (384 neural + 1 sync)
             print(f"Using {n_channels_rec} total channels in recording")

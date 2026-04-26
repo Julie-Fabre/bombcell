@@ -319,6 +319,20 @@ def load_bc_results(bc_path):
         quality_metrics = pd.read_parquet(quality_metrics_path)
     else:
         print("Quality Metrics file not found")
+        quality_metrics = None
+
+    # Repopulate unique_templates / empty_unit_idx in param — these are normally
+    # set as a side-effect of make_qualityMetrics, but downstream plotting code
+    # (e.g. plot_waveforms_overlay) reads them from param.
+    if param is not None and quality_metrics is not None:
+        if "phy_clusterID" in quality_metrics.columns:
+            param["unique_templates"] = quality_metrics["phy_clusterID"].to_numpy().astype(int)
+        else:
+            param["unique_templates"] = np.arange(len(quality_metrics))
+        if "nSpikes" in quality_metrics.columns:
+            param["empty_unit_idx"] = (quality_metrics["nSpikes"].to_numpy() == 0)
+        else:
+            param["empty_unit_idx"] = np.zeros(len(quality_metrics), dtype=bool)
 
     # BombCell fration RPVS all TauR
     fractions_RPVs_all_taur_path = os.path.join(
