@@ -28,8 +28,20 @@ wheels/
 *.egg
 .claude/
 py_bombcell/.claude/
-BC_demo_jf_tests.ipynb
-py_bombcell/demos/
 py_bombcell/sit/
-py_bombcell/demos/BC_demo_spikeGLX_jf_test2.ipynb
 matlab/gettingStarted_test.mlx
+
+# Personal/exploratory demo notebooks (not part of the public demos)
+py_bombcell/demos/BC_test.ipynb
+py_bombcell/demos/BC_demo_jf_tests.ipynb
+py_bombcell/demos/BC_demo_spikeGLX_jf_test2.ipynb
+py_bombcell/demos/BC_aggregate_rpv_vs_metrics.*
+py_bombcell/demos/aggregate_rpv_vs_metrics/
+py_bombcell/demos/BC_rpv_methods_comparison*.ipynb
+py_bombcell/demos/BC_rpv_vs_other_metrics.ipynb
+py_bombcell/demos/dscisi_comparison*.ipynb
+py_bombcell/demos/ibl_sliding_rp_comparison.ipynb
+
+# Toy data: only track the .npy kilosort files (everything else is generated output)
+py_bombcell/demos/toy_data/*
+!py_bombcell/demos/toy_data/*.npy
