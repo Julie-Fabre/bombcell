@@ -295,7 +295,7 @@ def get_gain_spikeglx(meta_path):
         if "imChan0apGain" in meta_dict:
             gain = float(meta_dict["imChan0apGain"])
         else:
-            gain = 80  # NP2 default gain
+            gain = 100.0  # NP2 default gain
 
         import warnings
         warnings.warn(
