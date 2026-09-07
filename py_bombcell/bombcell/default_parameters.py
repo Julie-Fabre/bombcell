@@ -58,6 +58,12 @@ def get_default_parameters(
         "nRawSpikesToExtract": 100,  # Number of raw spikes per unit
         "decompress_data": False,  # whether to decompress .cbin data
         "extractRaw": True,
+        "joblib_n_jobs": -1,  # workers used to extract raw waveforms in parallel.
+        # -1 is one per core; lower it if extraction runs out of memory
+        "joblib_backend_preference": "processes",  # 'processes' or 'threads'. joblib's
+        # process pool is the faster option, but cannot start on some setups (cluster
+        # schedulers, containers with a small /dev/shm, some notebook environments) -
+        # use 'threads' there
         "probeType": 1,  # If you are using spikeGLX and your meta files does not
         # contain information on your probe type specify it here
         # '1' for 1.0 (3Bs) and '2' for 2.0 (single or 4-shanks)
