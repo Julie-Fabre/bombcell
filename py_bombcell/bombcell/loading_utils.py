@@ -145,6 +145,8 @@ def get_gain_spikeglx(meta_path):
 
     Uses the SpikeGLX formula: V = i * Vmax / Imax / gain
 
+    Vmax is read from `imAiRangeMax` in the meta file.
+
     Imax is determined with the following fallback chain:
         1. Read 'imMaxInt' from meta file (preferred)
         2. Fall back to probe-type-specific defaults:
@@ -152,15 +154,22 @@ def get_gain_spikeglx(meta_path):
            - NP2/NP2.1/NP2.4 probes: 2048 (commercial) or 8192 (pre-commercial)
         3. Fall back to commercial Neuropixels default (512 for NP1, 2048 for NP2)
 
+    The AP gain is determined with the following fallback chain:
+        1. Read `imChan0apGain` from the meta file
+        2. Fall back to probe-type-specific defaults:
+            - NP1/3A/3B probes: error (gain is user-configurable, cannot be assumed)
+            - NP2 pre-commercial (21, 24): 80
+            - NP2 commercial (all other `2...` imDatPrb_type codes): 100
+
     For NP1/3A/3B probes:
         - Imax = imMaxInt (typically 512)
         - Vmax = imAiRangeMax (typically 0.6V)
         - gain = imChan0apGain (typically 500)
 
-    For NP2/NP2.1/NP2.4 probes (type 21, 24):
+    For NP2/NP2.1/NP2.4 probes:
         - Imax = imMaxInt (typically 2048 for commercial, 8192 for pre-commercial)
         - Vmax = imAiRangeMax (typically 0.6V)
-        - gain = 80 (fixed)
+        - gain = imChan0apGain (typically 100 for commercial, 80 for pre-commercial)
 
     Parameters
     ----------
@@ -222,7 +231,20 @@ def get_gain_spikeglx(meta_path):
     )
     # NP2, NP2.1, NP2.4 probes
     probeType_2 = np.array(
-        ("21", "24", "2003", "2004", "2013", "2014", "2020")
+        (
+            "21",
+            "24",
+            "2003",
+            "2004",
+            "2005",
+            "2006",
+            "2013",
+            "2014",
+            "2020",
+            "2021",
+            "2022",
+            "2300",
+        )
     )
 
     # Get Vmax from meta file (in Volts), convert to microvolts
@@ -253,7 +275,16 @@ def get_gain_spikeglx(meta_path):
             Imax = int(meta_dict["imMaxInt"])
         else:
             Imax = 2048  # Commercial NP2 default (14-bit ADC: 2^12 / 2)
-        gain = 80  # Fixed gain for NP2 probes
+
+        # AP gain: prefer meta file's imChan0apGain. Only fall back to subtype defaults
+        # when the field is absent.
+        if "imChan0apGain" in meta_dict:
+            gain = float(meta_dict["imChan0apGain"])
+        elif probeType in ("21", "24"):
+            gain = 80.0    # Pre-commercial probes
+        else:
+            gain = 100.0   # Commercial NP2 probes
+
     else:
         # Unknown probe type: try to read from meta, fallback to commercial NP2 default
         if "imMaxInt" in meta_dict:
@@ -264,7 +295,7 @@ def get_gain_spikeglx(meta_path):
         if "imChan0apGain" in meta_dict:
             gain = float(meta_dict["imChan0apGain"])
         else:
-            gain = 80  # NP2 default gain
+            gain = 100.0  # NP2 default gain
 
         import warnings
         warnings.warn(
