@@ -34,7 +34,19 @@ def load_manual_classifications(save_path):
     
     if manual_file.exists():
         manual_df = pd.read_csv(manual_file)
+
+        # The GUI writes -1 for units you have not classified yet. Counting those as
+        # labels makes every summary below meaningless - they are not data.
+        n_rows = len(manual_df)
+        manual_df = manual_df[manual_df['manual_classification'] >= 0].reset_index(drop=True)
+        n_unclassified = n_rows - len(manual_df)
+
         print(f"📂 Found manual classifications for {len(manual_df)} units")
+        if n_unclassified > 0:
+            print(f"   ({n_unclassified} units in the file are not classified yet - ignoring them)")
+        if len(manual_df) == 0:
+            print("❌ No units have been classified yet.")
+            return None
         return manual_df
     else:
         print("❌ No manual classifications found. Please use the GUI to manually classify some units first.")
@@ -202,14 +214,225 @@ def analyze_classification_concordance(manual_df, quality_metrics_table, save_pa
     return merged_df, confusion_df, concordance_stats
 
 
-def suggest_parameter_adjustments(merged_df, quality_metrics_table, param):
+# Threshold criteria applied by get_quality_unit_type, described as
+# (quality metric, parameter, rejected side, classification stage).
+#
+# 'side' is the side of the threshold on which units are *rejected*: 'below' means
+# units with metric < param fail the criterion, 'above' means metric > param fails.
+# 'stage' is which decision the criterion contributes to: noise metrics separate
+# NOISE from everything else, mua metrics separate GOOD from MUA among non-noise units.
+_THRESHOLD_CRITERIA = [
+    # metric, param, side, stage, integer-valued
+    ("nPeaks", "maxNPeaks", "above", "noise", True),
+    ("nTroughs", "maxNTroughs", "above", "noise", True),
+    ("waveformDuration_peakTrough", "minWvDuration", "below", "noise", False),
+    ("waveformDuration_peakTrough", "maxWvDuration", "above", "noise", False),
+    ("waveformBaselineFlatness", "maxWvBaselineFraction", "above", "noise", False),
+    ("scndPeakToTroughRatio", "maxScndPeakToTroughRatio_noise", "above", "noise", False),
+    ("spatialDecaySlope", "minSpatialDecaySlope", "below", "noise", False),
+    ("spatialDecaySlope", "minSpatialDecaySlopeExp", "below", "noise", False),
+    ("spatialDecaySlope", "maxSpatialDecaySlopeExp", "above", "noise", False),
+    ("percentageSpikesMissing_gaussian", "maxPercSpikesMissing", "above", "mua", False),
+    ("nSpikes", "minNumSpikes", "below", "mua", True),
+    ("fractionRPVs_estimatedTauR", "maxRPVviolations", "above", "mua", False),
+    ("presenceRatio", "minPresenceRatio", "below", "mua", False),
+    ("rawAmplitude", "minAmplitude", "below", "mua", False),
+    ("signalToNoiseRatio", "minSNR", "below", "mua", False),
+    ("maxDriftEstimate", "maxDrift", "above", "mua", False),
+    ("isolationDistance", "isoDmin", "below", "mua", False),
+    ("Lratio", "lratioMax", "above", "mua", False),
+]
+
+# Manual labels that count as passing each stage. Non-somatic units are a separate
+# axis from quality, so 'Non-somatic good'/'Non-somatic MUA' join good/MUA. The
+# unsplit 'Non-somatic' label conflates the two and is left out of the MUA stage.
+_STAGE_LABELS = {
+    "noise": {
+        "pass": ["Good", "MUA", "Non-somatic", "Non-somatic good", "Non-somatic MUA"],
+        "fail": ["Noise"],
+    },
+    "mua": {
+        "pass": ["Good", "Non-somatic good"],
+        "fail": ["MUA", "Non-somatic MUA"],
+    },
+}
+
+
+def _criterion_is_active(metric, param_name, param):
+    """Whether a threshold criterion is actually used given the current parameters."""
+    if param_name not in param:
+        return False
+    if np.all(np.isnan(np.atleast_1d(np.asarray(param[param_name], dtype=float)))):
+        return False
+
+    if metric == "spatialDecaySlope":
+        if not param.get("computeSpatialDecay", True):
+            return False
+        # Only one of the linear / exponential fit parameters is in play
+        lin_fit = param.get("spDecayLinFit", False)
+        if lin_fit != (param_name == "minSpatialDecaySlope"):
+            return False
+    if metric in ("rawAmplitude", "signalToNoiseRatio") and not param.get("extractRaw", False):
+        return False
+    if metric == "maxDriftEstimate" and not param.get("computeDrift", False):
+        return False
+    if metric in ("isolationDistance", "Lratio") and not param.get("computeDistanceMetrics", False):
+        return False
+    return True
+
+
+def _passes(values, threshold, side):
+    """Apply a threshold the same way get_quality_unit_type does."""
+    with np.errstate(invalid='ignore'):
+        return values >= threshold if side == "below" else values <= threshold
+
+
+def _criterion_failures(full_data, param):
     """
-    Suggest parameter threshold adjustments based on analysis of all quality metrics
-    
-    This function analyzes each unit's quality metrics to determine what parameter 
-    thresholds would best match the user's manual classifications, then compares
-    these optimal thresholds to current parameters to suggest improvements.
-    
+    Which units each active criterion currently rejects.
+
+    BombCell rejects a unit if *any* criterion fails, so tuning one threshold means
+    asking what the whole classification looks like with only that threshold moved.
+    That needs the other criteria's verdicts, which is what this returns.
+    """
+    failures = {}
+    for metric, param_name, side, stage, _ in _THRESHOLD_CRITERIA:
+        if metric not in full_data.columns or not _criterion_is_active(metric, param_name, param):
+            continue
+        values = full_data[metric].to_numpy(dtype=float)
+        # A NaN metric cannot fail a threshold - BombCell handles those separately
+        failures[(metric, param_name, stage)] = (
+            ~_passes(values, float(param[param_name]), side) & np.isfinite(values))
+    return failures
+
+
+def _failures_of_others(failures, stage, this_key, n_units):
+    """Units already rejected by the other criteria in this stage, whatever we do here."""
+    others = np.zeros(n_units, dtype=bool)
+    for key, fails in failures.items():
+        if key[2] == stage and key != this_key:
+            others |= fails
+    return others
+
+
+def _rejection_matrix(values, candidates, side, others_fail):
+    """
+    Unit x threshold table of which units the classifier rejects.
+
+    Column j is the full stage verdict when this criterion's threshold is
+    candidates[j]: rejected either by this criterion or by one of the others.
+    """
+    if side == "below":
+        fails_here = values[:, None] < candidates[None, :]
+    else:
+        fails_here = values[:, None] > candidates[None, :]
+    return others_fail[:, None] | fails_here
+
+
+def _balanced_accuracy(rejected, should_reject):
+    """
+    Mean of sensitivity and specificity, per candidate threshold.
+
+    Taking the mean rather than plain accuracy stops a threshold winning by rejecting
+    (or keeping) everything when one class is much larger than the other.
+    """
+    axis = 0 if rejected.ndim > 1 else None
+    sensitivity = rejected[should_reject].mean(axis=axis)
+    specificity = (~rejected[~should_reject]).mean(axis=axis)
+    return 0.5 * (sensitivity + specificity)
+
+
+def _candidate_thresholds(values):
+    """Midpoints between observed values, plus thresholds that accept / reject everything."""
+    unique_values = np.unique(values)
+    if unique_values.size < 2:
+        return np.array([])
+    midpoints = (unique_values[:-1] + unique_values[1:]) / 2
+    span = unique_values[-1] - unique_values[0]
+    return np.concatenate([[unique_values[0] - span], midpoints, [unique_values[-1] + span]])
+
+
+def _best_threshold(rejected, should_reject, candidates, tie_break_towards):
+    """Threshold maximising balanced accuracy, ties broken towards tie_break_towards."""
+    scores = _balanced_accuracy(rejected, should_reject)
+    tied = np.flatnonzero(scores >= scores.max() - 1e-12)
+    closest = tied[np.argmin(np.abs(candidates[tied] - tie_break_towards))]
+    return candidates[closest], scores[closest]
+
+
+def _bootstrap_threshold(rejected, should_reject, candidates, tie_break_towards,
+                         n_bootstrap, rng):
+    """
+    Bootstrap the optimal threshold to see how much it depends on individual units.
+
+    Resampling is stratified so both classes survive every resample. Returns the median
+    optimal threshold, a 68% interval, and an out-of-bag accuracy - each resample's
+    threshold scored on the units that resample left out. Scoring a threshold on the
+    units it was chosen from always flatters it, which is how a metric carrying no
+    information can appear to beat the current setting.
+    """
+    reject_idx = np.flatnonzero(should_reject)
+    keep_idx = np.flatnonzero(~should_reject)
+    thresholds = np.empty(n_bootstrap)
+    oob_accuracies = []
+
+    for i in range(n_bootstrap):
+        resampled = np.concatenate([
+            rng.choice(reject_idx, size=reject_idx.size, replace=True),
+            rng.choice(keep_idx, size=keep_idx.size, replace=True),
+        ])
+        threshold, _ = _best_threshold(
+            rejected[resampled], should_reject[resampled], candidates, tie_break_towards)
+        thresholds[i] = threshold
+
+        held_out = np.setdiff1d(np.arange(should_reject.size), resampled)
+        if held_out.size and 0 < should_reject[held_out].sum() < held_out.size:
+            column = np.flatnonzero(candidates == threshold)[0]
+            oob_accuracies.append(_balanced_accuracy(
+                rejected[held_out, column], should_reject[held_out]))
+
+    return (np.median(thresholds), np.percentile(thresholds, 16),
+            np.percentile(thresholds, 84),
+            float(np.mean(oob_accuracies)) if oob_accuracies else np.nan)
+
+
+def _round_threshold(threshold, values, side, is_integer):
+    """Round to a value that is readable without moving the decision boundary."""
+    if is_integer:
+        # Keep the same units on each side of the boundary
+        return int(np.ceil(threshold)) if side == "below" else int(np.floor(threshold))
+
+    magnitude = np.nanmax(np.abs(values))
+    if magnitude == 0 or not np.isfinite(magnitude):
+        return float(threshold)
+    decimals = max(0, 3 - int(np.floor(np.log10(magnitude))) - 1)
+    return float(np.round(threshold, decimals))
+
+
+def suggest_parameter_adjustments(merged_df, quality_metrics_table, param,
+                                  min_units_per_class=10, min_improvement=0.02,
+                                  n_bootstrap=200, random_seed=0, return_details=False):
+    """
+    Suggest parameter threshold adjustments based on manually classified units
+
+    Each BombCell threshold is tuned independently, by sweeping every possible
+    threshold for its quality metric and keeping the one that best reproduces the
+    manual labels. "Best" is balanced accuracy - the mean of sensitivity and
+    specificity - so a threshold cannot win by simply accepting (or rejecting) every
+    unit when one class is much larger than the other.
+
+    A threshold is only suggested when all of the following hold, which keeps single
+    outliers and mislabelled units from moving a parameter:
+
+    - both classes have at least `min_units_per_class` manually labelled units
+    - the new threshold beats the current one by at least `min_improvement`, judged on
+      units held out of the fit rather than on the units it was chosen from
+    - the current value falls outside the bootstrap interval of the optimum, i.e. the
+      labelled units can actually tell the two apart
+
+    The suggested value is the bootstrap median rather than the single best
+    threshold, so it reflects where the boundary sits across resamples.
+
     Parameters
     ----------
     merged_df : pd.DataFrame
@@ -218,152 +441,180 @@ def suggest_parameter_adjustments(merged_df, quality_metrics_table, param):
         Full quality metrics table
     param : dict
         Current BombCell parameters
-        
+    min_units_per_class : int, optional
+        Minimum manually labelled units needed on each side of a threshold, by default 10
+    min_improvement : float, optional
+        Minimum gain in balanced accuracy needed to suggest a change, by default 0.02
+    n_bootstrap : int, optional
+        Bootstrap resamples used to estimate threshold stability, by default 200
+    random_seed : int, optional
+        Seed for the bootstrap, so suggestions are reproducible, by default 0
+    return_details : bool, optional
+        Also return the full per-parameter analysis, by default False
+
     Returns
     -------
     suggestions : list
-        List of suggested parameter changes
+        List of suggested parameter changes, as 'param: current → suggested' strings
+    details : pd.DataFrame
+        Per-parameter analysis, only returned when `return_details` is True. Includes
+        parameters that were left alone and why.
     """
+    empty_details = pd.DataFrame(columns=[
+        'parameter', 'metric', 'stage', 'current', 'suggested', 'status',
+        'n_pass', 'n_fail', 'accuracy_current', 'accuracy_suggested',
+        'ci_low', 'ci_high'])
+
     if merged_df is None or len(merged_df) == 0:
         print("❌ No classification data available for parameter suggestions")
-        return []
-    
+        return ([], empty_details) if return_details else []
+
     print(f"\n🔧 Parameter Threshold Suggestions")
     print(f"{'='*60}")
-    
+
     # Merge with full quality metrics
     full_data = merged_df.merge(
-        quality_metrics_table, 
-        left_on='unit_id', 
+        quality_metrics_table,
+        left_on='unit_id',
         right_on='phy_clusterID',
         how='left'
     )
-    
+
     print(f"Analyzing {len(full_data)} units with manual classifications...")
-    
-    # Define key quality metrics and their parameter mappings
-    quality_metrics = {
-        'nSpikes': {'param': 'minNumSpikes', 'direction': 'min'},
-        'presenceRatio': {'param': 'minPresenceRatio', 'direction': 'min'}, 
-        'fractionRPVs_estimatedTauR': {'param': 'maxRPVviolations', 'direction': 'max'},
-        'percentageSpikesMissing_gaussian': {'param': 'maxPercSpikesMissing', 'direction': 'max'},
-        'nPeaks': {'param': 'maxNPeaks', 'direction': 'max'},
-        'nTroughs': {'param': 'maxNTroughs', 'direction': 'max'},
-        'waveformDuration_peakTrough': {'param': 'maxWvDuration', 'direction': 'max'},
-        'spatialDecaySlope': {'param': 'minSpatialDecaySlope', 'direction': 'min'}
-    }
-    
+
+    rng = np.random.default_rng(random_seed)
     suggestions = []
-    
-    # Analyze each quality metric
-    for metric, info in quality_metrics.items():
-        if metric not in full_data.columns:
+    rows = []
+
+    # Every criterion's current verdict, needed to judge one threshold in the context
+    # of the others rather than on its own
+    failures = _criterion_failures(full_data, param)
+    n_units = len(full_data)
+    manual = full_data['manual_type_name'].to_numpy()
+    predicted_noise = _failures_of_others(failures, 'noise', None, n_units)
+
+    for metric, param_name, side, stage, is_integer in _THRESHOLD_CRITERIA:
+        key = (metric, param_name, stage)
+        if key not in failures:
             continue
-            
-        param_name = info['param']
-        if param_name not in param:
+
+        current_threshold = float(param[param_name])
+        labels = _STAGE_LABELS[stage]
+        values_all = full_data[metric].to_numpy(dtype=float)
+
+        # Units this stage's decision actually applies to. The MUA criteria only ever
+        # see units that were not already thrown out as noise, so neither should we.
+        evaluable = np.isin(manual, labels['pass'] + labels['fail']) & np.isfinite(values_all)
+        if stage == 'mua':
+            evaluable &= ~predicted_noise
+
+        values = values_all[evaluable]
+        should_reject = np.isin(manual[evaluable], labels['fail'])
+        n_reject, n_keep = int(should_reject.sum()), int((~should_reject).sum())
+
+        row = {'parameter': param_name, 'metric': metric, 'stage': stage,
+               'current': current_threshold, 'suggested': np.nan, 'status': '',
+               'n_pass': n_keep, 'n_fail': n_reject,
+               'accuracy_current': np.nan, 'accuracy_suggested': np.nan,
+               'ci_low': np.nan, 'ci_high': np.nan}
+
+        if n_reject < min_units_per_class or n_keep < min_units_per_class:
+            row['status'] = 'too few labels'
+            rows.append(row)
             continue
-            
-        current_threshold = param[param_name]
-        direction = info['direction']
-        
-        # Get manually classified units
-        good_units = full_data[full_data['manual_type_name'] == 'Good']
-        noise_units = full_data[full_data['manual_type_name'] == 'Noise']
-        
-        if len(good_units) == 0 and len(noise_units) == 0:
+
+        candidates = _candidate_thresholds(values)
+        if candidates.size == 0:
+            row['status'] = 'no variation'
+            rows.append(row)
             continue
-            
-        # Calculate optimal threshold based on manual classifications
-        good_values = good_units[metric].dropna()
-        noise_values = noise_units[metric].dropna()
-        
-        if len(good_values) == 0 or len(noise_values) == 0:
-            continue
-        
-        # For 'min' parameters: threshold should be below the worst good unit
-        # For 'max' parameters: threshold should be above the worst good unit
-        if direction == 'min':
-            # For minNumSpikes, minPresenceRatio: set to accommodate worst good unit
-            optimal_threshold = good_values.min()
-            needs_adjustment = current_threshold > optimal_threshold
-            suggestion_value = optimal_threshold
+
+        # Score the classification the whole stage would produce, moving only this
+        # threshold. A criterion that is already catching the right units cannot be
+        # improved on, however well its metric happens to correlate with quality.
+        others_fail = _failures_of_others(failures, stage, key, n_units)[evaluable]
+        rejected = _rejection_matrix(values, candidates, side, others_fail)
+        row['accuracy_current'] = _balanced_accuracy(
+            others_fail | ~_passes(values, current_threshold, side), should_reject)
+
+        median_threshold, ci_low, ci_high, accuracy_suggested = _bootstrap_threshold(
+            rejected, should_reject, candidates, current_threshold, n_bootstrap, rng)
+        suggested = _round_threshold(median_threshold, values, side, is_integer)
+
+        row.update({'suggested': suggested, 'accuracy_suggested': accuracy_suggested,
+                    'ci_low': ci_low, 'ci_high': ci_high})
+
+        # A threshold outside the range of the data accepts every unit, which says the
+        # criterion is only costing you units here - useful to know, but the number
+        # itself is meaningless, so it is reported rather than offered to paste in
+        accepts_everything = (suggested <= values.min() if side == 'below'
+                              else suggested >= values.max())
+
+        # If the current threshold falls inside the bootstrap interval, the labelled
+        # units cannot tell it apart from the optimum - moving it would be churn
+        if ci_low <= current_threshold <= ci_high:
+            row['status'] = 'inconclusive'
+        elif accuracy_suggested - row['accuracy_current'] < min_improvement:
+            row['status'] = 'ok as is'
+        elif accepts_everything:
+            row['status'] = 'rejects only good units'
         else:
-            # For maxRPVviolations, maxPercSpikesMissing, maxNPeaks: set to exclude worst noise unit
-            if len(noise_values) > 0:
-                # Set threshold to be stricter than the best noise unit
-                optimal_threshold = noise_values.min()
-                needs_adjustment = current_threshold > optimal_threshold
-                suggestion_value = optimal_threshold
-            else:
-                # No noise units, use good units as reference
-                optimal_threshold = good_values.max()
-                needs_adjustment = current_threshold < optimal_threshold
-                suggestion_value = optimal_threshold
-        
-        # Special handling for nPeaks - if any noise units have >1 peak, suggest maxNPeaks=1
-        if metric == 'nPeaks' and len(noise_values) > 0:
-            if any(noise_values > 1) and current_threshold > 1:
-                suggestions.append(f"maxNPeaks: {current_threshold} → 1")
-                print(f"📊 {metric}: Noise units have >1 peak → suggest maxNPeaks=1")
-                continue
-        
-        # Check if adjustment is needed and beneficial
-        if needs_adjustment:
-            # Calculate current performance
-            if direction == 'min':
-                good_pass_current = (good_values >= current_threshold).sum()
-                good_pass_optimal = (good_values >= suggestion_value).sum()
-            else:
-                good_pass_current = (good_values <= current_threshold).sum()
-                good_pass_optimal = (good_values <= suggestion_value).sum()
-                
-            # Only suggest if it improves classification of good units
-            if good_pass_optimal > good_pass_current:
-                # Format suggestion value appropriately
-                if metric in ['nPeaks', 'nTroughs', 'nSpikes']:
-                    suggestion_value = int(suggestion_value)
-                else:
-                    suggestion_value = round(suggestion_value, 3)
-                    
-                suggestions.append(f"{param_name}: {current_threshold} → {suggestion_value}")
-                
-                print(f"📊 {metric}: Current={current_threshold}, Optimal≈{suggestion_value}")
-                print(f"   Good units passing: {good_pass_current}/{len(good_values)} → {good_pass_optimal}/{len(good_values)}")
-    
-    # Additional analysis for disagreements
+            row['status'] = 'suggested'
+            suggestions.append(f"{param_name}: {param[param_name]} → {suggested}")
+
+        rows.append(row)
+
+    details = pd.DataFrame(rows, columns=empty_details.columns)
+
+    if len(details) > 0:
+        print(f"\n{'parameter':<32}{'current':>10}{'suggested':>11}"
+              f"{'acc now':>9}{'acc new':>9}  status")
+        for _, row in details.iterrows():
+            suggested = '-' if np.isnan(row['suggested']) else f"{row['suggested']:g}"
+            accuracy_current = ('-' if np.isnan(row['accuracy_current'])
+                                else f"{row['accuracy_current']:.2f}")
+            accuracy_suggested = ('-' if np.isnan(row['accuracy_suggested'])
+                                  else f"{row['accuracy_suggested']:.2f}")
+            marker = '👉' if row['status'] == 'suggested' else '  '
+            print(f"{marker}{row['parameter']:<30}{row['current']:>10g}{suggested:>11}"
+                  f"{accuracy_current:>9}{accuracy_suggested:>9}  {row['status']}")
+        print("   acc = balanced accuracy of the resulting classification against your "
+              "manual labels;\n   'acc new' is measured on held-out units.")
+
+        unused = details[details['status'] == 'rejects only good units']
+        if len(unused) > 0:
+            print(f"\n⚠️  {', '.join(unused['parameter'])}: every unit these reject is one "
+                  f"your labels kept.\n   Consider relaxing or disabling them for this data.")
+
+        n_skipped = int((details['status'] == 'too few labels').sum())
+        if n_skipped > 0:
+            print(f"\n⚠️  {n_skipped} parameter(s) skipped for lack of labelled units - "
+                  f"each needs {min_units_per_class} units on both sides of the threshold.")
+
+    # Show the units where BombCell and the manual labels disagree, which is where any
+    # remaining threshold problems will be
     disagreements = full_data[full_data['manual_type_name'] != full_data['Bombcell_unit_type_normalized']]
-    
+
     if len(disagreements) > 0:
-        print(f"\n🔍 Analyzing {len(disagreements)} specific disagreements:")
-        
-        for _, row in disagreements.iterrows():
-            unit_id = row['unit_id']
+        print(f"\n🔍 {len(disagreements)} disagreements between BombCell and manual labels:")
+        for _, row in disagreements.head(15).iterrows():
             bc_type = row.get('Bombcell_unit_type', 'Unknown')
             manual_type = row.get('manual_type_name', 'Unknown')
-            
-            print(f"\n📋 Unit {unit_id}: BombCell={bc_type} → Manual={manual_type}")
-            
-            # Show key metrics
-            npeaks = row.get('nPeaks', 'N/A')
-            rpv = row.get('fractionRPVs_estimatedTauR', 'N/A')
-            spikes_missing = row.get('percentageSpikesMissing_gaussian', 'N/A')
-            if rpv != 'N/A' and spikes_missing != 'N/A':
-                print(f"   📊 nPeaks={npeaks}, RPV={rpv:.3f}, SpikesMissing={spikes_missing:.1f}%")
-    
-    # Summarize suggestions
+            print(f"  Unit {row['unit_id']}: BombCell={bc_type} → Manual={manual_type}")
+        if len(disagreements) > 15:
+            print(f"  ... and {len(disagreements) - 15} more")
+
     if suggestions:
         print(f"\n🎯 Summary of Suggested Parameter Changes:")
         print(f"{'='*60}")
-        unique_suggestions = list(set(suggestions))
-        for i, suggestion in enumerate(unique_suggestions, 1):
+        for i, suggestion in enumerate(suggestions, 1):
             print(f"{i}. {suggestion}")
-        
         print(f"\n💡 To apply these changes, see the section below")
     else:
-        print("\n✅ No specific parameter adjustments recommended based on current disagreements.")
-    
-    return suggestions
+        print("\n✅ No parameter adjustments recommended - current thresholds match "
+              "your manual labels as well as any others would.")
+
+    return (suggestions, details) if return_details else suggestions
 
 
 def plot_classification_comparison(merged_df, quality_metrics_table):
@@ -524,14 +775,16 @@ def analyze_manual_vs_bombcell(save_path, quality_metrics_table, param, make_plo
         return None
     
     # Get parameter suggestions
-    suggestions = suggest_parameter_adjustments(merged_df, quality_metrics_table, param)
+    suggestions, suggestion_details = suggest_parameter_adjustments(
+        merged_df, quality_metrics_table, param, return_details=True)
     
     results = {
         'manual_df': manual_df,
         'merged_df': merged_df,
         'confusion_matrix': confusion_df,
         'concordance_stats': stats,
-        'parameter_suggestions': suggestions
+        'parameter_suggestions': suggestions,
+        'parameter_suggestion_details': suggestion_details
     }
     
     return results
