@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 
 import numpy as np
@@ -139,6 +140,67 @@ def handle_manual_curation(ephys_path, spike_templates, templates_waveforms, pc_
     return spike_clusters, templates_waveforms, pc_features_idx
 
 
+def get_ap_gain_from_imro(meta_dict, probe_type):
+    """
+    Read the AP gain of each channel out of the imro table.
+
+    NP1/3A/3B probes let the user set the AP gain per channel, so it is stored
+    in the imro table rather than in a dedicated meta field. Meta files written
+    before SpikeGLX added `imChan0apGain` have no other record of it.
+
+    Mirrors ChanGainsIM in SpikeGLX's own SGLX_readMeta.
+
+    Parameters
+    ----------
+    meta_dict : dict
+        The meta file read into a dictionary
+    probe_type : str
+        The `imDatPrb_type` (or `imProbeOpt`) value for this recording
+
+    Returns
+    -------
+    gains : ndarray or None
+        AP gain per channel, or None if the imro table is absent or its
+        format is not one this function knows how to read
+    """
+    imro = meta_dict.get("imroTbl", "").strip()
+    if imro == "":
+        return None
+
+    # imro tables are a run of parenthesised groups: a header, then one entry
+    # per channel, e.g. "(0,384)(0 0 0 500 250 1)(1 0 0 500 250 1)..."
+    groups = re.findall(r"\(([^)]*)\)", imro)
+    if len(groups) == 0:
+        return None
+
+    if probe_type == "1110":
+        # Active UHD probes carry a single gain for the whole probe, in the
+        # imro header: (type, ref, ..., apGain, lfGain)
+        header = groups[0].replace(",", " ").split()
+        if len(header) < 5:
+            return None
+        try:
+            return np.array([float(header[3])])
+        except ValueError:
+            return None
+
+    # Every other NP1-like probe: one entry per channel, laid out as
+    # (channel bank refid apGain lfGain [apFilt]). 3A tables omit apFilt.
+    gains = []
+    for entry in groups[1:]:
+        fields = entry.replace(",", " ").split()
+        if len(fields) < 5:
+            return None
+        try:
+            gains.append(float(fields[3]))
+        except ValueError:
+            return None
+
+    if len(gains) == 0:
+        return None
+    return np.array(gains)
+
+
 def get_gain_spikeglx(meta_path):
     """
     This function calculates the scaling factor to convert 16-bit analog values to microvolts.
@@ -156,15 +218,16 @@ def get_gain_spikeglx(meta_path):
 
     The AP gain is determined with the following fallback chain:
         1. Read `imChan0apGain` from the meta file
-        2. Fall back to probe-type-specific defaults:
-            - NP1/3A/3B probes: error (gain is user-configurable, cannot be assumed)
+        2. Fall back to probe-type-specific sources:
+            - NP1/3A/3B probes: read the per-channel gain from `imroTbl`, as the
+              gain is user-configurable and cannot be assumed
             - NP2 pre-commercial (21, 24): 80
             - NP2 commercial (all other `2...` imDatPrb_type codes): 100
 
     For NP1/3A/3B probes:
         - Imax = imMaxInt (typically 512)
         - Vmax = imAiRangeMax (typically 0.6V)
-        - gain = imChan0apGain (typically 500)
+        - gain = imChan0apGain, else channel 0's gain in imroTbl (typically 500)
 
     For NP2/NP2.1/NP2.4 probes:
         - Imax = imMaxInt (typically 2048 for commercial, 8192 for pre-commercial)
@@ -262,12 +325,27 @@ def get_gain_spikeglx(meta_path):
         else:
             Imax = 512  # Commercial NP1 default (10-bit ADC: 2^10 / 2)
 
-        if "imChan0apGain" not in meta_dict:
-            raise Exception(
-                f"Meta file missing 'imChan0apGain' field for probe type {probeType}. "
-                "Cannot determine gain."
-            )
-        gain = float(meta_dict["imChan0apGain"])
+        if "imChan0apGain" in meta_dict:
+            gain = float(meta_dict["imChan0apGain"])
+        else:
+            # Meta files written before SpikeGLX added imChan0apGain keep the
+            # per-channel AP gain in the imro table instead.
+            imro_gains = get_ap_gain_from_imro(meta_dict, probeType)
+            if imro_gains is None:
+                raise Exception(
+                    f"Meta file missing 'imChan0apGain' field for probe type {probeType}, "
+                    "and the AP gain could not be read from 'imroTbl'. "
+                    "Cannot determine gain."
+                )
+            gain = float(imro_gains[0])
+
+            if np.unique(imro_gains).size > 1:
+                import warnings
+                warnings.warn(
+                    f"AP gain varies across channels in 'imroTbl' "
+                    f"(values: {np.unique(imro_gains)}). "
+                    f"Using channel 0's gain ({gain}) for every channel."
+                )
 
     elif np.isin(probeType, probeType_2):
         # NP2/NP2.1/NP2.4: Read Imax from meta file, fallback to 2048 (commercial default)
