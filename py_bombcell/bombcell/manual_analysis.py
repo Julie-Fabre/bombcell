@@ -42,7 +42,7 @@ def load_manual_classifications(save_path):
         return None
 
 
-def analyze_classification_concordance(manual_df, quality_metrics_table, save_path=None):
+def analyze_classification_concordance(manual_df, quality_metrics_table, save_path=None, param=None):
     """
     Analyze concordance between manual and BombCell classifications
     
@@ -54,6 +54,10 @@ def analyze_classification_concordance(manual_df, quality_metrics_table, save_pa
         BombCell quality metrics table with 'phy_clusterID' column
     save_path : str or Path, optional
         Path to BombCell output directory containing unit type file
+    param : dict, optional
+        BombCell parameters. Used to know whether non-somatic units were split into
+        good and MUA (param['splitGoodAndMua_NonSomatic']). If not given, this is
+        inferred from the BombCell unit type labels.
         
     Returns
     -------
@@ -67,10 +71,6 @@ def analyze_classification_concordance(manual_df, quality_metrics_table, save_pa
     if manual_df is None or len(manual_df) == 0:
         print("❌ No manual classifications available")
         return None, None, None
-    
-    # Create mapping of classification names to numbers and vice versa
-    class_mapping = {'Noise': 0, 'Good': 1, 'MUA': 2, 'Non-somatic': 3}
-    reverse_mapping = {v: k for k, v in class_mapping.items()}
     
     # Load BombCell unit types from separate file
     bombcell_types = None
@@ -105,6 +105,23 @@ def analyze_classification_concordance(manual_df, quality_metrics_table, save_pa
         print("❌ No matching units found between manual and BombCell classifications")
         return None, None, None
     
+    # Non-somatic units are split into good and MUA when splitGoodAndMua_NonSomatic is
+    # set. Fall back to inferring this from the BombCell labels when param isn't given.
+    if param is not None:
+        split_nonsomatic = bool(param.get('splitGoodAndMua_NonSomatic', False))
+    else:
+        split_nonsomatic = merged_df['Bombcell_unit_type'].isin(
+            ['NON-SOMA GOOD', 'NON-SOMA MUA']).any()
+    
+    # Create mapping of manual classification numbers to names
+    reverse_mapping = {
+        0: 'Noise',
+        1: 'Good',
+        2: 'MUA',
+        3: 'Non-somatic good' if split_nonsomatic else 'Non-somatic',
+        4: 'Non-somatic MUA',
+    }
+    
     # Convert manual classifications to BombCell format names
     merged_df['manual_type_name'] = merged_df['manual_classification'].map(reverse_mapping)
     
@@ -116,7 +133,9 @@ def analyze_classification_concordance(manual_df, quality_metrics_table, save_pa
         'NOISE': 'Noise',
         'GOOD': 'Good', 
         'MUA': 'MUA',
-        'NON-SOMA': 'Non-somatic'
+        'NON-SOMA': 'Non-somatic',
+        'NON-SOMA GOOD': 'Non-somatic good',
+        'NON-SOMA MUA': 'Non-somatic MUA'
     }
     merged_df['Bombcell_unit_type_normalized'] = merged_df['Bombcell_unit_type'].map(bc_case_mapping)
     merged_df['Bombcell_unit_type_normalized'] = merged_df['Bombcell_unit_type_normalized'].fillna(merged_df['Bombcell_unit_type'])
@@ -383,7 +402,9 @@ def plot_classification_comparison(merged_df, quality_metrics_table):
         ('waveformDuration_peakTrough', 'Waveform Duration (μs)')
     ]
     
-    colors = {'Good': 'green', 'MUA': 'orange', 'NOISE': 'red', 'NON-SOMA': 'blue'}
+    colors = {'Good': 'green', 'MUA': 'orange', 'NOISE': 'red', 'NON-SOMA': 'blue',
+              'Noise': 'red', 'Non-somatic': 'blue', 'Non-somatic good': 'blue',
+              'Non-somatic MUA': 'darkmagenta'}
     
     # Determine which BombCell column to use
     bc_col = 'Bombcell_unit_type_normalized' if 'Bombcell_unit_type_normalized' in plot_data.columns else 'Bombcell_unit_type'
@@ -498,7 +519,7 @@ def analyze_manual_vs_bombcell(save_path, quality_metrics_table, param, make_plo
         return None
     
     # Analyze concordance
-    merged_df, confusion_df, stats = analyze_classification_concordance(manual_df, quality_metrics_table, save_path)
+    merged_df, confusion_df, stats = analyze_classification_concordance(manual_df, quality_metrics_table, save_path, param)
     if merged_df is None:
         return None
     

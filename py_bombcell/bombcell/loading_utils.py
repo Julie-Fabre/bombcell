@@ -212,13 +212,16 @@ def get_gain_spikeglx(meta_path):
     Imax is determined with the following fallback chain:
         1. Read 'imMaxInt' from meta file (preferred)
         2. Fall back to probe-type-specific defaults:
+           - NXT probes: no fallback, 'imMaxInt' is required (see below)
            - NP1/3A/3B probes: 512 (10-bit ADC)
-           - NP2/NP2.1/NP2.4 probes: 2048 (commercial) or 8192 (pre-commercial)
+           - NP2/NP2.1/NP2.4 probes: 2048 (commercial, 12-bit ADC) or
+             8192 (pre-commercial, 14-bit ADC)
         3. Fall back to commercial Neuropixels default (512 for NP1, 2048 for NP2)
 
     The AP gain is determined with the following fallback chain:
         1. Read `imChan0apGain` from the meta file
         2. Fall back to probe-type-specific sources:
+            - NXT probes: no fallback, `imChan0apGain` is required (see below)
             - NP1/3A/3B probes: read the per-channel gain from `imroTbl`, as the
               gain is user-configurable and cannot be assumed
             - NP2 pre-commercial (21, 24): 80
@@ -226,12 +229,21 @@ def get_gain_spikeglx(meta_path):
 
     For NP1/3A/3B probes:
         - Imax = imMaxInt (typically 512)
-        - Vmax = imAiRangeMax (typically 0.6V)
+        - Vmax = imAiRangeMax (typically 0.6V, i.e. 1.2 Vpp)
         - gain = imChan0apGain, else channel 0's gain in imroTbl (typically 500)
+
+    For NXT probes (identified by `imDatPrb_tech`, as SpikeGLX has not published
+    `imDatPrb_type` codes for them):
+        - Imax = imMaxInt, required
+        - Vmax = imAiRangeMax (typically 0.67V for the active parts)
+        - gain = imChan0apGain, required (typically 100 for the active parts)
+        The passive NP3000 is NP1-like (10-bit, user-set gain) while the active
+        NP30xx parts are 12-bit at gain 100, so neither value is assumed.
 
     For NP2/NP2.1/NP2.4 probes:
         - Imax = imMaxInt (typically 2048 for commercial, 8192 for pre-commercial)
-        - Vmax = imAiRangeMax (typically 0.6V)
+        - Vmax = imAiRangeMax (typically 0.62V for commercial, 0.5V for
+          pre-commercial)
         - gain = imChan0apGain (typically 100 for commercial, 80 for pre-commercial)
 
     Parameters
@@ -352,7 +364,7 @@ def get_gain_spikeglx(meta_path):
         if "imMaxInt" in meta_dict:
             Imax = int(meta_dict["imMaxInt"])
         else:
-            Imax = 2048  # Commercial NP2 default (14-bit ADC: 2^12 / 2)
+            Imax = 2048  # Commercial NP2 default (12-bit ADC: 2^12 / 2)
 
         # AP gain: prefer meta file's imChan0apGain. Only fall back to subtype defaults
         # when the field is absent.
@@ -362,6 +374,24 @@ def get_gain_spikeglx(meta_path):
             gain = 80.0    # Pre-commercial probes
         else:
             gain = 100.0   # Commercial NP2 probes
+
+    elif meta_dict.get("imDatPrb_tech") == "nxt":
+        # Neuropixels NXT. SpikeGLX does not publish imDatPrb_type codes for
+        # these yet, so they are identified by imDatPrb_tech instead. The NXT
+        # family is not electrically uniform -- the passive NP3000 is NP1-like
+        # (10-bit, user-configurable gain) while the active NP30xx probes are
+        # 12-bit with a fixed gain of 100 -- so both values are required from
+        # the meta file rather than assumed. Every NXT recording has them.
+        missing = [f for f in ("imMaxInt", "imChan0apGain") if f not in meta_dict]
+        if len(missing) > 0:
+            raise Exception(
+                f"Meta file for an NXT probe (imDatPrb_pn "
+                f"'{meta_dict.get('imDatPrb_pn', 'unknown')}') is missing "
+                f"{missing}. These cannot be assumed for NXT probes, as the "
+                "passive and active parts differ in both ADC depth and gain."
+            )
+        Imax = int(meta_dict["imMaxInt"])
+        gain = float(meta_dict["imChan0apGain"])
 
     else:
         # Unknown probe type: try to read from meta, fallback to commercial NP2 default

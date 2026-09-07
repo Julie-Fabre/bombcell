@@ -451,6 +451,18 @@ class InteractiveUnitQualityGUI:
         self.unit_types = unit_types
         self.save_path = save_path
         self.auto_advance = auto_advance
+
+        # Whether bombcell splits non-somatic units into good and MUA. This drives both
+        # the labels used everywhere below and the manual classification buttons offered.
+        self.split_nonsomatic = bool(self.param.get('splitGoodAndMua_NonSomatic', False))
+        self.class_names = {
+            -1: "Unclassified",
+            0: "Noise",
+            1: "Good",
+            2: "MUA",
+            3: "Non-somatic good" if self.split_nonsomatic else "Non-somatic",
+            4: "Non-somatic MUA",
+        }
         
         # Determine layout mode
         self.layout_mode = self._determine_layout(layout)
@@ -632,7 +644,7 @@ class InteractiveUnitQualityGUI:
             os.makedirs(export_path, exist_ok=True)
             
             # Get classification counts for manual classifications
-            class_names = {-1: "Unclassified", 0: "Noise", 1: "Good", 2: "MUA", 3: "Non-somatic"}
+            class_names = self.class_names
             manual_counts = {}
             for class_id, class_name in class_names.items():
                 manual_counts[class_name] = np.sum(self.manual_unit_types == class_id)
@@ -694,7 +706,7 @@ class InteractiveUnitQualityGUI:
             print("⚠️  No BombCell classifications available for comparison")
             return None
         
-        class_names = {-1: "Unclassified", 0: "Noise", 1: "Good", 2: "MUA", 3: "Non-somatic"}
+        class_names = self.class_names
         
         # Count agreements and disagreements
         manual_classified = self.manual_unit_types != -1
@@ -812,11 +824,25 @@ class InteractiveUnitQualityGUI:
             button_style='warning',
             layout=widgets.Layout(width='150px', height='35px')  # Match ◀mua + mua▶ = 75+75
         )
-        self.classify_nonsomatic_btn = widgets.Button(
-            description='mark as non-somatic', 
-            button_style='primary',
-            layout=widgets.Layout(width='300px', height='35px')  # Match ◀non-somatic + non-somatic▶ = 150+150
-        )
+        if self.split_nonsomatic:
+            # Two buttons sharing the width of the non-somatic navigation pair (150+150)
+            self.classify_nonsomatic_btn = widgets.Button(
+                description='mark as non-somatic good',
+                button_style='primary',
+                layout=widgets.Layout(width='150px', height='35px')
+            )
+            self.classify_nonsomatic_mua_btn = widgets.Button(
+                description='mark as non-somatic MUA',
+                button_style='primary',
+                layout=widgets.Layout(width='150px', height='35px')
+            )
+        else:
+            self.classify_nonsomatic_btn = widgets.Button(
+                description='mark as non-somatic', 
+                button_style='primary',
+                layout=widgets.Layout(width='300px', height='35px')  # Match ◀non-somatic + non-somatic▶ = 150+150
+            )
+            self.classify_nonsomatic_mua_btn = None
         self.classify_noise_btn = widgets.Button(
             description='mark as noise', 
             button_style='danger',
@@ -851,6 +877,8 @@ class InteractiveUnitQualityGUI:
         self.classify_good_btn.on_click(lambda b: self.classify_unit(1))
         self.classify_mua_btn.on_click(lambda b: self.classify_unit(2))
         self.classify_nonsomatic_btn.on_click(lambda b: self.classify_unit(3))
+        if self.classify_nonsomatic_mua_btn is not None:
+            self.classify_nonsomatic_mua_btn.on_click(lambda b: self.classify_unit(4))
         self.classify_noise_btn.on_click(lambda b: self.classify_unit(0))
         self.goto_next_unclassified_btn.on_click(self.goto_next_unclassified)
         
@@ -894,12 +922,14 @@ class InteractiveUnitQualityGUI:
             widgets.HBox([self.goto_next_unclassified_btn], layout=widgets.Layout(justify_content='center'))
         ])
         
+        classify_buttons = [self.classify_good_btn, self.classify_mua_btn, self.classify_nonsomatic_btn]
+        if self.classify_nonsomatic_mua_btn is not None:
+            classify_buttons.append(self.classify_nonsomatic_mua_btn)
+        classify_buttons.append(self.classify_noise_btn)
+        
         classify_right_section = widgets.VBox([
             widgets.HTML("<b>manual classification (optional):</b>", layout=widgets.Layout(text_align='center')),  # Text above buttons
-            widgets.HBox([
-                self.classify_good_btn, self.classify_mua_btn, 
-                self.classify_nonsomatic_btn, self.classify_noise_btn
-            ], layout=widgets.Layout(justify_content='center'))
+            widgets.HBox(classify_buttons, layout=widgets.Layout(justify_content='center'))
         ])
         
         # Combined classification controls - match nav_controls structure exactly
@@ -1049,7 +1079,8 @@ class InteractiveUnitQualityGUI:
         Parameters:
         -----------
         classification : int
-            0 = Noise, 1 = Good, 2 = MUA, 3 = Non-somatic
+            0 = Noise, 1 = Good, 2 = MUA, 3 = Non-somatic (non-somatic good if
+            param['splitGoodAndMua_NonSomatic']), 4 = Non-somatic MUA
         """
         # Update manual classification
         old_manual_class = self.manual_unit_types[self.current_unit_idx]
@@ -1059,7 +1090,7 @@ class InteractiveUnitQualityGUI:
         self.unit_types[self.current_unit_idx] = classification
         
         # Map classification numbers to names for user feedback
-        class_names = {-1: 'Unclassified', 0: 'Noise', 1: 'Good', 2: 'MUA', 3: 'Non-somatic'}
+        class_names = self.class_names
         unit_id = self.unique_units[self.current_unit_idx]
         
         # Show both manual and bombcell classifications for comparison
@@ -1125,7 +1156,7 @@ class InteractiveUnitQualityGUI:
         progress = n_classified / self.n_units * 100
         
         # Count by category
-        class_names = {0: "Noise", 1: "Good", 2: "MUA", 3: "Non-somatic"}
+        class_names = {k: v for k, v in self.class_names.items() if k != -1}
         counts = {}
         for class_id, class_name in class_names.items():
             counts[class_name] = np.sum(self.manual_unit_types == class_id)
@@ -1307,7 +1338,7 @@ class InteractiveUnitQualityGUI:
             return
             
         # Get manual and bombcell classifications
-        type_map = {-1: "Unclassified", 0: "Noise", 1: "Good", 2: "MUA", 3: "Non-somatic", 4: "Non-somatic MUA"}
+        type_map = self.class_names
         
         manual_type = self.manual_unit_types[self.current_unit_idx] if self.current_unit_idx < len(self.manual_unit_types) else -1
         manual_type_str = type_map.get(manual_type, "Unknown")
@@ -1325,7 +1356,8 @@ class InteractiveUnitQualityGUI:
             "Good": "green", 
             "MUA": "orange",
             "Non-somatic": "blue",
-            "Non-somatic MUA": "blue",
+            "Non-somatic good": "blue",
+            "Non-somatic MUA": "darkmagenta",
             "Unknown": "black"
         }
         title_color = title_colors.get(bombcell_type_str, "black")
