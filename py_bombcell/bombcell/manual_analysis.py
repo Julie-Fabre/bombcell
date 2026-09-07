@@ -410,7 +410,7 @@ def _round_threshold(threshold, values, side, is_integer):
 
 
 def suggest_parameter_adjustments(merged_df, quality_metrics_table, param,
-                                  min_units_per_class=10, min_improvement=0.02,
+                                  min_units_per_class=20, min_improvement=0.05,
                                   n_bootstrap=200, random_seed=0, return_details=False):
     """
     Suggest parameter threshold adjustments based on manually classified units
@@ -442,9 +442,14 @@ def suggest_parameter_adjustments(merged_df, quality_metrics_table, param,
     param : dict
         Current BombCell parameters
     min_units_per_class : int, optional
-        Minimum manually labelled units needed on each side of a threshold, by default 10
+        Minimum manually labelled units needed on each side of a threshold, by default 20
     min_improvement : float, optional
-        Minimum gain in balanced accuracy needed to suggest a change, by default 0.02
+        Minimum gain in balanced accuracy needed to suggest a change, by default 0.05
+
+    The two defaults above are set for precision rather than coverage: telling you to
+    change a threshold your labels give no reason to change is far more costly than
+    staying quiet, because you would apply it to every session. Lower them if you would
+    rather see marginal suggestions and judge them yourself.
     n_bootstrap : int, optional
         Bootstrap resamples used to estimate threshold stability, by default 200
     random_seed : int, optional
