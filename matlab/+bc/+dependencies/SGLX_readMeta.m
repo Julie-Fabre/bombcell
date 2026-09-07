@@ -171,7 +171,16 @@ function fI2V = Int2Volts(meta)
             else
                 maxInt = 512;
             end
-            fI2V = str2double(meta.imAiRangeMax) / maxInt;
+            if isfield(meta,'imAiRangeMax')
+                fI2V = str2double(meta.imAiRangeMax) / maxInt;
+            else
+                % (bombcell) meta files older than imAiRangeMax used to error
+                % out here. The input range cannot be resolved at this level
+                % without probe-type knowledge, so return NaN instead of
+                % throwing: bc.load.readSpikeGLXMetaFile applies its own
+                % probe-type Vrange fallback and ignores this value.
+                fI2V = NaN;
+            end
         case 'nidq'
             fI2V = str2double(meta.niAiRangeMax) / str2double(meta.niMaxInt);
         case 'obx'
@@ -312,8 +321,10 @@ function [APgain,LFgain, APChan0_to_uV, LFChan0_to_uV] = ChanGainsIM(meta)
             % development NP 2.0; APGain = 80 for all AP
             % return 0 for LFgain (no LF channels)
             APgain = APgain + 80;        
-        elseif (probeType == 2013)
-            % commercial NP 2.0; APGain = 80 for all AP
+        elseif ismember(probeType, [2003, 2004, 2005, 2006, 2013, 2014, 2020, 2021, 2022, 2300])
+            % commercial NP 2.0; APGain = 100 for all AP
+            % (bombcell: extended past 2013 to cover every commercial NP2.0
+            % part. Reference: https://github.com/billkarsh/ProbeTable)
             APgain = APgain + 100;
         else
             fprintf('unknown gain, setting APgain to 1\n');
