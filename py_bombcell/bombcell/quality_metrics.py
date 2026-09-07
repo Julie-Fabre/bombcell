@@ -1009,24 +1009,26 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
             tauR_step = param.get("tauR_valuesStep", 0.0005)
             param["tauR_values"] = np.arange(tauR_min, tauR_max + tauR_step/2, tauR_step)
 
-        # Call new sliding function
-        result = sliding_rp_violations(these_spike_times, time_chunks, param, return_per_bin)
+        # Call new sliding function. Per-bin data is always requested so that the legacy
+        # (n_time_chunks, n_tauR) output holds the per-chunk contamination rather than a
+        # single value repeated for every chunk - time_chunks_to_keep needs the per-chunk
+        # values to select good time chunks.
+        contamination, estimated_tauR, num_violations, per_bin_data = sliding_rp_violations(
+            these_spike_times, time_chunks, param, return_per_bin=True
+        )
+
+        # Convert to legacy output format for compatibility
+        n_chunks = max(len(time_chunks) - 1, 0)
+        n_tauR = len(param["tauR_values"])
+        contamination_per_chunk = np.asarray(per_bin_data['contamination_per_bin'], dtype=float)
+        fraction_RPVs = np.tile(contamination_per_chunk.reshape(n_chunks, 1), (1, n_tauR))
 
         if return_per_bin:
-            contamination, estimated_tauR, num_violations, per_bin_data = result
-            # Convert to legacy output format for compatibility
-            n_chunks = len(time_chunks) - 1
-            n_tauR = len(param["tauR_values"])
-            fraction_RPVs = np.full((n_chunks, n_tauR), contamination)
             # Store estimated_tauR index in per_bin_data
             per_bin_data['estimated_tauR'] = estimated_tauR
-            per_bin_data['fraction_RPVs_per_bin'] = per_bin_data['contamination_per_bin'][:, np.newaxis]
+            per_bin_data['fraction_RPVs_per_bin'] = contamination_per_chunk[:, np.newaxis]
             return fraction_RPVs, np.array([[num_violations]]), per_bin_data
         else:
-            contamination, estimated_tauR, num_violations = result
-            n_chunks = len(time_chunks) - 1
-            n_tauR = len(param["tauR_values"])
-            fraction_RPVs = np.full((n_chunks, n_tauR), contamination)
             return fraction_RPVs, np.array([[num_violations]])
 
     # Legacy mode - original implementation
@@ -1294,8 +1296,16 @@ def time_chunks_to_keep(
     maxRPVviolationss = param["maxRPVviolations"]
     maxPercSpikesMissing = param["maxPercSpikesMissing"]
 
-    sum_RPV = np.sum(fraction_RPVs, axis=0)
-    use_tauR = np.where(sum_RPV == np.min(sum_RPV))[0][-1] # gives the last index of the tauR which has smallest contamination # CAUGHT BUG was argmax!!
+    # Sum contamination over time chunks for each tauR value, ignoring chunks with too few
+    # spikes (NaN). MATLAB's min ignores NaN but numpy's does not, so without this the
+    # equality test below matches nothing and indexing with [-1] raises an IndexError
+    # (issue #388). tauR values with no usable chunk at all stay NaN so they are never picked.
+    sum_RPV = np.nansum(fraction_RPVs, axis=0)
+    sum_RPV[np.all(np.isnan(fraction_RPVs), axis=0)] = np.nan
+    if sum_RPV.size == 0 or np.all(np.isnan(sum_RPV)):
+        use_tauR = 0  # no usable contamination estimate: fall back to the first tauR value
+    else:
+        use_tauR = np.where(sum_RPV == np.nanmin(sum_RPV))[0][-1] # gives the last index of the tauR which has smallest contamination # CAUGHT BUG was argmax!!
     use_these_times_temp = np.zeros(time_chunks.shape[0] - 1)
 
     use_these_times_temp = np.argwhere(
@@ -1411,6 +1421,13 @@ def presence_ratio(these_spike_times, use_this_time_start, use_this_time_end, pa
     presence_ratio_bins = np.arange(
         use_this_time_start, use_this_time_end, presenceRatioBinSize
     )
+
+    # NOTE like the drift estimate, allow units kept over a window shorter than one bin to
+    # still get a value: without this spikes_per_bin is empty, np.percentile raises an
+    # IndexError and the presence ratio divides by zero (issue #388). This happens whenever
+    # deltaTimeChunk <= presenceRatioBinSize and a single time chunk is kept.
+    if presence_ratio_bins.shape[0] < 2:
+        presence_ratio_bins = np.array([use_this_time_start, use_this_time_end])
 
     spikes_per_bin = np.array(
         [

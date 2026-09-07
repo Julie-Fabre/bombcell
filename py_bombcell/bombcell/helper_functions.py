@@ -1293,10 +1293,16 @@ def run_bombcell(ks_dir, save_path, param, save_figures=False, return_figures=Fa
     # Divide recording into time chunks
     spike_times_seconds = spike_times_samples / param["ephys_sample_rate"]
     if param["computeTimeChunks"]:
-        time_chunks = np.arange(
-            np.min(spike_times_seconds),
+        # Match MATLAB: [min:delta:max, max] - the final (partial) chunk is kept, and
+        # there are always at least 2 chunk edges even if deltaTimeChunk exceeds the
+        # recording duration.
+        time_chunks = np.append(
+            np.arange(
+                np.min(spike_times_seconds),
+                np.max(spike_times_seconds),
+                param["deltaTimeChunk"],
+            ),
             np.max(spike_times_seconds),
-            param["deltaTimeChunk"],
         )
     else:
         time_chunks = np.array(
