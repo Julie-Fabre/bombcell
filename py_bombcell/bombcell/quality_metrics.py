@@ -11,6 +11,7 @@ from scipy.stats import norm, chi2
 import matplotlib.pyplot as plt
 
 from bombcell.extract_raw_waveforms import path_handler
+from bombcell.default_parameters import check_parameter_fields
 
 
 def get_waveform_peak_channel(template_waveforms):
@@ -2354,6 +2355,10 @@ def get_quality_unit_type(param, quality_metrics):
     unit_type_string : ndarray
         The unit type classification as a string
     """
+    # fill in any parameters an older param set predates, and keep the four ANDed
+    # non-somatic thresholds coherent as a group
+    param = check_parameter_fields(param)
+
     n_units = len(quality_metrics["nPeaks"])
     unit_type = np.full(n_units, np.nan)
 
@@ -2383,10 +2388,12 @@ def get_quality_unit_type(param, quality_metrics):
     
     # Non-somatic classification
     is_non_somatic = (
-        (quality_metrics["troughToPeak2Ratio"] < param["minTroughToPeak2Ratio_nonSomatic"]) &
-        (quality_metrics["mainPeak_before_width"] < param["minWidthFirstPeak_nonSomatic"]) &
-        (quality_metrics["mainTrough_width"] < param["minWidthMainTrough_nonSomatic"]) &
-        (quality_metrics["peak1ToPeak2Ratio"] > param["maxPeak1ToPeak2Ratio_nonSomatic"]) |
+        (
+            (quality_metrics["troughToPeak2Ratio"] < param["minTroughToPeak2Ratio_nonSomatic"]) &
+            (quality_metrics["mainPeak_before_width"] < param["minWidthFirstPeak_nonSomatic"]) &
+            (quality_metrics["mainTrough_width"] < param["minWidthMainTrough_nonSomatic"]) &
+            (quality_metrics["peak1ToPeak2Ratio"] > param["maxPeak1ToPeak2Ratio_nonSomatic"])
+        ) |
         (quality_metrics["mainPeakToTroughRatio"] > param["maxMainPeakToTroughRatio_nonSomatic"])
     )
     

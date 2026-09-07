@@ -23,12 +23,6 @@ if param.computeDrift
     parquetwrite([fullfile(savePath, 'templates._bc_medianSpikeDepth.parquet')], array2table(medianSpikeDepth))
     parquetwrite([fullfile(savePath, 'time_chunks._bc_medianSpikeDepth.parquet')], array2table(timeBins))
 end
-% Get ratios
-invalid_peaks = (qMetric.troughToPeak2Ratio> param.minTroughToPeak2Ratio_nonSomatic | ...
-                            qMetric.mainPeak_before_width > param.minWidthFirstPeak_nonSomatic | ...
-                            qMetric.mainTrough_width > param.minWidthMainTrough_nonSomatic);
-qMetric.peak1ToPeak2Ratio(invalid_peaks) = 0;
-
 if ~exist(savePath, 'dir')
     mkdir(fullfile(savePath))
 end
@@ -50,12 +44,6 @@ end
 if param.saveMatFileForGUI
     save(fullfile(savePath, 'templates.qualityMetricDetailsforGUI.mat'), 'forGUI', '-v7.3')
 end
-
-% compute the waveform ratios 
-invalid_peaks = (qMetric.troughToPeak2Ratio > param.minTroughToPeak2Ratio_nonSomatic | ...
-                            qMetric.mainPeak_before_width > param.minWidthFirstPeak_nonSomatic | ...
-                            qMetric.mainTrough_width > param.minWidthMainTrough_nonSomatic);
-qMetric.peak1ToPeak2Ratio(invalid_peaks) = 0;
 
 % save fraction refractory period violations for all different tauR times
 parquetwrite([fullfile(savePath, 'templates._bc_fractionRefractoryPeriodViolationsPerTauR.parquet')], array2table(qMetric.fractionRPVs))
@@ -123,10 +111,10 @@ if isfield(param,'saveAsTSV') % ensure back-compatibility if users have a previo
         for fid = 1:length(fieldsToSave)
             if ismember(fid, indicesToUse)
                 cluster_table = table(cluster_id_vector, qMetric.(fieldsToSave{fid}), 'VariableNames', {'cluster_id', fieldsRename{fid}});
-                writetable(cluster_table,[saveTSV_path filesep 'cluster_' fieldsRename{fid} '.tsv'],'FileType', 'text','Delimiter','\t');  
+                writetable(cluster_table, fullfile(saveTSV_path, ['cluster_', fieldsRename{fid}, '.tsv']),'FileType', 'text','Delimiter','\t');  
             else
-                if exist([saveTSV_path filesep 'cluster_' fieldsRename{fid} '.tsv'], 'file')
-                    delete([saveTSV_path filesep 'cluster_' fieldsRename{fid} '.tsv'])
+                if exist(fullfile(saveTSV_path, ['cluster_', fieldsRename{fid}, '.tsv']), 'file')
+                    delete(fullfile(saveTSV_path, ['cluster_', fieldsRename{fid}, '.tsv']))
                 end
             end
         end

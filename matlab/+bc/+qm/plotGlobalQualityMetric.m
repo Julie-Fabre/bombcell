@@ -183,10 +183,6 @@ if param.plotGlobal
             qMetric.troughToPeak2Ratio = abs(qMetric.mainTrough_size./qMetric.mainPeak_before_size);
         end
 
-        invalid_peaks = (qMetric.troughToPeak2Ratio > param.minTroughToPeak2Ratio_nonSomatic & ...
-            qMetric.mainPeak_before_width < param.minWidthFirstPeak_nonSomatic & ...
-            qMetric.mainTrough_width < param.minWidthMainTrough_nonSomatic);
-        qMetric.peak1ToPeak2Ratio(invalid_peaks) = 0;
         % Define metrics, thresholds, and plot conditions
         [metricNames, metricThresh1, metricThresh2, plotConditions, metricNames_SHORT, metricLineCols] = defineMetrics(param);
 
