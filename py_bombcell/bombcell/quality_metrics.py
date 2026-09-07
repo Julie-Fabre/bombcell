@@ -1,4 +1,5 @@
 import os
+import warnings
 
 import numpy as np
 from numba import njit
@@ -24,11 +25,39 @@ def get_waveform_peak_channel(template_waveforms):
     Returns
     -------
     maxChannels : ndarray (n_templates)
-        The channel with maximum amplitude for each template
+        The channel with maximum amplitude for each template. Templates that are
+        entirely NaN (e.g. empty templates saved by some kilosort versions) are
+        assigned channel 0 and a warning is raised.
     """
-    max_value = np.max(template_waveforms, axis=1)
-    min_value = np.min(template_waveforms, axis=1)
-    maxChannels = np.nanargmax(max_value - min_value, axis=1)
+    template_waveforms = np.asarray(template_waveforms)
+    n_templates = template_waveforms.shape[0]
+    maxChannels = np.zeros(n_templates, dtype=int)
+
+    # templates with at least one finite sample can be processed, the others cannot
+    valid = ~np.all(np.isnan(template_waveforms), axis=(1, 2))
+    n_invalid = int(np.sum(~valid))
+    if n_invalid > 0:
+        invalid_idx = np.flatnonzero(~valid)
+        shown = ", ".join(str(i) for i in invalid_idx[:10])
+        if n_invalid > 10:
+            shown += ", ..."
+        warnings.warn(
+            f"Found {n_invalid} all-NaN template waveform(s) (unit indices: {shown}); "
+            "assigning fallback peak channel 0. These units will have unreliable "
+            "quality metrics.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+
+    if np.any(valid):
+        with warnings.catch_warnings():
+            # channels that are all-NaN within an otherwise valid template give NaN
+            # amplitudes, which nanargmax then ignores
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            valid_waveforms = template_waveforms[valid]
+            max_value = np.nanmax(valid_waveforms, axis=1)
+            min_value = np.nanmin(valid_waveforms, axis=1)
+            maxChannels[valid] = np.nanargmax(max_value - min_value, axis=1)
 
     return maxChannels
 
