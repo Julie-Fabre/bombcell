@@ -1,6 +1,10 @@
 import os
 import json
+import warnings
+from concurrent.futures import BrokenExecutor
 from pathlib import Path
+from pickle import PicklingError
+
 from joblib import Parallel, delayed
 
 import numpy as np
@@ -15,6 +19,15 @@ except ImportError:
 from scipy.signal import detrend
 from scipy.ndimage import gaussian_filter
 from tqdm.auto import tqdm
+
+
+# joblib raises these when its worker pool cannot start or dies outright. A unit that
+# raises is re-raised unchanged in the parent instead, so catching these does not mask
+# real errors in process_a_unit. BrokenExecutor is the stdlib base class of loky's
+# TerminatedWorkerError, so this covers loky without importing its internals.
+PARALLEL_POOL_ERRORS = (BrokenExecutor, PicklingError)
+
+JOBLIB_BACKEND_PREFERENCES = ("processes", "threads")
 
 
 # DEBUG FLAG - set to True to enable debug plots
@@ -531,6 +544,54 @@ def unpack_dicts(
     )
 
 
+def resolve_parallel_config(param):
+    """
+    Work out the joblib settings to extract raw waveforms with.
+
+    Both keys are optional so that a param set predating them still runs: a saved
+    _bc_parameters parquet, or a user's own copy of the default parameter file. Missing
+    keys fall back to the process-based pool over every core, which is what raw waveform
+    extraction has always used.
+
+    Parameters
+    ----------
+    param : dict
+        The param dictionary used in BombCell
+
+    Returns
+    -------
+    n_jobs : int
+        The number of workers to hand joblib
+    prefer : str
+        The joblib backend hint, 'processes' or 'threads'
+    """
+    prefer = param.get("joblib_backend_preference", "processes")
+    if prefer not in JOBLIB_BACKEND_PREFERENCES:
+        warnings.warn(
+            f"joblib_backend_preference is {prefer!r}, expected one of "
+            f"{JOBLIB_BACKEND_PREFERENCES}. Extracting with 'processes'.",
+            stacklevel=2,
+        )
+        prefer = "processes"
+
+    n_jobs = param.get("joblib_n_jobs", -1)
+    # joblib rejects 0, and a float or a string would only fail once the pool starts.
+    # bool is an int subclass, so exclude it explicitly rather than run True as 1 worker.
+    if (
+        isinstance(n_jobs, bool)
+        or not isinstance(n_jobs, (int, np.integer))
+        or n_jobs == 0
+    ):
+        warnings.warn(
+            f"joblib_n_jobs is {n_jobs!r}, expected a non-zero integer. "
+            "Extracting with -1 (one worker per core).",
+            stacklevel=2,
+        )
+        n_jobs = -1
+
+    return int(n_jobs), prefer
+
+
 def extract_raw_waveforms(
     param, spike_clusters, spike_times, re_extract_waveforms, save_path, template_peak_channels=None
 ):
@@ -786,25 +847,43 @@ def extract_raw_waveforms(
                 print("DEBUG_EXIT_AFTER_PLOT is True, exiting early...")
                 return None, None, None, None
 
-        all_waveforms = Parallel(n_jobs=-1, verbose=10, mmap_mode="r", max_nbytes=None)(
-            delayed(process_a_unit)(
-                raw_data,
-                spike_width,
-                half_width,
-                all_spikes_idxs[i],
-                n_channels_rec,
-                n_channels,
-                n_sync_channels,
-                cid,
-                detrendWaveform,
-                detrendForUnitMatch,
-                waveform_baseline_noise,
-                raw_waveforms_dir,
-                save_multiple_raw,
-                template_peak_channels[cid] if template_peak_channels is not None and cid < len(template_peak_channels) else None,
+        n_jobs, prefer = resolve_parallel_config(param)
+        try:
+            all_waveforms = Parallel(
+                n_jobs=n_jobs,
+                verbose=10,
+                mmap_mode="r",
+                max_nbytes=None,
+                prefer=prefer,
+            )(
+                delayed(process_a_unit)(
+                    raw_data,
+                    spike_width,
+                    half_width,
+                    all_spikes_idxs[i],
+                    n_channels_rec,
+                    n_channels,
+                    n_sync_channels,
+                    cid,
+                    detrendWaveform,
+                    detrendForUnitMatch,
+                    waveform_baseline_noise,
+                    raw_waveforms_dir,
+                    save_multiple_raw,
+                    template_peak_channels[cid] if template_peak_channels is not None and cid < len(template_peak_channels) else None,
+                )
+                for i, cid in tqdm(enumerate(unique_clusters))
             )
-            for i, cid in tqdm(enumerate(unique_clusters))
-        )
+        except PARALLEL_POOL_ERRORS as err:
+            fixes = [f"lower param['joblib_n_jobs'] (currently {n_jobs})"]
+            if prefer == "processes":
+                # The process pool cannot start at all on some setups, and one worker
+                # per core can exhaust memory on a large recording.
+                fixes.insert(0, "set param['joblib_backend_preference'] = 'threads'")
+            raise RuntimeError(
+                f"joblib's {prefer} pool failed while extracting raw waveforms: its "
+                "workers could not start, or died. Try " + ", or ".join(fixes) + "."
+            ) from err
 
         (raw_waveforms,
          raw_waveforms_full,
