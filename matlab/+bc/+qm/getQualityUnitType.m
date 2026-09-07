@@ -137,7 +137,7 @@ try
                     end
 
                     cluster_table = table(cluster_id_vector, unitType_string, 'VariableNames', {'cluster_id', 'bc_unitType'});
-                    writetable(cluster_table, [saveTSV_path, filesep, 'cluster_bc_unitType.tsv'], 'FileType', 'text', 'Delimiter', '\t');
+                    writetable(cluster_table, fullfile(saveTSV_path, 'cluster_bc_unitType.tsv'), 'FileType', 'text', 'Delimiter', '\t');
                 end
             end
         end

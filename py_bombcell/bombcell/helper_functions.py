@@ -1482,6 +1482,7 @@ def make_qm_table(quality_metrics, param, unit_type_string):
     qm_table : DataFrame
         The quality metrics information and as pandas dataframe
     """
+    param = qm.check_parameter_fields(param, verbose=False)
     unique_templates = param['unique_templates']
 
     qm_table_list = [unit_type_string, unique_templates]
@@ -1581,10 +1582,12 @@ def make_qm_table(quality_metrics, param, unit_type_string):
 
     # determine if ALL unit is somatic or non-somatic
     is_non_somatic = (
-        (quality_metrics["troughToPeak2Ratio"] < param["minTroughToPeak2Ratio_nonSomatic"]) &
-        (quality_metrics["mainPeak_before_width"] < param["minWidthFirstPeak_nonSomatic"]) &
-        (quality_metrics["mainTrough_width"] < param["minWidthMainTrough_nonSomatic"]) &
-        (quality_metrics["peak1ToPeak2Ratio"] > param["maxPeak1ToPeak2Ratio_nonSomatic"]) |
+        (
+            (quality_metrics["troughToPeak2Ratio"] < param["minTroughToPeak2Ratio_nonSomatic"]) &
+            (quality_metrics["mainPeak_before_width"] < param["minWidthFirstPeak_nonSomatic"]) &
+            (quality_metrics["mainTrough_width"] < param["minWidthMainTrough_nonSomatic"]) &
+            (quality_metrics["peak1ToPeak2Ratio"] > param["maxPeak1ToPeak2Ratio_nonSomatic"])
+        ) |
         (quality_metrics["mainPeakToTroughRatio"] > param["maxMainPeakToTroughRatio_nonSomatic"])
     )
     # Only evaluate non-somatic metrics for units actually classified as non-somatic
