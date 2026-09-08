@@ -22,18 +22,37 @@ VALID_LABELS = {"good", "mua", "noise", "non_soma", "non_soma_good", "non_soma_m
 
 
 @pytest.fixture(scope="module")
-def analyzer():
-    """A small simulated SortingAnalyzer with the extensions the pipeline expects up front."""
-    recording, sorting = si.generate_ground_truth_recording(
-        num_channels=8,
-        num_units=10,
-        durations=[300.0],  # long enough for several drift bins at the default 60 s interval
-        seed=0,
-    )
-    analyzer = si.create_sorting_analyzer(sorting, recording, sparse=True)
-    analyzer.compute({"random_spikes": {"seed": 0}, "noise_levels": {}, "templates": {}})
-    analyzer.compute("template_metrics", include_multi_channel_metrics=True)
-    return analyzer
+def analyzer_factory():
+    """Build a fresh simulated SortingAnalyzer.
+
+    Tests that mutate the analyzer (the pipeline computes extensions onto it) need their own,
+    rather than sharing one and depending on execution order.
+    """
+
+    def _build(with_waveforms=False, duration_s=300.0):
+        recording, sorting = si.generate_ground_truth_recording(
+            num_channels=8,
+            num_units=10,
+            durations=[duration_s],  # several drift bins at the default 60 s interval
+            seed=0,
+        )
+        analyzer = si.create_sorting_analyzer(sorting, recording, sparse=True)
+        extensions = {"random_spikes": {"seed": 0}, "noise_levels": {}}
+        if with_waveforms:
+            # Must come before templates: computing waveforms invalidates what derives from it.
+            extensions["waveforms"] = {}
+        extensions["templates"] = {}
+        analyzer.compute(extensions)
+        analyzer.compute("template_metrics", include_multi_channel_metrics=True)
+        return analyzer
+
+    return _build
+
+
+@pytest.fixture(scope="module")
+def analyzer(analyzer_factory):
+    """The analyzer the shared pipeline run operates on."""
+    return analyzer_factory()
 
 
 @pytest.fixture(scope="module")
@@ -123,7 +142,7 @@ def test_labeler_alone_matches_the_pipeline(analyzer, qc_result):
     assert (direct["bombcell_label"] == labels["bombcell_label"]).all()
 
 
-def test_distance_metrics_need_waveforms(analyzer):
+def test_distance_metrics_need_waveforms(analyzer_factory):
     """Without the waveforms extension the pipeline must refuse, not compute it.
 
     Computing "waveforms" invalidates "templates" and "template_metrics", so computing it
@@ -132,17 +151,14 @@ def test_distance_metrics_need_waveforms(analyzer):
     params = bombcell.get_default_qc_params()
     params["compute_distance_metrics"] = True
     with pytest.raises(ValueError, match="waveforms"):
-        bombcell.run_bombcell_qc(analyzer, output_folder=None, params=params, n_jobs=1, progress_bar=False)
+        bombcell.run_bombcell_qc(
+            analyzer_factory(), output_folder=None, params=params, n_jobs=1, progress_bar=False
+        )
 
 
-def test_distance_metrics_with_waveforms(tmp_path):
+def test_distance_metrics_with_waveforms(analyzer_factory):
     """With waveforms computed up front, the PCA metrics come through."""
-    recording, sorting = si.generate_ground_truth_recording(
-        num_channels=8, num_units=10, durations=[300.0], seed=0
-    )
-    a = si.create_sorting_analyzer(sorting, recording, sparse=True)
-    a.compute({"random_spikes": {"seed": 0}, "noise_levels": {}, "waveforms": {}, "templates": {}})
-    a.compute("template_metrics", include_multi_channel_metrics=True)
+    a = analyzer_factory(with_waveforms=True)
 
     params = bombcell.get_default_qc_params()
     params["compute_distance_metrics"] = True
@@ -153,6 +169,45 @@ def test_distance_metrics_with_waveforms(tmp_path):
     for name in ("isolation_distance", "l_ratio"):
         assert name in metrics.columns, f"{name} missing despite compute_distance_metrics=True"
         assert metrics[name].notna().any(), f"{name} is all-NaN"
+
+
+def test_valid_periods_params_follow_the_bombcell_thresholds():
+    """Valid periods are BombCell's time chunks: chunk length is deltaTimeChunk, and the
+    fp/fn thresholds deciding which chunks to keep come from thresholds["mua"] so they
+    cannot drift away from the thresholds used for labeling."""
+    from bombcell.spikeinterface_pipeline import _DEFAULT_TIME_CHUNK_S, _valid_periods_params
+
+    thresholds = sc.bombcell_get_default_thresholds()
+    rpv_metric = next(m for m in ("sliding_rp_violation", "rp_contamination") if m in thresholds["mua"])
+    thresholds["mua"][rpv_metric]["less"] = 0.02
+    thresholds["mua"]["amplitude_cutoff"]["less"] = 0.15
+
+    derived = _valid_periods_params(thresholds, bombcell.get_default_qc_params())
+    assert derived["period_mode"] == "absolute"
+    assert derived["period_duration_s_absolute"] == _DEFAULT_TIME_CHUNK_S
+    assert derived["fp_threshold"] == 0.02
+    assert derived["fn_threshold"] == 0.15
+
+    params = bombcell.get_default_qc_params()
+    params["valid_periods_params"] = {"period_duration_s_absolute": 120, "fp_threshold": 0.05}
+    overridden = _valid_periods_params(thresholds, params)
+    assert overridden["period_duration_s_absolute"] == 120
+    assert overridden["fp_threshold"] == 0.05
+    assert overridden["fn_threshold"] == 0.15  # untouched keys still derived
+
+
+def test_compute_valid_periods(analyzer_factory):
+    """The extension is computed with the derived parameters and labeling still works."""
+    a = analyzer_factory()
+    params = bombcell.get_default_qc_params()
+    params["compute_valid_periods"] = True
+    params["valid_periods_params"] = {"period_duration_s_absolute": 120}
+
+    labels, _, _ = bombcell.run_bombcell_qc(a, output_folder=None, params=params, n_jobs=1, progress_bar=False)
+
+    assert a.has_extension("valid_unit_periods")
+    assert a.get_extension("valid_unit_periods").params["period_duration_s_absolute"] == 120
+    assert set(labels["bombcell_label"]).issubset(VALID_LABELS)
 
 
 def test_rpv_metric_selection_is_validated():

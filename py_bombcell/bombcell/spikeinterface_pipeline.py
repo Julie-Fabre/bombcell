@@ -56,6 +56,36 @@ def _require_spikeinterface():
 # determines which metric is computed AND thresholded. No other knob selects it.
 _RPV_METRICS = ("sliding_rp_violation", "rp_contamination")
 
+# Length of the time chunks valid periods are built from. SpikeInterface defaults to 30 s;
+# this is BombCell's own deltaTimeChunk, so the pipeline behaves like BombCell out of the box.
+_DEFAULT_TIME_CHUNK_S = 360
+
+
+def _valid_periods_params(thresholds: dict, params: dict) -> dict:
+    """Build the ``valid_unit_periods`` parameters for a BombCell run.
+
+    The false-positive and false-negative thresholds that select valid periods are the same
+    quantities BombCell thresholds on (refractory-period violations and missing spikes), so
+    they are derived from ``thresholds["mua"]`` rather than left to drift apart from it.
+    Anything in ``params["valid_periods_params"]`` overrides all of this.
+    """
+    mua = thresholds.get("mua", {})
+    vp_params = {
+        "period_mode": "absolute",
+        "period_duration_s_absolute": _DEFAULT_TIME_CHUNK_S,
+    }
+
+    fp_threshold = mua.get(_resolve_rpv_metric(thresholds), {}).get("less", None)
+    if fp_threshold is not None:
+        vp_params["fp_threshold"] = fp_threshold
+
+    fn_threshold = mua.get("amplitude_cutoff", {}).get("less", None)
+    if fn_threshold is not None:
+        vp_params["fn_threshold"] = fn_threshold
+
+    vp_params.update(params.get("valid_periods_params") or {})
+    return vp_params
+
 
 def _resolve_rpv_metric(thresholds: dict) -> str:
     """Return the single RPV metric name the user selected in thresholds["mua"].
@@ -172,8 +202,23 @@ def get_default_qc_params():
             If the ``valid_unit_periods`` extension is already present on the
             analyzer, it is reused as-is (no recompute); if its ``fp_threshold``
             / ``fn_threshold`` differ from the bombcell RPV / amplitude_cutoff
-            thresholds, a warning is emitted. To customize valid-periods
-            parameters, compute the extension upstream with your own settings.
+            thresholds, a warning is emitted.
+
+            This is the SpikeInterface equivalent of BombCell's time chunks: the
+            recording is split into chunks and only those where the unit looks
+            well isolated are kept. The chunk length defaults to BombCell's
+            ``deltaTimeChunk`` (360 s) rather than the SpikeInterface default of
+            30 s, and the ``fp_threshold`` / ``fn_threshold`` that decide whether
+            a chunk is kept are taken from ``thresholds["mua"]`` (the RPV metric
+            and ``amplitude_cutoff``), so they cannot drift apart from the
+            thresholds used for labeling.
+
+        valid_periods_params : dict or None, default: None
+            Parameters forwarded to the ``valid_unit_periods`` extension, overriding
+            the ones derived above. For example
+            ``{"period_duration_s_absolute": 120, "minimum_valid_period_duration": 60}``.
+            Only used when the extension is computed here; an extension already on
+            the analyzer is reused untouched.
 
         **Presence Ratio Parameters**
 
@@ -230,6 +275,7 @@ def get_default_qc_params():
         # BombCell labeling options
         "split_non_somatic": False,
         "compute_valid_periods": False,
+        "valid_periods_params": None,
         # Presence ratio
         "presence_ratio_bin_duration_s": 60,
         # Drift
@@ -474,7 +520,7 @@ def run_bombcell_qc(
         if sorting_analyzer.has_extension("valid_unit_periods"):
             _warn_if_valid_periods_mismatch(sorting_analyzer, thresholds)
         else:
-            sorting_analyzer.compute("valid_unit_periods", **job_kwargs)
+            sorting_analyzer.compute("valid_unit_periods", **_valid_periods_params(thresholds, params), **job_kwargs)
 
     # Compute quality metrics
     if not sorting_analyzer.has_extension("quality_metrics") or rerun_quality_metrics:
