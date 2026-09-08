@@ -436,6 +436,20 @@ def run_bombcell_qc(
 
     if "mahalanobis" in metric_names:
         if not sorting_analyzer.has_extension("principal_components") or rerun_pca:
+            # principal_components is computed from the waveforms, so that extension must exist.
+            # We deliberately do not compute it here: computing "waveforms" invalidates every
+            # extension derived from it, including "templates" and "template_metrics", and
+            # recomputing those would silently drop whatever parameters the user chose.
+            if not sorting_analyzer.has_extension("waveforms"):
+                raise ValueError(
+                    "compute_distance_metrics=True needs the 'waveforms' extension, which this "
+                    "analyzer does not have. It cannot be computed here, because computing "
+                    "'waveforms' invalidates the extensions derived from it ('templates', "
+                    "'template_metrics'), discarding the parameters you computed them with. "
+                    "Compute it yourself, before 'template_metrics':\n"
+                    "    analyzer.compute(['random_spikes', 'noise_levels', 'waveforms', 'templates'])\n"
+                    "    analyzer.compute('template_metrics', include_multi_channel_metrics=True)"
+                )
             sorting_analyzer.compute("principal_components", n_components=5, mode="by_channel_local", **job_kwargs)
 
     # amplitude_median needs spike_amplitudes and drift needs spike_locations. Without these
