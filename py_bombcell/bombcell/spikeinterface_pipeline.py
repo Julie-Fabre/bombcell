@@ -61,6 +61,43 @@ _RPV_METRICS = ("sliding_rp_violation", "rp_contamination")
 _DEFAULT_TIME_CHUNK_S = 360
 
 
+def _valid_periods_table(sorting_analyzer):
+    """Per-time-chunk contamination and missing-spike rates, as a DataFrame.
+
+    The ``valid_unit_periods`` extension evaluates every candidate time chunk and keeps the
+    ones that pass. It stores the rates for all of them, so this is BombCell's per-chunk view:
+    one row per unit and chunk, with the false-positive rate (refractory-period violations),
+    the false-negative rate (missing spikes), and whether the chunk was kept.
+    """
+    import pandas as pd
+
+    extension = sorting_analyzer.get_extension("valid_unit_periods")
+    if extension is None:
+        return None
+
+    all_periods = extension.data["all_periods"]
+    fps = extension.data["fps"]
+    fns = extension.data["fns"]
+    sampling_frequency = sorting_analyzer.sampling_frequency
+    unit_ids = sorting_analyzer.unit_ids
+
+    # The stored valid periods are merged spans, so they cannot be matched back to individual
+    # chunks. Re-apply the criterion the extension used instead.
+    kept = (fps < extension.params["fp_threshold"]) & (fns < extension.params["fn_threshold"])
+
+    return pd.DataFrame(
+        {
+            "unit_id": [unit_ids[i] for i in all_periods["unit_index"]],
+            "segment_index": all_periods["segment_index"],
+            "start_s": all_periods["start_sample_index"] / sampling_frequency,
+            "end_s": all_periods["end_sample_index"] / sampling_frequency,
+            "fraction_rpv": fps,
+            "fraction_spikes_missing": fns,
+            "kept": kept,
+        }
+    )
+
+
 def _valid_periods_params(thresholds: dict, params: dict) -> dict:
     """Build the ``valid_unit_periods`` parameters for a BombCell run.
 
@@ -583,8 +620,13 @@ def run_bombcell_qc(
         }
         with open(output_folder / "bombcell_config.json", "w") as f:
             json.dump(bombcell_config, f, indent=2)
-        # Note: valid periods are stored by the valid_unit_periods extension on the analyzer itself.
-        # Access them via: analyzer.get_extension("valid_unit_periods").get_data()
+        # Valid periods themselves live on the analyzer (analyzer.get_extension("valid_unit_periods")),
+        # but the per-chunk rates behind them are worth having next to the results, the way
+        # BombCell saves useTheseTimesStart/Stop.
+        if compute_valid_periods:
+            valid_periods_table = _valid_periods_table(sorting_analyzer)
+            if valid_periods_table is not None:
+                valid_periods_table.to_csv(output_folder / "valid_periods.csv", index=False)
         if "histograms" in figures:
             figures["histograms"].savefig(output_folder / "metric_histograms.png", dpi=150, bbox_inches="tight")
         if "waveforms" in figures:

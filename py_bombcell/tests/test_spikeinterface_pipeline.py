@@ -223,6 +223,48 @@ def test_valid_periods_are_off_by_default(analyzer, qc_result):
     assert qm_params["periods"] is None
 
 
+def test_valid_periods_csv_is_saved(analyzer_factory, tmp_path):
+    """The per-chunk rates are BombCell's time-chunk view, so they get saved with the results."""
+    import pandas as pd
+
+    a = analyzer_factory(duration_s=1200.0)
+    params = bombcell.get_default_qc_params()
+    params["compute_valid_periods"] = True
+    params["valid_periods_params"] = {"period_duration_s_absolute": 300}
+
+    bombcell.run_bombcell_qc(a, output_folder=tmp_path, params=params, n_jobs=1, progress_bar=False)
+
+    csv = tmp_path / "valid_periods.csv"
+    assert csv.exists()
+    table = pd.read_csv(csv)
+    assert list(table.columns) == [
+        "unit_id",
+        "segment_index",
+        "start_s",
+        "end_s",
+        "fraction_rpv",
+        "fraction_spikes_missing",
+        "kept",
+    ]
+    # One row per unit per chunk, and the rows describe the chunks that were evaluated.
+    assert len(table) == a.unit_ids.size * 4
+    # Compared as strings: numeric-looking unit ids are read back from CSV as ints.
+    assert set(table["unit_id"].astype(str)) == {str(uid) for uid in a.unit_ids}
+    assert (table["end_s"] > table["start_s"]).all()
+
+    vp_params = a.get_extension("valid_unit_periods").params
+    expected_kept = (table["fraction_rpv"] < vp_params["fp_threshold"]) & (
+        table["fraction_spikes_missing"] < vp_params["fn_threshold"]
+    )
+    assert (table["kept"] == expected_kept).all()
+
+
+def test_no_valid_periods_csv_when_disabled(qc_result):
+    """The default run must not leave a valid_periods.csv behind."""
+    _, _, _, output_folder = qc_result
+    assert not (output_folder / "valid_periods.csv").exists()
+
+
 def test_rpv_metric_selection_is_validated():
     """The RPV method is chosen by which key sits in thresholds["mua"]; neither or both is an error."""
     from bombcell.spikeinterface_pipeline import _resolve_rpv_metric
