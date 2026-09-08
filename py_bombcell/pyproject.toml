@@ -43,12 +43,6 @@ dependencies = [
     "cachecache",
 ]
 
-[project.optional-dependencies]
-# Needed only by bombcell.spikeinterface_pipeline, which runs bombcell on a
-# SpikeInterface SortingAnalyzer. 0.104 is the first release with the
-# bombcell_label_units labeler that module builds on.
-spikeinterface = ["spikeinterface>=0.104"]
-
 [project.urls]
 Homepage = "https://github.com/Julie-Fabre/bombcell"
 Repository = "https://github.com/Julie-Fabre/bombcell"
