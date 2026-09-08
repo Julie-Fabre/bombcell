@@ -209,6 +209,19 @@ def test_compute_valid_periods(analyzer_factory):
     assert a.get_extension("valid_unit_periods").params["period_duration_s_absolute"] == 120
     assert set(labels["bombcell_label"]).issubset(VALID_LABELS)
 
+    # Computing the periods is only half of it: the quality metrics have to actually be
+    # restricted to them, otherwise the labels come from the whole recording regardless.
+    qm_params = a.get_extension("quality_metrics").params
+    assert qm_params["use_valid_periods"] is True
+    assert qm_params["periods"] is not None
+
+
+def test_valid_periods_are_off_by_default(analyzer, qc_result):
+    """The default run must not silently restrict metrics to valid periods."""
+    qm_params = analyzer.get_extension("quality_metrics").params
+    assert qm_params["use_valid_periods"] is False
+    assert qm_params["periods"] is None
+
 
 def test_rpv_metric_selection_is_validated():
     """The RPV method is chosen by which key sits in thresholds["mua"]; neither or both is an error."""
