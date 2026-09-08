@@ -16,7 +16,7 @@ param = table2struct(param); % param is conceptually a struct; loading via parqu
 if nargin < 2
     saveTSV = 0; 
 end
-if isfield(param,'saveAsTSV') % ensure back-compatibility if users have a previous version of param 
+if saveTSV && isfield(param,'saveAsTSV') % ensure back-compatibility if users have a previous version of param 
 
     fieldsToSave = {'percentageSpikesMissing_gaussian', ...
         'presenceRatio', 'maxDriftEstimate', 'nPeaks', 'nTroughs','waveformDuration_peakTrough', 'spatialDecaySlope','waveformBaselineFlatness',...
@@ -46,10 +46,10 @@ if isfield(param,'saveAsTSV') % ensure back-compatibility if users have a previo
         for fid = 1:length(fieldsToSave)
             if ismember(fid, indicesToUse)
                 cluster_table = table(cluster_id_vector, qMetric.(fieldsToSave{fid}), 'VariableNames', {'cluster_id', fieldsRename{fid}});
-                writetable(cluster_table,[saveTSV_path filesep 'cluster_' fieldsRename{fid} '.tsv'],'FileType', 'text','Delimiter','\t');  
+                writetable(cluster_table, fullfile(saveTSV_path, ['cluster_', fieldsRename{fid}, '.tsv']),'FileType', 'text','Delimiter','\t');  
             else
-                if exist([saveTSV_path filesep 'cluster_' fieldsRename{fid} '.tsv'], 'file')
-                    delete([saveTSV_path filesep 'cluster_' fieldsRename{fid} '.tsv'])
+                if exist(fullfile(saveTSV_path, ['cluster_', fieldsRename{fid}, '.tsv']), 'file')
+                    delete(fullfile(saveTSV_path, ['cluster_', fieldsRename{fid}, '.tsv']))
                 end
             end
         end

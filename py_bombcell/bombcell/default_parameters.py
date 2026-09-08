@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from pathlib import Path
 
@@ -56,6 +58,12 @@ def get_default_parameters(
         "nRawSpikesToExtract": 100,  # Number of raw spikes per unit
         "decompress_data": False,  # whether to decompress .cbin data
         "extractRaw": True,
+        "joblib_n_jobs": -1,  # workers used to extract raw waveforms in parallel.
+        # -1 is one per core; lower it if extraction runs out of memory
+        "joblib_backend_preference": "processes",  # 'processes' or 'threads'. joblib's
+        # process pool is the faster option, but cannot start on some setups (cluster
+        # schedulers, containers with a small /dev/shm, some notebook environments) -
+        # use 'threads' there
         "probeType": 1,  # If you are using spikeGLX and your meta files does not
         # contain information on your probe type specify it here
         # '1' for 1.0 (3Bs) and '2' for 2.0 (single or 4-shanks)
@@ -235,3 +243,125 @@ def get_unit_match_parameters(
     return param
 
 
+
+# Parameters that predate a given bombcell version are filled in with values chosen
+# to reproduce the behaviour from before that parameter existed, so that reloading an
+# old _bc_parameters._bc_qMetrics.parquet classifies the same way it did originally.
+# Mirrors bc.qm.checkParameterFields on the MATLAB side.
+_BACKCOMPAT_DEFAULTS = {
+    "extractRaw": True,
+    "computeSpatialDecay": True,
+    "spDecayLinFit": True,
+    "computeDrift": False,
+    "computeDistanceMetrics": False,
+    "splitGoodAndMua_NonSomatic": False,
+    "minSpatialDecaySlopeExp": 0.01,
+    "maxSpatialDecaySlopeExp": 0.1,
+    "maxScndPeakToTroughRatio_noise": 0.8,
+    "maxMainPeakToTroughRatio_nonSomatic": 0.8,
+    # The four below are ANDed together in get_quality_unit_type, so these values
+    # disable that test outright. See _NON_SOMATIC_GROUP.
+    "minWidthFirstPeak_nonSomatic": 0,
+    "minWidthMainTrough_nonSomatic": 0,
+    "minTroughToPeak2Ratio_nonSomatic": 0,
+    "maxPeak1ToPeak2Ratio_nonSomatic": np.inf,
+}
+
+# The peak1/peak2 non-somatic test is a conjunction of these four thresholds.
+_NON_SOMATIC_GROUP = (
+    "minTroughToPeak2Ratio_nonSomatic",
+    "minWidthFirstPeak_nonSomatic",
+    "minWidthMainTrough_nonSomatic",
+    "maxPeak1ToPeak2Ratio_nonSomatic",
+)
+
+# Every parameter get_quality_unit_type reads. Anything here that is missing and has
+# no back-compatibility default is a hard error rather than an invented threshold.
+_CLASSIFICATION_KEYS = (
+    "maxNPeaks", "maxNTroughs", "minWvDuration", "maxWvDuration",
+    "maxWvBaselineFraction", "maxScndPeakToTroughRatio_noise",
+    "computeSpatialDecay", "spDecayLinFit", "minSpatialDecaySlope",
+    "minSpatialDecaySlopeExp", "maxSpatialDecaySlopeExp",
+    "minTroughToPeak2Ratio_nonSomatic", "minWidthFirstPeak_nonSomatic",
+    "minWidthMainTrough_nonSomatic", "maxPeak1ToPeak2Ratio_nonSomatic",
+    "maxMainPeakToTroughRatio_nonSomatic", "maxPercSpikesMissing", "minNumSpikes",
+    "maxRPVviolations", "minPresenceRatio", "extractRaw", "minAmplitude", "minSNR",
+    "computeDrift", "maxDrift", "computeDistanceMetrics", "isoDmin", "lratioMax",
+    "splitGoodAndMua_NonSomatic",
+)
+
+
+def check_parameter_fields(param, verbose=True):
+    """
+    Fill in parameters missing from an older param set, for back-compatibility.
+
+    Missing fields are filled with values that reproduce the behaviour from before
+    that field was introduced, so reloading an old parquet reclassifies as it did
+    originally. The exception is the group of four thresholds behind the peak1/peak2
+    non-somatic test: those are only inert as a set, so a param set holding some of
+    them has the rest filled from the current defaults instead of being silently
+    switched off. See bc.qm.checkParameterFields for the MATLAB equivalent.
+
+    Parameters
+    ----------
+    param : dict
+        Parameters, e.g. as returned by load_bc_results
+    verbose : bool, optional
+        Whether to report which fields were filled in, by default True
+
+    Returns
+    -------
+    dict
+        A copy of param with any missing fields added
+
+    Raises
+    ------
+    KeyError
+        If a parameter needed for classification is missing and has no
+        back-compatibility default, rather than inventing a threshold for it
+    """
+    param = dict(param)
+    defaults = dict(_BACKCOMPAT_DEFAULTS)
+
+    group_is_set = [key in param for key in _NON_SOMATIC_GROUP]
+    if any(group_is_set) and not all(group_is_set):
+        # Some of the conjunction is configured, so filling the rest with the inert
+        # values above would switch off a test the user did set up. Use the current
+        # defaults instead, scaling the widths by spike width as get_default_parameters
+        # does when a MATLAB-written param set gives us the spike width to do it with.
+        width_scale = 1.0
+        spike_width = param.get("spikeWidth")
+        standard_width = param.get("standardSpikeWidth")
+        if spike_width and standard_width and np.isfinite(spike_width) and standard_width > 0:
+            width_scale = spike_width / standard_width
+        defaults["minTroughToPeak2Ratio_nonSomatic"] = 5
+        defaults["minWidthFirstPeak_nonSomatic"] = max(2, round(4 * width_scale))
+        defaults["minWidthMainTrough_nonSomatic"] = max(3, round(5 * width_scale))
+        defaults["maxPeak1ToPeak2Ratio_nonSomatic"] = 3
+
+        present = [k for k, s in zip(_NON_SOMATIC_GROUP, group_is_set) if s]
+        absent = [k for k, s in zip(_NON_SOMATIC_GROUP, group_is_set) if not s]
+        warnings.warn(
+            f"Some non-somatic peak1/peak2 parameters are set ({', '.join(present)}) "
+            f"but others are missing ({', '.join(absent)}). Filling the missing ones "
+            "with the current bombcell defaults rather than with values that would "
+            "disable the peak1/peak2 non-somatic test entirely.",
+            stacklevel=2,
+        )
+
+    filled = [key for key in defaults if key not in param]
+    for key in filled:
+        param[key] = defaults[key]
+
+    still_missing = [key for key in _CLASSIFICATION_KEYS if key not in param]
+    if still_missing:
+        raise KeyError(
+            "Parameters needed for classification are missing and have no "
+            f"back-compatibility default: {', '.join(still_missing)}. Add them to "
+            "param, or regenerate it with get_default_parameters."
+        )
+
+    if filled and verbose:
+        print(f"Missing param fields filled in with default values: {', '.join(sorted(filled))}")
+
+    return param
