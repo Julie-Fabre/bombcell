@@ -34,6 +34,7 @@ Take a look at:
 - the MATLAB live script [`gettingStarted`](https://github.com/Julie-Fabre/bombcell/tree/main/matlab/gettingStarted.mlx) to see an example workflow and play around with our small toy dataset.
 - the Python Jupyter notebook [`BC_demo`](https://github.com/Julie-Fabre/bombcell/blob/main/py_bombcell/demos/BC_demo_toy_data.ipynb) and software specific ones : [`BC_demo_spikeGLX`](https://github.com/Julie-Fabre/bombcell/blob/main/py_bombcell/demos/BC_demo_spikeGLX.ipynb) ,
 [`BC_demo_open_ephys`](https://github.com/Julie-Fabre/bombcell/blob/main/py_bombcell/demos/BC_demo_open_ephys.ipynb) and [`BC_demo_other_recording_software`](https://github.com/Julie-Fabre/bombcell/blob/main/py_bombcell/demos/BC_demo_other_recording_software.ipynb) 
+- the Jupyter notebook [`BC_demo_spikeinterface`](https://github.com/Julie-Fabre/bombcell/blob/main/py_bombcell/demos/BC_demo_spikeinterface.ipynb) if your data is a [SpikeInterface](https://spikeinterface.readthedocs.io/) `SortingAnalyzer` rather than a sorter output folder.
 - You can also take a look at the exercise we prepared for the 2024 Neuropixels course [here](https://github.com/BombCell/Neuropixels_course_2024). 
 
 #### Installation
@@ -85,6 +86,17 @@ cd bombcell/py_bombcell
 pip install uv
 uv pip install -e .
 ```
+##### With SpikeInterface
+To run bombcell on a SpikeInterface `SortingAnalyzer`, install the optional extra:
+```bash
+uv pip install "bombcell[spikeinterface]"
+```
+Then:
+```python
+import bombcell
+labels, metrics, figures = bombcell.run_bombcell_qc(sorting_analyzer)
+```
+This computes the quality metrics bombcell needs, labels the units, and saves the results and plots. See the [`BC_demo_spikeinterface`](https://github.com/Julie-Fabre/bombcell/blob/main/py_bombcell/demos/BC_demo_spikeinterface.ipynb) notebook.
 
 ### 🤗 Support and citing
 
