@@ -265,6 +265,92 @@ def test_no_valid_periods_csv_when_disabled(qc_result):
     assert not (output_folder / "valid_periods.csv").exists()
 
 
+def test_preprocess_for_bombcell(tmp_path):
+    """Raw recording and sorting through to an analyzer bombcell can label."""
+    recording, sorting = si.generate_ground_truth_recording(
+        num_channels=16, num_units=10, durations=[300.0], seed=0
+    )
+    params = bombcell.get_default_preprocessing_params()
+    # coherence+psd needs a realistic probe geometry, which simulated data does not have.
+    params["detect_bad_channels"] = False
+
+    analyzer, recording_preprocessed, bad_channel_ids = bombcell.preprocess_for_bombcell(
+        recording, sorting, tmp_path / "analyzer.zarr", params=params, n_jobs=1, progress_bar=False
+    )
+
+    assert bad_channel_ids is None  # detection disabled
+    assert recording_preprocessed is not recording  # filtering and CMR applied
+    for extension in ("random_spikes", "waveforms", "templates", "noise_levels", "template_metrics"):
+        assert analyzer.has_extension(extension), f"{extension} not computed"
+
+    # The analyzer it builds must be directly usable, including the distance metrics, which
+    # need the waveforms this computes but a hand-built analyzer often lacks.
+    qc_params = bombcell.get_default_qc_params()
+    qc_params["compute_distance_metrics"] = True
+    labels, metrics, _ = bombcell.run_bombcell_qc(
+        analyzer, output_folder=None, params=qc_params, n_jobs=1, progress_bar=False
+    )
+    assert "isolation_distance" in metrics.columns
+    assert set(labels["bombcell_label"]).issubset(VALID_LABELS)
+
+
+def test_motion_correction_is_off_by_default_and_wired_when_on(tmp_path, monkeypatch):
+    """Drift correction defaults to off, because Kilosort4 does its own.
+
+    The correction itself is not run here: the presets either need torch or need real probe
+    geometry to find peaks on. What is checked is that the flag reaches ``correct_motion``
+    with the requested preset, and that nothing is called when it is off.
+    """
+    import spikeinterface.full as si_full
+
+    calls = []
+
+    def fake_correct_motion(recording, preset=None, folder=None, **kwargs):
+        calls.append({"preset": preset, "folder": folder})
+        return recording
+
+    monkeypatch.setattr(si_full, "correct_motion", fake_correct_motion)
+
+    recording, sorting = si.generate_ground_truth_recording(
+        num_channels=8, num_units=4, durations=[60.0], seed=0
+    )
+    params = bombcell.get_default_preprocessing_params()
+    params["detect_bad_channels"] = False
+    params["apply_phase_shift"] = False
+
+    assert params["apply_motion_correction"] is False, "must default off for a Kilosort4 workflow"
+    bombcell.preprocess_for_bombcell(
+        recording, sorting, tmp_path / "off.zarr", params=params, n_jobs=1, progress_bar=False
+    )
+    assert calls == []
+
+    params["apply_motion_correction"] = True
+    params["motion_preset"] = "kilosort_like"
+    bombcell.preprocess_for_bombcell(
+        recording, sorting, tmp_path / "on.zarr", params=params, n_jobs=1, progress_bar=False
+    )
+    assert len(calls) == 1
+    assert calls[0]["preset"] == "kilosort_like"
+    assert calls[0]["folder"] is not None  # save_motion_info defaults True
+
+
+def test_phase_shift_skipped_without_adc_metadata(tmp_path):
+    """phase_shift is on by default but only works on probes with multiplexed ADCs."""
+    recording, sorting = si.generate_ground_truth_recording(
+        num_channels=8, num_units=4, durations=[60.0], seed=0
+    )
+    assert "inter_sample_shift" not in recording.get_property_keys()
+
+    params = bombcell.get_default_preprocessing_params()
+    params["detect_bad_channels"] = False
+    assert params["apply_phase_shift"] is True
+
+    with pytest.warns(UserWarning, match="inter_sample_shift"):
+        bombcell.preprocess_for_bombcell(
+            recording, sorting, tmp_path / "analyzer.zarr", params=params, n_jobs=1, progress_bar=False
+        )
+
+
 def test_rpv_metric_selection_is_validated():
     """The RPV method is chosen by which key sits in thresholds["mua"]; neither or both is an error."""
     from bombcell.spikeinterface_pipeline import _resolve_rpv_metric

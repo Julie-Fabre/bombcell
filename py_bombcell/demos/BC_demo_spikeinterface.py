@@ -6,8 +6,7 @@
 # Kilosort output folder (for that, see the other demos in this folder).
 #
 # It runs end to end on simulated data, so you can execute it as-is with no data and no paths to
-# edit. To use your own recording, replace the "Simulated data" cell with
-# `analyzer = si.load_sorting_analyzer("/path/to/your/sorting_analyzer.zarr")`.
+# edit. To use your own data, replace the "Simulated data" cell with your recording and sorting.
 #
 # **Requirements**: SpikeInterface is an optional dependency of bombcell:
 #
@@ -17,6 +16,8 @@
 #
 # **How the pieces fit together**
 #
+# - `bombcell.preprocess_for_bombcell` (this repo) preprocesses the recording and builds a
+#   `SortingAnalyzer` with the extensions bombcell needs.
 # - `bombcell.run_bombcell_qc` (this repo) decides which quality metrics to compute, computes the
 #   extensions they depend on, runs the labeling, plots and saves. It carries the BombCell-flavored
 #   defaults.
@@ -37,25 +38,75 @@ import bombcell
 # %% [markdown]
 # ## Simulated data
 #
-# We generate a small ground-truth recording and build a `SortingAnalyzer` from it. The pipeline
-# needs `template_metrics` computed up front (that is where the waveform-shape metrics used for
-# noise and non-somatic labeling come from). Everything else it computes itself.
-#
-# Replace this cell with `si.load_sorting_analyzer(...)` to use your own data.
+# We generate a small ground-truth recording and its sorting, so this notebook runs with no data
+# and nothing installed beyond bombcell and SpikeInterface. Replace this cell with your own
+# recording, e.g. `si.read_spikeglx(...)`.
 
 # %%
 recording, sorting = si.generate_ground_truth_recording(
-    num_channels=8,
+    num_channels=16,
     num_units=15,
     durations=[300.0],
     seed=0,
 )
+print(recording)
 
-analyzer = si.create_sorting_analyzer(sorting, recording, sparse=True)
-analyzer.compute({"random_spikes": {"seed": 0}, "noise_levels": {}, "templates": {}})
-analyzer.compute("template_metrics", include_multi_channel_metrics=True)
+# %% [markdown]
+# ## Spike sorting
+#
+# The recommended sorter is **Kilosort4**:
+#
+# ```python
+# import spikeinterface.sorters as ss
+# sorting = ss.run_sorter("kilosort4", recording, folder="ks4_output")
+# ```
+#
+# It needs `pip install kilosort` (and a GPU to be quick), so this notebook uses the simulated
+# ground-truth sorting instead of running it — that keeps the demo executable anywhere. Everything
+# downstream is identical either way: bombcell only ever sees a sorting.
+#
+# **Drift correction.** SpikeInterface runs Kilosort4 with `do_correction=True`, so Kilosort4
+# corrects drift itself. That is why `apply_motion_correction` below defaults to `False`: turning
+# it on as well would correct the same drift twice. Only enable it for a sorter that does not
+# correct drift, and remember it has to happen *before* sorting to mean anything — correcting the
+# recording afterwards does not move spikes that were already sorted from uncorrected traces.
+
+# %% [markdown]
+# ## Preprocessing
+#
+# `preprocess_for_bombcell` applies the preprocessing bombcell expects and builds the
+# `SortingAnalyzer` with the extensions it needs:
+#
+# highpass filter → detect and drop bad channels → phase shift → common median reference,
+# then `random_spikes`, `waveforms`, `templates`, `noise_levels`, `unit_locations`,
+# `spike_locations` and `template_metrics`.
+#
+# Every step is a parameter, so you can turn off whatever your data does not need. Two notes for
+# this simulated recording: bad-channel detection wants a realistic probe geometry, and phase
+# shift only applies to probes with multiplexed ADCs (Neuropixels read through SpikeGLX or
+# OpenEphys) — it is skipped with a warning otherwise.
+#
+# Already have an analyzer? Skip this cell and use `si.load_sorting_analyzer(...)`, but make sure
+# `template_metrics` is computed: that is where the waveform-shape metrics come from.
+
+# %%
+preprocessing_params = bombcell.get_default_preprocessing_params()
+preprocessing_params["detect_bad_channels"] = False  # simulated data has no probe geometry
+preprocessing_params["apply_phase_shift"] = False  # simulated data has no ADC metadata
+pprint(preprocessing_params)
+
+# %%
+analyzer, recording_preprocessed, bad_channel_ids = bombcell.preprocess_for_bombcell(
+    recording,
+    sorting,
+    analyzer_folder=Path("bombcell_si_demo_output") / "analyzer.zarr",
+    params=preprocessing_params,
+    n_jobs=1,
+    progress_bar=False,
+)
 
 print(f"{analyzer.unit_ids.size} units")
+print("bad channels:", bad_channel_ids)
 print("extensions:", sorted(analyzer.get_loaded_extension_names()))
 
 # %% [markdown]
@@ -72,8 +123,10 @@ qc_params = bombcell.get_default_qc_params()
 # --- Metrics to compute ---
 qc_params["compute_amplitude_cutoff"] = True   # estimate missing spikes
 qc_params["compute_drift"] = True              # position changes over time
-qc_params["compute_distance_metrics"] = False  # isolation distance & L-ratio: slow, and not drift-robust.
-                                               # Recommended True for stable/chronic recordings.
+qc_params["compute_distance_metrics"] = True   # isolation distance & L-ratio. Slow, and not drift-robust,
+                                               # so recommended for stable/chronic recordings.
+                                               # Needs the waveforms extension, which the
+                                               # preprocessing step above computed.
 
 # --- Labeling options ---
 # The refractory-period-violation method is NOT set here: it is chosen by which key you put in
@@ -142,8 +195,8 @@ pprint(thresholds)
 # ```
 #
 # Metrics that were never computed are skipped, with a warning saying which. `isolation_distance`
-# and `l_ratio` are in the defaults but need principal components, so they are skipped unless you
-# set `compute_distance_metrics = True`.
+# and `l_ratio` need principal components, so they only appear because `compute_distance_metrics`
+# is set above.
 
 # %% [markdown]
 # ## Run the pipeline
