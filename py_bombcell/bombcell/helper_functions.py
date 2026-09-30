@@ -1096,10 +1096,16 @@ def get_all_quality_metrics(
     tauR_window = np.arange(
         tauR_min, tauR_max + tauR_step, tauR_step
     )
-    RPV_tauR_estimate_units_NtauR = np.array([el[1] for el in RPV_tauR_estimate_units_NtauR])
-    df = pd.DataFrame(RPV_tauR_estimate_units_NtauR,
-                      columns=tauR_window,
-                      index=[el[0] for el in RPV_tauR_estimate_units_NtauR])
+    rpv_unit_idx = [el[0] for el in RPV_tauR_estimate_units_NtauR]
+    rpv_values = np.array([el[1] for el in RPV_tauR_estimate_units_NtauR])
+    if rpv_values.ndim == 2 and rpv_values.shape[1] == len(tauR_window):
+        rpv_columns = tauR_window
+    else:
+        # sliding RPV mode stores one value per unit (fraction at the estimated tauR)
+        rpv_columns = ["fractionRPVs_estimatedTauR"]
+    df = pd.DataFrame(rpv_values.reshape(len(rpv_unit_idx), -1),
+                      columns=rpv_columns,
+                      index=rpv_unit_idx)
     df.to_parquet(Path(save_path) / "templates._bc_fractionRefractoryPeriodViolationsPerTauR.parquet")
 
     if param["computeDistanceMetrics"]:
