@@ -75,8 +75,9 @@ def get_default_parameters(
                                             # For sweeping, use e.g. np.arange(0.001, 0.005, 0.0005)
         "tauC": 0.1 / 1000,  # Censored period time (s), to prevent duplicate spikes
         "contamination_values": None,  # For ibl_sliding: contamination values to test
-                                       # If None, uses np.arange(0.5, 35, 0.5) / 100
+                                       # If None, uses np.arange(0.5, 35.5, 0.5) / 100
         "confidence_threshold": 0.9,  # For ibl_sliding: confidence threshold for contamination estimate
+        "tauR_reject": 0.5 / 1000,  # For ibl_sliding: refractory periods <= this (s) are not tested
 
         # Legacy parameters (still supported for backward compatibility):
         "tauR_valuesMin": 2 / 1000,  # refractory period time (s), usually 0.002 s

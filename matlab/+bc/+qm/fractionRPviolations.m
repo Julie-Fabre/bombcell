@@ -127,13 +127,10 @@ for iTimeChunk = 1:length(timeChunks) - 1 % loop through each time chunk
                     rts = roots([k, -k, nRPVs * T]);
                     RPVrate(iTimeChunk, iTauR_value) = min(rts);
                     if ~isreal(RPVrate(iTimeChunk, iTauR_value))
-                        % Approximation when roots are complex
-                        if nRPVs < N_chunk
-                            RPVrate(iTimeChunk, iTauR_value) = nRPVs / (2 * (thisTauR - tauC) * (N_chunk - nRPVs));
-                        else
-                            RPVrate(iTimeChunk, iTauR_value) = 1;
-                            overestimateBool(iTimeChunk, iTauR_value) = 1;
-                        end
+                        % Complex roots: more violations than the model allows for
+                        % any contamination <= 0.5, so the unit is maximally contaminated
+                        RPVrate(iTimeChunk, iTauR_value) = 1;
+                        overestimateBool(iTimeChunk, iTauR_value) = 1;
                     end
                     if RPVrate(iTimeChunk, iTauR_value) > 1
                         RPVrate(iTimeChunk, iTauR_value) = 1;

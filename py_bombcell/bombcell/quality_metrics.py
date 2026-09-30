@@ -639,13 +639,26 @@ def _compute_contamination_hill(n_violations, n_spikes, duration, tauR, tauC):
     if np.isreal(min_root):
         contamination = np.real(min_root)
     else:
-        # Approximation when roots are complex
-        if n_violations < n_spikes:
-            contamination = n_violations / (2 * (tauR - tauC) * (n_spikes - n_violations))
-        else:
-            contamination = 1.0
+        # Complex roots: more violations than the model allows for any
+        # contamination <= 0.5, so the unit is maximally contaminated
+        contamination = 1.0
 
     return min(contamination, 1.0)
+
+
+def _count_pair_violations(spike_times, tauC, tauR, include_tauR=True):
+    """
+    Count all spike pairs (not only consecutive spikes) whose time difference
+    dt satisfies tauC <= dt <= tauR (or dt < tauR if include_tauR is False).
+    Pairs with dt == 0 are never counted. Runs in O(N log N).
+    """
+    st = np.sort(np.asarray(spike_times, dtype=np.float64))
+    if st.size < 2:
+        return 0
+    lo = np.searchsorted(st, st + tauC, side="left" if tauC > 0 else "right")
+    hi = np.searchsorted(st, st + tauR, side="right" if include_tauR else "left")
+    lo = np.maximum(lo, np.arange(1, st.size + 1))
+    return int(np.sum(np.maximum(hi - lo, 0)))
 
 
 def _compute_contamination_llobet(spike_times, duration, tauR, tauC):
@@ -673,10 +686,7 @@ def _compute_contamination_llobet(spike_times, duration, tauR, tauC):
         return np.nan
 
     # Count all pair-wise violations
-    isi_violations_sum = 0
-    for i in range(N - 1):
-        isi_vec = spike_times[i+1:] - spike_times[i]
-        isi_violations_sum += np.sum((isi_vec <= tauR) & (isi_vec >= tauC))
+    isi_violations_sum = _count_pair_violations(spike_times, tauC, tauR)
 
     if N > 0 and (tauR - tauC) > 0:
         underRoot = 1 - (isi_violations_sum * (duration - 2 * N * tauC)) / (N**2 * (tauR - tauC))
@@ -692,12 +702,20 @@ def _compute_contamination_llobet(spike_times, duration, tauR, tauC):
 
 def _compute_sliding_rp_ibl(spike_times, duration, tauR_values, tauC=None,
                              bin_size_ms=0.25, contamination_values=None,
-                             confidence_threshold=0.9):
+                             confidence_threshold=0.9, tauR_reject=0.0005):
     """
-    Compute contamination using IBL sliding refractory period method.
+    Compute contamination using the sliding refractory period method
+    (Roth et al., SteinmetzLab/slidingRefractory).
 
-    This method sweeps across refractory periods and contamination values to find
-    the minimum contamination with at least 90% confidence.
+    For each tested refractory period tauR and contamination level C, the
+    confidence that the true contamination is below C is
+    1 - PoissonCDF(observed violations; expected violations), with expected
+    violations from Llobet et al. (2022):
+        Ve = 2 * (tauR - tauC) / D * Nc * (Nb + (Nc - 1) / 2)
+    where Nc = C * N and Nb = (1 - C) * N. Observed violations are all spike
+    pairs (not only consecutive spikes) with tauC <= dt < tauR. The minimum
+    contamination reached with at least `confidence_threshold` confidence at
+    any tauR > tauR_reject is returned.
 
     Parameters
     ----------
@@ -708,22 +726,28 @@ def _compute_sliding_rp_ibl(spike_times, duration, tauR_values, tauC=None,
     tauR_values : ndarray
         Refractory period values to test in seconds
     tauC : float, optional
-        Censored period in seconds. ISIs below tauC are excluded from violation
-        counts (e.g., duplicate spike detections). Also used to skip testing
-        refractory periods <= tauC. Default: 0.5ms
+        Censored period in seconds. Spike pairs closer than tauC are excluded
+        from violation counts (e.g., duplicate spike detections), and the
+        duration is reduced accordingly. Default: 0.5ms
     bin_size_ms : float
         Bin size for autocorrelogram in ms (not currently used, kept for API compatibility)
     contamination_values : ndarray, optional
-        Contamination values to test. If None, uses np.arange(0.5, 35, 0.5) / 100
+        Contamination values to test. If None, uses np.arange(0.5, 35.5, 0.5) / 100
     confidence_threshold : float
         Confidence threshold for accepting contamination estimate (default 0.9)
+    tauR_reject : float
+        Refractory periods <= tauR_reject (s) are not tested (default 0.5ms, as
+        in the reference implementation), to avoid spuriously low estimates.
 
     Returns
     -------
     min_contamination : float
-        Minimum contamination at specified confidence level
+        Minimum contamination at specified confidence level. 1.0 if no tested
+        contamination level is reached (i.e. contamination is above the tested
+        range), NaN if the metric could not be computed.
     estimated_tauR : float
-        The estimated refractory period (in seconds) that gives minimum contamination
+        The refractory period (in seconds) at which the minimum contamination is
+        confirmed with the highest confidence (NaN if none)
     """
     from scipy.stats import poisson
 
@@ -732,57 +756,41 @@ def _compute_sliding_rp_ibl(spike_times, duration, tauR_values, tauC=None,
         return np.nan, np.nan
 
     if contamination_values is None:
-        contamination_values = np.arange(0.5, 35, 0.5) / 100
+        contamination_values = np.arange(0.5, 35.5, 0.5) / 100
+    contamination_values = np.asarray(contamination_values, dtype=float)
 
-    # Compute ISIs
-    isis = np.diff(spike_times)
-
-    # Censored period - ISIs below this are excluded (duplicates/artifacts)
+    # Censored period - spike pairs closer than this are excluded (duplicates/artifacts)
     if tauC is None:
         tauC = 0.5 / 1000  # Default 0.5ms
 
     # Effective duration: total duration minus censored periods around each spike
-    # Each spike has tauC on both sides where violations can't be detected
     effective_duration = duration - 2 * n_spikes * tauC
     if effective_duration <= 0:
         return np.nan, np.nan
 
-    # Firing rate adjusted for effective duration
-    firing_rate = n_spikes / effective_duration
+    tauR_values = np.atleast_1d(np.asarray(tauR_values, dtype=float))
+    tauR_test = tauR_values[tauR_values > max(tauC, tauR_reject)]
+    if tauR_test.size == 0:
+        return np.nan, np.nan
 
-    # For each tauR value, compute violations in range [tauC, tauR)
-    min_contamination = np.nan
-    estimated_tauR = np.nan
+    # confidence[i_tauR, i_cont]
+    n_contaminating = n_spikes * contamination_values
+    n_base = n_spikes * (1 - contamination_values)
+    confidence = np.zeros((tauR_test.size, contamination_values.size))
+    for i_tauR, tauR in enumerate(tauR_test):
+        n_violations = _count_pair_violations(spike_times, tauC, tauR, include_tauR=False)
+        expected_violations = (2 * (tauR - tauC) / effective_duration
+                               * n_contaminating * (n_base + (n_contaminating - 1) / 2))
+        confidence[i_tauR] = 1 - poisson.cdf(n_violations, expected_violations)
 
-    for tauR in tauR_values:
-        # Skip if tauR is not greater than censored period
-        if tauR <= tauC:
-            continue
+    passing_cont = np.nonzero(np.any(confidence >= confidence_threshold, axis=0))[0]
+    if passing_cont.size == 0:
+        # contamination is higher than any tested value: unit fails
+        return 1.0, np.nan
 
-        # Count violations: ISIs in range [tauC, tauR)
-        # This excludes ISIs < tauC (censored, e.g., duplicates)
-        n_violations = np.sum((isis >= tauC) & (isis < tauR))
-
-        # Test each contamination value (from lowest to highest)
-        for cont_val in contamination_values:
-            # Expected violations given contamination
-            # Window around each spike where violations can be detected: (tauR - tauC) on each side
-            contamination_rate = firing_rate * cont_val
-            effective_window = tauR - tauC
-            expected_violations = contamination_rate * effective_window * 2 * n_spikes
-
-            # Confidence score using Poisson distribution
-            # P(observed <= expected | contamination) - we want this to be high
-            if expected_violations > 0:
-                confidence = 1 - poisson.cdf(n_violations, expected_violations)
-            else:
-                confidence = 0 if n_violations > 0 else 1
-
-            if confidence > confidence_threshold:
-                if np.isnan(min_contamination) or cont_val < min_contamination:
-                    min_contamination = cont_val
-                    estimated_tauR = tauR
-                break
+    min_cont_idx = passing_cont[0]
+    min_contamination = contamination_values[min_cont_idx]
+    estimated_tauR = tauR_test[np.argmax(confidence[:, min_cont_idx])]
 
     return min_contamination, estimated_tauR
 
@@ -833,6 +841,7 @@ def sliding_rp_violations(these_spike_times, time_chunks, param, return_per_bin=
     tauC = param.get("tauC", 0.0001)  # Default 0.1ms
     contamination_values = param.get("contamination_values", None)
     confidence_threshold = param.get("confidence_threshold", 0.9)
+    tauR_reject = param.get("tauR_reject", 0.0005)
     plot_details = param.get("plotDetails", False)
 
     # Validate method
@@ -875,15 +884,19 @@ def sliding_rp_violations(these_spike_times, time_chunks, param, return_per_bin=
             cont, est_tauR = _compute_sliding_rp_ibl(
                 chunk_spike_times, duration_chunk, tauR_values, tauC,
                 contamination_values=contamination_values,
-                confidence_threshold=confidence_threshold
+                confidence_threshold=confidence_threshold,
+                tauR_reject=tauR_reject
             )
             contamination_per_chunk[time_chunk_idx] = cont
-            estimated_tauR_per_chunk[time_chunk_idx] = est_tauR if not np.isnan(est_tauR) else tauR_values[0]
-            # Count violations at estimated tauR
-            if not np.isnan(est_tauR):
-                num_violations_per_chunk[time_chunk_idx] = np.sum(chunk_ISIs < est_tauR)
-            else:
-                num_violations_per_chunk[time_chunk_idx] = np.sum(chunk_ISIs < tauR_values[0])
+            if np.isnan(est_tauR):
+                # no tauR confirmed: fall back to the shortest tested tauR
+                tested_tauR = tauR_values[tauR_values > max(tauC, tauR_reject)]
+                est_tauR = tested_tauR[0] if tested_tauR.size else tauR_values[0]
+            estimated_tauR_per_chunk[time_chunk_idx] = est_tauR
+            # Count violations (all spike pairs in [tauC, tauR)) at estimated tauR
+            num_violations_per_chunk[time_chunk_idx] = _count_pair_violations(
+                chunk_spike_times, tauC, estimated_tauR_per_chunk[time_chunk_idx], include_tauR=False
+            )
 
         else:
             # Hill or Llobet method - sweep through tauR values
@@ -1149,14 +1162,10 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
                         fraction_RPVs[time_chunk_idx, i_tau_r] = np.real(min_root)
                         overestimate_bool[time_chunk_idx, i_tau_r] = 0
                     else:
-                        # If roots are complex, use approximation formula
-                        if num_violations[time_chunk_idx, i_tau_r] < n_chunk:
-                            fraction_RPVs[time_chunk_idx, i_tau_r] = num_violations[time_chunk_idx, i_tau_r] / (
-                                2 * (tauR - tauC) * (n_chunk - num_violations[time_chunk_idx, i_tau_r])
-                            )
-                        else:
-                            fraction_RPVs[time_chunk_idx, i_tau_r] = 1
-                            overestimate_bool[time_chunk_idx, i_tau_r] = 1
+                        # Complex roots: more violations than the model allows for
+                        # any contamination <= 0.5, so the unit is maximally contaminated
+                        fraction_RPVs[time_chunk_idx, i_tau_r] = 1
+                        overestimate_bool[time_chunk_idx, i_tau_r] = 1
 
                     # Cap fraction at 1 (assumptions failing if > 1)
                     if fraction_RPVs[time_chunk_idx, i_tau_r] > 1:
@@ -1165,15 +1174,8 @@ def fraction_RP_violations(these_spike_times, these_amplitudes, time_chunks, par
             else:
                 # Llobet et al. method
                 N = len(chunk_spike_times)
-                isi_violations_sum = 0
-
                 # Count all pair-wise violations
-                if N > 1:
-                    for i in range(N - 1):
-                        isi_vec = chunk_spike_times[i+1:] - chunk_spike_times[i]
-                        isi_violations_sum += np.sum((isi_vec <= tauR) & (isi_vec >= tauC))
-                else:
-                    isi_violations_sum = 0
+                isi_violations_sum = _count_pair_violations(chunk_spike_times, tauC, tauR)
 
                 # Calculate fraction using Llobet equation
                 if N > 0:  # Avoid division by zero
