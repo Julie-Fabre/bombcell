@@ -392,6 +392,19 @@ def _mua_section(param, tracker):
         f"; units exceeding {max_rpv * 100:.0f}% violations were "
         "classified as MUA."
     )
+    if rpv_method_name == "ibl_sliding":
+        if param.get("keepUncertainRPVUnits", False):
+            rpv_text += (
+                " Units with too few spikes to determine, at this confidence, "
+                f"whether their contamination was below or above {max_rpv * 100:.0f}% "
+                "were not classified as MUA on this criterion."
+            )
+        else:
+            rpv_text += (
+                " Units with too few spikes to confirm, at this confidence, "
+                f"that their contamination was below {max_rpv * 100:.0f}% "
+                "were also classified as MUA."
+            )
     text += rpv_text
 
     # Spikes missing

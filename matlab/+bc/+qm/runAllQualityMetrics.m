@@ -105,6 +105,23 @@ else
     timeChunks = [min(spikeTimes_seconds), max(spikeTimes_seconds)];
 end
 
+% pairs closer than the duplicate spike window were just removed, so censor them
+tauC = bc.qm.helpers.effectiveTauC(param);
+if tauC ~= param.tauC
+    if param.verbose
+        fprintf('\n Censored period tauC raised from %.3g ms to the duplicate spike window (%.3g ms)', ...
+            param.tauC * 1000, tauC * 1000);
+    end
+    param.tauC = tauC;
+end
+
+% refractory period values to test, from new or legacy parameters
+if isfield(param, 'tauR_values') && ~isempty(param.tauR_values)
+    tauR_window = param.tauR_values;
+else
+    tauR_window = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
+end
+
 %% loop through units and get quality metrics
 fprintf('\n Extracting quality metrics from %s ... \n', param.rawFile)
 
@@ -133,7 +150,9 @@ for iUnit = 1:size(uniqueTemplates, 1)
         qMetric.percentageSpikesMissing_gaussian(iUnit) = NaN;
         qMetric.percentageSpikesMissing_symmetric(iUnit) = NaN;
         qMetric.ksTest_pValue(iUnit) = NaN;
-        qMetric.fractionRPVs(iUnit, :) = NaN(1, length(param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax));
+        qMetric.fractionRPVs(iUnit, :) = NaN(1, length(tauR_window));
+        qMetric.estimatedTauR(iUnit) = NaN;
+        qMetric.RPV_status(iUnit) = NaN;
         qMetric.presenceRatio(iUnit) = NaN;
         qMetric.maxDriftEstimate(iUnit) = NaN;
         qMetric.cumDriftEstimate(iUnit) = NaN;
@@ -192,12 +211,6 @@ for iUnit = 1:size(uniqueTemplates, 1)
         bc.qm.percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param);
 
     %% fraction contamination (false positives)
-    % Build tauR values from new or legacy parameters
-    if isfield(param, 'tauR_values') && ~isempty(param.tauR_values)
-        tauR_window = param.tauR_values;
-    else
-        tauR_window = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
-    end
     [rateRPVs, ~, ~, ~] = bc.qm.fractionRPviolations(theseSpikeTimes, theseAmplis, ...
         tauR_window, param, timeChunks, NaN);
     
@@ -217,6 +230,20 @@ for iUnit = 1:size(uniqueTemplates, 1)
 
     [qMetric.fractionRPVs(iUnit, :), ~, ~, qMetric.estimatedTauR(iUnit)] = bc.qm.fractionRPviolations(theseSpikeTimes, theseAmplis, ...
         tauR_window, param, thisUnits_timesToUse, qMetric.RPV_window_index(iUnit)); %rename: fractionRPV should be called RPVrate
+
+    % pass (1) / uncertain (0) / fail (-1) against param.maxRPVviolations
+    if isfield(param, 'rpvMethod') && strcmp(param.rpvMethod, 'ibl_sliding')
+        qMetric.RPV_status(iUnit) = bc.qm.slidingRPstatus(theseSpikeTimes, thisUnits_timesToUse, ...
+            tauR_window, param);
+    else
+        % hill / llobet give a point estimate, with no uncertain outcome
+        thisContamination = qMetric.fractionRPVs(iUnit, qMetric.RPV_window_index(iUnit));
+        if isnan(thisContamination)
+            qMetric.RPV_status(iUnit) = NaN;
+        else
+            qMetric.RPV_status(iUnit) = 1 - 2 * (thisContamination > param.maxRPVviolations);
+        end
+    end
 
     %% presence ratio (potential false negatives)
     [qMetric.presenceRatio(iUnit)] = bc.qm.presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...

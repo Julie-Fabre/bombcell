@@ -38,6 +38,7 @@ def get_metric_keys():
             "RPV_window_index",
             "fractionRPVs_estimatedTauR",
             "estimatedTauR",  # Estimated refractory period in seconds
+            "RPV_status",  # 1 pass, 0 uncertain, -1 fail (see quality_metrics.sliding_rp_status)
             "presenceRatio",
             "maxDriftEstimate",
             "cumDriftEstimate",

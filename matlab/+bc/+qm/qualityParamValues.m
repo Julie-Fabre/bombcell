@@ -77,14 +77,22 @@ param.computeSpatialDecay = 1;
 
 % refractory period parameters
 % New recommended parameters:
-param.rpvMethod = 'hill'; % Method for RPV computation: 'hill', 'llobet', or 'ibl_sliding'
-param.tauR_values = 0.002; % Refractory period values to test (in seconds)
-    % For sweeping, use e.g. 0.001:0.0005:0.005 to test 1-5ms
-param.tauC = 0.1/1000; % Censored period time (s) - ISIs below this are excluded
-    % (prevents counting duplicate spike detections as violations)
+param.rpvMethod = 'ibl_sliding'; % Method for RPV computation: 'hill', 'llobet', or 'ibl_sliding'
+param.tauR_values = (4:40) * 0.25 / 1000; % Refractory period values to test (s):
+    % 1 to 10 ms in 0.25 ms steps. Shorter values let units hold off a fail by
+    % having a barely testable sub-ms refractory period. For 'hill'/'llobet' a
+    % single value, e.g. 0.002
+param.tauC = 0.1/1000; % Censored period time (s): spike pairs closer than this are
+    % ignored. Set below to Kilosort 4's duplicate spike window, and raised to
+    % duplicateSpikeWindow_s at run time if removeDuplicateSpikes is true
+    % (see bc.qm.helpers.effectiveTauC)
 param.contaminationValues = []; % For ibl_sliding: contamination values to test
     % If empty, uses (0.5:0.5:35)/100 (0.5% to 35%)
 param.confidenceThreshold = 0.9; % For ibl_sliding: confidence threshold
+param.tauR_reject = 0.5/1000; % For ibl_sliding: refractory periods <= this (s) are not tested
+param.keepUncertainRPVUnits = 0; % For ibl_sliding: units with too few spikes to confirm
+    % they are below maxRPVviolations, and no evidence they are above it
+    % (RPV_status == 0), pass the RPV criterion if 1, and are classified as MUA if 0
 
 % Legacy parameters (still supported for backward compatibility):
 param.tauR_valuesMin = 2/1000; % refractory period time (s), usually 0.0020
@@ -150,6 +158,9 @@ param.spikeWidth = bc.qm.helpers.calculateSpikeWidth(param.ephys_sample_rate, ki
 % For backwards compatibility, store the standard spike widths
 if kilosortVersion == 4
     param.standardSpikeWidth = 61; % width in samples at 30kHz
+    % Kilosort 4 removes same-cluster spikes closer than duplicate_spike_ms, so no
+    % pair can fall in that window: it has to be censored in the RPV estimate
+    param.tauC = max(param.tauC, bc.qm.helpers.kilosort4DuplicateWindow(ephysKilosortPath));
 else
     param.standardSpikeWidth = 82; % width in samples at 30kHz
 end

@@ -60,6 +60,7 @@ if load_data
         if ~param_provided
             paramTable = parquetread(fullfile(save_path, '_bc_parameters._bc_qMetrics.parquet'));
             param = table2struct(paramTable);
+            param = bc.qm.helpers.decodeVectorParams(param); % e.g. tauR_values, saved as text
         end
         param.plotGlobal = 1;
     catch

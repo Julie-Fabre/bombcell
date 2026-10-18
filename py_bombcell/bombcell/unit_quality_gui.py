@@ -582,9 +582,18 @@ class InteractiveUnitQualityGUI:
             if hasattr(self.quality_metrics, 'iloc'):
                 self.quality_metrics = self.quality_metrics.reset_index(drop=True)
 
+        # Convert inf to nan once here rather than on every redraw of the histogram panel
+        from bombcell.helper_functions import clean_inf_values
+        self.quality_metrics = clean_inf_values(self.quality_metrics)
+
         self.n_units = len(self.unique_units)
         print(f"Total units: {self.n_units}")
         self.current_unit_idx = 0
+
+        # Index spikes by cluster once, so per-unit lookups are slices instead of
+        # comparisons over every spike in the recording
+        self._build_spike_index()
+        self._unit_location_cache = None
 
         # Initialize manual classifications (separate from bombcell unit_types)
         self._initialize_manual_classifications()
@@ -597,7 +606,7 @@ class InteractiveUnitQualityGUI:
         """Initialize manual classification system - separate from bombcell classifications"""
         # Store original bombcell unit_types separately
         self.bombcell_unit_types = self.unit_types.copy() if self.unit_types is not None else None
-        
+
         # Initialize manual classifications as a separate array
         self.manual_unit_types = self._load_manual_classifications()
         
@@ -617,6 +626,22 @@ class InteractiveUnitQualityGUI:
         else:
             print("👆 Auto-advance disabled: use navigation buttons to move between units")
     
+    def _build_spike_index(self):
+        """Sort spikes by cluster so each unit's spikes are one contiguous block.
+
+        A stable sort keeps each unit's spikes in their original order, so indexing with
+        the result gives exactly what the boolean mask `spike_clusters == unit_id` gives.
+        """
+        clusters = np.asarray(self.ephys_data['spike_clusters']).ravel()
+        self._spike_order = np.argsort(clusters, kind='stable')
+        self._sorted_spike_clusters = clusters[self._spike_order]
+
+    def _unit_spike_indices(self, unit_id):
+        """Indices (in original spike order) of all spikes belonging to unit_id."""
+        lo = np.searchsorted(self._sorted_spike_clusters, unit_id, side='left')
+        hi = np.searchsorted(self._sorted_spike_clusters, unit_id, side='right')
+        return self._spike_order[lo:hi]
+
     def export_manual_classifications(self, export_path=None):
         """
         Export manual classifications for parameter optimization
@@ -774,6 +799,7 @@ class InteractiveUnitQualityGUI:
             max=self.n_units-1,
             step=1,
             description='Unit:',
+            continuous_update=False,  # redraw on release, not for every unit dragged past
             style={'description_width': 'initial'},
             layout=widgets.Layout(width='500px')
         )
@@ -1266,7 +1292,7 @@ class InteractiveUnitQualityGUI:
         unit_id = self.unique_units[unit_idx]
         
         # Get spike times for this unit
-        spike_mask = self.ephys_data['spike_clusters'] == unit_id
+        spike_mask = self._unit_spike_indices(unit_id)
         spike_times = self.ephys_data['spike_times'][spike_mask]
         
         # Get template waveform - index by unit_id since template_waveforms is indexed by unit ID
@@ -2059,7 +2085,7 @@ class InteractiveUnitQualityGUI:
         if len(spike_times) > 0:
             # Get amplitudes if available
             unit_id = unit_data['unit_id']
-            spike_mask = self.ephys_data['spike_clusters'] == unit_id
+            spike_mask = self._unit_spike_indices(unit_id)
             
             # Calculate time bins for presence ratio and firing rate
             total_duration = np.max(spike_times) - np.min(spike_times)
@@ -2605,6 +2631,64 @@ class InteractiveUnitQualityGUI:
             ax.set_ylabel('Metrics', fontsize=13, fontfamily="DejaVu Sans")
             ax.tick_params(labelsize=13)
         
+    def _get_unit_location_data(self, classification_colors):
+        """Depth, firing rate and BombCell colour of every unit (cached after first call)."""
+        if self._unit_location_cache is not None:
+            return self._unit_location_cache
+
+        positions = self.ephys_data['channel_positions']
+        sorted_spike_times = np.asarray(self.ephys_data['spike_times']).ravel()[self._spike_order]
+        type_map = {
+            0: 'noise',
+            1: 'good',
+            2: 'mua',
+            3: 'non-somatic',
+            4: 'non-somatic'
+        }
+
+        all_units = []
+        all_depths = []
+        all_firing_rates = []
+        all_colors = []
+        for i, unit_id in enumerate(self.unique_units):
+            # Get max channel from all_max_channels (indexed by unit_id, not affected by filtering)
+            if unit_id >= len(self.all_max_channels):
+                continue
+            max_ch = int(self.all_max_channels[unit_id])
+            if max_ch >= len(positions):
+                continue
+            # Use Y position as depth - deeper channels have higher index, should be at bottom
+            depth = positions[max_ch, 1]
+
+            lo = np.searchsorted(self._sorted_spike_clusters, unit_id, side='left')
+            hi = np.searchsorted(self._sorted_spike_clusters, unit_id, side='right')
+            unit_spike_times = sorted_spike_times[lo:hi]
+            if len(unit_spike_times) == 0:
+                continue
+            duration = np.max(unit_spike_times) - np.min(unit_spike_times)
+            if duration <= 0:
+                continue
+            firing_rate = len(unit_spike_times) / duration
+
+            # Get BombCell classification for dot colors
+            if self.bombcell_unit_types is not None and i < len(self.bombcell_unit_types):
+                classification = type_map.get(self.bombcell_unit_types[i], 'good')
+            else:
+                classification = 'good'  # Default
+
+            all_units.append(unit_id)
+            all_depths.append(depth)
+            all_firing_rates.append(max(firing_rate, 0.01))  # Avoid log(0)
+            all_colors.append(classification_colors.get(classification, [0, 0, 0]))
+
+        self._unit_location_cache = (
+            np.array(all_units),
+            np.array(all_depths),
+            np.array(all_firing_rates),
+            np.array(all_colors, dtype=float).reshape(-1, 3),
+        )
+        return self._unit_location_cache
+
     def plot_unit_location(self, ax, unit_data):
         """Plot all units by depth vs log firing rate, colored by classification"""
         # Define classification colors
@@ -2618,66 +2702,23 @@ class InteractiveUnitQualityGUI:
         if 'channel_positions' in self.ephys_data and hasattr(self, 'all_max_channels'):
             positions = self.ephys_data['channel_positions']
 
-            # Get all unit classifications and firing rates
-            all_units = []
-            all_depths = []
-            all_firing_rates = []
-            all_colors = []
+            # Depth, firing rate and colour of every unit don't change between units,
+            # so they are computed once and reused on every redraw
+            all_units, all_depths, all_firing_rates, all_colors = self._get_unit_location_data(classification_colors)
 
-            for i, unit_id in enumerate(self.unique_units):
-                # Get max channel from all_max_channels (indexed by unit_id, not affected by filtering)
-                if unit_id < len(self.all_max_channels):
-                    max_ch = int(self.all_max_channels[unit_id])
-                    if max_ch < len(positions):
-                        # Use Y position as depth - deeper channels have higher index, should be at bottom
-                        depth = positions[max_ch, 1]  # Keep original - deeper = lower y values
-                        
-                        # Calculate firing rate for this unit
-                        unit_spike_mask = self.ephys_data['spike_clusters'] == unit_id
-                        unit_spike_times = self.ephys_data['spike_times'][unit_spike_mask]
-                        
-                        if len(unit_spike_times) > 0:
-                            duration = np.max(unit_spike_times) - np.min(unit_spike_times)
-                            if duration > 0:
-                                firing_rate = len(unit_spike_times) / duration
-                                
-                                # Get BombCell classification for dot colors
-                                if self.bombcell_unit_types is not None and i < len(self.bombcell_unit_types):
-                                    unit_type = self.bombcell_unit_types[i]
-                                    # Map numeric codes to classification names
-                                    type_map = {
-                                        0: 'noise',
-                                        1: 'good', 
-                                        2: 'mua',
-                                        3: 'non-somatic',
-                                        4: 'non-somatic'
-                                    }
-                                    classification = type_map.get(unit_type, 'good')
-                                else:
-                                    classification = 'good'  # Default
-                                
-                                all_units.append(unit_id)
-                                all_depths.append(depth)
-                                all_firing_rates.append(max(firing_rate, 0.01))  # Avoid log(0)
-                                all_colors.append(classification_colors.get(classification, [0, 0, 0]))
-            
             if len(all_units) > 0:
-                all_depths = np.array(all_depths)
-                all_firing_rates = np.array(all_firing_rates)
                 log_firing_rates = np.log10(all_firing_rates)
-                
-                # Plot all units
-                for i, (depth, log_fr, color, unit_id) in enumerate(zip(all_depths, log_firing_rates, all_colors, all_units)):
-                    is_current = unit_id == unit_data['unit_id']
-                    
-                    if is_current:
-                        # Current unit: larger with black outline
-                        ax.scatter(log_fr, depth, c=[color], s=80, edgecolors='black', 
-                                 linewidths=2, zorder=10)
-                    else:
-                        # Other units: smaller, no outline
-                        ax.scatter(log_fr, depth, c=[color], s=30, alpha=0.7, zorder=5)
-                
+
+                # Plot all units: other units in one call, current unit on top with black outline
+                is_current = all_units == unit_data['unit_id']
+                others = ~is_current
+                if np.any(others):
+                    ax.scatter(log_firing_rates[others], all_depths[others], c=all_colors[others],
+                               s=30, alpha=0.7, zorder=5)
+                for log_fr, depth, color in zip(log_firing_rates[is_current], all_depths[is_current], all_colors[is_current]):
+                    ax.scatter(log_fr, depth, c=[color], s=80, edgecolors='black',
+                             linewidths=2, zorder=10)
+
                 ax.set_xlabel('Log₁₀ firing rate (sp/s)', fontsize=13, fontfamily="DejaVu Sans")
                 ax.set_ylabel('Depth from tip of probe (μm)', fontsize=13, fontfamily="DejaVu Sans")
                 ax.tick_params(labelsize=13)
@@ -2771,7 +2812,7 @@ class InteractiveUnitQualityGUI:
         if len(spike_times) > 0:
             # Get amplitudes if available
             unit_id = unit_data['unit_id']
-            spike_mask = self.ephys_data['spike_clusters'] == unit_id
+            spike_mask = self._unit_spike_indices(unit_id)
             
             if 'template_amplitudes' in self.ephys_data:
                 amplitudes = self.ephys_data['template_amplitudes'][spike_mask]
@@ -3405,9 +3446,7 @@ class InteractiveUnitQualityGUI:
     
     def plot_histograms_panel(self, fig, unit_data):
         """Plot histogram distributions showing where current unit sits - exact copy of plot_functions.py"""
-        # Preprocessing - handle inf values using shared utility
-        from bombcell.helper_functions import clean_inf_values
-        self.quality_metrics = clean_inf_values(self.quality_metrics)
+        # inf values were already converted to nan in __init__
 
         # Define MATLAB-style color matrices - exact copy
         red_colors = np.array([

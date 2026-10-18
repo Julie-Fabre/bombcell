@@ -11,6 +11,7 @@ qMetric = parquetread(fullfile(savePath, 'templates._bc_qMetrics.parquet'));
 fractionRPVs_allTauR = parquetread([fullfile(savePath, 'templates._bc_fractionRefractoryPeriodViolationsPerTauR.parquet')]);
 param = parquetread([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')]);
 param = table2struct(param); % param is conceptually a struct; loading via parquet returns a 1-row table
+param = bc.qm.helpers.decodeVectorParams(param); % e.g. tauR_values, saved as text
 
 % optionally, also save output as a .tsv file
 if nargin < 2

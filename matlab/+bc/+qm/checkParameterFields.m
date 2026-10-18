@@ -26,6 +26,7 @@ function param_complete = checkParameterFields(param)
 if istable(param)
     param = table2struct(param(1, :));
 end
+param = bc.qm.helpers.decodeVectorParams(param); % e.g. tauR_values, saved as text
 
 %% Default values for fields
 % duplicate spikes
@@ -56,6 +57,8 @@ defaultValues.rpvMethod = 'hill';  % new: 'hill', 'llobet', or 'ibl_sliding'
 defaultValues.tauR_values = 0.002;  % refractory period values to test (s)
 defaultValues.contaminationValues = [];  % for ibl_sliding (default 0.5-35%)
 defaultValues.confidenceThreshold = 0.9;  % for ibl_sliding
+defaultValues.tauR_reject = 0;  % for ibl_sliding: earlier versions tested every tauR > tauC
+defaultValues.keepUncertainRPVUnits = 0;  % for ibl_sliding
 
 % waveform - noise
 defaultValues.normalizeSpDecay = 0;% whether to normalize spatial decay points relative to 

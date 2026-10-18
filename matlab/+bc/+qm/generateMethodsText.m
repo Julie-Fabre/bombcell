@@ -83,6 +83,18 @@ function [methodsText, references, bibtexEntries] = generateMethodsText(param, v
         '  year = {2022}\n' ...
         '}']);
 
+    citations.ibl2022.inline = 'International Brain Laboratory, 2022';
+    citations.ibl2022.full = ['International Brain Laboratory et al. (2022). Reproducibility of ' ...
+        'in-vivo electrophysiological measurements in mice. bioRxiv. ' ...
+        'https://doi.org/10.1101/2022.05.09.491042'];
+    citations.ibl2022.bibtex = sprintf(['@article{ibl2022reproducibility,\n' ...
+        '  author = {{International Brain Laboratory} and others},\n' ...
+        '  title = {Reproducibility of in-vivo electrophysiological measurements in mice},\n' ...
+        '  journal = {bioRxiv},\n' ...
+        '  year = {2022},\n' ...
+        '  doi = {10.1101/2022.05.09.491042}\n' ...
+        '}']);
+
     citations.deligkaris2016.inline = 'Deligkaris et al., 2016';
     citations.deligkaris2016.full = ['Deligkaris, K., Bullmann, T., & Frey, U. (2016). Extracellularly ' ...
         'recorded somatic and neuritic signal shapes and classification algorithms for high-density ' ...
@@ -284,23 +296,58 @@ function [methodsText, references, bibtexEntries] = generateMethodsText(param, v
             'were met.'];
 
         % RPV
-        if getParam('hillOrLlobetMethod', 1)
-            rpvMethod = textcite('hill2011');
-        else
-            rpvMethod = textcite('llobet2022');
+        rpvMethodName = getParam('rpvMethod', '');
+        if isempty(rpvMethodName) % legacy
+            if getParam('hillOrLlobetMethod', 1)
+                rpvMethodName = 'hill';
+            else
+                rpvMethodName = 'llobet';
+            end
+        end
+        switch rpvMethodName
+            case 'llobet'
+                rpvMethod = ['the method of ' textcite('llobet2022')];
+            case 'ibl_sliding'
+                rpvMethod = ['the IBL sliding refractory period method (' textcite('ibl2022') ')'];
+            otherwise
+                rpvMethod = ['the method of ' textcite('hill2011')];
         end
         rpvText = sprintf([' The fraction of refractory period violations was estimated ' ...
-            'using the method of %s'], rpvMethod);
+            'using %s'], rpvMethod);
+        tauRValues = getParam('tauR_values', []);
+        if ~isempty(tauRValues)
+            tauRMin = min(tauRValues) * 1000;
+            tauRMax = max(tauRValues) * 1000;
+        end
         if tauRMin == tauRMax
             rpvText = [rpvText sprintf(', with a refractory period of %.1f ms and a censored period of %.1f ms', ...
                 tauRMin, tauC)];
+        elseif ~isempty(tauRValues)
+            rpvText = [rpvText sprintf([', testing refractory period values from %.1f to ' ...
+                '%.1f ms (with a censored period of %.1f ms), and selecting the ' ...
+                'optimal value per unit'], tauRMin, tauRMax, tauC)];
         else
             tauRStep = getParam('tauR_valuesStep', 0.0005) * 1000;
             rpvText = [rpvText sprintf([', testing refractory period values from %.1f to ' ...
                 '%.1f ms in steps of %.1f ms (with a censored period of %.1f ms), and ' ...
                 'selecting the optimal value per unit'], tauRMin, tauRMax, tauRStep, tauC)];
         end
+        if strcmp(rpvMethodName, 'ibl_sliding')
+            rpvText = [rpvText sprintf(['. The IBL method estimates the minimum contamination at ' ...
+                '%.0f%% confidence by sweeping across refractory periods and contamination values'], ...
+                getParam('confidenceThreshold', 0.9) * 100)];
+        end
         rpvText = [rpvText sprintf('; units exceeding %.0f%% violations were classified as MUA.', maxRPV * 100)];
+        if strcmp(rpvMethodName, 'ibl_sliding')
+            if getParam('keepUncertainRPVUnits', 0)
+                rpvText = [rpvText sprintf([' Units with too few spikes to determine, at this confidence, ' ...
+                    'whether their contamination was below or above %.0f%% were not classified as ' ...
+                    'MUA on this criterion.'], maxRPV * 100)];
+            else
+                rpvText = [rpvText sprintf([' Units with too few spikes to confirm, at this confidence, ' ...
+                    'that their contamination was below %.0f%% were also classified as MUA.'], maxRPV * 100)];
+            end
+        end
         text = [text rpvText];
 
         % Spikes missing

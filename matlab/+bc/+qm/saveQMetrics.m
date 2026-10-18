@@ -36,7 +36,7 @@ if ~istable(param)
     if ~isfield(param,'gain_to_uV') || isempty(param.gain_to_uV)
         param.gain_to_uV = 'NaN';
     end
-    paramTable = struct2table(param, 'AsArray', true);
+    paramTable = struct2table(bc.qm.helpers.encodeVectorParams(param), 'AsArray', true);
     parquetwrite([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')], paramTable)
     writetable(paramTable, fullfile(savePath, '_bc_parameters._bc_qMetrics.csv'));
 end

@@ -33,11 +33,17 @@ function [theseSpikeTimes, theseAmplis, theseSpikeTemplates, useThisTimeStart, u
 %   estimated percent spikes missing
 % useTauR: estimated refractory period for the current unit
 
-% Calculate the sum of refractory period violations across all time chunks
-sumRPV = sum(fractionRPVs, 1);
+% Calculate the sum of refractory period violations across all time chunks,
+% ignoring chunks with too few spikes (NaN). tauR values with no usable chunk
+% at all (e.g. not tested by the sliding method) stay NaN so they are never picked
+sumRPV = sum(fractionRPVs, 1, 'omitnan');
+sumRPV(all(isnan(fractionRPVs), 1)) = NaN;
 
 % Find the largest tauR value that gives the smallest contamination
 useTauR = find(sumRPV == min(sumRPV), 1, 'last');
+if isempty(useTauR)
+    useTauR = 1; % no usable contamination estimate: fall back to the first tauR value
+end
 
 % Identify time chunks that meet the criteria for low missing spikes and RPVs
 useTheseTimes_temp = find(percSpikesMissing < param.maxPercSpikesMissing & fractionRPVs(:, useTauR) < param.maxRPVviolations);

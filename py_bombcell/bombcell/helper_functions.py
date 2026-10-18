@@ -8,6 +8,7 @@ from tqdm.auto import tqdm
 
 from bombcell.extract_raw_waveforms import manage_data_compression, extract_raw_waveforms
 from bombcell.loading_utils import load_ephys_data
+from bombcell.default_parameters import effective_tauC
 
 # import matplotlib.pyplot as plt
 import bombcell.quality_metrics as qm
@@ -909,6 +910,15 @@ def get_all_quality_metrics(
             )
             quality_metrics["fractionRPVs_estimatedTauR"][unit_idx] = contamination
             quality_metrics["estimatedTauR"][unit_idx] = estimated_tauR
+            if param["rpv_method"] == "ibl_sliding":
+                quality_metrics["RPV_status"][unit_idx] = qm.sliding_rp_status(
+                    these_spike_times, use_these_times, param
+                )
+            elif not np.isnan(contamination):
+                # hill / llobet give a point estimate, with no uncertain outcome
+                quality_metrics["RPV_status"][unit_idx] = (
+                    1.0 if contamination <= param["maxRPVviolations"] else -1.0
+                )
             RPV_tauR_estimate_units_NtauR.append([unit_idx, np.array([contamination])])
         else:
             # Legacy mode: use original fraction_RP_violations
@@ -1296,6 +1306,14 @@ def run_bombcell(ks_dir, save_path, param, save_figures=False, return_figures=Fa
         units_with_spikes = np.unique(spike_clusters)
         empty_unit_idx = ~np.isin(unique_templates, units_with_spikes)
 
+    # Pairs closer than the duplicate spike window were just removed, so censor them
+    tauC = effective_tauC(param)
+    if tauC != param.get("tauC"):
+        if param.get("verbose", True):
+            print(f"Censored period tauC raised from {param.get('tauC', 0.0001) * 1000:.3g} ms "
+                  f"to the duplicate spike window ({tauC * 1000:.3g} ms)")
+        param["tauC"] = tauC
+
     # Divide recording into time chunks
     spike_times_seconds = spike_times_samples / param["ephys_sample_rate"]
     if param["computeTimeChunks"]:
@@ -1558,9 +1576,7 @@ def make_qm_table(quality_metrics, param, unit_type_string):
     )
     
     too_many_RPVs = np.full(len(unit_type_string), False, dtype=bool)
-    too_many_RPVs[is_mua_unit] = (
-        quality_metrics["fractionRPVs_estimatedTauR"][is_mua_unit] > param["maxRPVviolations"]
-    )
+    too_many_RPVs[is_mua_unit] = qm.too_many_rpvs(quality_metrics, param)[is_mua_unit]
 
     qm_table_list.extend([too_many_spikes_missing, too_low_presence_ratio, too_few_total_spikes, too_many_RPVs])
     qm_table_names.extend(["% spikes missing", "presence ratio", "# spikes", "fraction RPVs"])
