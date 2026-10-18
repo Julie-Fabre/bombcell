@@ -19,6 +19,7 @@ function [RPVrate, RPVfraction, overestimateBool, estimatedTauR] = fractionRPvio
 %   - hillOrLlobetMethod: (legacy) boolean, true=hill, false=llobet
 %   - contaminationValues: (for ibl_sliding) contamination values to test
 %   - confidenceThreshold: (for ibl_sliding) confidence threshold (default 0.9)
+%   - tauR_reject: (for ibl_sliding) refractory periods <= this (s) are not tested
 % RPV_tauR_estimate: index of tauR to use for plotting (optional)
 % ------
 % Outputs
@@ -69,6 +70,11 @@ if strcmp(rpvMethod, 'ibl_sliding')
     else
         confidenceThreshold = 0.9;
     end
+    if isfield(param, 'tauR_reject')
+        tauR_reject = param.tauR_reject;
+    else
+        tauR_reject = 0.0005;
+    end
 end
 
 % Initialize variables
@@ -97,7 +103,7 @@ for iTimeChunk = 1:length(timeChunks) - 1 % loop through each time chunk
     if strcmp(rpvMethod, 'ibl_sliding')
         % IBL sliding refractory period method
         [RPVrate(iTimeChunk, :), estimatedTauR_perChunk(iTimeChunk), RPVfraction(iTimeChunk, :), overestimateBool(iTimeChunk, :)] = ...
-            computeIBLSliding(spikeChunk, durationChunk, tauR, tauC, contaminationValues, confidenceThreshold);
+            computeIBLSliding(spikeChunk, durationChunk, tauR, tauC, contaminationValues, confidenceThreshold, tauR_reject);
     else
         % Hill or Llobet method - loop through tauR values
         for iTauR_value = 1:length(tauR)
@@ -127,13 +133,10 @@ for iTimeChunk = 1:length(timeChunks) - 1 % loop through each time chunk
                     rts = roots([k, -k, nRPVs * T]);
                     RPVrate(iTimeChunk, iTauR_value) = min(rts);
                     if ~isreal(RPVrate(iTimeChunk, iTauR_value))
-                        % Approximation when roots are complex
-                        if nRPVs < N_chunk
-                            RPVrate(iTimeChunk, iTauR_value) = nRPVs / (2 * (thisTauR - tauC) * (N_chunk - nRPVs));
-                        else
-                            RPVrate(iTimeChunk, iTauR_value) = 1;
-                            overestimateBool(iTimeChunk, iTauR_value) = 1;
-                        end
+                        % Complex roots: more violations than the model allows for
+                        % any contamination <= 0.5, so the unit is maximally contaminated
+                        RPVrate(iTimeChunk, iTauR_value) = 1;
+                        overestimateBool(iTimeChunk, iTauR_value) = 1;
                     end
                     if RPVrate(iTimeChunk, iTauR_value) > 1
                         RPVrate(iTimeChunk, iTauR_value) = 1;
@@ -240,97 +243,60 @@ end
 end
 
 
-function [contamination, estimatedTauR, RPVfraction, overestimateBool] = computeIBLSliding(spikeTimes, duration, tauR_values, tauC, contaminationValues, confidenceThreshold)
-% Compute contamination using IBL sliding refractory period method
+function [contamination, estimatedTauR, RPVfraction, overestimateBool] = computeIBLSliding(spikeTimes, duration, tauR_values, tauC, contaminationValues, confidenceThreshold, tauR_reject)
+% Compute contamination using the sliding refractory period method
+% (Roth et al., SteinmetzLab/slidingRefractory), as _compute_sliding_rp_ibl
+% in the python version.
 %
-% This method sweeps across refractory periods and contamination values to find
-% the minimum contamination with at least the specified confidence.
+% For each tested refractory period tauR and contamination level C, the
+% confidence that the true contamination is below C is
+% 1 - PoissonCDF(observed violations; expected violations), with expected
+% violations from Llobet et al. (2022) (see
+% bc.qm.helpers.slidingRPExpectedViolations). Observed violations are all
+% spike pairs (not only consecutive spikes) with tauC <= dt < tauR.
+% contamination(iTauR) is the lowest contamination reached with at least
+% confidenceThreshold confidence at that tauR (1 if none is, NaN if tauR
+% is not tested: tauR <= max(tauC, tauR_reject)). Its minimum across tauR
+% is the unit's contamination. estimatedTauR is the tauR at which that
+% minimum is confirmed with the highest confidence.
 
 nTauR = length(tauR_values);
-contamination = ones(1, nTauR);
+contamination = nan(1, nTauR);
 RPVfraction = nan(1, nTauR);
 overestimateBool = zeros(1, nTauR);
+estimatedTauR = NaN;
 
 n_spikes = length(spikeTimes);
-if n_spikes <= 1
-    contamination(:) = NaN;
-    estimatedTauR = NaN;
+[tauR_test, nViolations, effectiveDuration] = bc.qm.helpers.slidingRPViolationCounts( ...
+    spikeTimes, duration, tauR_values, tauC, tauR_reject);
+if isempty(tauR_test)
     return;
 end
+testedIdx = find(tauR_values(:)' > max(tauC, tauR_reject));
 
-% Compute ISIs
-isis = diff(spikeTimes);
+% confidence(iTauR, iCont)
+expectedViolations = bc.qm.helpers.slidingRPExpectedViolations(n_spikes, effectiveDuration, ...
+    tauR_test(:), tauC, contaminationValues(:)');
+confidence = 1 - poisscdf(repmat(nViolations(:), 1, numel(contaminationValues)), expectedViolations);
+passing = confidence >= confidenceThreshold;
 
-% Effective duration: total duration minus censored periods around each spike
-effectiveDuration = duration - 2 * n_spikes * tauC;
-if effectiveDuration <= 0
-    contamination(:) = NaN;
-    estimatedTauR = NaN;
-    return;
+for iTest = 1:numel(tauR_test)
+    firstPassing = find(passing(iTest, :), 1, 'first');
+    if isempty(firstPassing)
+        contamination(testedIdx(iTest)) = 1; % no tested contamination level is confirmed
+        overestimateBool(testedIdx(iTest)) = 1;
+    else
+        contamination(testedIdx(iTest)) = contaminationValues(firstPassing);
+    end
+    RPVfraction(testedIdx(iTest)) = nViolations(iTest) / n_spikes;
 end
 
-% Firing rate adjusted for effective duration
-firingRate = n_spikes / effectiveDuration;
-
-% Track best contamination across all tauR values
-minContamination = NaN;
-bestTauR = NaN;
-
-for iTauR = 1:nTauR
-    thisTauR = tauR_values(iTauR);
-
-    % Skip if tauR is not greater than censored period
-    if thisTauR <= tauC
-        contamination(iTauR) = NaN;
-        continue;
-    end
-
-    % Count violations: ISIs in range [tauC, tauR)
-    n_violations = sum(isis >= tauC & isis < thisTauR);
-    RPVfraction(iTauR) = n_violations / n_spikes;
-
-    % Test each contamination value (from lowest to highest)
-    foundContamination = false;
-    for iCont = 1:length(contaminationValues)
-        contVal = contaminationValues(iCont);
-
-        % Expected violations given contamination
-        % Window around each spike where violations can be detected: (tauR - tauC) on each side
-        contaminationRate = firingRate * contVal;
-        effectiveWindow = thisTauR - tauC;
-        expectedViolations = contaminationRate * effectiveWindow * 2 * n_spikes;
-
-        % Confidence score using Poisson distribution
-        if expectedViolations > 0
-            % P(X >= n_violations) where X ~ Poisson(expectedViolations)
-            confidence = 1 - poisscdf(n_violations, expectedViolations);
-        else
-            if n_violations > 0
-                confidence = 0;
-            else
-                confidence = 1;
-            end
-        end
-
-        if confidence > confidenceThreshold
-            contamination(iTauR) = contVal;
-            foundContamination = true;
-
-            % Track overall minimum
-            if isnan(minContamination) || contVal < minContamination
-                minContamination = contVal;
-                bestTauR = thisTauR;
-            end
-            break;
-        end
-    end
-
-    if ~foundContamination
-        contamination(iTauR) = 1; % Max contamination if no value found
-        overestimateBool(iTauR) = 1;
-    end
+minContIdx = find(any(passing, 1), 1, 'first');
+if isempty(minContIdx)
+    estimatedTauR = tauR_test(1); % no tauR confirmed: fall back to the shortest tested tauR
+else
+    [~, bestTest] = max(confidence(:, minContIdx));
+    estimatedTauR = tauR_test(bestTest);
 end
-
-estimatedTauR = bestTauR;
 
 end

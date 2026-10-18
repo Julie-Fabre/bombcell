@@ -169,6 +169,7 @@ function [param, qMetric, templateWaveforms, unitType, uniqueTemplates] = loadDa
         if exist(paramPath, 'file')
             paramTable = parquetread(paramPath);
             param = table2struct(paramTable);
+            param = bc.qm.helpers.decodeVectorParams(param); % e.g. tauR_values, saved as text
         else
             error('Could not find parameters at %s', paramPath);
         end

@@ -288,43 +288,162 @@ print((labels_direct["bombcell_label"] == labels["bombcell_label"]).all(), "- sa
 # labels_direct = bombcell_label_units(external_metrics=my_metrics, thresholds=thresholds)
 # ```
 #
-# Because it computes nothing, valid-periods-aware labels need the metrics prepared first - see
-# below.
+# Because it computes nothing, labels restricted to time chunks need the metrics prepared first -
+# see the time chunks section below.
 
 # %% [markdown]
-# ## Valid time periods
+# ## Time chunks (valid time periods)
 #
-# Valid periods are the stretches of a recording where a unit has stable amplitude and few
-# refractory violations. Computing metrics on those stretches only gives a fairer picture of units
-# that drift or drop out partway through.
+# BombCell can split the recording into time chunks and compute a unit's metrics only on the
+# chunks where it is well isolated, which gives a fairer picture of units that drift or drop out
+# partway through. In SpikeInterface these are the **valid periods** of the `valid_unit_periods`
+# extension, and turning them on is a single flag: `compute_valid_periods`.
 #
-# **Option A - let the pipeline do it:**
+# A chunk is kept when both its refractory-period violations and its fraction of missing spikes
+# are under threshold. Those limits are taken from your BombCell thresholds (the RPV metric and
+# `amplitude_cutoff` under `thresholds["mua"]`), so the chunks are selected with the same criteria
+# the labels use.
 #
-# ```python
-# qc_params["compute_valid_periods"] = True
-# labels, metrics, figures = bombcell.run_bombcell_qc(analyzer, params=qc_params)
-# ```
+# Every unit in the simulated recording is equally clean from start to finish, so to show what
+# time chunks do we spoil one good unit for the first minute only: we add a second spike 0.7 ms
+# after each of its spikes, which puts them inside the refractory period. That mimics a unit that
+# is contaminated by a neighbour for part of the session.
+
+# %%
+import numpy as np
+
+contaminated_unit = good_units[0]
+fs = sorting.sampling_frequency
+
+spike_trains = {unit_id: sorting.get_unit_spike_train(unit_id) for unit_id in sorting.unit_ids}
+spike_train = spike_trains[contaminated_unit]
+first_minute = spike_train[spike_train < 60 * fs]
+doublets = first_minute + int(0.0007 * fs)  # 0.7 ms later: inside the refractory period
+spike_trains[contaminated_unit] = np.sort(np.concatenate([spike_train, doublets]))
+sorting_contaminated = si.NumpySorting.from_unit_dict(spike_trains, fs)
+
+print(f"unit {contaminated_unit}: added {doublets.size} refractory violations in the first 60 s")
+
+analyzer_contaminated, _, _ = bombcell.preprocess_for_bombcell(
+    recording,
+    sorting_contaminated,
+    analyzer_folder=Path("bombcell_si_demo_output_time_chunks") / "analyzer.zarr",
+    params=preprocessing_params,
+    n_jobs=1,
+    progress_bar=False,
+)
+
+# %% [markdown]
+# Now run the pipeline twice on it: once on the whole recording, once with time chunks.
 #
-# **Option B - compute them yourself first** (better when you want to tune the criteria, and makes
-# "what was the fp threshold?" unambiguous):
+# The chunk length defaults to 360 s, BombCell's `deltaTimeChunk`. This simulated recording is only
+# 300 s long, so we use 60 s chunks here. Anything in `valid_periods_params` is passed straight to
+# the extension and overrides the defaults.
+
+# %%
+qc_params_chunks = dict(qc_params)
+qc_params_chunks["compute_distance_metrics"] = False  # not needed here, and keeps this quick
+qc_params_chunks["plot_histograms"] = False
+qc_params_chunks["plot_waveforms"] = False
+qc_params_chunks["plot_upset"] = False
+
+# Whole recording
+qc_params_chunks["compute_valid_periods"] = False
+labels_whole, metrics_whole, _ = bombcell.run_bombcell_qc(
+    sorting_analyzer=analyzer_contaminated,
+    output_folder=None,
+    params=qc_params_chunks,
+    thresholds=thresholds,
+    n_jobs=1,
+    progress_bar=False,
+)
+
+# Time chunks
+qc_params_chunks["compute_valid_periods"] = True
+qc_params_chunks["valid_periods_params"] = {
+    "period_duration_s_absolute": 60,      # chunk length (s); default 360
+    "minimum_valid_period_duration": 120,  # a unit needs at least this much good time (s)
+}
+output_folder_chunks = Path("bombcell_si_demo_output_time_chunks")
+labels_chunks, metrics_chunks, _ = bombcell.run_bombcell_qc(
+    sorting_analyzer=analyzer_contaminated,
+    output_folder=output_folder_chunks,
+    params=qc_params_chunks,
+    thresholds=thresholds,
+    n_jobs=1,
+    progress_bar=False,
+)
+
+vp_params = analyzer_contaminated.get_extension("valid_unit_periods").params
+print("chunk length (s):", vp_params["period_duration_s_absolute"])
+print("max RPV fraction (fp_threshold):", vp_params["fp_threshold"])
+print("max fraction of spikes missing (fn_threshold):", vp_params["fn_threshold"])
+
+# %% [markdown]
+# Every chunk of every unit, with the rates it was judged on and whether it was kept. The same
+# table is saved as `valid_periods.csv` next to the other results. Here are the contaminated
+# unit's chunks: the contaminated first minute is dropped, and so is the next chunk, whose
+# amplitudes are judged together with its neighbours.
+
+# %%
+import pandas as pd
+
+chunks = pd.read_csv(output_folder_chunks / "valid_periods.csv")
+chunks[chunks["unit_id"].astype(str) == str(contaminated_unit)]
+
+# %%
+kept_per_unit = chunks.groupby("unit_id")["kept"].agg(["sum", "count"])
+kept_per_unit.columns = ["chunks_kept", "chunks_total"]
+kept_per_unit.T
+
+# %% [markdown]
+# The kept periods drawn over the spike amplitudes, for the contaminated unit and a clean one:
+
+# %%
+clean_unit = good_units[1]
+_ = sw.plot_valid_unit_periods(analyzer_contaminated, unit_ids=[contaminated_unit, clean_unit])
+
+# %% [markdown]
+# On the whole recording the contaminated unit is labelled `mua`. Its `sliding_rp_violation` is
+# NaN: the contamination is too high to estimate, which counts as failing the threshold. With
+# time chunks its metrics come only from the chunks that were kept, and it is `good` again. The
+# clean units are unaffected.
+
+# %%
+rpv_metric = next(m for m in ("sliding_rp_violation", "rp_contamination") if m in thresholds["mua"])
+comparison = pd.DataFrame(
+    {
+        f"{rpv_metric} (whole)": metrics_whole[rpv_metric],
+        f"{rpv_metric} (chunks)": metrics_chunks[rpv_metric],
+        "amplitude_cutoff (whole)": metrics_whole["amplitude_cutoff"],
+        "amplitude_cutoff (chunks)": metrics_chunks["amplitude_cutoff"],
+        "label (whole)": labels_whole["bombcell_label"],
+        "label (chunks)": labels_chunks["bombcell_label"],
+    }
+)
+print(pd.crosstab(comparison["label (whole)"], comparison["label (chunks)"]))
+comparison[comparison["label (whole)"] != comparison["label (chunks)"]]
+
+# %% [markdown]
+# **Tuning the chunks yourself.** To choose the criteria directly instead of deriving them from
+# your BombCell thresholds, compute the extension before running the pipeline. The pipeline then
+# reuses it as-is, and warns if its `fp_threshold`/`fn_threshold` disagree with your BombCell
+# thresholds:
 #
 # ```python
 # analyzer.compute("amplitude_scalings")
 # analyzer.compute(
 #     "valid_unit_periods",
+#     period_mode="absolute",
+#     period_duration_s_absolute=360,
 #     fp_threshold=0.1,   # match your bombcell RPV threshold
 #     fn_threshold=0.1,   # match your bombcell amplitude_cutoff threshold
-#     period_duration_s_absolute=30.0,
-#     period_target_num_spikes=300,
-#     period_mode="absolute",
 #     minimum_valid_period_duration=180,
 # )
 # qc_params["compute_valid_periods"] = True
 # ```
 #
-# The pipeline reuses an existing `valid_unit_periods` extension as-is, and warns if its fp/fn
-# thresholds disagree with your BombCell thresholds. Afterwards the periods live on the analyzer:
-# `analyzer.get_extension("valid_unit_periods").get_data()`.
+# The periods themselves live on the analyzer: `analyzer.get_extension("valid_unit_periods").get_data()`.
 
 # %% [markdown]
 # ## Tuning by recording type

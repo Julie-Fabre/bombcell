@@ -65,6 +65,10 @@ def _require_spikeinterface_full():
 # determines which metric is computed AND thresholded. No other knob selects it.
 _RPV_METRICS = ("sliding_rp_violation", "rp_contamination")
 
+# The SpikeInterface quality metric that produces each RPV column: rp_contamination is one of the
+# outputs of the rp_violation metric, not a metric name itself.
+_RPV_METRIC_SOURCE = {"sliding_rp_violation": "sliding_rp_violation", "rp_contamination": "rp_violation"}
+
 # Length of the time chunks valid periods are built from. SpikeInterface defaults to 30 s;
 # this is BombCell's own deltaTimeChunk, so the pipeline behaves like BombCell out of the box.
 _DEFAULT_TIME_CHUNK_S = 360
@@ -78,6 +82,7 @@ def _valid_periods_table(sorting_analyzer):
     one row per unit and chunk, with the false-positive rate (refractory-period violations),
     the false-negative rate (missing spikes), and whether the chunk was kept.
     """
+    import numpy as np
     import pandas as pd
 
     extension = sorting_analyzer.get_extension("valid_unit_periods")
@@ -90,9 +95,20 @@ def _valid_periods_table(sorting_analyzer):
     sampling_frequency = sorting_analyzer.sampling_frequency
     unit_ids = sorting_analyzer.unit_ids
 
-    # The stored valid periods are merged spans, so they cannot be matched back to individual
-    # chunks. Re-apply the criterion the extension used instead.
-    kept = (fps < extension.params["fp_threshold"]) & (fns < extension.params["fn_threshold"])
+    # A chunk counts as kept when it lies inside one of the unit's final valid periods. Checking
+    # the fp/fn thresholds alone is not enough: passing chunks are merged into periods, and periods
+    # shorter than minimum_valid_period_duration are then dropped along with their chunks.
+    valid_periods = extension.data["valid_unit_periods"]
+    kept = np.zeros(len(all_periods), dtype=bool)
+    for i, chunk in enumerate(all_periods):
+        same_unit = (valid_periods["unit_index"] == chunk["unit_index"]) & (
+            valid_periods["segment_index"] == chunk["segment_index"]
+        )
+        kept[i] = np.any(
+            same_unit
+            & (valid_periods["start_sample_index"] <= chunk["start_sample_index"])
+            & (valid_periods["end_sample_index"] >= chunk["end_sample_index"])
+        )
 
     return pd.DataFrame(
         {
@@ -190,6 +206,69 @@ def _warn_if_valid_periods_mismatch(sorting_analyzer, thresholds: dict) -> None:
             "a different missing-spikes criterion than bombcell will use for labeling. "
             "Recompute valid_unit_periods if you want them to line up."
         )
+
+
+def _with_defaults(params: dict, defaults: dict, extra_keys: tuple = ()) -> dict:
+    """Fill in whatever ``params`` leaves out from ``defaults``, warning about unknown keys.
+
+    Lets a caller (or a JSON file) set only the options they care about, and catches typos
+    that would otherwise be silently ignored.
+    """
+    unknown = set(params) - set(defaults) - set(extra_keys)
+    if unknown:
+        warnings.warn(f"Ignoring unknown parameters: {sorted(unknown)}. Valid ones are: {sorted(defaults)}.")
+    return {**defaults, **params}
+
+
+def _quality_metrics_are_stale(existing_qm, metric_names: list, qm_params: dict, use_valid_periods: bool) -> bool:
+    """Whether an existing quality_metrics extension no longer matches what this run asks for.
+
+    It is stale if it was computed with the other valid-periods setting, lacks one of the
+    requested metrics (e.g. after switching the RPV metric or turning on amplitude_cutoff), or
+    used different parameters for a requested metric.
+    """
+    existing = existing_qm.params
+    if existing.get("use_valid_periods", False) != use_valid_periods:
+        return True
+    if not set(metric_names) <= set(existing.get("metric_names") or []):
+        return True
+    existing_metric_params = existing.get("metric_params") or {}
+    for metric, metric_params in qm_params.items():
+        if metric not in metric_names:
+            continue
+        for key, value in metric_params.items():
+            if existing_metric_params.get(metric, {}).get(key) != value:
+                return True
+    return False
+
+
+def _check_existing_analyzer(analyzer_folder: Path, sorting, params: dict, params_file: Path) -> None:
+    """Raise if the analyzer saved in ``analyzer_folder`` was not built from ``sorting`` and ``params``."""
+    import json
+
+    import numpy as np
+
+    si = _require_spikeinterface_full()
+    how_to_fix = "Pass overwrite=True to rebuild it, or use a different analyzer_folder."
+
+    saved_sorting = si.load_sorting_analyzer(analyzer_folder, load_extensions=False).sorting
+    same_units = np.array_equal(np.asarray(saved_sorting.unit_ids), np.asarray(sorting.unit_ids))
+    if not same_units or saved_sorting.count_num_spikes_per_unit() != sorting.count_num_spikes_per_unit():
+        raise ValueError(
+            f"The analyzer in {analyzer_folder} was built from a different sorting "
+            f"({saved_sorting.unit_ids.size} units there, {sorting.unit_ids.size} passed). {how_to_fix}"
+        )
+
+    if params_file.exists():
+        with open(params_file) as f:
+            saved_params = json.load(f)
+        # JSON turns tuples into lists, so compare in that form.
+        changed = sorted(k for k in params if json.loads(json.dumps(params[k])) != saved_params.get(k))
+        if changed:
+            raise ValueError(
+                f"The analyzer in {analyzer_folder} was built with different preprocessing parameters "
+                f"({', '.join(changed)}). {how_to_fix}"
+            )
 
 
 def get_default_preprocessing_params():
@@ -352,6 +431,7 @@ def preprocess_for_bombcell(
     analyzer_folder: str | Path,
     params: dict | None = None,
     rerun_extensions: bool = False,
+    overwrite: bool = False,
     n_jobs: int = -1,
     progress_bar: bool = True,
 ):
@@ -372,13 +452,18 @@ def preprocess_for_bombcell(
         any other sorting loader.
     analyzer_folder : str or Path
         Path to save the SortingAnalyzer. Will be created in zarr format.
-        If folder exists, loads existing analyzer instead of creating new one.
+        If folder exists, loads existing analyzer instead of creating new one. It
+        must have been built from the same sorting and preprocessing parameters,
+        otherwise a ValueError is raised: pass ``overwrite=True`` or use another folder.
+        The preprocessing parameters are saved next to it, as
+        ``<analyzer name>_preprocessing_params.json``.
     params : dict or None, default: None
         Preprocessing parameters from get_default_preprocessing_params().
-        If None, uses all default values.
+        If None, uses all default values. Keys left out take their default value.
     rerun_extensions : bool, default: False
         If True, recompute all extensions even if they already exist.
-        Useful after changing parameters.
+    overwrite : bool, default: False
+        If True, delete an existing analyzer folder (and saved motion) and rebuild it.
     n_jobs : int, default: -1
         Number of parallel jobs for computation. -1 uses all available CPUs.
     progress_bar : bool, default: True
@@ -421,11 +506,26 @@ def preprocess_for_bombcell(
     """
     si = _require_spikeinterface_full()
 
-    if params is None:
-        params = get_default_preprocessing_params()
+    import json
+    import shutil
+
+    params = _with_defaults(params or {}, get_default_preprocessing_params())
 
     analyzer_folder = Path(analyzer_folder)
+    params_file = analyzer_folder.parent / f"{analyzer_folder.stem}_preprocessing_params.json"
+    motion_folder = analyzer_folder.parent / "motion"
     job_kwargs = dict(n_jobs=n_jobs, chunk_duration="1s", progress_bar=progress_bar)
+
+    if overwrite:
+        for path in (analyzer_folder, motion_folder):
+            if path.exists():
+                shutil.rmtree(path)
+        params_file.unlink(missing_ok=True)
+
+    # An existing analyzer is only reused if it was built from this sorting with these parameters;
+    # otherwise the caller would silently get results for different data.
+    if analyzer_folder.exists():
+        _check_existing_analyzer(analyzer_folder, sorting, params, params_file)
 
     # Preprocess
     rec = si.highpass_filter(recording, freq_min=params["freq_min"])
@@ -457,12 +557,23 @@ def preprocess_for_bombcell(
     # it is slow, and it only makes sense before sorting. If the sorting passed in was produced
     # from an uncorrected recording, correcting here would misalign it - see the docstring.
     if params["apply_motion_correction"]:
-        rec = si.correct_motion(
-            rec,
-            preset=params["motion_preset"],
-            folder=(Path(analyzer_folder).parent / "motion") if params["save_motion_info"] else None,
-            **job_kwargs,
-        )
+        if params["save_motion_info"] and (motion_folder / "motion").is_dir():
+            # Motion saved by an earlier call: reuse it rather than re-estimating (slow), and
+            # rather than failing because SpikeInterface will not write into an existing folder.
+            from spikeinterface.sortingcomponents.motion import interpolate_motion
+
+            motion = si.load_motion_info(motion_folder)["motion"]
+            interpolate_kwargs = si.get_motion_parameters_preset(params["motion_preset"])["interpolate_motion_kwargs"]
+            if rec.get_dtype().kind != "f":
+                rec = rec.astype("float32")
+            rec = interpolate_motion(rec, motion, **interpolate_kwargs)
+        else:
+            rec = si.correct_motion(
+                rec,
+                preset=params["motion_preset"],
+                folder=motion_folder if params["save_motion_info"] else None,
+                **job_kwargs,
+            )
 
     rec_preprocessed = rec
 
@@ -480,6 +591,8 @@ def preprocess_for_bombcell(
             folder=analyzer_folder,
             return_in_uV=params["return_in_uV"],
         )
+        with open(params_file, "w") as f:
+            json.dump(params, f, indent=2)
 
     # Compute extensions
     def _compute(name, **kwargs):
@@ -514,11 +627,13 @@ def get_default_qc_params():
 
         **Quality Metrics Selection**
 
-        compute_amplitude_cutoff : bool, default: False
-            Whether to compute amplitude_cutoff metric (estimated percentage of
-            missing spikes). Requires spike_amplitudes extension which is slow
-            to compute for large recordings. When enabled, spike_amplitudes will
-            be computed automatically if not already present.
+        compute_amplitude_cutoff : bool, default: True
+            Whether to compute amplitude_cutoff metric (estimated fraction of
+            missing spikes), BombCell's percentage of spikes missing. On by default,
+            as in BombCell: the default thresholds include it, and it sets the
+            missing-spikes limit used to select valid periods. Requires the
+            amplitude_scalings extension, computed automatically if not present,
+            which can be slow on large recordings.
 
         compute_distance_metrics : bool, default: False
             Whether to compute isolation_distance and l_ratio metrics.
@@ -555,9 +670,9 @@ def get_default_qc_params():
             quality metrics only on those periods. Useful for recordings
             with unstable periods. Requires amplitude_scalings extension.
             If the ``valid_unit_periods`` extension is already present on the
-            analyzer, it is reused as-is (no recompute); if its ``fp_threshold``
-            / ``fn_threshold`` differ from the bombcell RPV / amplitude_cutoff
-            thresholds, a warning is emitted.
+            analyzer, it is reused, unless ``valid_periods_params`` asks for different
+            parameters; if its ``fp_threshold`` / ``fn_threshold`` differ from the
+            bombcell RPV / amplitude_cutoff thresholds, a warning is emitted.
 
             This is the SpikeInterface equivalent of BombCell's time chunks: the
             recording is split into chunks and only those where the unit looks
@@ -572,8 +687,8 @@ def get_default_qc_params():
             Parameters forwarded to the ``valid_unit_periods`` extension, overriding
             the ones derived above. For example
             ``{"period_duration_s_absolute": 120, "minimum_valid_period_duration": 60}``.
-            Only used when the extension is computed here; an extension already on
-            the analyzer is reused untouched.
+            An extension already on the analyzer is recomputed if any of these differ
+            from the parameters it was computed with.
 
         **Presence Ratio Parameters**
 
@@ -624,7 +739,7 @@ def get_default_qc_params():
     """
     return {
         # Which metrics to compute
-        "compute_amplitude_cutoff": False,  # slow - requires spike_amplitudes
+        "compute_amplitude_cutoff": True,  # BombCell's % spikes missing; needs amplitude_scalings
         "compute_distance_metrics": False,
         "compute_drift": True,
         # BombCell labeling options
@@ -672,7 +787,8 @@ def run_bombcell_qc(
         Created if it doesn't exist.
     params : dict, str, Path, or None, default: None
         QC parameters from get_default_qc_params(), or a path to a JSON file
-        containing such a dict. If None, uses defaults.
+        containing such a dict. If None, uses defaults. Keys left out take their
+        default value, so ``{"compute_valid_periods": True}`` is enough.
 
         To override the default metric list built from the compute_* flags, set
         params["metric_names"] to an explicit list of metric names. To override
@@ -697,7 +813,9 @@ def run_bombcell_qc(
         both which RPV metric is computed AND the threshold applied to it.
 
     rerun_quality_metrics : bool, default: False
-        Force recomputation of quality metrics even if they exist.
+        Force recomputation of quality metrics even if they exist. Existing ones are always
+        recomputed when they don't match this run: a requested metric is missing, a metric
+        parameter changed, ``compute_valid_periods`` changed, or the valid periods were recomputed.
     rerun_pca : bool, default: False
         Force recomputation of PCA (only relevant if compute_distance_metrics=True).
     rerun_amplitude_scalings : bool, default: False
@@ -740,10 +858,10 @@ def run_bombcell_qc(
     When ``params["compute_valid_periods"]=True``, the valid time periods per unit
     are stored by the ``valid_unit_periods`` extension on the analyzer itself.
     Access them via ``sorting_analyzer.get_extension("valid_unit_periods").get_data()``.
-    If you want to customize the ``valid_unit_periods`` parameters (``fp_threshold``,
-    ``fn_threshold``, ``period_mode``, etc.), compute the extension upstream and
-    the pipeline will reuse it. A warning is raised if its fp/fn differ from the
-    bombcell RPV / amplitude_cutoff thresholds.
+    To customize the ``valid_unit_periods`` parameters (``fp_threshold``,
+    ``fn_threshold``, ``period_mode``, etc.), pass them in ``params["valid_periods_params"]``,
+    or compute the extension upstream and the pipeline will reuse it. A warning is raised
+    if its fp/fn differ from the bombcell RPV / amplitude_cutoff thresholds.
 
     Examples
     --------
@@ -782,6 +900,7 @@ def run_bombcell_qc(
     elif isinstance(params, (str, Path)):
         with open(params, "r") as f:
             params = json.load(f)
+    params = _with_defaults(params, get_default_qc_params(), extra_keys=("metric_names", "metric_params"))
 
     # Resolve thresholds (dict, JSON path, or None)
     if thresholds is None:
@@ -818,7 +937,7 @@ def run_bombcell_qc(
         if params["compute_amplitude_cutoff"]:
             metric_names.append("amplitude_cutoff")
 
-        metric_names.append(rpv_metric)
+        metric_names.append(_RPV_METRIC_SOURCE[rpv_metric])
 
         if params["compute_drift"]:
             metric_names.append("drift")
@@ -831,9 +950,11 @@ def run_bombcell_qc(
     # Ensure prerequisite extensions are computed for whichever metrics are requested
     # amplitude_cutoff uses amplitude_scalings (not spike_amplitudes) in this pipeline
     needs_amplitude_scalings = "amplitude_cutoff" in metric_names or compute_valid_periods
+    amplitude_scalings_recomputed = False
     if needs_amplitude_scalings:
         if rerun_amplitude_scalings or not sorting_analyzer.has_extension("amplitude_scalings"):
             sorting_analyzer.compute("amplitude_scalings", **job_kwargs)
+            amplitude_scalings_recomputed = True
 
     if "mahalanobis" in metric_names:
         if not sorting_analyzer.has_extension("principal_components") or rerun_pca:
@@ -867,23 +988,47 @@ def run_bombcell_qc(
             qm_params[metric] = mp
 
     # Valid unit periods (pipeline-level, since it affects which QMs bombcell sees).
-    # - If the extension already exists, reuse it as-is, but warn if its fp/fn thresholds
-    #   don't line up with the bombcell RPV / amplitude_cutoff thresholds.
-    # - If it doesn't exist, compute it using defaults (users who want custom fp/fn
-    #   or period params should compute it upstream themselves).
+    # - If the extension doesn't exist, compute it from the bombcell thresholds and
+    #   params["valid_periods_params"].
+    # - If it exists, reuse it (it may have been computed upstream with custom parameters), but warn
+    #   if its fp/fn thresholds don't line up with the bombcell RPV / amplitude_cutoff thresholds.
+    #   It is recomputed when params["valid_periods_params"] asks for something different, or when
+    #   the amplitude_scalings it was computed from were just recomputed.
+    valid_periods_recomputed = False
     if compute_valid_periods:
-        if sorting_analyzer.has_extension("valid_unit_periods"):
-            _warn_if_valid_periods_mismatch(sorting_analyzer, thresholds)
-        else:
+        existing_vp = sorting_analyzer.get_extension("valid_unit_periods")
+        requested_vp = params.get("valid_periods_params") or {}
+        recompute_vp = (
+            existing_vp is None
+            or amplitude_scalings_recomputed
+            or any(existing_vp.params.get(key) != value for key, value in requested_vp.items())
+        )
+        if recompute_vp:
             sorting_analyzer.compute("valid_unit_periods", **_valid_periods_params(thresholds, params), **job_kwargs)
+            valid_periods_recomputed = True
+        else:
+            _warn_if_valid_periods_mismatch(sorting_analyzer, thresholds)
 
-    # Compute quality metrics
-    if not sorting_analyzer.has_extension("quality_metrics") or rerun_quality_metrics:
+    # Compute quality metrics. Existing ones are reused only if they match this run: same metrics,
+    # same metric parameters, same valid-periods setting, and computed on the current valid periods.
+    existing_qm = sorting_analyzer.get_extension("quality_metrics")
+    qm_periods_mismatch = (
+        existing_qm is not None and existing_qm.params.get("use_valid_periods", False) != compute_valid_periods
+    )
+    if (
+        existing_qm is None
+        or rerun_quality_metrics
+        or (compute_valid_periods and valid_periods_recomputed)
+        or _quality_metrics_are_stale(existing_qm, metric_names, qm_params, compute_valid_periods)
+    ):
         sorting_analyzer.compute(
             "quality_metrics",
             metric_names=metric_names,
             metric_params=qm_params,
             use_valid_periods=compute_valid_periods,
+            # When switching valid periods on or off, drop metrics left over from the other setting
+            # so the labels never mix whole-recording and valid-period metrics.
+            delete_existing_metrics=qm_periods_mismatch,
             **job_kwargs,
         )
 

@@ -10,8 +10,7 @@ from . import (
     classification,
     manual_analysis,
     unit_quality_gui,
-    methods_text,
-    spikeinterface_pipeline
+    methods_text
 )
 
 from .default_parameters import *

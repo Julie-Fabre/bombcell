@@ -216,6 +216,80 @@ def test_compute_valid_periods(analyzer_factory):
     assert qm_params["periods"] is not None
 
 
+def test_turning_on_valid_periods_recomputes_existing_metrics(analyzer_factory):
+    """A second run with valid periods on must not reuse the whole-recording metrics of the first."""
+    a = analyzer_factory()
+    params = bombcell.get_default_qc_params()
+    bombcell.run_bombcell_qc(a, output_folder=None, params=params, n_jobs=1, progress_bar=False)
+    assert a.get_extension("quality_metrics").params["use_valid_periods"] is False
+
+    params["compute_valid_periods"] = True
+    params["valid_periods_params"] = {"period_duration_s_absolute": 120}
+    bombcell.run_bombcell_qc(a, output_folder=None, params=params, n_jobs=1, progress_bar=False)
+
+    qm_params = a.get_extension("quality_metrics").params
+    assert qm_params["use_valid_periods"] is True
+    assert qm_params["periods"] is not None
+
+
+def test_switching_rpv_metric_recomputes_existing_metrics(analyzer_factory):
+    """Changing which RPV metric thresholds["mua"] selects must compute that metric."""
+    a = analyzer_factory()
+    params = bombcell.get_default_qc_params()
+    bombcell.run_bombcell_qc(a, output_folder=None, params=params, n_jobs=1, progress_bar=False)
+
+    thresholds = sc.bombcell_get_default_thresholds()
+    thresholds["mua"]["rp_contamination"] = thresholds["mua"].pop("sliding_rp_violation")
+    _, metrics, _ = bombcell.run_bombcell_qc(
+        a, output_folder=None, params=params, thresholds=thresholds, n_jobs=1, progress_bar=False
+    )
+    assert "rp_contamination" in metrics.columns
+
+
+def test_turning_on_a_metric_recomputes_existing_metrics(analyzer_factory):
+    """Turning on amplitude_cutoff after a run without it must compute it."""
+    a = analyzer_factory()
+    params = bombcell.get_default_qc_params()
+    params["compute_amplitude_cutoff"] = False
+    bombcell.run_bombcell_qc(a, output_folder=None, params=params, n_jobs=1, progress_bar=False)
+    assert "amplitude_cutoff" not in a.get_metrics_extension_data().columns
+
+    params["compute_amplitude_cutoff"] = True
+    _, metrics, _ = bombcell.run_bombcell_qc(a, output_folder=None, params=params, n_jobs=1, progress_bar=False)
+    assert "amplitude_cutoff" in metrics.columns
+
+
+def test_changed_metric_params_recompute_existing_metrics(analyzer_factory):
+    """A changed metric parameter must not be ignored because metrics already exist."""
+    a = analyzer_factory()
+    params = bombcell.get_default_qc_params()
+    bombcell.run_bombcell_qc(a, output_folder=None, params=params, n_jobs=1, progress_bar=False)
+
+    params["presence_ratio_bin_duration_s"] = 10
+    bombcell.run_bombcell_qc(a, output_folder=None, params=params, n_jobs=1, progress_bar=False)
+    used = a.get_extension("quality_metrics").params["metric_params"]["presence_ratio"]
+    assert used["bin_duration_s"] == 10
+
+
+def test_partial_params_take_defaults(analyzer_factory):
+    """Only the options that differ from the defaults need to be given, and typos are flagged."""
+    a = analyzer_factory()
+    labels, _, _ = bombcell.run_bombcell_qc(
+        a, output_folder=None, params={"plot_upset": False}, n_jobs=1, progress_bar=False
+    )
+    assert set(labels["bombcell_label"]).issubset(VALID_LABELS)
+
+    with pytest.warns(UserWarning, match="compute_valid_period"):
+        bombcell.run_bombcell_qc(
+            a, output_folder=None, params={"compute_valid_period": True}, n_jobs=1, progress_bar=False
+        )
+
+
+def test_amplitude_cutoff_is_on_by_default():
+    """The default thresholds include amplitude_cutoff, so it must be computed by default."""
+    assert bombcell.get_default_qc_params()["compute_amplitude_cutoff"] is True
+
+
 def test_valid_periods_are_off_by_default(analyzer, qc_result):
     """The default run must not silently restrict metrics to valid periods."""
     qm_params = analyzer.get_extension("quality_metrics").params
@@ -252,11 +326,44 @@ def test_valid_periods_csv_is_saved(analyzer_factory, tmp_path):
     assert set(table["unit_id"].astype(str)) == {str(uid) for uid in a.unit_ids}
     assert (table["end_s"] > table["start_s"]).all()
 
+    # A kept chunk must pass both thresholds (the reverse need not hold: a passing chunk is still
+    # dropped if its period ends up shorter than minimum_valid_period_duration).
     vp_params = a.get_extension("valid_unit_periods").params
-    expected_kept = (table["fraction_rpv"] < vp_params["fp_threshold"]) & (
+    passes = (table["fraction_rpv"] < vp_params["fp_threshold"]) & (
         table["fraction_spikes_missing"] < vp_params["fn_threshold"]
     )
-    assert (table["kept"] == expected_kept).all()
+    assert (passes[table["kept"]]).all()
+
+
+def test_valid_periods_csv_respects_minimum_duration(analyzer_factory, tmp_path):
+    """Chunks that pass fp/fn but belong to a too-short period are not reported as kept."""
+    import pandas as pd
+
+    a = analyzer_factory()
+    params = bombcell.get_default_qc_params()
+    params["compute_valid_periods"] = True
+    # Longer than the whole recording, so no period survives, whatever the chunks' rates.
+    params["valid_periods_params"] = {"period_duration_s_absolute": 60, "minimum_valid_period_duration": 600}
+
+    bombcell.run_bombcell_qc(a, output_folder=tmp_path, params=params, n_jobs=1, progress_bar=False)
+
+    table = pd.read_csv(tmp_path / "valid_periods.csv")
+    assert len(a.get_extension("valid_unit_periods").data["valid_unit_periods"]) == 0
+    assert not table["kept"].any()
+
+
+def test_changed_valid_periods_params_recompute_the_extension(analyzer_factory):
+    """A second run asking for a different chunk length must not reuse the first run's periods."""
+    a = analyzer_factory()
+    params = bombcell.get_default_qc_params()
+    params["compute_valid_periods"] = True
+    params["valid_periods_params"] = {"period_duration_s_absolute": 60, "minimum_valid_period_duration": 60}
+    bombcell.run_bombcell_qc(a, output_folder=None, params=params, n_jobs=1, progress_bar=False)
+
+    params["valid_periods_params"] = {"period_duration_s_absolute": 100, "minimum_valid_period_duration": 100}
+    bombcell.run_bombcell_qc(a, output_folder=None, params=params, n_jobs=1, progress_bar=False)
+
+    assert a.get_extension("valid_unit_periods").params["period_duration_s_absolute"] == 100
 
 
 def test_no_valid_periods_csv_when_disabled(qc_result):
@@ -332,6 +439,67 @@ def test_motion_correction_is_off_by_default_and_wired_when_on(tmp_path, monkeyp
     assert len(calls) == 1
     assert calls[0]["preset"] == "kilosort_like"
     assert calls[0]["folder"] is not None  # save_motion_info defaults True
+
+
+def test_saved_motion_is_reused(tmp_path, monkeypatch):
+    """A second call reuses the saved motion instead of re-estimating it.
+
+    SpikeInterface refuses to write motion into an existing folder, so re-estimating would fail.
+    """
+    import spikeinterface.full as si_full
+    import spikeinterface.sortingcomponents.motion as sc_motion
+
+    calls = {"estimate": 0, "interpolate": 0}
+
+    def fake_correct_motion(recording, preset=None, folder=None, **kwargs):
+        calls["estimate"] += 1
+        (folder / "motion").mkdir(parents=True)
+        return recording
+
+    def fake_interpolate_motion(recording, motion, **kwargs):
+        calls["interpolate"] += 1
+        assert motion == "saved motion"
+        return recording
+
+    monkeypatch.setattr(si_full, "correct_motion", fake_correct_motion)
+    monkeypatch.setattr(si_full, "load_motion_info", lambda folder: {"motion": "saved motion"})
+    monkeypatch.setattr(sc_motion, "interpolate_motion", fake_interpolate_motion)
+
+    recording, sorting = si.generate_ground_truth_recording(num_channels=8, num_units=4, durations=[60.0], seed=0)
+    params = bombcell.get_default_preprocessing_params()
+    params["detect_bad_channels"] = False
+    params["apply_phase_shift"] = False
+    params["apply_motion_correction"] = True
+
+    for _ in range(2):
+        bombcell.preprocess_for_bombcell(
+            recording, sorting, tmp_path / "analyzer.zarr", params=params, n_jobs=1, progress_bar=False
+        )
+    assert calls == {"estimate": 1, "interpolate": 1}
+
+
+def test_existing_analyzer_must_match_sorting_and_params(tmp_path):
+    """Reusing an analyzer folder built from other data or settings is an error, unless overwritten."""
+    recording, sorting = si.generate_ground_truth_recording(num_channels=8, num_units=6, durations=[60.0], seed=0)
+    params = {"detect_bad_channels": False, "apply_phase_shift": False}  # partial: the rest default
+    folder = tmp_path / "analyzer.zarr"
+    kwargs = dict(n_jobs=1, progress_bar=False)
+
+    bombcell.preprocess_for_bombcell(recording, sorting, folder, params=params, **kwargs)
+    # Same inputs: the saved analyzer is simply loaded.
+    bombcell.preprocess_for_bombcell(recording, sorting, folder, params=params, **kwargs)
+
+    fewer_units = sorting.select_units(sorting.unit_ids[:3])
+    with pytest.raises(ValueError, match="different sorting"):
+        bombcell.preprocess_for_bombcell(recording, fewer_units, folder, params=params, **kwargs)
+
+    with pytest.raises(ValueError, match="freq_min"):
+        bombcell.preprocess_for_bombcell(recording, sorting, folder, params={**params, "freq_min": 250.0}, **kwargs)
+
+    analyzer, _, _ = bombcell.preprocess_for_bombcell(
+        recording, fewer_units, folder, params=params, overwrite=True, **kwargs
+    )
+    assert analyzer.unit_ids.size == 3
 
 
 def test_phase_shift_skipped_without_adc_metadata(tmp_path):

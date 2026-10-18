@@ -70,13 +70,24 @@ def get_default_parameters(
 
         ## Refractory period parameters
         # New recommended parameters:
-        "rpv_method": "hill",  # Method for RPV computation: 'hill', 'llobet', or 'ibl_sliding'
-        "tauR_values": np.array([0.002]),  # Refractory period values to test (in seconds)
-                                            # For sweeping, use e.g. np.arange(0.001, 0.005, 0.0005)
-        "tauC": 0.1 / 1000,  # Censored period time (s), to prevent duplicate spikes
+        "rpv_method": "ibl_sliding",  # Method for RPV computation: 'hill', 'llobet', or 'ibl_sliding'
+        "tauR_values": np.arange(4, 41) * 0.25 / 1000,  # Refractory period values to test (s):
+                                            # 1 to 10 ms in 0.25 ms steps. Shorter values let
+                                            # units hold off a fail by having a barely testable
+                                            # sub-ms refractory period. For 'hill'/'llobet' a
+                                            # single value, e.g. np.array([0.002])
+        "keepUncertainRPVUnits": False,  # For ibl_sliding: units with too few spikes to confirm
+                                         # they are below maxRPVviolations, and no evidence they
+                                         # are above it (RPV_status == 0), pass the RPV criterion
+                                         # if True, and are classified as MUA if False
+        "tauC": 0.1 / 1000,  # Censored period time (s): spike pairs closer than this are
+                             # ignored. Set below to Kilosort 4's duplicate spike window,
+                             # and raised to duplicateSpikeWindow_s at run time if
+                             # removeDuplicateSpikes is True (see effective_tauC)
         "contamination_values": None,  # For ibl_sliding: contamination values to test
-                                       # If None, uses np.arange(0.5, 35, 0.5) / 100
+                                       # If None, uses np.arange(0.5, 35.5, 0.5) / 100
         "confidence_threshold": 0.9,  # For ibl_sliding: confidence threshold for contamination estimate
+        "tauR_reject": 0.5 / 1000,  # For ibl_sliding: refractory periods <= this (s) are not tested
 
         # Legacy parameters (still supported for backward compatibility):
         "tauR_valuesMin": 2 / 1000,  # refractory period time (s), usually 0.002 s
@@ -186,6 +197,9 @@ def get_default_parameters(
         param["raw_data_file"] = None
 
     if kilosort_version == 4:
+        # Kilosort 4 removes same-cluster spikes closer than duplicate_spike_ms, so no
+        # pair can fall in that window: it has to be censored in the RPV estimate
+        param["tauC"] = max(param["tauC"], _kilosort4_duplicate_window_s(kilosort_path))
         param["spike_width"] = 61 # width of spike in samples
         param["waveformBaselineNoiseWindow"] = 10  # time in samples at the beginning, with no signal
         param["waveform_baseline_window_start"] = 0  # 0-indexed, in samples
@@ -198,6 +212,38 @@ def get_default_parameters(
         param["waveform_baseline_window_stop"] = 31  # in samples
 
     return param
+
+
+def _kilosort4_duplicate_window_s(kilosort_path, default_ms=0.25):
+    """
+    Kilosort 4's duplicate spike window (settings["duplicate_spike_ms"]) in seconds,
+    read from the ops.npy it saves alongside its output. Falls back to Kilosort 4's
+    default of 0.25 ms if ops.npy cannot be read, and returns 0 if it was saved by
+    a Kilosort 4 version that does not remove duplicate spikes.
+    """
+    ops_path = Path(kilosort_path) / "ops.npy"
+    try:
+        ops = np.load(ops_path, allow_pickle=True).item()
+    except Exception:
+        return default_ms / 1000
+    settings = ops.get("settings", ops)
+    if "duplicate_spike_ms" in settings:
+        return float(settings["duplicate_spike_ms"]) / 1000
+    if "duplicate_spike_ms" in ops:
+        return float(ops["duplicate_spike_ms"]) / 1000
+    return 0.0
+
+
+def effective_tauC(param):
+    """
+    Censored period used for refractory period violations: param["tauC"], raised
+    to bombcell's duplicate spike window if duplicate spikes are removed, since
+    pairs closer than that window can no longer occur.
+    """
+    tauC = param.get("tauC", 0.0001)
+    if param.get("removeDuplicateSpikes", False):
+        tauC = max(tauC, param.get("duplicateSpikeWindow_s", 0))
+    return tauC
 
 
 def get_unit_match_parameters(
@@ -255,6 +301,7 @@ _BACKCOMPAT_DEFAULTS = {
     "computeDrift": False,
     "computeDistanceMetrics": False,
     "splitGoodAndMua_NonSomatic": False,
+    "keepUncertainRPVUnits": False,
     "minSpatialDecaySlopeExp": 0.01,
     "maxSpatialDecaySlopeExp": 0.1,
     "maxScndPeakToTroughRatio_noise": 0.8,
