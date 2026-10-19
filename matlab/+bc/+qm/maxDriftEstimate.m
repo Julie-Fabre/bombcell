@@ -31,7 +31,7 @@ function [maxDrift_estimate, cumulativeDrift_estimate, median_spikeDepth, timeBi
 % For the metric: Siegle, J.H., Jia, X., Durand, S. et al. Survey of spiking in the mouse
 % visual system reveals functional hierarchy. Nature 592, 86–92 (2021). https://doi.org/10.1038/s41586-020-03171-x
 % For the center of mass estimation, this is based on the method in:
-% https://github.com/cortex-lab/spikes/analysis/ksDriftMap
+% https://github.com/cortex-lab/spikes/blob/master/analysis/ksDriftmap.m
 if param.computeDrift
 
     %% calculate center of mass for each spike

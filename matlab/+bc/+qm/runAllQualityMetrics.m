@@ -236,13 +236,9 @@ for iUnit = 1:size(uniqueTemplates, 1)
         qMetric.RPV_status(iUnit) = bc.qm.slidingRPstatus(theseSpikeTimes, thisUnits_timesToUse, ...
             tauR_window, param);
     else
-        % hill / llobet give a point estimate, with no uncertain outcome
-        thisContamination = qMetric.fractionRPVs(iUnit, qMetric.RPV_window_index(iUnit));
-        if isnan(thisContamination)
-            qMetric.RPV_status(iUnit) = NaN;
-        else
-            qMetric.RPV_status(iUnit) = 1 - 2 * (thisContamination > param.maxRPVviolations);
-        end
+        % hill / llobet: point estimate, uncertain only if param.maxRPVestimateCV is set
+        qMetric.RPV_status(iUnit) = bc.qm.pointEstimateRPstatus(theseSpikeTimes, thisUnits_timesToUse, ...
+            qMetric.fractionRPVs(iUnit, qMetric.RPV_window_index(iUnit)), qMetric.estimatedTauR(iUnit), param);
     end
 
     %% presence ratio (potential false negatives)

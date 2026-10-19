@@ -910,6 +910,96 @@ def sliding_rp_status(these_spike_times, time_chunks, param):
     return -1.0
 
 
+def point_estimate_rp_status(these_spike_times, time_chunks, contamination, tauR, param):
+    """
+    Three-way outcome of a point estimate of contamination ('hill' or 'llobet')
+    against the contamination threshold param["maxRPVviolations"].
+
+    By default (param["maxRPVestimateCV"] is None) the point estimate alone
+    decides: 1 (pass) if contamination <= maxRPVviolations, -1 (fail)
+    otherwise. Units with few spikes have few expected violations, so their
+    estimate is noisy: a unit with no violations has an estimate of 0 whether
+    or not it is clean. Following Vincent & Economo (2024, eNeuro), who found
+    that single-unit contamination estimates are only reliable once their
+    coefficient of variation (CV) is below ~20%, which requires tens of
+    minutes of recording at > 5 Hz, setting param["maxRPVestimateCV"] (e.g. 0.2)
+    flags such units:
+
+    The CV of the estimate is computed for a unit at the threshold C* =
+    maxRPVviolations, from the expected number of violations with N = infinity
+    contaminating neurons (Vincent & Economo, Eq. 8, equivalent to Llobet et
+    al., 2022):
+        lambda = K * C* * (2 - C*),  K = sum over chunks of (tauR - tauC) * n^2 / D
+    where n is the number of spikes and D the effective duration of each chunk.
+    The violation count is Poisson, so by the delta method
+        CV = sqrt(lambda) / (C* * dlambda/dC) = sqrt(lambda) / (2 * K * C* * (1 - C*))
+    If CV <= maxRPVestimateCV, the point estimate decides as above. Otherwise
+    the observed violations are tested against lambda as in sliding_rp_status:
+    -  1 (pass): contamination is below C* with param["confidence_threshold"]
+       confidence.
+    - -1 (fail): contamination is above C* with that confidence.
+    -  0 (uncertain): neither, there are too few spikes to tell.
+
+    Parameters
+    ----------
+    these_spike_times : ndarray
+        The spike times for the given unit in seconds
+    time_chunks : ndarray
+        The time chunk edges to use
+    contamination : float
+        The unit's point estimate of contamination
+    tauR : float
+        The refractory period (s) at which contamination was estimated
+    param : dict
+        The param dictionary (uses maxRPVviolations, maxRPVestimateCV, tauC
+        and confidence_threshold)
+
+    Returns
+    -------
+    status : float
+        1, 0 or -1 as above, NaN if contamination is NaN
+    """
+    from scipy.stats import poisson
+
+    if np.isnan(contamination):
+        return np.nan
+    max_contamination = param["maxRPVviolations"]
+    point_status = 1.0 if contamination <= max_contamination else -1.0
+    max_cv = param.get("maxRPVestimateCV", None)
+    if max_cv is None or np.isnan(max_cv) or not 0 < max_contamination < 1:
+        return point_status
+    tauC = param.get("tauC", 0.0001)
+    confidence_threshold = param.get("confidence_threshold", 0.9)
+
+    n_violations = 0
+    K = 0.0
+    for chunk_start, chunk_stop in zip(time_chunks[:-1], time_chunks[1:]):
+        chunk_spike_times = these_spike_times[(these_spike_times >= chunk_start) &
+                                              (these_spike_times < chunk_stop)]
+        counts = _sliding_rp_violation_counts(
+            chunk_spike_times, chunk_stop - chunk_start, [tauR], tauC, 0)
+        if counts is None:
+            continue
+        _, chunk_violations, effective_duration = counts
+        n_violations += chunk_violations[0]
+        K += (tauR - tauC) * len(chunk_spike_times) ** 2 / effective_duration
+    if K == 0:
+        return point_status
+
+    expected_violations = K * max_contamination * (2 - max_contamination)
+    cv = np.sqrt(expected_violations) / (2 * K * max_contamination * (1 - max_contamination))
+    if cv <= max_cv:
+        return point_status
+
+    # confidence that contamination < max: P(more violations than observed | C = max)
+    if poisson.sf(n_violations, expected_violations) >= confidence_threshold:
+        return 1.0
+    # confidence that contamination > max: 1 - P(at least as many violations | C = max)
+    if poisson.cdf(n_violations - 1, expected_violations) >= confidence_threshold:
+        return -1.0
+    return 0.0
+
+
 def sliding_rp_violations(these_spike_times, time_chunks, param, return_per_bin=False):
     """
     Compute refractory period violations using sliding methods.
@@ -2449,15 +2539,19 @@ def get_raw_amplitude(this_raw_waveform, gain_to_uV, peak_channel=None):
 
 def too_many_rpvs(quality_metrics, param):
     """
-    Units failing the refractory period criterion. With the sliding refractory
-    period method, units for which it cannot be said whether they are clean or
-    contaminated (RPV_status == 0, see sliding_rp_status) are counted as passing
-    when param["keepUncertainRPVUnits"] is True.
+    Units failing the refractory period criterion. Units for which it cannot be
+    said whether they are clean or contaminated (RPV_status == 0, see
+    sliding_rp_status and point_estimate_rp_status) are counted as passing when
+    param["keepUncertainRPVUnits"] is True, and as failing otherwise.
     """
     too_many = np.asarray(
         quality_metrics["fractionRPVs_estimatedTauR"] > param["maxRPVviolations"])
-    if param.get("keepUncertainRPVUnits", False) and "RPV_status" in quality_metrics:
-        too_many = too_many & ~np.asarray(quality_metrics["RPV_status"] == 0)
+    if "RPV_status" in quality_metrics:
+        uncertain = np.asarray(quality_metrics["RPV_status"] == 0)
+        if param.get("keepUncertainRPVUnits", False):
+            too_many = too_many & ~uncertain
+        else:
+            too_many = too_many | uncertain
     return too_many
 
 
