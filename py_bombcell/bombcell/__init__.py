@@ -39,6 +39,14 @@ from .manual_analysis import (
     compare_manual_vs_bombcell
 )
 from .methods_text import generate_methods_text, print_methods_text, save_methods_text
+# SpikeInterface entry point. Safe to import without SpikeInterface installed:
+# it is only imported inside these functions, which raise a clear error if missing.
+from .spikeinterface_pipeline import (
+    get_default_preprocessing_params,
+    get_default_qc_params,
+    preprocess_for_bombcell,
+    run_bombcell_qc,
+)
 from .plot_functions import generate_supplementary_figure
 
 # __version__ attribute exposition
