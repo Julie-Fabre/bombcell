@@ -42,14 +42,24 @@ np1_types = {'0', '1', '3', '1020', '1030', '1100', '1110', '1120', '1121', '112
 np2_preCommercial_types = {'21', '24'}; % NP2.0 phase 1 (NP2000, NP2010)
 np2_commercial_types = {'2003', '2004', '2005', '2006', '2013', '2014', '2020', '2021', '2022', '2300'}; % NP2.0 commercial
 
-% gain 
+% gain
+% ChanGainsIM is indexed by original (acquired) channel, while the binary
+% file - and so the raw waveform peak channels - only holds the saved
+% channels (e.g. after removing bad channels with CatGT or saving a subset
+% in SpikeGLX, see snsSaveChanSubset). Map each saved AP channel back to
+% its original channel to get its gain, in file order.
 gain_allChannels = bc.dependencies.SGLX_readMeta.ChanGainsIM(meta);
 allChannels_index = bc.dependencies.SGLX_readMeta.OriginalChans(meta);
+[nSavedAP, ~, ~] = bc.dependencies.SGLX_readMeta.ChannelCountsIM(meta);
 
-allChannels_index(allChannels_index > recordingChannels_n) = []; % remove sync
+savedAPChannels_index = allChannels_index(1:nSavedAP); % saved AP channels come first; drops LF and sync
+gain_allChannels_ordered = reshape(gain_allChannels(savedAPChannels_index), [], 1);
 
-[~, sort_idx]= sort(allChannels_index);
-gain_allChannels_ordered = gain_allChannels(sort_idx);
+if nSavedAP ~= recordingChannels_n
+    warning(['The meta file lists %d saved AP channels (snsApLfSy) but param.nChannels - param.nSyncChannels = %d. ', ...
+        'Set param.nChannels to nSavedChans (%s) from your meta file.'], ...
+        nSavedAP, recordingChannels_n, meta.nSavedChans);
+end
 
 % bits_encoding 
 if isfield(meta, 'imMaxInt')
