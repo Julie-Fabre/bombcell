@@ -35,7 +35,9 @@ function [RPVrate, RPVfraction, overestimateBool, estimatedTauR] = fractionRPvio
 % ------
 % Reference
 % ------
-% - Llobet V et al., biorXiv 2023. (see equation 3, page 11)
+% - Llobet, V., Wyngaard, A., & Barbour, B. Automatic post-processing and merging
+%   of multiple spike-sorting analyses with Lussac. bioRxiv (2022), see equation 3.
+%   https://doi.org/10.1101/2022.02.08.479192
 % - Hill, Daniel N., Samar B. Mehta, and David Kleinfeld.
 %   "Quality metrics to accompany spike sorting of extracellular signals."
 %   Journal of Neuroscience 31.24 (2011): 8699-8705

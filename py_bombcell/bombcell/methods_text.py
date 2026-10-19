@@ -38,7 +38,8 @@ CITATIONS = {
         "full": (
             "Hill, D.N., Mehta, S.B., & Kleinfeld, D. (2011). Quality metrics "
             "to accompany spike sorting of extracellular signals. Journal of "
-            "Neuroscience, 31(24), 8699-8705."
+            "Neuroscience, 31(24), 8699-8705. "
+            "https://doi.org/10.1523/JNEUROSCI.0971-11.2011"
         ),
         "bibtex": (
             "@article{hill2011quality,\n"
@@ -48,40 +49,44 @@ CITATIONS = {
             "  volume = {31},\n"
             "  number = {24},\n"
             "  pages = {8699--8705},\n"
-            "  year = {2011}\n"
+            "  year = {2011},\n"
+            "  doi = {10.1523/JNEUROSCI.0971-11.2011}\n"
             "}"
         ),
     },
     "llobet2022": {
         "inline": "Llobet et al., 2022",
         "full": (
-            "Llobet, V., Wyngaard, D., Bhatt, D.K., Marx, M., & Bhatt, S. (2022). "
-            "A sliding window framework for optimal refractory period estimation. "
-            "bioRxiv."
+            "Llobet, V., Wyngaard, A., & Barbour, B. (2022). Automatic "
+            "post-processing and merging of multiple spike-sorting analyses with "
+            "Lussac. bioRxiv. https://doi.org/10.1101/2022.02.08.479192"
         ),
         "bibtex": (
-            "@article{llobet2022sliding,\n"
-            "  author = {Llobet, Vincent and Wyngaard, Darik and Bhatt, Devika K. and Marx, Marius and Bhatt, Shashwat},\n"
-            "  title = {A sliding window framework for optimal refractory period estimation},\n"
+            "@article{llobet2022lussac,\n"
+            "  author = {Llobet, Victor and Wyngaard, Aur{\\'e}lien and Barbour, Boris},\n"
+            "  title = {Automatic post-processing and merging of multiple spike-sorting analyses with Lussac},\n"
             "  journal = {bioRxiv},\n"
-            "  year = {2022}\n"
+            "  year = {2022},\n"
+            "  doi = {10.1101/2022.02.08.479192}\n"
             "}"
         ),
     },
     "ibl2022": {
-        "inline": "International Brain Laboratory, 2022",
+        "inline": "International Brain Laboratory, 2025",
         "full": (
-            "International Brain Laboratory et al. (2022). Reproducibility of "
-            "in-vivo electrophysiological measurements in mice. bioRxiv. "
-            "https://doi.org/10.1101/2022.05.09.491042"
+            "International Brain Laboratory, Banga, K., Benson, J., et al. (2025). "
+            "Reproducibility of in vivo electrophysiological measurements in mice. "
+            "eLife, 13, RP100840. https://doi.org/10.7554/eLife.100840"
         ),
         "bibtex": (
-            "@article{ibl2022reproducibility,\n"
-            "  author = {{International Brain Laboratory} and others},\n"
-            "  title = {Reproducibility of in-vivo electrophysiological measurements in mice},\n"
-            "  journal = {bioRxiv},\n"
-            "  year = {2022},\n"
-            "  doi = {10.1101/2022.05.09.491042}\n"
+            "@article{ibl2025reproducibility,\n"
+            "  author = {{International Brain Laboratory} and Banga, Kush and Benson, Julius and others},\n"
+            "  title = {Reproducibility of in vivo electrophysiological measurements in mice},\n"
+            "  journal = {eLife},\n"
+            "  volume = {13},\n"
+            "  pages = {RP100840},\n"
+            "  year = {2025},\n"
+            "  doi = {10.7554/eLife.100840}\n"
             "}"
         ),
     },
