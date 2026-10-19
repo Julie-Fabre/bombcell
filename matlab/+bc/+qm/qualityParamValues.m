@@ -90,16 +90,9 @@ param.contaminationValues = []; % For ibl_sliding: contamination values to test
     % If empty, uses (0.5:0.5:35)/100 (0.5% to 35%)
 param.confidenceThreshold = 0.9; % For ibl_sliding: confidence threshold
 param.tauR_reject = 0.5/1000; % For ibl_sliding: refractory periods <= this (s) are not tested
-param.keepUncertainRPVUnits = 0; % Units with too few spikes to tell whether they are
-    % below or above maxRPVviolations (RPV_status == 0), pass the RPV criterion if 1,
-    % and are classified as MUA if 0. For ibl_sliding: units that cannot confirm
-    % they are below it, with no evidence they are above it. For hill/llobet: see
-    % maxRPVestimateCV
-param.maxRPVestimateCV = NaN; % For hill/llobet: if set (e.g. 0.2, following Vincent &
-    % Economo, 2024), units whose contamination estimate would have a coefficient of
-    % variation above this at maxRPVviolations, and that are not confidently (at
-    % confidenceThreshold) below or above it, are uncertain (RPV_status == 0).
-    % NaN: the point estimate alone decides
+param.keepUncertainRPVUnits = 0; % For ibl_sliding: units with too few spikes to confirm
+    % they are below maxRPVviolations, and no evidence they are above it
+    % (RPV_status == 0), pass the RPV criterion if 1, and are classified as MUA if 0
 
 % Legacy parameters (still supported for backward compatibility):
 param.tauR_valuesMin = 2/1000; % refractory period time (s), usually 0.0020

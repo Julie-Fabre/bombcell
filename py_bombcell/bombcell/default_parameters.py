@@ -76,18 +76,10 @@ def get_default_parameters(
                                             # units hold off a fail by having a barely testable
                                             # sub-ms refractory period. For 'hill'/'llobet' a
                                             # single value, e.g. np.array([0.002])
-        "keepUncertainRPVUnits": False,  # Units with too few spikes to tell whether they are
-                                         # below or above maxRPVviolations (RPV_status == 0),
-                                         # pass the RPV criterion if True, and are classified
-                                         # as MUA if False. For ibl_sliding: units that cannot
-                                         # confirm they are below it, with no evidence they are
-                                         # above it. For hill/llobet: see maxRPVestimateCV
-        "maxRPVestimateCV": None,  # For hill/llobet: if set (e.g. 0.2, following Vincent &
-                                   # Economo, 2024), units whose contamination estimate would
-                                   # have a coefficient of variation above this at
-                                   # maxRPVviolations, and that are not confidently (at
-                                   # confidence_threshold) below or above it, are uncertain
-                                   # (RPV_status == 0). None: the point estimate alone decides
+        "keepUncertainRPVUnits": False,  # For ibl_sliding: units with too few spikes to confirm
+                                         # they are below maxRPVviolations, and no evidence they
+                                         # are above it (RPV_status == 0), pass the RPV criterion
+                                         # if True, and are classified as MUA if False
         "tauC": 0.1 / 1000,  # Censored period time (s): spike pairs closer than this are
                              # ignored. Set below to Kilosort 4's duplicate spike window,
                              # and raised to duplicateSpikeWindow_s at run time if
@@ -310,7 +302,6 @@ _BACKCOMPAT_DEFAULTS = {
     "computeDistanceMetrics": False,
     "splitGoodAndMua_NonSomatic": False,
     "keepUncertainRPVUnits": False,
-    "maxRPVestimateCV": None,
     "minSpatialDecaySlopeExp": 0.01,
     "maxSpatialDecaySlopeExp": 0.1,
     "maxScndPeakToTroughRatio_noise": 0.8,

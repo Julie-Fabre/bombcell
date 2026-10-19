@@ -914,10 +914,10 @@ def get_all_quality_metrics(
                 quality_metrics["RPV_status"][unit_idx] = qm.sliding_rp_status(
                     these_spike_times, use_these_times, param
                 )
-            else:
-                # hill / llobet: point estimate, uncertain only if maxRPVestimateCV is set
-                quality_metrics["RPV_status"][unit_idx] = qm.point_estimate_rp_status(
-                    these_spike_times, use_these_times, contamination, estimated_tauR, param
+            elif not np.isnan(contamination):
+                # hill / llobet give a point estimate, with no uncertain outcome
+                quality_metrics["RPV_status"][unit_idx] = (
+                    1.0 if contamination <= param["maxRPVviolations"] else -1.0
                 )
             RPV_tauR_estimate_units_NtauR.append([unit_idx, np.array([contamination])])
         else:

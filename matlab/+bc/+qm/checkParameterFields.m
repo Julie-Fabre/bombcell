@@ -59,7 +59,6 @@ defaultValues.contaminationValues = [];  % for ibl_sliding (default 0.5-35%)
 defaultValues.confidenceThreshold = 0.9;  % for ibl_sliding
 defaultValues.tauR_reject = 0;  % for ibl_sliding: earlier versions tested every tauR > tauC
 defaultValues.keepUncertainRPVUnits = 0;  % for ibl_sliding
-defaultValues.maxRPVestimateCV = NaN;  % for hill/llobet: NaN = off
 
 % waveform - noise
 defaultValues.normalizeSpDecay = 0;% whether to normalize spatial decay points relative to 
