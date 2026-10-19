@@ -105,6 +105,14 @@ else
     timeChunks = [min(spikeTimes_seconds), max(spikeTimes_seconds)];
 end
 
+% drift time bins, as in bc.qm.maxDriftEstimate (used to size NaN rows for empty units)
+if param.computeDrift
+    timeBins = timeChunks(1):param.driftBinSize:timeChunks(end);
+else
+    timeBins = NaN;
+end
+nDriftBins = length(timeBins);
+
 % pairs closer than the duplicate spike window were just removed, so censor them
 tauC = bc.qm.helpers.effectiveTauC(param);
 if tauC ~= param.tauC
@@ -156,7 +164,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
         qMetric.presenceRatio(iUnit) = NaN;
         qMetric.maxDriftEstimate(iUnit) = NaN;
         qMetric.cumDriftEstimate(iUnit) = NaN;
-        medianSpikeDepth(iUnit,:) = NaN(1, length(timeChunks)-1);
+        medianSpikeDepth(iUnit,:) = NaN(1, nDriftBins); % same width as bc.qm.maxDriftEstimate output
         qMetric.nSpikes(iUnit) = 0;  % Explicitly 0 spikes
         qMetric.nPeaks(iUnit) = NaN;
         qMetric.nTroughs(iUnit) = NaN;
